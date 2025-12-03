@@ -70,7 +70,8 @@ const EventDetailPanel: React.FC<EventDetailPanelProps> = ({ event, open, onOpen
                     // Fetch recent events of this type to infer properties
                     // Temporary workaround until api.ts update:
                     const token = localStorage.getItem('token');
-                    const res = await fetch(`http://localhost:4000/v1/admin/analytics/events?limit=50&type=${encodeURIComponent(event.name)}`, {
+                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+                    const res = await fetch(`${apiUrl}/v1/admin/analytics/events?limit=50&type=${encodeURIComponent(event.name)}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }

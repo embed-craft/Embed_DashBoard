@@ -7,7 +7,8 @@ const Stats: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
-        fetch('http://localhost:4000/api/admin/stats', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        fetch(`${apiUrl}/api/admin/stats`, {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => res.json())

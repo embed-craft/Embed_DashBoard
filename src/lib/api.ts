@@ -7,7 +7,7 @@ import type { CampaignEditor } from '@/store/useEditorStore';
 import { editorToBackend, backendToEditor, type BackendCampaign } from './campaignTransformers';
 
 // Configuration
-const DEFAULT_BASE_URL = 'http://localhost:4000';
+const DEFAULT_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const DEFAULT_TIMEOUT_MS = 30000;
 const API_KEY_STORAGE_KEY = 'embeddedcraft_api_key';
 

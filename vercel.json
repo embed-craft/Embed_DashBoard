@@ -23,6 +23,10 @@
         {
             "source": "/admin/nudge/:match*",
             "destination": "https://embed-backend-w9j0.onrender.com/admin/nudge/:match*"
+        },
+        {
+            "source": "/((?!assets/|.*\\..*).*)",
+            "destination": "/index.html"
         }
     ]
 }

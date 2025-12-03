@@ -1,0 +1,1546 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Layer, BottomSheetConfig, LayerStyle } from '@/store/useEditorStore';
+import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
+import { ResizableBox, ResizeCallbackData } from 'react-resizable';
+import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
+import 'react-resizable/css/styles.css';
+import { ErrorBoundary } from './ErrorBoundary';
+import { DraggableResizableLayerWrapper } from './DraggableResizableLayerWrapper';
+
+type ColorTheme = {
+    border: {
+        default: string;
+    };
+    primary: Record<number, string>;
+    gray: Record<number, string>;
+} & (
+        | {
+            background: {
+                page: string;
+                card: string;
+            };
+            text: {
+                primary: string;
+                secondary: string;
+            };
+        }
+        | {
+            bg: string;
+            text: string;
+        }
+    );
+
+// Helper functions for type-safe color access
+const getBackgroundColor = (colors: ColorTheme): string => {
+    if ('background' in colors) return colors.background.card;
+    if ('bg' in colors) return colors.bg;
+    return '#FFFFFF';
+};
+
+const getTextColor = (colors: ColorTheme): string => {
+    if ('text' in colors) {
+        if (typeof colors.text === 'string') return colors.text;
+        return colors.text.primary;
+    }
+    return '#000000';
+};
+
+// Helper to convert transform object to string
+const getTransformString = (transform?: LayerStyle['transform']) => {
+    if (!transform || typeof transform !== 'object') return undefined;
+    const parts = [];
+    if (transform.rotate) parts.push(`rotate(${transform.rotate}deg)`);
+    if (transform.scale) parts.push(`scale(${transform.scale})`);
+
+    // Handle X Translation
+    if (transform.translateX !== undefined) {
+        const val = transform.translateX;
+        const valStr = typeof val === 'number' ? `${val}px` : val;
+        parts.push(`translateX(${valStr})`);
+    }
+
+    // Handle Y Translation
+    if (transform.translateY !== undefined) {
+        const val = transform.translateY;
+        const valStr = typeof val === 'number' ? `${val}px` : val;
+        parts.push(`translateY(${valStr})`);
+    }
+
+    return parts.join(' ');
+};
+
+// Helper to convert filter object to string
+const getFilterString = (filter?: LayerStyle['filter']) => {
+    if (!filter || typeof filter !== 'object') return undefined;
+    const parts = [];
+    if (filter.blur) parts.push(`blur(${filter.blur}px)`);
+    if (filter.brightness) parts.push(`brightness(${filter.brightness}%)`);
+    if (filter.contrast) parts.push(`contrast(${filter.contrast}%)`);
+    if (filter.grayscale) parts.push(`grayscale(${filter.grayscale}%)`);
+    return parts.join(' ');
+};
+
+// Extracted Component: Countdown Layer
+const CountdownLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
+    const [timeLeft, setTimeLeft] = useState<{ hours: number, minutes: number, seconds: number, totalSeconds: number }>({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
+    const endTimeMs = useMemo(() =>
+        layer.content.endTime ? new Date(layer.content.endTime).getTime() : Date.now() + 3600000,
+        [layer.content.endTime]
+    );
+
+    useEffect(() => {
+        let mounted = true;
+
+        const updateTimer = () => {
+            if (!mounted) return;
+
+            const now = Date.now();
+            const diff = endTimeMs - now;
+
+            if (diff <= 0) {
+                setTimeLeft({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                setTimeLeft({ hours, minutes, seconds, totalSeconds: Math.floor(diff / 1000) });
+            }
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, [endTimeMs]);
+
+    const isUrgent = layer.content.urgencyThreshold && timeLeft.totalSeconds < (layer.content.urgencyThreshold || 0);
+    const variant = layer.content.timerVariant || 'text';
+    const textColor = isUrgent ? '#EF4444' : (layer.content.textColor || '#111827');
+    const fontSize = layer.content.fontSize || 24;
+    const fontWeight = layer.content.fontWeight || 'bold';
+    const fontFamily = layer.style?.fontFamily || 'monospace';
+
+    // Helper to render a single time unit block
+    const renderBlock = (value: number, label: string) => (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <div style={{
+                backgroundColor: variant === 'card' ? (layer.style?.backgroundColor || '#F3F4F6') : 'transparent',
+                borderRadius: variant === 'card' ? '8px' : '0',
+                padding: variant === 'card' ? '8px 12px' : '0',
+                minWidth: variant === 'card' ? '48px' : 'auto',
+                textAlign: 'center',
+                border: variant === 'card' ? `1px solid ${layer.style?.borderColor || '#E5E7EB'}` : 'none',
+                boxShadow: variant === 'card' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+            }}>
+                <span style={{ fontSize: `${fontSize}px`, fontWeight, color: textColor, fontFamily }}>
+                    {String(value).padStart(2, '0')}
+                </span>
+            </div>
+            {variant !== 'text' && (
+                <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 500 }}>
+                    {label}
+                </span>
+            )}
+        </div>
+    );
+
+    // Helper to render flip clock style
+    const renderFlip = (value: number, label: string) => (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <div style={{
+                backgroundColor: layer.style?.backgroundColor || '#1F2937',
+                borderRadius: '6px',
+                padding: '10px 8px',
+                minWidth: '44px',
+                textAlign: 'center',
+                position: 'relative',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                overflow: 'hidden'
+            }}>
+                {/* Top half shine/gradient */}
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
+                    background: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+                    borderBottom: '1px solid rgba(0,0,0,0.3)'
+                }} />
+                <span style={{
+                    fontSize: `${fontSize}px`, fontWeight: 'bold', color: layer.content.textColor || '#FFFFFF',
+                    fontFamily: 'Courier New, monospace', position: 'relative', zIndex: 1, display: 'block', lineHeight: 1
+                }}>
+                    {String(value).padStart(2, '0')}
+                </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>
+                {label}
+            </span>
+        </div>
+    );
+
+    // Helper to render digital/LED style
+    const renderDigital = (value: number, label: string) => (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <div style={{
+                backgroundColor: '#000000',
+                borderRadius: '4px',
+                padding: '8px 10px',
+                minWidth: '50px',
+                textAlign: 'center',
+                border: `2px solid ${layer.style?.borderColor || '#333'}`,
+                boxShadow: `0 0 10px ${isUrgent ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.2)'}`
+            }}>
+                <span style={{
+                    fontSize: `${fontSize}px`, fontWeight: 'normal',
+                    color: isUrgent ? '#EF4444' : '#10B981', // Red or Green LED
+                    fontFamily: "'Courier New', Courier, monospace",
+                    textShadow: `0 0 5px ${isUrgent ? '#EF4444' : '#10B981'}`
+                }}>
+                    {String(value).padStart(2, '0')}
+                </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 600 }}>
+                {label}
+            </span>
+        </div>
+    );
+
+    // Helper to render circular progress
+    const renderCircle = (value: number, max: number, label: string) => {
+        const size = 60;
+        const strokeWidth = 4;
+        const radius = (size - strokeWidth) / 2;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (value / max) * circumference;
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <div style={{ position: 'relative', width: size, height: size }}>
+                    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={size / 2} cy={size / 2} r={radius} stroke="#E5E7EB" strokeWidth={strokeWidth} fill="none" />
+                        <circle
+                            cx={size / 2} cy={size / 2} r={radius}
+                            stroke={isUrgent ? '#EF4444' : (layer.style?.backgroundColor || '#6366F1')}
+                            strokeWidth={strokeWidth} fill="none"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={offset}
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                        />
+                    </svg>
+                    <div style={{
+                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                        fontSize: `${Math.max(14, fontSize * 0.6)}px`, fontWeight, color: textColor, fontFamily
+                    }}>
+                        {String(value).padStart(2, '0')}
+                    </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 500 }}>
+                    {label}
+                </span>
+            </div>
+        );
+    };
+
+    // Helper for Bubble style
+    const renderBubble = (value: number, label: string) => (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <div style={{
+                backgroundColor: layer.style?.backgroundColor || '#EEF2FF',
+                borderRadius: '50%',
+                width: '56px',
+                height: '56px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                border: `2px solid ${layer.style?.borderColor || 'transparent'}`
+            }}>
+                <span style={{ fontSize: `${Math.max(16, fontSize * 0.8)}px`, fontWeight: 'bold', color: textColor, fontFamily }}>
+                    {String(value).padStart(2, '0')}
+                </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#6B7280', fontWeight: 600 }}>
+                {label}
+            </span>
+        </div>
+    );
+
+    // Helper for Minimal style
+    const renderMinimal = (value: number, label: string) => (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: `${fontSize * 1.2}px`, fontWeight: 300, color: textColor, fontFamily: 'Helvetica Neue, sans-serif', lineHeight: 1 }}>
+                {String(value).padStart(2, '0')}
+            </span>
+            <span style={{ fontSize: '9px', color: '#9CA3AF', letterSpacing: '1px', marginTop: '2px' }}>
+                {label}
+            </span>
+        </div>
+    );
+
+    // Helper for Neon style
+    const renderNeon = (value: number, label: string) => (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <div style={{
+                padding: '4px 12px',
+                border: `2px solid ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}`,
+                borderRadius: '8px',
+                boxShadow: `0 0 8px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}, inset 0 0 8px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}`,
+                backgroundColor: 'rgba(0,0,0,0.8)'
+            }}>
+                <span style={{
+                    fontSize: `${fontSize}px`, fontWeight: 'bold', color: '#FFFFFF',
+                    textShadow: `0 0 10px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}`,
+                    fontFamily: 'sans-serif'
+                }}>
+                    {String(value).padStart(2, '0')}
+                </span>
+            </div>
+            <span style={{ fontSize: '10px', color: isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1'), fontWeight: 600, textShadow: `0 0 5px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}` }}>
+                {label}
+            </span>
+        </div>
+    );
+
+    if (variant === 'circular') {
+        return (
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                {renderCircle(timeLeft.hours, 24, 'Hrs')}
+                {renderCircle(timeLeft.minutes, 60, 'Mins')}
+                {renderCircle(timeLeft.seconds, 60, 'Secs')}
+            </div>
+        );
+    }
+
+    if (variant === 'bubble') {
+        return (
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                {renderBubble(timeLeft.hours, 'Hrs')}
+                {renderBubble(timeLeft.minutes, 'Mins')}
+                {renderBubble(timeLeft.seconds, 'Secs')}
+            </div>
+        );
+    }
+
+    if (variant === 'minimal') {
+        return (
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
+                {renderMinimal(timeLeft.hours, 'HOURS')}
+                <span style={{ fontSize: `${fontSize}px`, fontWeight: 300, color: '#E5E7EB', marginBottom: '12px' }}>|</span>
+                {renderMinimal(timeLeft.minutes, 'MINS')}
+                <span style={{ fontSize: `${fontSize}px`, fontWeight: 300, color: '#E5E7EB', marginBottom: '12px' }}>|</span>
+                {renderMinimal(timeLeft.seconds, 'SECS')}
+            </div>
+        );
+    }
+
+    if (variant === 'neon') {
+        return (
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                {renderNeon(timeLeft.hours, 'HRS')}
+                {renderNeon(timeLeft.minutes, 'MIN')}
+                {renderNeon(timeLeft.seconds, 'SEC')}
+            </div>
+        );
+    }
+
+    if (variant === 'flip') {
+        return (
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'flex-start' }}>
+                {renderFlip(timeLeft.hours, 'Hours')}
+                {renderFlip(timeLeft.minutes, 'Mins')}
+                {renderFlip(timeLeft.seconds, 'Secs')}
+            </div>
+        );
+    }
+
+    if (variant === 'digital') {
+        return (
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'flex-start' }}>
+                {renderDigital(timeLeft.hours, 'Hours')}
+                <span style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', color: isUrgent ? '#EF4444' : '#10B981', marginTop: '8px', textShadow: `0 0 5px ${isUrgent ? '#EF4444' : '#10B981'}` }}>:</span>
+                {renderDigital(timeLeft.minutes, 'Mins')}
+                <span style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', color: isUrgent ? '#EF4444' : '#10B981', marginTop: '8px', textShadow: `0 0 5px ${isUrgent ? '#EF4444' : '#10B981'}` }}>:</span>
+                {renderDigital(timeLeft.seconds, 'Secs')}
+            </div>
+        );
+    }
+
+    if (variant === 'card') {
+        return (
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'flex-start' }}>
+                {renderBlock(timeLeft.hours, 'Hours')}
+                <span style={{ fontSize: `${fontSize}px`, fontWeight, color: textColor, marginTop: '8px' }}>:</span>
+                {renderBlock(timeLeft.minutes, 'Mins')}
+                <span style={{ fontSize: `${fontSize}px`, fontWeight, color: textColor, marginTop: '8px' }}>:</span>
+                {renderBlock(timeLeft.seconds, 'Secs')}
+            </div>
+        );
+    }
+
+    // Default text variant
+    return (
+        <div style={{
+            fontSize: `${fontSize}px`,
+            fontWeight,
+            color: textColor,
+            textAlign: 'center',
+            fontFamily,
+            letterSpacing: '2px'
+        }}>
+            {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+        </div>
+    );
+};
+
+// Extracted Component: Statistic Layer
+const StatisticLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
+    const [displayValue, setDisplayValue] = useState(0);
+    const targetValue = layer.content.value || 0;
+    const shouldAnimate = layer.content.animateOnLoad;
+
+    useEffect(() => {
+        if (!shouldAnimate) {
+            setDisplayValue(targetValue);
+            return;
+        }
+
+        let mounted = true;
+        let start = 0;
+        const duration = 1000;
+        const increment = targetValue / (duration / 16);
+
+        const timer = setInterval(() => {
+            if (!mounted) return;
+
+            start += increment;
+            if (start >= targetValue) {
+                setDisplayValue(targetValue);
+                clearInterval(timer);
+            } else {
+                setDisplayValue(Math.floor(start));
+            }
+        }, 16);
+
+        return () => {
+            mounted = false;
+            clearInterval(timer);
+        };
+    }, [targetValue, shouldAnimate]);
+
+    return (
+        <div style={{ textAlign: 'center' }}>
+            <div style={{
+                fontSize: `${layer.content.fontSize || 36}px`,
+                fontWeight: layer.content.fontWeight || 'bold',
+                color: layer.content.textColor || '#111827'
+            }}>
+                {layer.content.prefix || ''}{displayValue}{layer.content.suffix ? ` ${layer.content.suffix}` : ''}
+            </div>
+        </div>
+    );
+};
+
+// DraggableResizableLayerWrapper removed (extracted to separate file)
+
+interface BannerConfig {
+    position: 'top' | 'bottom';
+    mode?: 'default' | 'image-only';
+    height: 'auto' | number | string;
+    backgroundColor: string;
+    backgroundImageUrl?: string;
+    backgroundSize?: 'cover' | 'contain' | 'auto';
+    showCloseButton?: boolean;
+    opacity?: number;
+    borderRadius: number | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
+    elevation: 0 | 1 | 2 | 3 | 4 | 5;
+    animation: {
+        type: 'slide' | 'fade';
+        duration: number;
+        easing: string;
+    };
+    overlay?: {
+        enabled: boolean;
+        opacity: number;
+        blur: number;
+        color: string;
+        dismissOnClick: boolean;
+    };
+}
+
+interface BannerRendererProps {
+    layers: Layer[];
+    selectedLayerId: string | null;
+    onLayerSelect: (id: string) => void;
+    colors: ColorTheme;
+    config?: BannerConfig;
+    onHeightChange?: (height: number | string) => void;
+    onLayerUpdate?: (id: string, style: Partial<LayerStyle>) => void;
+}
+
+/**
+ * Banner Renderer
+ * Renders a banner at the top or bottom of the screen.
+ */
+export const BannerRenderer: React.FC<BannerRendererProps> = ({
+    layers,
+    selectedLayerId,
+    onLayerSelect,
+    colors,
+    config,
+    onHeightChange,
+    onLayerUpdate
+}) => {
+    // Debug logging
+    console.log('BottomSheetRenderer: Rendering with', layers.length, 'layers');
+
+    // Visual resize handle state
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeStartY, setResizeStartY] = useState(0);
+    const [resizeStartHeight, setResizeStartHeight] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Find banner container
+    const bannerLayer = layers.find(
+        l => (l.type === 'container' && !l.parent) ||
+            (l.type === 'container' && l.name.toLowerCase().includes('banner'))
+    );
+
+    if (!bannerLayer) {
+        return (
+            <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                padding: '20px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100px',
+                zIndex: 1000
+            }}>
+                <p style={{ color: '#9CA3AF', fontSize: '14px' }}>
+                    No banner container found. Add layers to see preview.
+                </p>
+            </div>
+        );
+    }
+
+    // Get all child layers sorted by zIndex
+    const childLayers = layers
+        .filter(l => l.parent === bannerLayer.id)
+        .sort((a, b) => a.zIndex - b.zIndex);
+
+    // --- Helper Render Functions ---
+
+    const renderProgressCircle = (layer: Layer) => {
+        const value = layer.content?.value || 0;
+        const max = layer.content?.max || 100;
+        const showPercentage = layer.content?.showPercentage !== false;
+        const variant = layer.content?.progressVariant || 'simple';
+
+        // Calculate percentage
+        const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+
+        // SVG parameters
+        const size = 120;
+        const strokeWidth = variant === 'thick' ? 12 : 8;
+        const radius = (size - strokeWidth) / 2;
+        const circumference = 2 * Math.PI * radius;
+
+        // Calculate offset based on variant
+        let offset = circumference - (percentage / 100) * circumference;
+        let rotation = -90;
+        let circleCircumference = circumference;
+
+        if (variant === 'semicircle') {
+            rotation = 135;
+            circleCircumference = circumference * 0.75; // Show 75% of the circle (270 degrees)
+            offset = circleCircumference - (percentage / 100) * circleCircumference;
+        }
+
+        const strokeColor = layer.content?.themeColor || layer.style?.backgroundColor || '#6366F1';
+        const trackColor = '#E5E7EB';
+
+        return (
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '16px'
+            }}>
+                <div style={{ position: 'relative', width: size, height: size }}>
+                    <svg width={size} height={size} style={{ transform: `rotate(${rotation}deg)` }}>
+                        {/* Track Circle */}
+                        <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            stroke={trackColor}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                            strokeDasharray={variant === 'semicircle' ? `${circleCircumference} ${circumference}` : variant === 'dashed' ? '4 4' : undefined}
+                            strokeLinecap={variant === 'semicircle' ? 'round' : 'butt'}
+                        />
+                        {/* Progress Circle */}
+                        <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            stroke={strokeColor}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                            strokeDasharray={variant === 'semicircle' ? `${circleCircumference} ${circumference}` : circumference}
+                            strokeDashoffset={variant === 'semicircle' ? offset : (variant === 'dashed' ? circumference - (percentage / 100) * circumference : offset)}
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                        />
+                    </svg>
+
+                    {/* Text Overlay */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            color: '#111827',
+                            fontFamily: (layer.content as any)?.fontFamily || 'Inter, sans-serif'
+                        }}>
+                            {value}
+                        </div>
+                        {showPercentage && (
+                            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                                {variant === 'semicircle' ? 'Score' : (layer.content?.max ? `of ${layer.content.max}` : '%')}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {variant === 'semicircle' && (
+                    <div style={{ marginTop: '-20px', fontSize: '14px', fontWeight: 500, color: '#4B5563' }}>
+                        {Math.round(percentage)}%
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderList = (layer: Layer) => {
+        const items = layer.content.items || [];
+        const listStyle = layer.content.listStyle || 'bullet';
+
+        const getListIcon = (index: number) => {
+            switch (listStyle) {
+                case 'numbered':
+                    return `${index + 1}.`;
+                case 'checkmark':
+                    return <Check size={16} color="#22C55E" />;
+                case 'bullet':
+                default:
+                    return <Circle size={8} style={{ fill: 'currentColor' }} />;
+            }
+        };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {items.map((item, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                        <span style={{ flexShrink: 0, marginTop: '2px', color: layer.content.textColor || '#6B7280' }}>
+                            {getListIcon(index)}
+                        </span>
+                        <span style={{
+                            fontSize: `${layer.content.fontSize || 14}px`,
+                            color: layer.content.textColor || '#111827',
+                            lineHeight: 1.5
+                        }}>
+                            {item}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const renderInput = (layer: Layer) => {
+        const inputType = layer.content.inputType || 'text';
+        const placeholder = layer.content.placeholder || 'Enter text...';
+
+        if (inputType === 'textarea') {
+            return (
+                <textarea
+                    placeholder={placeholder}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: `1px solid ${colors.border.default}`,
+                        borderRadius: `${layer.style?.borderRadius || 8}px`,
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        minHeight: '80px',
+                        outline: 'none'
+                    }}
+                />
+            );
+        }
+
+        return (
+            <input
+                type={inputType}
+                placeholder={placeholder}
+                style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: `${layer.style?.borderRadius || 8}px`,
+                    fontSize: '14px',
+                    outline: 'none'
+                }}
+            />
+        );
+    };
+
+    const renderCheckbox = (layer: Layer) => {
+        const label = layer.content?.checkboxLabel || 'Checkbox';
+        const checked = layer.content?.checked || false;
+        const checkboxColor = layer.content?.checkboxColor || '#6366F1';
+        const textColor = layer.content?.textColor || '#374151';
+        const fontSize = layer.content?.fontSize || 14;
+
+        return (
+            <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                fontSize: `${fontSize}px`,
+                color: textColor,
+                fontFamily: layer.style?.fontFamily || 'inherit'
+            }}>
+                <div style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '4px',
+                    border: `2px solid ${checked ? checkboxColor : '#D1D5DB'}`,
+                    backgroundColor: checked ? checkboxColor : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                }}>
+                    {checked && <Check size={14} color="white" strokeWidth={3} />}
+                </div>
+                <span>{label}</span>
+            </label>
+        );
+    };
+
+    const renderRating = (layer: Layer) => {
+        const maxStars = layer.content.maxStars || 5;
+        const rating = layer.content.rating || 0;
+        const reviewCount = layer.content.reviewCount || 0;
+        const starColor = layer.style?.starColor || '#FFB800';
+        const emptyStarColor = layer.style?.emptyStarColor || '#D1D5DB';
+        const starSize = layer.style?.starSize || 20;
+        const starSpacing = layer.style?.starSpacing || 2;
+
+        const renderStar = (index: number) => {
+            const filled = index < Math.floor(rating);
+            const half = index < rating && index >= Math.floor(rating);
+
+            return (
+                <span
+                    key={index}
+                    style={{
+                        fontSize: `${starSize}px`,
+                        color: filled || half ? starColor : emptyStarColor,
+                        marginRight: index < maxStars - 1 ? `${starSpacing}px` : '0',
+                        display: 'inline-block',
+                    }}
+                >
+                    {filled ? '★' : half ? '⯨' : '☆'}
+                </span>
+            );
+        };
+
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {Array.from({ length: maxStars }, (_, i) => renderStar(i))}
+                </div>
+                {layer.content.showReviewCount && reviewCount > 0 && (
+                    <span style={{ fontSize: '14px', color: '#6B7280' }}>
+                        ({reviewCount.toLocaleString()} reviews)
+                    </span>
+                )}
+            </div>
+        );
+    };
+
+    const renderBadge = (layer: Layer) => {
+        const text = layer.content.badgeText || 'Badge';
+        const variant = layer.content.badgeVariant || 'custom';
+        const icon = layer.content.badgeIcon;
+        const iconPosition = layer.content.badgeIconPosition || 'left';
+
+        // Variant colors
+        const variantColors = {
+            success: { bg: '#10B981', text: '#FFFFFF' },
+            error: { bg: '#EF4444', text: '#FFFFFF' },
+            warning: { bg: '#F59E0B', text: '#FFFFFF' },
+            info: { bg: '#3B82F6', text: '#FFFFFF' },
+            custom: {
+                bg: layer.style?.badgeBackgroundColor || '#6B7280',
+                text: layer.style?.badgeTextColor || '#FFFFFF'
+            }
+        };
+
+        const badgeColors = variantColors[variant];
+        const padding = layer.style?.badgePadding;
+        const paddingStyle = typeof padding === 'number'
+            ? { padding: `${padding}px` }
+            : padding
+                ? { paddingLeft: `${padding.horizontal}px`, paddingRight: `${padding.horizontal}px`, paddingTop: `${padding.vertical}px`, paddingBottom: `${padding.vertical}px` }
+                : { padding: '4px 12px' };
+
+        return (
+            <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: badgeColors.bg,
+                color: badgeColors.text,
+                borderRadius: `${layer.style?.badgeBorderRadius || 12}px`,
+                ...paddingStyle,
+                fontSize: '12px',
+                fontWeight: '600',
+                animation: layer.content.pulse ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+            }}>
+                {icon && iconPosition === 'left' && <span>{icon}</span>}
+                <span>{text}</span>
+                {icon && iconPosition === 'right' && <span>{icon}</span>}
+            </div>
+        );
+    };
+
+    const renderGradientOverlay = (layer: Layer) => {
+        const gradientType = layer.content.gradientType || 'linear';
+        const direction = layer.content.gradientDirection || 'to-bottom';
+        const stops = layer.content.gradientStops || [
+            { color: '#00000000', position: 0 },
+            { color: '#00000066', position: 100 }
+        ];
+
+        const gradientString = gradientType === 'linear'
+            ? `linear-gradient(${typeof direction === 'number' ? `${direction}deg` : direction}, ${stops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : `radial-gradient(circle, ${stops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+
+        return (
+            <div style={{
+                width: '100%',
+                height: '100%',
+                background: gradientString,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                pointerEvents: 'none'
+            }} />
+        );
+    };
+
+    // Helper to adjust color brightness (simple version)
+    const adjustColorBrightness = (hex: string, percent: number) => {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) + amt;
+        const G = (num >> 8 & 0x00FF) + amt;
+        const B = (num & 0x0000FF) + amt;
+        return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+    };
+
+    const renderButton = (layer: Layer) => {
+        const label = layer.content?.label || 'Button';
+        const variant = layer.content?.buttonVariant || 'primary';
+        const themeColor = layer.content?.themeColor || '#6366F1';
+        const textColor = layer.content?.textColor || '#FFFFFF';
+        const fontSize = layer.content?.fontSize || 14;
+        const fontWeight = layer.content?.fontWeight || 'medium';
+        const borderRadius = layer.style?.borderRadius || 8;
+        const iconName = layer.content?.buttonIcon;
+        const iconPosition = layer.content?.buttonIconPosition || 'right';
+
+        // Icon mapping
+        const icons: Record<string, React.ReactNode> = {
+            ArrowRight: <ArrowRight size={16} />,
+            ArrowLeft: <ArrowLeft size={16} />,
+            Play: <Play size={16} fill="currentColor" />,
+            Search: <Search size={16} />,
+            Home: <Home size={16} />,
+            Check: <Check size={16} />,
+            X: <X size={16} />,
+            Download: <Download size={16} />,
+            Upload: <Upload size={16} />,
+            User: <User size={16} />,
+            Settings: <Settings size={16} />,
+        };
+
+        const icon = iconName ? icons[iconName] : null;
+
+        const baseStyle: React.CSSProperties = {
+            padding: '10px 20px',
+            borderRadius: `${borderRadius}px`,
+            fontSize: `${fontSize}px`,
+            fontWeight,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            flexDirection: iconPosition === 'left' ? 'row-reverse' : 'row',
+            border: 'none',
+            outline: 'none',
+            width: '100%',
+            height: '100%',
+            fontFamily: layer.style?.fontFamily || 'inherit',
+        };
+
+        let variantStyle: React.CSSProperties = {};
+        let content = (
+            <>
+                <span>{label}</span>
+                {icon && <span>{icon}</span>}
+            </>
+        );
+
+        switch (variant) {
+            case 'primary':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    boxShadow: `0 4px 6px -1px ${themeColor}40, 0 2px 4px -1px ${themeColor}20`
+                };
+                break;
+            case 'secondary':
+                variantStyle = {
+                    backgroundColor: `${themeColor}20`, // 20% opacity
+                    color: themeColor,
+                };
+                break;
+            case 'outline':
+                variantStyle = {
+                    backgroundColor: 'transparent',
+                    border: `2px solid ${themeColor}`,
+                    color: themeColor,
+                };
+                break;
+            case 'ghost':
+                variantStyle = {
+                    backgroundColor: 'transparent',
+                    color: themeColor,
+                };
+                break;
+            case 'soft':
+                variantStyle = {
+                    backgroundColor: `${themeColor}15`,
+                    color: themeColor,
+                };
+                break;
+            case 'glass':
+                variantStyle = {
+                    backgroundColor: `${themeColor}40`,
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: textColor,
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                };
+                break;
+            case 'gradient':
+                variantStyle = {
+                    background: `linear-gradient(135deg, ${themeColor}, ${adjustColorBrightness(themeColor, -20)})`,
+                    color: textColor,
+                    boxShadow: `0 4px 15px ${themeColor}60`,
+                };
+                break;
+            case 'shine':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    position: 'relative',
+                    overflow: 'hidden',
+                };
+                // Note: Shine animation would need CSS keyframes, simplified here
+                break;
+            case '3d':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    boxShadow: `0 5px 0 ${adjustColorBrightness(themeColor, -30)}`,
+                    transform: 'translateY(-2px)',
+                    marginBottom: '5px' // Compensate for shadow
+                };
+                break;
+            case 'elevated':
+                variantStyle = {
+                    backgroundColor: 'white',
+                    color: themeColor,
+                    boxShadow: '0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.05)',
+                };
+                break;
+            case 'neumorphic':
+                variantStyle = {
+                    backgroundColor: '#EEF2FF', // Assuming light bg
+                    color: themeColor,
+                    boxShadow: '5px 5px 10px #d1d5db, -5px -5px 10px #ffffff',
+                };
+                break;
+            case 'pill':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    borderRadius: '9999px',
+                };
+                break;
+            case 'underline':
+                variantStyle = {
+                    backgroundColor: 'transparent',
+                    color: themeColor,
+                    borderBottom: `2px solid ${themeColor}`,
+                    borderRadius: '0',
+                    padding: '4px 0',
+                };
+                break;
+            case 'glow':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    boxShadow: `0 0 15px ${themeColor}, 0 0 30px ${themeColor}80`,
+                };
+                break;
+            case 'cyberpunk':
+                variantStyle = {
+                    backgroundColor: '#F3E600', // Cyberpunk yellow default or theme
+                    color: '#000000',
+                    clipPath: 'polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%)',
+                    textTransform: 'uppercase',
+                    fontWeight: 'bold',
+                    letterSpacing: '2px',
+                };
+                break;
+            case 'two-tone':
+                variantStyle = {
+                    backgroundColor: 'white',
+                    color: themeColor,
+                    border: `1px solid ${themeColor}20`,
+                    padding: 0,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                };
+                content = (
+                    <>
+                        <span style={{ padding: '10px 20px', flex: 1, textAlign: 'center' }}>{label}</span>
+                        {icon && (
+                            <span style={{
+                                backgroundColor: themeColor,
+                                color: 'white',
+                                padding: '10px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                {icon}
+                            </span>
+                        )}
+                    </>
+                );
+                break;
+            case 'comic':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    border: '3px solid black',
+                    boxShadow: '4px 4px 0px black',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                };
+                break;
+            case 'skeuomorphic':
+                variantStyle = {
+                    background: `linear-gradient(to bottom, ${adjustColorBrightness(themeColor, 20)}, ${themeColor})`,
+                    color: textColor,
+                    border: `1px solid ${adjustColorBrightness(themeColor, -20)}`,
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.2)',
+                    textShadow: '0 -1px 0 rgba(0,0,0,0.2)',
+                };
+                break;
+            case 'liquid':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%', // Organic shape
+                    boxShadow: `0 10px 20px ${themeColor}60`,
+                };
+                break;
+            case 'block':
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'center',
+                    borderRadius: '4px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: 'bold',
+                };
+                break;
+            default:
+                variantStyle = {
+                    backgroundColor: themeColor,
+                    color: textColor,
+                };
+        }
+
+        return (
+            <button style={{ ...baseStyle, ...variantStyle }}>
+                {content}
+            </button>
+        );
+    };
+
+    const renderProgressBar = (layer: Layer) => {
+        const value = layer.content.value || 0;
+        const max = layer.content.max || 100;
+        const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+        const variant = layer.content.progressBarVariant || 'simple';
+        const themeColor = layer.content.themeColor || layer.style?.backgroundColor || '#22C55E';
+        const showPercentage = layer.content.showPercentage;
+
+        const containerStyle: React.CSSProperties = {
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#E5E7EB',
+            borderRadius: typeof layer.style?.borderRadius === 'number' ? layer.style.borderRadius : 8,
+            overflow: 'hidden',
+            position: 'relative',
+        };
+
+        let barStyle: React.CSSProperties = {
+            width: `${percentage}%`,
+            height: '100%',
+            backgroundColor: themeColor,
+            transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingRight: showPercentage ? '8px' : '0',
+        };
+
+        switch (variant) {
+            case 'rounded':
+                containerStyle.borderRadius = '9999px';
+                barStyle.borderRadius = '9999px';
+                break;
+            case 'striped':
+                barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
+                barStyle.backgroundSize = '1rem 1rem';
+                break;
+            case 'animated':
+                barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
+                barStyle.backgroundSize = '1rem 1rem';
+                // Animation would be handled via CSS class in a real app
+                break;
+            case 'gradient':
+                barStyle.background = `linear-gradient(90deg, ${themeColor}, ${adjustColorBrightness(themeColor, 40)})`;
+                break;
+            case 'segmented':
+                // Segmented logic would be more complex, simplified here
+                containerStyle.backgroundColor = 'transparent';
+                containerStyle.display = 'flex';
+                containerStyle.gap = '2px';
+                return (
+                    <div style={containerStyle}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    flex: 1,
+                                    height: '100%',
+                                    backgroundColor: (i + 1) * 10 <= percentage ? themeColor : '#E5E7EB',
+                                    borderRadius: '2px',
+                                    transition: 'background-color 0.3s'
+                                }}
+                            />
+                        ))}
+                    </div>
+                );
+            case 'glow':
+                barStyle.boxShadow = `0 0 10px ${themeColor}`;
+                break;
+        }
+
+        return (
+            <div style={containerStyle}>
+                <div style={barStyle}>
+                    {showPercentage && (
+                        <span style={{ fontSize: '10px', color: 'white', fontWeight: 'bold' }}>
+                            {Math.round(percentage)}%
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // --- Main Layer Renderer ---
+
+    const renderLayer = (layer: Layer): React.ReactNode => {
+        if (!layer.visible) return null;
+
+        const isSelected = layer.id === selectedLayerId;
+
+        // Helper to get padding/margin
+        const getSpacing = (spacing: any) => {
+            if (typeof spacing === 'number') return `${spacing}px`;
+            if (spacing) return `${spacing.top || 0}px ${spacing.right || 0}px ${spacing.bottom || 0}px ${spacing.left || 0}px`;
+            return undefined;
+        };
+
+        // Helper to get border radius
+        const getBorderRadius = (radius: any) => {
+            if (typeof radius === 'number') return `${radius}px`;
+            if (radius) return `${radius.topLeft || 0}px ${radius.topRight || 0}px ${radius.bottomRight || 0}px ${radius.bottomLeft || 0}px`;
+            return undefined;
+        };
+
+        const style = layer.style || {};
+
+        const baseStyle: React.CSSProperties = {
+            // Positioning
+            position: style.position || 'relative',
+            top: style.top,
+            right: style.right,
+            bottom: style.bottom,
+            left: style.left,
+            zIndex: style.zIndex,
+
+            // Dimensions
+            width: layer.style?.width ?? layer.size?.width,
+            height: layer.style?.height ?? layer.size?.height,
+            minWidth: style.minWidth,
+            minHeight: style.minHeight,
+            maxWidth: style.maxWidth,
+            maxHeight: style.maxHeight,
+
+            // Layout (Flexbox)
+            display: style.display,
+            flexDirection: style.flexDirection,
+            alignItems: style.alignItems,
+            justifyContent: style.justifyContent,
+            gap: style.gap ? `${style.gap}px` : undefined,
+            flexWrap: style.flexWrap,
+            flexGrow: style.flexGrow,
+            flexShrink: style.flexShrink,
+            flexBasis: style.flexBasis,
+            alignSelf: style.alignSelf,
+
+            // Spacing
+            padding: getSpacing(style.padding),
+            margin: getSpacing(style.margin),
+
+            // Appearance
+            backgroundColor: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+            backgroundSize: style.backgroundSize,
+            backgroundPosition: style.backgroundPosition,
+            backgroundRepeat: style.backgroundRepeat,
+            opacity: style.opacity,
+            boxShadow: style.boxShadow,
+            cursor: style.cursor || 'pointer',
+
+            // Border
+            borderWidth: typeof style.borderWidth === 'object'
+                ? `${style.borderWidth.top}px ${style.borderWidth.right}px ${style.borderWidth.bottom}px ${style.borderWidth.left}px`
+                : style.borderWidth,
+            borderStyle: style.borderStyle,
+            borderColor: style.borderColor,
+            borderRadius: getBorderRadius(style.borderRadius),
+
+            // Typography
+            color: style.color || layer.content?.textColor,
+            fontSize: layer.content?.fontSize,
+            fontWeight: layer.content?.fontWeight,
+            textAlign: layer.content?.textAlign,
+            lineHeight: style.lineHeight,
+            letterSpacing: style.letterSpacing,
+            fontFamily: style.fontFamily,
+
+            // Effects
+            transform: getTransformString(style.transform),
+            filter: getFilterString(style.filter),
+            backdropFilter: style.backdropFilter,
+            overflow: style.overflow,
+        };
+
+        // Render content based on type
+        const renderContent = () => {
+            switch (layer.type) {
+                case 'text':
+                    return layer.content?.text || '';
+                case 'button':
+                    return renderButton(layer);
+                case 'image':
+                    return (
+                        <img
+                            src={layer.content?.imageUrl || 'https://via.placeholder.com/150'}
+                            alt={layer.name}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: (layer.content?.imageFit as any) || 'cover',
+                                borderRadius: 'inherit'
+                            }}
+                        />
+                    );
+                case 'video':
+                    return (
+                        <div style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                            Video Player Placeholder
+                        </div>
+                    );
+                case 'input':
+                    return renderInput(layer);
+                case 'checkbox':
+                    return renderCheckbox(layer);
+                case 'list':
+                    return renderList(layer);
+                case 'rating':
+                    return renderRating(layer);
+                case 'badge':
+                    return renderBadge(layer);
+                case 'progress-bar':
+                    return renderProgressBar(layer);
+                case 'progress-circle':
+                    return renderProgressCircle(layer);
+                case 'countdown':
+                    return <CountdownLayer layer={layer} />;
+                case 'statistic':
+                    return <StatisticLayer layer={layer} />;
+                case 'gradient-overlay':
+                    return renderGradientOverlay(layer);
+                case 'container':
+                    return (
+                        <>
+                            {childLayers
+                                .filter(child => child.parent === layer.id)
+                                .sort((a, b) => a.zIndex - b.zIndex)
+                                .map(child => (
+                                    <div key={child.id} onClick={(e) => { e.stopPropagation(); onLayerSelect(child.id); }}>
+                                        {renderLayer(child)}
+                                    </div>
+                                ))}
+                        </>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        return (
+            <DraggableResizableLayerWrapper
+                layer={layer}
+                isSelected={isSelected}
+                onLayerSelect={onLayerSelect}
+                onLayerUpdate={onLayerUpdate}
+                baseStyle={baseStyle}
+                colors={colors}
+            >
+                {renderContent()}
+            </DraggableResizableLayerWrapper>
+        );
+    };
+
+    // --- Resize Logic ---
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const deltaY = resizeStartY - e.clientY;
+            const newHeight = Math.max(100, Math.min(812, resizeStartHeight + deltaY));
+
+            if (onHeightChange) {
+                onHeightChange(newHeight);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing, resizeStartY, resizeStartHeight, onHeightChange]);
+
+    // --- Main Return ---
+
+    // Banner Configuration
+    const position = config?.position || 'top';
+    const isTop = position === 'top';
+    const height = config?.height || 'auto';
+    const backgroundColor = config?.backgroundColor || '#FFFFFF';
+    const borderRadius = config?.borderRadius || 0;
+    const elevation = config?.elevation || 2;
+
+    const isImageOnly = config?.mode === 'image-only';
+
+    // Calculate shadow
+    const getShadow = (elevation: number) => {
+        if (isImageOnly) return 'none';
+        switch (elevation) {
+            case 1: return '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+            case 2: return '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
+            case 3: return '0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)';
+            case 4: return '0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22)';
+            case 5: return '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)';
+            default: return 'none';
+        }
+    };
+
+    return (
+        <>
+            {/* Overlay (Optional for Banner) */}
+            {config?.overlay?.enabled && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: config.overlay.color || 'rgba(0,0,0,0.5)',
+                        opacity: config.overlay.opacity,
+                        backdropFilter: `blur(${config.overlay.blur}px)`,
+                        zIndex: 0,
+                        pointerEvents: config.overlay.dismissOnClick ? 'auto' : 'none',
+                    }}
+                    onClick={() => {
+                        if (config.overlay?.dismissOnClick) {
+                            // Handle dismiss
+                        }
+                    }}
+                />
+            )}
+
+            {/* Banner Container */}
+            <div
+                ref={containerRef}
+                style={{
+                    position: 'absolute',
+                    [isTop ? 'top' : 'bottom']: 0,
+                    left: 0,
+                    right: 0,
+                    height: typeof height === 'number' ? `${height}px` : height,
+                    minHeight: isImageOnly ? (typeof height === 'number' || height !== 'auto' ? '0' : '150px') : '100px',
+                    ...(bannerLayer.style?.background ? { background: bannerLayer.style.background } : {
+                        backgroundColor: isImageOnly ? 'transparent' : backgroundColor,
+                        backgroundImage: bannerLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
+                    }),
+                    backgroundSize: bannerLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
+                    backgroundPosition: bannerLayer.style?.backgroundPosition || 'center',
+                    backgroundRepeat: bannerLayer.style?.backgroundRepeat || 'no-repeat',
+                    opacity: config?.opacity ?? 1,
+                    borderRadius: isImageOnly ? 0 : (typeof borderRadius === 'object'
+                        ? `${borderRadius.topLeft}px ${borderRadius.topRight}px ${borderRadius.bottomRight}px ${borderRadius.bottomLeft}px`
+                        : `${borderRadius}px`),
+                    boxShadow: getShadow(elevation),
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    zIndex: 1,
+                    transition: 'all 0.3s ease-out',
+                    transform: 'translateY(0)', // In a real app, this would be animated
+                }}
+            >
+                {/* Resize Handle (Optional) */}
+                {onHeightChange && (
+                    <div
+                        onMouseDown={(e) => {
+                            setIsResizing(true);
+                            setResizeStartY(e.clientY);
+                            setResizeStartHeight(containerRef.current?.offsetHeight || 0);
+                        }}
+                        style={{
+                            width: '100%',
+                            height: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'ns-resize',
+                            flexShrink: 0,
+                            order: isTop ? 1 : 0, // Handle at bottom for top banner, top for bottom banner
+                            opacity: isImageOnly ? 0 : 1, // Hide handle visually in image-only mode but keep it functional
+                            position: isImageOnly ? 'absolute' : 'relative',
+                            [isTop ? 'bottom' : 'top']: 0,
+                            zIndex: 100,
+                        }}
+                    >
+                        {!isImageOnly && <div style={{ width: '40px', height: '4px', backgroundColor: '#E5E7EB', borderRadius: '2px' }} />}
+                    </div>
+                )}
+
+                {/* Content Area */}
+                <div style={{
+                    flex: 1,
+                    position: 'relative',
+                    overflowY: bannerLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto',
+                    padding: isImageOnly ? '0' : '20px',
+                    order: isTop ? 0 : 1 // Content order depends on handle position
+                }}>
+                    {childLayers.map(layer => (
+                        <div key={layer.id} style={{ position: layer.style?.position === 'absolute' ? 'absolute' : 'relative', zIndex: layer.zIndex }}>
+                            {renderLayer(layer)}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Close Button (Optional, if configured) */}
+            {config?.showCloseButton !== false && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        cursor: 'pointer',
+                        zIndex: 50,
+                        padding: '4px',
+                        borderRadius: '50%',
+                        backgroundColor: isImageOnly ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <X size={20} color={isImageOnly ? '#FFFFFF' : "#6B7280"} />
+                </div>
+            )}
+        </>
+    );
+};

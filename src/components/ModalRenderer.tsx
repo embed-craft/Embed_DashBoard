@@ -557,6 +557,7 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
     onDismiss
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const modalLayer = layers.find(l => l.type === 'modal') || layers[0] || {} as any;
 
     // ... (existing code) ...
 

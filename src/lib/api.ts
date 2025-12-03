@@ -46,12 +46,7 @@ class ApiClient {
   }
 
   private resolveBaseUrl(): string {
-    try {
-      const env = import.meta.env;
-      return env.VITE_API_URL || env.VITE_SERVER_BASE || DEFAULT_BASE_URL;
-    } catch {
-      return DEFAULT_BASE_URL;
-    }
+    return DEFAULT_BASE_URL;
   }
 
   public setApiKey(key: string) {

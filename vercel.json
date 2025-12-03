@@ -1,0 +1,28 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/:match*",
+            "destination": "https://embed-backend-w9j0.onrender.com/api/:match*"
+        },
+        {
+            "source": "/v1/:match*",
+            "destination": "https://embed-backend-w9j0.onrender.com/v1/:match*"
+        },
+        {
+            "source": "/admin/segments/:match*",
+            "destination": "https://embed-backend-w9j0.onrender.com/admin/segments/:match*"
+        },
+        {
+            "source": "/admin/flows/:match*",
+            "destination": "https://embed-backend-w9j0.onrender.com/admin/flows/:match*"
+        },
+        {
+            "source": "/admin/templates/:match*",
+            "destination": "https://embed-backend-w9j0.onrender.com/admin/templates/:match*"
+        },
+        {
+            "source": "/admin/nudge/:match*",
+            "destination": "https://embed-backend-w9j0.onrender.com/admin/nudge/:match*"
+        }
+    ]
+}

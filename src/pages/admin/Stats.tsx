@@ -7,7 +7,7 @@ const Stats: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
         fetch(`${apiUrl}/api/admin/stats`, {
             headers: { Authorization: `Bearer ${token}` }
         })

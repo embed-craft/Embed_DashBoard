@@ -27,7 +27,7 @@ const Clients: React.FC = () => {
 
     const fetchClients = async () => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+            const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
             const res = await fetch(`${apiUrl}/api/admin/clients`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -51,7 +51,7 @@ const Clients: React.FC = () => {
             const endDate = new Date();
             endDate.setMonth(endDate.getMonth() + subscriptionMonths);
 
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+            const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
             const res = await fetch(`${apiUrl}/api/admin/client`, {
                 method: 'POST',
                 headers: {
@@ -83,7 +83,7 @@ const Clients: React.FC = () => {
 
     const handleUpdateStatus = async (orgId: string, newStatus: 'active' | 'inactive') => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+            const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
             const res = await fetch(`${apiUrl}/api/admin/client/${orgId}/contract`, {
                 method: 'PATCH',
                 headers: {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/v1/admin/metadata`;
+const API_URL = `${(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '')}/v1/admin/metadata`;
 
 // Types based on backend models
 export interface EventDefinition {

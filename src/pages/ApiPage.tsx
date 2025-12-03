@@ -38,7 +38,7 @@ const ApiPage = () => {
   const [loading, setLoading] = useState(false);
 
   // Hardcoded API URL for simulator
-  const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/v1`;
+  const API_URL = `${(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '')}/api/v1`;
 
   const addLog = (type: 'req' | 'res' | 'err', message: string, data?: any) => {
     setLogs(prev => [{

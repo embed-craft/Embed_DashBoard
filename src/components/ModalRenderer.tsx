@@ -968,117 +968,87 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
     };
 
     const renderProgressBar = (layer: Layer) => {
-        const value = layer.content.value || 0;
-        const max = layer.content.max || 100;
+        const value = layer.content?.value || 0;
+        const max = layer.content?.max || 100;
         const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-        const variant = layer.content.progressBarVariant || 'simple';
-        const themeColor = layer.content.themeColor || layer.style?.backgroundColor || '#22C55E';
-        const showPercentage = layer.content.showPercentage;
+        const showPercentage = layer.content?.showPercentage !== false;
+        const themeColor = layer.content?.themeColor || '#6366F1';
+        const variant = layer.content?.progressBarVariant || 'simple';
 
         const containerStyle: React.CSSProperties = {
             width: '100%',
-            height: '100%',
+            height: '10px',
             backgroundColor: '#E5E7EB',
-            borderRadius: typeof layer.style?.borderRadius === 'number' ? layer.style.borderRadius : 8,
+            borderRadius: '4px',
             overflow: 'hidden',
             position: 'relative',
         };
 
-        let barStyle: React.CSSProperties = {
+        const barStyle: React.CSSProperties = {
             width: `${percentage}%`,
             height: '100%',
             backgroundColor: themeColor,
-            transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'width 0.5s ease-in-out',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
-            paddingRight: showPercentage ? '8px' : '0',
+            justifyContent: 'center',
         };
 
         switch (variant) {
             case 'rounded':
-                const renderProgressBar = (layer: Layer) => {
-                    const value = layer.content?.value || 0;
-                    const max = layer.content?.max || 100;
-                    const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-                    const showPercentage = layer.content?.showPercentage !== false;
-                    const themeColor = layer.content?.themeColor || '#6366F1';
-                    const variant = layer.content?.progressBarVariant || 'simple';
+                containerStyle.borderRadius = '9999px';
+                barStyle.borderRadius = '9999px';
+                break;
+            case 'striped':
+                barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
+                barStyle.backgroundSize = '1rem 1rem';
+                break;
+            case 'animated':
+                barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
+                barStyle.backgroundSize = '1rem 1rem';
+                // Animation would be handled via CSS class in a real app
+                break;
+            case 'gradient':
+                barStyle.background = `linear-gradient(90deg, ${themeColor}, ${adjustColorBrightness(themeColor, 40)})`;
+                break;
+            case 'segmented':
+                // Segmented logic would be more complex, simplified here
+                containerStyle.backgroundColor = 'transparent';
+                containerStyle.display = 'flex';
+                containerStyle.gap = '2px';
+                return (
+                    <div style={containerStyle}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    flex: 1,
+                                    height: '100%',
+                                    backgroundColor: (i + 1) * 10 <= percentage ? themeColor : '#E5E7EB',
+                                    borderRadius: '2px',
+                                    transition: 'background-color 0.3s'
+                                }}
+                            />
+                        ))}
+                    </div>
+                );
+            case 'glow':
+                barStyle.boxShadow = `0 0 10px ${themeColor}`;
+                break;
+        }
 
-                    const containerStyle: React.CSSProperties = {
-                        width: '100%',
-                        height: '10px',
-                        backgroundColor: '#E5E7EB',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        position: 'relative',
-                    };
-
-                    const barStyle: React.CSSProperties = {
-                        width: `${percentage}%`,
-                        height: '100%',
-                        backgroundColor: themeColor,
-                        transition: 'width 0.5s ease-in-out',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    };
-
-                    switch (variant) {
-                        case 'rounded':
-                            containerStyle.borderRadius = '9999px';
-                            barStyle.borderRadius = '9999px';
-                            break;
-                        case 'striped':
-                            barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
-                            barStyle.backgroundSize = '1rem 1rem';
-                            break;
-                        case 'animated':
-                            barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
-                            barStyle.backgroundSize = '1rem 1rem';
-                            // Animation would be handled via CSS class in a real app
-                            break;
-                        case 'gradient':
-                            barStyle.background = `linear-gradient(90deg, ${themeColor}, ${adjustColorBrightness(themeColor, 40)})`;
-                            break;
-                        case 'segmented':
-                            // Segmented logic would be more complex, simplified here
-                            containerStyle.backgroundColor = 'transparent';
-                            containerStyle.display = 'flex';
-                            containerStyle.gap = '2px';
-                            return (
-                                <div style={containerStyle}>
-                                    {Array.from({ length: 10 }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            style={{
-                                                flex: 1,
-                                                height: '100%',
-                                                backgroundColor: (i + 1) * 10 <= percentage ? themeColor : '#E5E7EB',
-                                                borderRadius: '2px',
-                                                transition: 'background-color 0.3s'
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            );
-                        case 'glow':
-                            barStyle.boxShadow = `0 0 10px ${themeColor}`;
-                            break;
-                    }
-
-                    return (
-                        <div style={containerStyle}>
-                            <div style={barStyle}>
-                                {showPercentage && (
-                                    <span style={{ fontSize: '10px', color: 'white', fontWeight: 'bold' }}>
-                                        {Math.round(percentage)}%
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    );
-                };
+        return (
+            <div style={containerStyle}>
+                <div style={barStyle}>
+                    {showPercentage && (
+                        <span style={{ fontSize: '10px', color: 'white', fontWeight: 'bold' }}>
+                            {Math.round(percentage)}%
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
                 const renderLayer = (layer: Layer) => {
                     if (layer.visible === false) return null;

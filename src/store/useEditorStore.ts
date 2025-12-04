@@ -82,6 +82,10 @@ export interface LayerContent {
   badgeIcon?: string; // Lucide icon name
   badgeIconPosition?: 'left' | 'right';
   pulse?: boolean; // Pulse animation
+  badgeBackgroundColor?: string;
+  badgeTextColor?: string;
+  badgeBorderRadius?: number;
+  badgePadding?: number | { vertical: number; horizontal: number };
 
   // Gradient Overlay content (Phase 3.5)
   gradientType?: 'linear' | 'radial';
@@ -615,7 +619,7 @@ export const useEditorStore = create<EditorStore>()(
           // Initialize modal config for modal nudge type
           modalConfig: nudgeType === 'modal' ? {
             mode: 'container',
-            width: '90%',
+            width: '90%' as any,
             height: 'auto',
             backgroundColor: '#FFFFFF',
             backgroundImageUrl: '',
@@ -1414,7 +1418,7 @@ export const useEditorStore = create<EditorStore>()(
         set({
           currentCampaign: {
             ...currentCampaign,
-            modalConfig: updatedConfig,
+            modalConfig: updatedConfig as any,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },

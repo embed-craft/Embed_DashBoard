@@ -574,7 +574,7 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
     onDismiss
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const modalLayer = layers.find(l => l.type === 'modal') || layers[0] || {} as any;
+    const modalLayer = layers.find(l => l.type === 'modal') || layers[0] || { id: 'fallback', type: 'modal', content: {}, style: {} } as any;
     const childLayers = layers.filter(l => l.parent === modalLayer.id);
 
     const handleAction = (layer: Layer) => {
@@ -997,258 +997,287 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
 
         switch (variant) {
             case 'rounded':
-                containerStyle.borderRadius = '9999px';
-                barStyle.borderRadius = '9999px';
-                break;
-            case 'striped':
-                barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
-                barStyle.backgroundSize = '1rem 1rem';
-                break;
-            case 'animated':
-                barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
-                barStyle.backgroundSize = '1rem 1rem';
-                // Animation would be handled via CSS class in a real app
-                break;
-            case 'gradient':
-                barStyle.background = `linear-gradient(90deg, ${themeColor}, ${adjustColorBrightness(themeColor, 40)})`;
-                break;
-            case 'segmented':
-                // Segmented logic would be more complex, simplified here
-                containerStyle.backgroundColor = 'transparent';
-                containerStyle.display = 'flex';
-                containerStyle.gap = '2px';
-                return (
-                    <div style={containerStyle}>
-                        {Array.from({ length: 10 }).map((_, i) => (
-                            <div
-                                key={i}
-                                style={{
-                                    flex: 1,
-                                    height: '100%',
-                                    backgroundColor: (i + 1) * 10 <= percentage ? themeColor : '#E5E7EB',
-                                    borderRadius: '2px',
-                                    transition: 'background-color 0.3s'
-                                }}
-                            />
-                        ))}
-                    </div>
-                );
-            case 'glow':
-                barStyle.boxShadow = `0 0 10px ${themeColor}`;
-                break;
-        }
+                const renderProgressBar = (layer: Layer) => {
+                    const value = layer.content?.value || 0;
+                    const max = layer.content?.max || 100;
+                    const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+                    const showPercentage = layer.content?.showPercentage !== false;
+                    const themeColor = layer.content?.themeColor || '#6366F1';
+                    const variant = layer.content?.progressBarVariant || 'simple';
 
-        return (
-            <div style={containerStyle}>
-                <div style={barStyle}>
-                    {showPercentage && (
-                        <span style={{ fontSize: '10px', color: 'white', fontWeight: 'bold' }}>
-                            {Math.round(percentage)}%
-                        </span>
-                    )}
-                </div>
-            </div>
-        );
-    };
+                    const containerStyle: React.CSSProperties = {
+                        width: '100%',
+                        height: '10px',
+                        backgroundColor: '#E5E7EB',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                    };
 
-    const renderLayer = (layer: Layer) => {
-        if (layer.visible === false) return null;
-        const isSelected = selectedLayerId === layer.id;
+                    const barStyle: React.CSSProperties = {
+                        width: `${percentage}%`,
+                        height: '100%',
+                        backgroundColor: themeColor,
+                        transition: 'width 0.5s ease-in-out',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    };
 
-        // Base style for all layers
-        const baseStyle: React.CSSProperties = {
-            position: 'relative',
-            width: layer.style?.width || '100%',
-            height: layer.style?.height || 'auto',
-            marginBottom: '12px',
-            ...layer.style,
-        };
+                    switch (variant) {
+                        case 'rounded':
+                            containerStyle.borderRadius = '9999px';
+                            barStyle.borderRadius = '9999px';
+                            break;
+                        case 'striped':
+                            barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
+                            barStyle.backgroundSize = '1rem 1rem';
+                            break;
+                        case 'animated':
+                            barStyle.backgroundImage = `linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)`;
+                            barStyle.backgroundSize = '1rem 1rem';
+                            // Animation would be handled via CSS class in a real app
+                            break;
+                        case 'gradient':
+                            barStyle.background = `linear-gradient(90deg, ${themeColor}, ${adjustColorBrightness(themeColor, 40)})`;
+                            break;
+                        case 'segmented':
+                            // Segmented logic would be more complex, simplified here
+                            containerStyle.backgroundColor = 'transparent';
+                            containerStyle.display = 'flex';
+                            containerStyle.gap = '2px';
+                            return (
+                                <div style={containerStyle}>
+                                    {Array.from({ length: 10 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            style={{
+                                                flex: 1,
+                                                height: '100%',
+                                                backgroundColor: (i + 1) * 10 <= percentage ? themeColor : '#E5E7EB',
+                                                borderRadius: '2px',
+                                                transition: 'background-color 0.3s'
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            );
+                        case 'glow':
+                            barStyle.boxShadow = `0 0 10px ${themeColor}`;
+                            break;
+                    }
 
-        let content = null;
-
-        switch (layer.type) {
-            case 'text':
-                content = (
-                    <div style={{
-                        fontSize: layer.style?.fontSize ? (typeof layer.style.fontSize === 'number' ? `${layer.style.fontSize}px` : layer.style.fontSize) : `${layer.content.fontSize || 16}px`,
-                        fontWeight: layer.style?.fontWeight || layer.content.fontWeight || 'normal',
-                        color: layer.style?.color || layer.content.textColor || '#000000',
-                        textAlign: (layer.style?.textAlign as any) || layer.content.textAlign || 'left',
-                        fontFamily: layer.style?.fontFamily || 'inherit',
-                        lineHeight: layer.style?.lineHeight || '1.5',
-                        letterSpacing: layer.style?.letterSpacing || 'normal',
-                        textTransform: (layer.style?.textTransform as any) || 'none',
-                    }}>
-                        {layer.content.text || 'Text Layer'}
-                    </div>
-                );
-                break;
-            case 'image':
-                content = (
-                    <img
-                        src={layer.content.imageUrl || 'https://via.placeholder.com/150'}
-                        alt={layer.name}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: (layer.style?.objectFit as any) || 'cover',
-                            borderRadius: `${layer.style?.borderRadius || 0}px`,
-                        }}
-                    />
-                );
-                break;
-            case 'button':
-                content = renderButton(layer);
-                break;
-            case 'input':
-                content = renderInput(layer);
-                break;
-            case 'checkbox':
-                content = renderCheckbox(layer);
-                break;
-            case 'list':
-                content = renderList(layer);
-                break;
-            case 'rating':
-                content = renderRating(layer);
-                break;
-            case 'badge':
-                content = renderBadge(layer);
-                break;
-            case 'progress-bar':
-                content = renderProgressBar(layer);
-                break;
-            case 'progress-circle':
-                content = renderProgressCircle(layer);
-                break;
-            case 'statistic':
-                content = <StatisticLayer layer={layer} />;
-                break;
-            case 'countdown':
-                content = <CountdownLayer layer={layer} />;
-                break;
-            case 'gradient-overlay':
-                content = renderGradientOverlay(layer);
-                break;
-            default:
-                content = null;
-        }
-
-        return (
-            <ResizableLayerWrapper
-                key={layer.id}
-                layer={layer}
-                isSelected={isSelected}
-                onLayerSelect={onLayerSelect}
-                onLayerUpdate={onLayerUpdate}
-                baseStyle={baseStyle}
-                colors={colors}
-            >
-                {content}
-            </ResizableLayerWrapper>
-        );
-    };
-
-    return (
-        <>
-            {/* Backdrop */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: `rgba(0,0,0,${config?.overlay?.opacity ?? 0.5})`,
-                    zIndex: 0,
-                    pointerEvents: 'auto',
-                    backdropFilter: config?.overlay?.blur ? `blur(${config.overlay.blur}px)` : 'none',
-                    transition: 'opacity 0.3s ease'
-                }}
-            />
-
-            {/* Modal Container */}
-            <div
-                ref={containerRef}
-                style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: `translate(-50%, -50%) ${getTransformString(modalLayer.style?.transform) || ''}`,
-                    width: typeof modalLayer.style?.width === 'number' ? `${modalLayer.style.width}px` :
-                        (modalLayer.style?.width ||
-                            (typeof config?.width === 'number' ? `${config.width}px` : (config?.width || (config?.mode === 'image-only' ? 'auto' : '90%')))),
-                    maxWidth: config?.mode === 'image-only' ? '100%' : '400px',
-                    backgroundColor: config?.mode === 'image-only' ? 'transparent' : (modalLayer.style?.backgroundColor || '#FFFFFF'),
-                    backgroundImage: modalLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
-                    backgroundSize: modalLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
-                    backgroundPosition: modalLayer.style?.backgroundPosition || 'center',
-                    backgroundRepeat: modalLayer.style?.backgroundRepeat || 'no-repeat',
-                    borderRadius: config?.mode === 'image-only' ? '0' : (modalLayer.style?.borderRadius ? `${modalLayer.style.borderRadius}px` : '16px'),
-
-                    // Layout & Spacing
-                    display: modalLayer.style?.display || 'flex',
-                    flexDirection: modalLayer.style?.flexDirection || 'column',
-                    alignItems: modalLayer.style?.alignItems || 'stretch',
-                    justifyContent: modalLayer.style?.justifyContent || 'flex-start',
-                    gap: typeof modalLayer.style?.gap === 'number' ? `${modalLayer.style.gap}px` : (modalLayer.style?.gap || '0'),
-                    padding: typeof modalLayer.style?.padding === 'object'
-                        ? `${modalLayer.style.padding.top}px ${modalLayer.style.padding.right}px ${modalLayer.style.padding.bottom}px ${modalLayer.style.padding.left}px`
-                        : (modalLayer.style?.padding ? `${modalLayer.style.padding}px` : (config?.mode === 'image-only' ? '0' : '20px')),
-
-                    // Visuals
-                    opacity: modalLayer.style?.opacity ?? 1,
-                    filter: getFilterString(modalLayer.style?.filter),
-                    clipPath: modalLayer.style?.clipPath,
-                    boxShadow: config?.mode === 'image-only' ? 'none' : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)'),
-
-                    // Dimensions
-                    minHeight: modalLayer.style?.minHeight || config?.minHeight || '100px',
-                    height: modalLayer.style?.height || modalLayer.size?.height || config?.height || 'auto',
-                    maxHeight: modalLayer.style?.maxHeight || config?.maxHeight || '85vh',
-
-                    overflow: modalLayer.style?.overflow || 'hidden',
-                    zIndex: 1,
-                    animation: 'modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                }}
-            >
-                {/* Content Area */}
-                <div style={{ flex: 1, position: 'relative', overflowY: modalLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto', padding: config?.mode === 'image-only' ? '0' : '20px' }}>
-                    {childLayers.map(layer => (
-                        <div key={layer.id} style={{ position: layer.style?.position === 'absolute' ? 'absolute' : 'relative', zIndex: layer.zIndex }}>
-                            {renderLayer(layer)}
+                    return (
+                        <div style={containerStyle}>
+                            <div style={barStyle}>
+                                {showPercentage && (
+                                    <span style={{ fontSize: '10px', color: 'white', fontWeight: 'bold' }}>
+                                        {Math.round(percentage)}%
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    ))}
-                </div>
+                    );
+                };
 
-                {/* Close Button (Optional, if configured) */}
-                {(config as any)?.showCloseButton !== false && (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: '12px',
-                            right: '12px',
-                            cursor: 'pointer',
-                            zIndex: 50,
-                            padding: '4px',
-                            borderRadius: '50%',
-                            backgroundColor: 'rgba(0,0,0,0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        <X size={20} color="#6B7280" />
-                    </div>
-                )}
-            </div >
+                const renderLayer = (layer: Layer) => {
+                    if (layer.visible === false) return null;
+                    const isSelected = selectedLayerId === layer.id;
 
-            <style>{`
+                    // Base style for all layers
+                    const baseStyle: React.CSSProperties = {
+                        position: 'relative',
+                        width: layer.style?.width || '100%',
+                        height: layer.style?.height || 'auto',
+                        marginBottom: '12px',
+                        ...(layer.style as any),
+                    };
+
+                    let content = null;
+
+                    switch (layer.type) {
+                        case 'text':
+                            content = (
+                                <div style={{
+                                    fontSize: layer.style?.fontSize ? (typeof layer.style.fontSize === 'number' ? `${layer.style.fontSize}px` : layer.style.fontSize) : `${layer.content.fontSize || 16}px`,
+                                    fontWeight: layer.style?.fontWeight || layer.content.fontWeight || 'normal',
+                                    color: layer.style?.color || layer.content.textColor || '#000000',
+                                    textAlign: (layer.style?.textAlign as any) || layer.content.textAlign || 'left',
+                                    fontFamily: layer.style?.fontFamily || 'inherit',
+                                    lineHeight: layer.style?.lineHeight || '1.5',
+                                    letterSpacing: layer.style?.letterSpacing || 'normal',
+                                    textTransform: (layer.style?.textTransform as any) || 'none',
+                                }}>
+                                    {layer.content.text || 'Text Layer'}
+                                </div>
+                            );
+                            break;
+                        case 'image':
+                            content = (
+                                <img
+                                    src={layer.content.imageUrl || 'https://via.placeholder.com/150'}
+                                    alt={layer.name}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: (layer.style?.objectFit as any) || 'cover',
+                                        borderRadius: `${layer.style?.borderRadius || 0}px`,
+                                    }}
+                                />
+                            );
+                            break;
+                        case 'button':
+                            content = renderButton(layer);
+                            break;
+                        case 'input':
+                            content = renderInput(layer);
+                            break;
+                        case 'checkbox':
+                            content = renderCheckbox(layer);
+                            break;
+                        case 'list':
+                            content = renderList(layer);
+                            break;
+                        case 'rating':
+                            content = renderRating(layer);
+                            break;
+                        case 'badge':
+                            content = renderBadge(layer);
+                            break;
+                        case 'progress-bar':
+                            content = renderProgressBar(layer);
+                            break;
+                        case 'progress-circle':
+                            content = renderProgressCircle(layer);
+                            break;
+                        case 'statistic':
+                            content = <StatisticLayer layer={layer} />;
+                            break;
+                        case 'countdown':
+                            content = <CountdownLayer layer={layer} />;
+                            break;
+                        case 'gradient-overlay':
+                            content = renderGradientOverlay(layer);
+                            break;
+                        default:
+                            content = null;
+                    }
+
+                    return (
+                        <ResizableLayerWrapper
+                            key={layer.id}
+                            layer={layer}
+                            isSelected={isSelected}
+                            onLayerSelect={onLayerSelect}
+                            onLayerUpdate={onLayerUpdate}
+                            baseStyle={baseStyle}
+                            colors={colors}
+                        >
+                            {content}
+                        </ResizableLayerWrapper>
+                    );
+                };
+
+                return (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: `rgba(0,0,0,${config?.overlay?.opacity ?? 0.5})`,
+                                zIndex: 0,
+                                pointerEvents: 'auto',
+                                backdropFilter: config?.overlay?.blur ? `blur(${config.overlay.blur}px)` : 'none',
+                                transition: 'opacity 0.3s ease'
+                            }}
+                        />
+
+                        {/* Modal Container */}
+                        <div
+                            ref={containerRef}
+                            style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: `translate(-50%, -50%) ${getTransformString(modalLayer.style?.transform) || ''}`,
+                                width: typeof modalLayer.style?.width === 'number' ? `${modalLayer.style.width}px` :
+                                    (modalLayer.style?.width ||
+                                        (typeof config?.width === 'number' ? `${config.width}px` : (config?.width || (config?.mode === 'image-only' ? 'auto' : '90%')))),
+                                maxWidth: config?.mode === 'image-only' ? '100%' : '400px',
+                                backgroundColor: config?.mode === 'image-only' ? 'transparent' : (modalLayer.style?.backgroundColor || '#FFFFFF'),
+                                backgroundImage: modalLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
+                                backgroundSize: modalLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
+                                backgroundPosition: modalLayer.style?.backgroundPosition || 'center',
+                                backgroundRepeat: modalLayer.style?.backgroundRepeat || 'no-repeat',
+                                borderRadius: config?.mode === 'image-only' ? '0' : (modalLayer.style?.borderRadius ? `${modalLayer.style.borderRadius}px` : '16px'),
+
+                                // Layout & Spacing
+                                display: modalLayer.style?.display || 'flex',
+                                flexDirection: modalLayer.style?.flexDirection || 'column',
+                                alignItems: modalLayer.style?.alignItems || 'stretch',
+                                justifyContent: modalLayer.style?.justifyContent || 'flex-start',
+                                gap: typeof modalLayer.style?.gap === 'number' ? `${modalLayer.style.gap}px` : (modalLayer.style?.gap || '0'),
+                                padding: typeof modalLayer.style?.padding === 'object'
+                                    ? `${modalLayer.style.padding.top}px ${modalLayer.style.padding.right}px ${modalLayer.style.padding.bottom}px ${modalLayer.style.padding.left}px`
+                                    : (modalLayer.style?.padding ? `${modalLayer.style.padding}px` : (config?.mode === 'image-only' ? '0' : '20px')),
+
+                                // Visuals
+                                opacity: modalLayer.style?.opacity ?? 1,
+                                filter: getFilterString(modalLayer.style?.filter),
+                                clipPath: modalLayer.style?.clipPath,
+                                boxShadow: config?.mode === 'image-only' ? 'none' : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)'),
+
+                                // Dimensions
+                                minHeight: modalLayer.style?.minHeight || (config as any)?.minHeight || '100px',
+                                height: modalLayer.style?.height || modalLayer.size?.height || (config as any)?.height || 'auto',
+                                maxHeight: modalLayer.style?.maxHeight || (config as any)?.maxHeight || '85vh',
+
+                                overflow: modalLayer.style?.overflow || 'hidden',
+                                zIndex: 1,
+                                animation: 'modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
+                            {/* Content Area */}
+                            <div style={{ flex: 1, position: 'relative', overflowY: modalLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto', padding: config?.mode === 'image-only' ? '0' : '20px' }}>
+                                {childLayers.map(layer => (
+                                    <div key={layer.id} style={{ position: layer.style?.position === 'absolute' ? 'absolute' : 'relative', zIndex: layer.zIndex }}>
+                                        {renderLayer(layer)}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Close Button (Optional, if configured) */}
+                            {(config as any)?.showCloseButton !== false && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: '12px',
+                                        right: '12px',
+                                        cursor: 'pointer',
+                                        zIndex: 50,
+                                        padding: '4px',
+                                        borderRadius: '50%',
+                                        backgroundColor: 'rgba(0,0,0,0.05)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <X size={20} color="#6B7280" />
+                                </div>
+                            )}
+                        </div >
+
+                        <style>{`
             @keyframes modal-pop {
               0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
               100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             }
           `}</style>
-        </>
-    );
-};
+                    </>
+                );
+        };

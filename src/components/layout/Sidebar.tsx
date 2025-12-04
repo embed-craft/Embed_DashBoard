@@ -58,21 +58,18 @@ const Sidebar = () => {
         borderBottom: `1px solid ${theme.colors.border.default}`
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            backgroundColor: theme.colors.primary[600],
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: isCollapsed ? '0' : '12px',
-            color: 'white',
-            fontWeight: 'bold',
-            flexShrink: 0
-          }}>
-            E
-          </div>
+          <img
+            src="/logo.png"
+            alt="EmbedCraft Logo"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              objectFit: 'contain',
+              marginRight: isCollapsed ? '0' : '12px',
+              flexShrink: 0
+            }}
+          />
           {!isCollapsed && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <span style={{

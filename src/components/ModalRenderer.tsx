@@ -79,6 +79,17 @@ const getFilterString = (filter?: LayerStyle['filter']) => {
     return parts.join(' ');
 };
 
+// Helper to adjust color brightness
+const adjustColorBrightness = (color: string, percent: number) => {
+    if (!color) return '#000000';
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const B = ((num >> 8) & 0x00ff) + amt;
+    const G = (num & 0x0000ff) + amt;
+    return '#' + (0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (B < 255 ? (B < 1 ? 0 : B) : 255) * 0x100 + (G < 255 ? (G < 1 ? 0 : G) : 255)).toString(16).slice(1);
+};
+
 // Extracted Component: Countdown Layer
 const CountdownLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
     const [timeLeft, setTimeLeft] = useState<{ hours: number, minutes: number, seconds: number, totalSeconds: number }>({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
@@ -445,7 +456,7 @@ const ResizableLayerWrapper: React.FC<{
     layer: Layer;
     isSelected: boolean;
     onLayerSelect: (id: string) => void;
-    onLayerUpdate?: (id: string, style: Partial<LayerStyle>) => void;
+    onLayerUpdate?: (id: string, updates: Partial<Layer>) => void;
     baseStyle: React.CSSProperties;
     colors: any;
     children: React.ReactNode;
@@ -463,7 +474,13 @@ const ResizableLayerWrapper: React.FC<{
 
     const handleResizeStop = (e: any, data: ResizeCallbackData) => {
         if (onLayerUpdate) {
-            onLayerUpdate(layer.id, { width: data.size.width, height: data.size.height });
+            onLayerUpdate(layer.id, {
+                style: {
+                    ...layer.style,
+                    width: data.size.width,
+                    height: data.size.height
+                }
+            });
             setDimensions({ width: data.size.width, height: data.size.height });
         }
     };
@@ -558,43 +575,129 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const modalLayer = layers.find(l => l.type === 'modal') || layers[0] || {} as any;
-
-    // ... (existing code) ...
+    const childLayers = layers.filter(l => l.parent === modalLayer.id);
 
     const handleAction = (layer: Layer) => {
-        const action = layer.content?.action || 'dismiss';
+        const actionType = layer.content?.action?.type || 'close';
 
-        switch (action) {
-            case 'dismiss':
+        switch (actionType) {
+            case 'close':
                 if (onDismiss) onDismiss();
                 break;
-            case 'link':
-                if (layer.content?.url) {
-                    window.open(layer.content.url, '_blank');
+            case 'deeplink':
+                if (layer.content?.action?.url) {
+                    window.open(layer.content.action.url, '_blank');
                 }
                 break;
             case 'navigate':
-                const screenName = layer.content?.screenName || 'Unknown Screen';
-                toast.success(`Navigating to screen: ${screenName}`);
-                if (onDismiss) onDismiss();
-                break;
-            case 'submit':
-                console.log('Submit action triggered');
-                toast.success('Form submitted successfully!');
+                // const screenName = layer.content?.screenName || 'Unknown Screen';
+                toast.success(`Navigating to screen`);
                 if (onDismiss) onDismiss();
                 break;
             case 'custom':
-                console.log('Custom action triggered:', layer.content?.actionName);
-                toast.info(`Custom event triggered: ${layer.content?.actionName || 'Unnamed Event'}`);
+                console.log('Custom action triggered');
+                toast.info(`Custom event triggered`);
                 break;
-            case 'none':
             default:
                 // No action
                 break;
         }
     };
 
-    // ... (existing helper functions) ...
+    const renderInput = (layer: Layer) => {
+        return (
+            <input
+                type="text"
+                placeholder={layer.content?.placeholder || 'Enter text...'}
+                style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: `${layer.style?.borderRadius || 4}px`,
+                    border: `1px solid ${layer.style?.borderColor || '#E5E7EB'}`,
+                    fontSize: `${layer.content?.fontSize || 14}px`,
+                    color: layer.content?.textColor || '#000000',
+                    backgroundColor: layer.style?.backgroundColor || '#FFFFFF',
+                }}
+            />
+        );
+    };
+
+    const renderCheckbox = (layer: Layer) => {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="checkbox" style={{ width: '16px', height: '16px' }} />
+                <span style={{
+                    fontSize: `${layer.content?.fontSize || 14}px`,
+                    color: layer.content?.textColor || '#000000',
+                }}>
+                    {layer.content?.label || 'Checkbox'}
+                </span>
+            </div>
+        );
+    };
+
+    const renderList = (layer: Layer) => {
+        return (
+            <ul style={{
+                listStyleType: 'disc',
+                paddingLeft: '20px',
+                color: layer.content?.textColor || '#000000',
+                fontSize: `${layer.content?.fontSize || 14}px`,
+            }}>
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+            </ul>
+        );
+    };
+
+    const renderRating = (layer: Layer) => {
+        return (
+            <div style={{ display: 'flex', gap: '4px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} style={{ color: '#FBBF24', fontSize: '20px' }}>★</span>
+                ))}
+            </div>
+        );
+    };
+
+    const renderBadge = (layer: Layer) => {
+        return (
+            <div style={{
+                backgroundColor: layer.content?.badgeBackgroundColor || '#EF4444',
+                color: layer.content?.badgeTextColor || '#FFFFFF',
+                padding: typeof layer.content?.badgePadding === 'object'
+                    ? `${layer.content.badgePadding.vertical}px ${layer.content.badgePadding.horizontal}px`
+                    : `${layer.content?.badgePadding || 4}px 8px`,
+                borderRadius: `${layer.content?.badgeBorderRadius || 4}px`,
+                fontSize: '12px',
+                fontWeight: 'bold',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+            }}>
+                {layer.content?.badgeText || 'Badge'}
+            </div>
+        );
+    };
+
+    const renderProgressCircle = (layer: Layer) => {
+        return <div>Progress Circle Placeholder</div>;
+    };
+
+    const renderGradientOverlay = (layer: Layer) => {
+        return (
+            <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: `linear-gradient(${layer.content?.gradientDirection || 'to bottom'}, ${layer.content?.gradientStops?.[0]?.color || 'transparent'}, ${layer.content?.gradientStops?.[1]?.color || 'rgba(0,0,0,0.5)'})`,
+                pointerEvents: 'none'
+            }} />
+        );
+    };
 
     const renderButton = (layer: Layer) => {
         const label = layer.content?.label || 'Button';
@@ -1119,7 +1222,7 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                 </div>
 
                 {/* Close Button (Optional, if configured) */}
-                {config?.showCloseButton !== false && (
+                {(config as any)?.showCloseButton !== false && (
                     <div
                         style={{
                             position: 'absolute',

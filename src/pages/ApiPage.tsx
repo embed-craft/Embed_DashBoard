@@ -33,6 +33,7 @@ const ApiPage = () => {
   const [simEventName, setSimEventName] = useState("Product Viewed");
   const [simEventProps, setSimEventProps] = useState('{\n  "price": 99.99,\n  "currency": "USD"\n}');
   const [simScreenName, setSimScreenName] = useState("home");
+  const [simPlatform, setSimPlatform] = useState("web");
   const [logs, setLogs] = useState<any[]>([]);
   const [simNudgeData, setSimNudgeData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -139,9 +140,9 @@ const ApiPage = () => {
   const handleSimulateFetch = async () => {
     setLoading(true);
     setSimNudgeData(null); // Reset previous nudge
-    addLog('req', `Fetching nudges for screen: ${simScreenName}`);
+    addLog('req', `Fetching nudges for screen: ${simScreenName} on ${simPlatform}`);
     try {
-      const response = await fetch(`${API_URL}/nudge/fetch?userId=${simUserId}&screenName=${simScreenName}&platform=web`, {
+      const response = await fetch(`${API_URL}/nudge/fetch?userId=${simUserId}&screenName=${simScreenName}&platform=${simPlatform}`, {
         headers: {
           'x-api-key': apiKey
         }
@@ -732,7 +733,19 @@ void onEvent(NudgeCallbackData event) {
                       </h4>
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-xs">Screen Name</Label>
+                          <Label className="text-xs">Platform</Label>
+                          <select
+                            className="flex w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={simPlatform}
+                            onChange={(e) => setSimPlatform(e.target.value)}
+                          >
+                            <option value="web">Web</option>
+                            <option value="ios">iOS</option>
+                            <option value="android">Android</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Screen / Page Name</Label>
                           <Input
                             placeholder="e.g. home_screen"
                             value={simScreenName}
@@ -743,6 +756,36 @@ void onEvent(NudgeCallbackData event) {
                         <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={handleSimulateFetch} disabled={loading}>
                           Fetch Nudge
                         </Button>
+
+                        {simNudgeData && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full mt-2 border-green-200 text-green-700 hover:bg-green-50"
+                            onClick={async () => {
+                              setLoading(true);
+                              try {
+                                await fetch(`${API_URL}/nudge/track`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+                                  body: JSON.stringify({
+                                    action: 'impression',
+                                    userId: simUserId,
+                                    metadata: { nudge_id: simNudgeData.nudge_id }
+                                  })
+                                });
+                                addLog('req', `Tracked Impression for ${simNudgeData.campaign_name}`);
+                                toast.success("Impression tracked! Try fetching again to test frequency cap.");
+                              } catch (e) {
+                                toast.error("Failed to track impression");
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                          >
+                            Simulate "User Saw This" (Track Impression)
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>

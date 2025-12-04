@@ -18,7 +18,7 @@ export const TargetingBuilder = ({ triggerEvent, setTriggerEvent, rules, setRule
   const addRule = () => {
     setRules([
       ...rules,
-      { id: Date.now(), type: "attribute", field: "", operator: "==", value: "" },
+      { id: Date.now(), type: "user_property", field: "", operator: "equals", value: "" },
     ]);
   };
 
@@ -105,13 +105,13 @@ export const TargetingBuilder = ({ triggerEvent, setTriggerEvent, rules, setRule
                 <Label className="text-xs">Type</Label>
                 <Select
                   value={rule.type}
-                  onValueChange={(v: "event" | "attribute") => updateRule(rule.id, "type", v)}
+                  onValueChange={(v: "event" | "user_property") => updateRule(rule.id, "type", v as any)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="attribute">User Attribute</SelectItem>
+                    <SelectItem value="user_property">User Attribute</SelectItem>
                     <SelectItem value="event">Event Property</SelectItem>
                   </SelectContent>
                 </Select>
@@ -137,13 +137,16 @@ export const TargetingBuilder = ({ triggerEvent, setTriggerEvent, rules, setRule
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="==">equals (==)</SelectItem>
-                    <SelectItem value="!=">not equals (!=)</SelectItem>
-                    <SelectItem value=">">greater than (&gt;)</SelectItem>
-                    <SelectItem value=">=">greater or equal (&gt;=)</SelectItem>
-                    <SelectItem value="<">less than (&lt;)</SelectItem>
-                    <SelectItem value="<=">less or equal (&lt;=)</SelectItem>
+                    <SelectItem value="equals">equals (==)</SelectItem>
+                    <SelectItem value="not_equals">not equals (!=)</SelectItem>
+                    <SelectItem value="greater_than">greater than (&gt;)</SelectItem>
+                    <SelectItem value="greater_than_or_equal">greater or equal (&gt;=)</SelectItem>
+                    <SelectItem value="less_than">less than (&lt;)</SelectItem>
+                    <SelectItem value="less_than_or_equal">less or equal (&lt;=)</SelectItem>
                     <SelectItem value="contains">contains</SelectItem>
+                    <SelectItem value="not_contains">not contains</SelectItem>
+                    <SelectItem value="set">is set</SelectItem>
+                    <SelectItem value="not_set">is not set</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -175,7 +178,7 @@ export const TargetingBuilder = ({ triggerEvent, setTriggerEvent, rules, setRule
               <ul className="ml-6 mt-1 space-y-1">
                 {rules.map((rule) => (
                   <li key={rule.id} className="text-xs">
-                    {rule.type === "attribute" ? "User" : "Event"}.
+                    {rule.type === "user_property" ? "User" : "Event"}.
                     <span className="text-accent font-semibold">{rule.field || "???"}</span>{" "}
                     {rule.operator} {rule.value || "???"}
                   </li>

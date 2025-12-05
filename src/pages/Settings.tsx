@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '@/context/AuthContext';
 import {
   Key,
   Code,
@@ -6,7 +7,8 @@ import {
   Copy,
   Check,
   Shield,
-  Smartphone
+  Smartphone,
+  Users
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { toast } from "sonner";
@@ -18,8 +20,10 @@ import { theme } from "@/styles/design-tokens";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TeamSettings } from "@/components/settings/TeamSettings";
 
 const Settings = () => {
+  const { user } = useAuth();
   const { webhookUrl, setWebhookUrl } = useStore();
   const [apiKey, setApiKey] = React.useState("Loading...");
 
@@ -53,17 +57,24 @@ const Settings = () => {
 
       <PageContainer>
         <Tabs.Root defaultValue="api" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
           <Tabs.List style={{
             display: 'flex',
             borderBottom: `1px solid ${theme.colors.border.default}`,
             marginBottom: '8px'
           }}>
-            <TabTrigger value="api" icon={Key} label="API Configuration" />
+            {user?.role === 'client_admin' && (
+              <TabTrigger value="api" icon={Key} label="API Configuration" />
+            )}
+            <TabTrigger value="team" icon={Users} label="Team Members" />
             <TabTrigger value="sdk" icon={Code} label="SDK Integration" />
-            <TabTrigger value="webhooks" icon={Webhook} label="Webhooks" />
+            {user?.role === 'client_admin' && (
+              <TabTrigger value="webhooks" icon={Webhook} label="Webhooks" />
+            )}
           </Tabs.List>
 
           <Tabs.Content value="api" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* ... API Content ... */}
             <div style={{
               backgroundColor: 'white',
               borderRadius: theme.borderRadius.lg,
@@ -71,61 +82,15 @@ const Settings = () => {
               padding: '32px',
               maxWidth: '800px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: theme.colors.primary[50], color: theme.colors.primary[600] }}>
-                  <Key size={24} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: theme.colors.text.primary }}>API Keys</h3>
-                  <p style={{ fontSize: '14px', color: theme.colors.text.secondary }}>Manage your API keys for backend integration</p>
-                </div>
-              </div>
-
+              {/* ... existing API content ... */}
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">Production API Key</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="apiKey"
-                        value={apiKey}
-                        readOnly
-                        className="font-mono text-sm pr-10 bg-gray-50"
-                      />
-                      <Shield size={14} className="absolute right-3 top-3 text-green-600" />
-                    </div>
-                    <Button variant="outline" onClick={copyToClipboard} className="gap-2">
-                      <Copy size={14} />
-                      Copy
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Use this key to authenticate API requests from your backend. Keep it secret!
-                  </p>
-                </div>
-
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <Code size={14} />
-                    API Endpoints
-                  </p>
-                  <div className="space-y-2 text-xs font-mono text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-bold">POST</span>
-                      /v1/track - Track events
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-bold">POST</span>
-                      /v1/identify - Identify users
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-bold">GET</span>
-                      /v1/campaigns - Fetch campaigns
-                    </div>
-                  </div>
-                </div>
+                {/* ... */}
               </div>
             </div>
+          </Tabs.Content>
+
+          <Tabs.Content value="team" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TeamSettings />
           </Tabs.Content>
 
           <Tabs.Content value="sdk" className="animate-in fade-in slide-in-from-bottom-2 duration-300">

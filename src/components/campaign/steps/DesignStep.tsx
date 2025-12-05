@@ -18,6 +18,8 @@ import { PhonePreview } from '@/components/editor/PhonePreview';
 import { PreviewToolbar } from '@/components/editor/PreviewToolbar';
 import { DEVICE_PRESETS, DEFAULT_DEVICE_ID } from '@/lib/devicePresets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { TemplateGallery } from '@/components/campaign/TemplateGallery';
+import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 
 export const DesignStep: React.FC = () => {
   const navigate = useNavigate();
@@ -73,6 +75,7 @@ export const DesignStep: React.FC = () => {
   const [selectedExperience, setSelectedExperience] = useState<string | null>('nudges');
   const [selectedNudgeType, setSelectedNudgeType] = useState<string | null>(currentCampaign?.nudgeType || null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(!!searchParams.get('experience')); // Auto-open if experience param exists
   const [filterCategory, setFilterCategory] = useState<string>('all'); // Filter state for selection view
   const [selectedExperienceType, setSelectedExperienceType] = useState<string | null>(null); // Track selected experience
@@ -6062,154 +6065,52 @@ export const DesignStep: React.FC = () => {
         </div>
       )}
 
-      {/* Template Selection Modal - PHASE 1 */}
-      {showTemplateModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 101, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '1200px', width: '100%', padding: '40px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button onClick={() => setShowTemplateModal(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', cursor: 'pointer', color: colors.gray[500], zIndex: 1 }}>
-              <X size={24} />
-            </button>
+      {/* Template Gallery */}
+      <TemplateGallery
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSelectTemplate={(template) => {
+          // If creating new, don't confirm
+          if (isCreating) {
+            loadTemplate(template.config);
+            setIsCreating(false);
+            // Also set the nudge type based on the template
+            if (template.config.nudgeType) {
+              setSelectedNudgeType(template.config.nudgeType);
+            }
+            toast.success('Template loaded successfully');
+          } else {
+            // Existing flow
+            if (window.confirm('Loading a template will overwrite your current design. Continue?')) {
+              loadTemplate(template.config);
+              toast.success('Template loaded successfully');
+            }
+          }
+        }}
+        onStartBlank={() => {
+          setShowTemplateModal(false);
+          if (isCreating) {
+            // If creating, start with a blank template (no config)
+            // We need to ensure we are in the editor view
+            setIsCreating(false);
+            // Default to modal if nothing selected, or keep current selection?
+            // Actually, if they clicked "Browse All", they might not have selected a type yet.
+            // But DesignStep usually forces a type selection before showing the editor.
+            // If we are here, we are likely in the "Browse All" flow.
+            // We should probably just let them proceed with the selected nudge type (or default).
+            if (!selectedNudgeType) setSelectedNudgeType('modal');
+            toast.success('Started with blank canvas');
+          }
+        }}
+      />
 
-            <div style={{ marginBottom: '32px' }}>
-              <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 600, color: colors.text.primary }}>Choose a Template</h2>
-              <p style={{ margin: 0, fontSize: '15px', color: colors.text.secondary }}>Start with a professionally designed template or build from scratch</p>
-            </div>
-
-            {/* Start from Scratch Option */}
-            <div
-              onClick={handleStartFromScratch}
-              style={{
-                padding: '24px',
-                border: `2px dashed ${colors.border.default}`,
-                borderRadius: '12px',
-                cursor: 'pointer',
-                marginBottom: '32px',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-                backgroundColor: colors.gray[50]
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.backgroundColor = colors.primary[50]; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.border.default; e.currentTarget.style.backgroundColor = colors.gray[50]; }}
-            >
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', backgroundColor: 'white', borderRadius: '12px', marginBottom: '12px' }}>
-                <Plus size={28} color={colors.primary[500]} />
-              </div>
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 600, color: colors.text.primary }}>Start from Scratch</h3>
-              <p style={{ margin: 0, fontSize: '13px', color: colors.text.secondary }}>Build your own custom bottom sheet</p>
-            </div>
-
-            {/* Featured Templates */}
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: colors.text.primary }}>
-                ⭐ Featured Templates
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                {getFeaturedTemplates().map((template) => (
-                  <div
-                    key={template.id}
-                    onClick={() => handleTemplateSelect(template.id)}
-                    style={{
-                      cursor: 'pointer',
-                      border: `2px solid ${colors.border.default}`,
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      transition: 'all 0.2s',
-                      backgroundColor: 'white'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.15)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.border.default; e.currentTarget.style.boxShadow = 'none'; }}
-                  >
-                    <div style={{ height: '160px', backgroundColor: colors.gray[100], overflow: 'hidden' }}>
-                      <img
-                        src={template.thumbnail}
-                        alt={template.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div style={{ padding: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          color: colors.primary[500],
-                          backgroundColor: colors.primary[50],
-                          padding: '3px 8px',
-                          borderRadius: '4px',
-                          letterSpacing: '0.5px'
-                        }}>
-                          {template.category}
-                        </span>
-                      </div>
-                      <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 600, color: colors.text.primary }}>
-                        {template.name}
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary, lineHeight: 1.4 }}>
-                        {template.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* All Templates */}
-            <div>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: colors.text.primary }}>
-                All Templates
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                {BOTTOM_SHEET_TEMPLATES.filter(t => !t.featured).map((template) => (
-                  <div
-                    key={template.id}
-                    onClick={() => handleTemplateSelect(template.id)}
-                    style={{
-                      cursor: 'pointer',
-                      border: `2px solid ${colors.border.default}`,
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      transition: 'all 0.2s',
-                      backgroundColor: 'white'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.15)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.border.default; e.currentTarget.style.boxShadow = 'none'; }}
-                  >
-                    <div style={{ height: '160px', backgroundColor: colors.gray[100], overflow: 'hidden' }}>
-                      <img
-                        src={template.thumbnail}
-                        alt={template.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div style={{ padding: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          color: colors.primary[500],
-                          backgroundColor: colors.primary[50],
-                          padding: '3px 8px',
-                          borderRadius: '4px',
-                          letterSpacing: '0.5px'
-                        }}>
-                          {template.category}
-                        </span>
-                      </div>
-                      <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 600, color: colors.text.primary }}>
-                        {template.name}
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary, lineHeight: 1.4 }}>
-                        {template.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Save Template Modal */}
+      <SaveTemplateModal
+        isOpen={showSaveTemplateModal}
+        onClose={() => setShowSaveTemplateModal(false)}
+        config={currentCampaign}
+        nudgeType={selectedNudgeType || 'unknown'}
+      />
 
 
 
@@ -6407,6 +6308,47 @@ export const DesignStep: React.FC = () => {
                             <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary }}>{template.description}</p>
                           </div>
                         ))}
+
+                      {/* Browse More Templates Card */}
+                      <div
+                        onClick={() => setShowTemplateModal(true)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div style={{
+                          aspectRatio: '3/4',
+                          backgroundColor: 'white',
+                          borderRadius: '12px',
+                          marginBottom: '12px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          border: `2px dashed ${colors.primary[200]}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          transition: 'all 0.2s'
+                        }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.backgroundColor = colors.primary[50]; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.primary[200]; e.currentTarget.style.backgroundColor = 'white'; }}
+                        >
+                          <div style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '50%',
+                            backgroundColor: colors.primary[100],
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <LayoutGrid size={24} color={colors.primary[600]} />
+                          </div>
+                          <div style={{ textAlign: 'center', padding: '0 16px' }}>
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: colors.primary[700] }}>Browse All</h4>
+                            <p style={{ margin: 0, fontSize: '12px', color: colors.primary[600] }}>View System & My Templates</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -6467,6 +6409,44 @@ export const DesignStep: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={() => setShowTemplateModal(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    backgroundColor: 'white',
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: '6px',
+                    color: colors.text.primary,
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <LayoutGrid size={16} />
+                  Templates
+                </button>
+                <button
+                  onClick={() => setShowSaveTemplateModal(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    backgroundColor: 'white',
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: '6px',
+                    color: colors.text.primary,
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Copy size={16} />
+                  Save as Template
+                </button>
                 <button
                   onClick={async () => {
                     try {

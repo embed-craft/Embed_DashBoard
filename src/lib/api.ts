@@ -218,53 +218,12 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ userId, action: event, metadata: properties }),
     });
-  }
+    if (params?.search) query.append('search', params.search);
 
-  // ============================================================================
-  // Segments
-  // ============================================================================
-  public async listSegments(): Promise<{ segments: any[] }> {
-    return this.request('/admin/segments');
-  }
+    const queryString = query.toString();
+    const url = `/admin/templates${queryString ? `?${queryString}` : ''}`;
 
-  public async createSegment(segment: any): Promise<any> {
-    return this.request('/admin/segments', {
-      method: 'POST',
-      body: JSON.stringify(segment),
-    });
-  }
-
-  public async deleteSegment(id: string): Promise<any> {
-    return this.request(`/admin/segments/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ============================================================================
-  // Flows
-  // ============================================================================
-  public async listFlows(): Promise<{ flows: any[] }> {
-    return this.request('/admin/flows');
-  }
-
-  public async createFlow(flow: any): Promise<any> {
-    return this.request('/admin/flows', {
-      method: 'POST',
-      body: JSON.stringify(flow),
-    });
-  }
-
-  public async deleteFlow(id: string): Promise<any> {
-    return this.request(`/admin/flows/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ============================================================================
-  // Templates
-  // ============================================================================
-  public async listTemplates(): Promise<{ templates: any[] }> {
-    return this.request('/admin/templates');
+    return this.request(url);
   }
 
   public async createTemplate(template: any): Promise<any> {
@@ -292,6 +251,47 @@ class ApiClient {
     formData.append('file', file);
     return this.request('/v1/admin/assets', {
       method: 'POST',
+
+      public async deleteAsset(id: string): Promise<any> {
+        return this.request(`/v1/admin/assets/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      }
+    }
+
+// Export Singleton Instance
+export const apiClient = new ApiClient();
+
+    // Export Legacy Functions (Adapters) for backward compatibility
+    export const setApiKey = (key: string) => apiClient.setApiKey(key);
+    export const getApiKey = () => apiClient.getApiKey();
+    export const clearApiKey = () => apiClient.clearApiKey();
+
+    export const listCampaigns = (opts?: { limit?: number; offset?: number }) => apiClient.listCampaigns(opts?.limit, opts?.offset);
+    export const listUsers = (opts?: { limit?: number; offset?: number }) => apiClient.listUsers(opts?.limit, opts?.offset);
+    export const deleteCampaign = (id: string) => apiClient.deleteCampaign(id);
+    export const uploadImage = (file: File) => apiClient.uploadImage(file);
+    export const testConnection = () => apiClient.checkHealth();
+
+    // Adapter for loadCampaign to return CampaignEditor format
+    export const loadCampaign = async (id: string): Promise<CampaignEditor> => {
+      const backend = await apiClient.getCampaign(id);
+      return backendToEditor(backend);
+    };
+
+    // Adapter for saveCampaign
+    export const saveCampaign = async (campaign: CampaignEditor): Promise<BackendCampaign> => {
+      const backend = editorToBackend(campaign);
+      if (campaign.lastSaved && campaign.id) {
+        return apiClient.updateCampaign(campaign.id, backend);
+      } else {
+        return apiClient.createCampaign(backend);
+      }
+  public async uploadAsset(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request('/v1/admin/assets', {
+      method: 'POST',
       body: formData,
       timeout: 60000,
     });
@@ -306,6 +306,26 @@ class ApiClient {
 
   public async deleteAsset(id: string): Promise<any> {
     return this.request(`/v1/admin/assets/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================================================
+  // Team Management
+  // ============================================================================
+  public async listTeam(): Promise<{ team: any[] }> {
+    return this.request('/v1/admin/team');
+  }
+
+  public async inviteUser(email: string, name: string, role: string): Promise<any> {
+    return this.request('/v1/admin/team/invite', {
+      method: 'POST',
+      body: JSON.stringify({ email, name, role }),
+    });
+  }
+
+  public async removeUser(userId: string): Promise<any> {
+    return this.request(`/v1/admin/team/${encodeURIComponent(userId)}`, {
       method: 'DELETE',
     });
   }

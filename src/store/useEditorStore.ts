@@ -391,7 +391,7 @@ export interface CampaignEditor {
   id: string;
   name: string;
   experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey';
-  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline';
+  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater';
 
   // Trigger configuration (industry-standard events)
   trigger?: string; // e.g., 'screen_viewed', 'button_clicked', 'product_viewed'
@@ -471,7 +471,7 @@ interface EditorStore {
   setShowEditor: (show: boolean) => void;
 
   // Auto-save
-  enableAutoSave: () => void;
+  initializeAutoSave: () => void;
   disableAutoSave: () => void;
 
   // Metadata (Events & Properties)
@@ -698,6 +698,11 @@ export const useEditorStore = create<EditorStore>()(
               blur: 0,
               color: '#000000',
               dismissOnClick: true,
+            },
+            animation: {
+              type: 'pop',
+              duration: 300,
+              easing: 'ease-out',
             },
           } : undefined,
           // Initialize floater config for floater nudge type
@@ -1681,7 +1686,7 @@ export const useEditorStore = create<EditorStore>()(
       setShowEditor: (show) => set({ showEditor: show }),
 
       // Auto-save (debounced to prevent rate limiting)
-      enableAutoSave: () => {
+      initializeAutoSave: () => {
         const debouncedSave = () => {
           if (autoSaveTimeout) {
             clearTimeout(autoSaveTimeout);

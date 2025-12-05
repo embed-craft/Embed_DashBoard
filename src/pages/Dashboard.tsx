@@ -279,9 +279,7 @@ const Dashboard = () => {
             border: `1px solid ${theme.colors.border.default}`,
             boxShadow: theme.shadows.sm
           }}>
-            const [selectedMetric, setSelectedMetric] = useState('impressions_clicks');
 
-            // ... (inside return)
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 600, color: theme.colors.text.primary }}>Weekly Performance</h3>

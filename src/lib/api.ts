@@ -218,6 +218,14 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ userId, action: event, metadata: properties }),
     });
+  }
+
+  // ============================================================================
+  // Templates
+  // ============================================================================
+  public async listTemplates(params?: { category?: string; search?: string }): Promise<{ templates: any[] }> {
+    const query = new URLSearchParams();
+    if (params?.category) query.append('category', params.category);
     if (params?.search) query.append('search', params.search);
 
     const queryString = query.toString();
@@ -249,95 +257,45 @@ class ApiClient {
   public async uploadAsset(file: File): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
-    body: formData,
+    return this.request('/v1/admin/assets', {
+      method: 'POST',
+      body: formData,
       timeout: 60000,
     });
-}
-
-  public async createAssetFromUrl(data: { name: string; url: string; type?: 'image' | 'file' }): Promise < any > {
-  return this.request('/v1/admin/assets/url', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-  public async deleteAsset(id: string): Promise < any > {
-  return this.request(`/v1/admin/assets/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
-}
-}
-
-// Export Singleton Instance
-export const apiClient = new ApiClient();
-
-// Export Legacy Functions (Adapters) for backward compatibility
-export const setApiKey = (key: string) => apiClient.setApiKey(key);
-export const getApiKey = () => apiClient.getApiKey();
-export const clearApiKey = () => apiClient.clearApiKey();
-
-export const listCampaigns = (opts?: { limit?: number; offset?: number }) => apiClient.listCampaigns(opts?.limit, opts?.offset);
-export const listUsers = (opts?: { limit?: number; offset?: number }) => apiClient.listUsers(opts?.limit, opts?.offset);
-export const deleteCampaign = (id: string) => apiClient.deleteCampaign(id);
-export const uploadImage = (file: File) => apiClient.uploadImage(file);
-export const testConnection = () => apiClient.checkHealth();
-
-// Adapter for loadCampaign to return CampaignEditor format
-export const loadCampaign = async (id: string): Promise<CampaignEditor> => {
-  const backend = await apiClient.getCampaign(id);
-  return backendToEditor(backend);
-};
-
-// Adapter for saveCampaign
-export const saveCampaign = async (campaign: CampaignEditor): Promise<BackendCampaign> => {
-  const backend = editorToBackend(campaign);
-  if (campaign.lastSaved && campaign.id) {
-    return apiClient.updateCampaign(campaign.id, backend);
-  } else {
-    return apiClient.createCampaign(backend);
   }
-  public async uploadAsset(file: File): Promise < any > {
-  const formData = new FormData();
-  formData.append('file', file);
-  return this.request('/v1/admin/assets', {
-    method: 'POST',
-    body: formData,
-    timeout: 60000,
-  });
-}
 
-  public async createAssetFromUrl(data: { name: string; url: string; type?: 'image' | 'file' }): Promise < any > {
-  return this.request('/v1/admin/assets/url', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
+  public async createAssetFromUrl(data: { name: string; url: string; type?: 'image' | 'file' }): Promise<any> {
+    return this.request('/v1/admin/assets/url', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 
-  public async deleteAsset(id: string): Promise < any > {
-  return this.request(`/v1/admin/assets/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
-}
+  public async deleteAsset(id: string): Promise<any> {
+    return this.request(`/v1/admin/assets/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
 
   // ============================================================================
   // Team Management
   // ============================================================================
-  public async listTeam(): Promise < { team: any[] } > {
-  return this.request('/v1/admin/team');
-}
+  public async listTeam(): Promise<{ team: any[] }> {
+    return this.request('/v1/admin/team');
+  }
 
-  public async inviteUser(email: string, name: string, role: string): Promise < any > {
-  return this.request('/v1/admin/team/invite', {
-    method: 'POST',
-    body: JSON.stringify({ email, name, role }),
-  });
-}
+  public async inviteUser(email: string, name: string, role: string): Promise<any> {
+    return this.request('/v1/admin/team/invite', {
+      method: 'POST',
+      body: JSON.stringify({ email, name, role }),
+    });
+  }
 
-  public async removeUser(userId: string): Promise < any > {
-  return this.request(`/v1/admin/team/${encodeURIComponent(userId)}`, {
-    method: 'DELETE',
-  });
-}
+  public async removeUser(userId: string): Promise<any> {
+    return this.request(`/v1/admin/team/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Export Singleton Instance

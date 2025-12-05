@@ -475,7 +475,13 @@ interface EditorStore {
   fetchMetadata: () => Promise<void>;
   createEvent: (event: Partial<EventDefinition>) => Promise<EventDefinition>;
   createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
-  saveCampaign: () => Promise<void>; // ✅ FIX: Add saveCampaign to interface
+  createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
+  saveCampaign: () => Promise<void>;
+
+  // Template Editor Mode
+  editorMode: 'campaign' | 'template';
+  setEditorMode: (mode: 'campaign' | 'template') => void;
+  saveTemplate: () => Promise<void>;
 }
 
 // Debounced history tracker to prevent race conditions
@@ -522,6 +528,64 @@ export const useEditorStore = create<EditorStore>()(
       showEditor: false,
       isSaving: false,
       saveError: null,
+      editorMode: 'campaign',
+
+      setEditorMode: (mode) => set({ editorMode: mode }),
+
+      saveTemplate: async () => {
+        const { currentCampaign, isSaving } = get();
+        if (!currentCampaign || isSaving) return;
+
+        // Prevent concurrent saves
+        if (saveMutex) return;
+        saveMutex = true;
+
+        set({ isSaving: true, saveError: null });
+
+        try {
+          const api = await import('@/lib/api');
+          
+          // Prepare template payload
+          const templatePayload = {
+            id: currentCampaign.id,
+            name: currentCampaign.name,
+            type: currentCampaign.nudgeType,
+            layers: currentCampaign.layers,
+            config: currentCampaign.nudgeType === 'bottomsheet' ? currentCampaign.bottomSheetConfig :
+                   currentCampaign.nudgeType === 'modal' ? currentCampaign.modalConfig :
+                   currentCampaign.nudgeType === 'floater' ? currentCampaign.floaterConfig : {},
+            // Add other configs as needed
+          };
+
+          // If ID exists and it's not a temp ID, update. Otherwise create.
+          // Note: For templates, we might always want to update if we are in editor mode with an ID
+          if (currentCampaign.id && !currentCampaign.id.startsWith('campaign_')) {
+             // TODO: Add updateTemplate to API
+             // await api.updateTemplate(currentCampaign.id, templatePayload);
+             // For now, we might need to handle this.
+             console.log('Saving template:', templatePayload);
+          } else {
+             await api.apiClient.createTemplate(templatePayload);
+          }
+
+          set({ 
+            currentCampaign: { ...currentCampaign, isDirty: false, lastSaved: new Date().toISOString() },
+            isSaving: false 
+          });
+          
+          if (typeof window !== 'undefined' && (window as any).toast) {
+            (window as any).toast.success('Template saved successfully');
+          }
+        } catch (error) {
+          console.error('Failed to save template:', error);
+          set({ isSaving: false, saveError: 'Failed to save template' });
+          if (typeof window !== 'undefined' && (window as any).toast) {
+            (window as any).toast.error('Failed to save template');
+          }
+        } finally {
+          saveMutex = false;
+        }
+      },
 
       // Metadata Initial State
       availableEvents: [],

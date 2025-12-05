@@ -234,9 +234,20 @@ class ApiClient {
     return this.request(url);
   }
 
+  public async getTemplate(id: string): Promise<any> {
+    return this.request(`/admin/templates/${encodeURIComponent(id)}`);
+  }
+
   public async createTemplate(template: any): Promise<any> {
     return this.request('/admin/templates', {
       method: 'POST',
+      body: JSON.stringify(template),
+    });
+  }
+
+  public async updateTemplate(id: string, template: any): Promise<any> {
+    return this.request(`/admin/templates/${encodeURIComponent(id)}`, {
+      method: 'PUT',
       body: JSON.stringify(template),
     });
   }

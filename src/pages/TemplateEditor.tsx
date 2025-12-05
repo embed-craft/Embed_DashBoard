@@ -56,7 +56,7 @@ const TemplateEditor = () => {
                     isDirty: false,
                 };
 
-                await loadCampaign(campaignData);
+                await loadCampaign(campaignData as any);
                 setShowEditor(true);
             } catch (error) {
                 console.error('Failed to load template:', error);

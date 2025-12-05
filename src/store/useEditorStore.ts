@@ -475,7 +475,6 @@ interface EditorStore {
   fetchMetadata: () => Promise<void>;
   createEvent: (event: Partial<EventDefinition>) => Promise<EventDefinition>;
   createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
-  createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
   saveCampaign: () => Promise<void>;
 
   // Template Editor Mode
@@ -544,35 +543,31 @@ export const useEditorStore = create<EditorStore>()(
 
         try {
           const api = await import('@/lib/api');
-          
+
           // Prepare template payload
           const templatePayload = {
             id: currentCampaign.id,
             name: currentCampaign.name,
             type: currentCampaign.nudgeType,
             layers: currentCampaign.layers,
-            config: currentCampaign.nudgeType === 'bottomsheet' ? currentCampaign.bottomSheetConfig :
-                   currentCampaign.nudgeType === 'modal' ? currentCampaign.modalConfig :
-                   currentCampaign.nudgeType === 'floater' ? currentCampaign.floaterConfig : {},
-            // Add other configs as needed
+            config: (currentCampaign.nudgeType === 'bottomsheet' ? currentCampaign.bottomSheetConfig :
+              currentCampaign.nudgeType === 'modal' ? currentCampaign.modalConfig :
+                currentCampaign.nudgeType === 'floater' ? currentCampaign.floaterConfig : {}) as any,
           };
-
-          // If ID exists and it's not a temp ID, update. Otherwise create.
-          // Note: For templates, we might always want to update if we are in editor mode with an ID
           if (currentCampaign.id && !currentCampaign.id.startsWith('campaign_')) {
-             // TODO: Add updateTemplate to API
-             // await api.updateTemplate(currentCampaign.id, templatePayload);
-             // For now, we might need to handle this.
-             console.log('Saving template:', templatePayload);
+            // TODO: Add updateTemplate to API
+            // await api.updateTemplate(currentCampaign.id, templatePayload);
+            // For now, we might need to handle this.
+            console.log('Saving template:', templatePayload);
           } else {
-             await api.apiClient.createTemplate(templatePayload);
+            await api.apiClient.createTemplate(templatePayload);
           }
 
-          set({ 
+          set({
             currentCampaign: { ...currentCampaign, isDirty: false, lastSaved: new Date().toISOString() },
-            isSaving: false 
+            isSaving: false
           });
-          
+
           if (typeof window !== 'undefined' && (window as any).toast) {
             (window as any).toast.success('Template saved successfully');
           }

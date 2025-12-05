@@ -41,7 +41,7 @@ export const DesignStep: React.FC = () => {
     saveTemplate,
     editorMode,
     saveCampaign,
-    initializeAutoSave,
+    // initializeAutoSave,
   } = useEditorStore();
 
   // Local UI state
@@ -335,12 +335,12 @@ const handleDrop = (e: React.DragEvent, targetLayerId: string) => {
 
 // Enable auto-save on mount
 useEffect(() => {
-  console.log('DesignStep mounted - Initializing AutoSave...');
-  initializeAutoSave();
+  console.log('DesignStep mounted - AutoSave temporarily disabled for debugging');
+  // initializeAutoSave();
   return () => {
     // Cleanup handled by store
   };
-}, [initializeAutoSave]);
+}, []);
 
 // Sync selectedNudgeType with current campaign
 useEffect(() => {

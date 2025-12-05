@@ -6791,7 +6791,9 @@ export const DesignStep: React.FC = () => {
 
               </div>
             </div>
-            );
+          </div>
+        </div>
+      );
 };
 
 

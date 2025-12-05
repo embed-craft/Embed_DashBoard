@@ -197,7 +197,6 @@ export const useStore = create<Store>()(
         })),
 
       // Segments
-      segments: [],
       fetchSegments: async () => {
         try {
           const api = await import('@/lib/api');
@@ -225,7 +224,6 @@ export const useStore = create<Store>()(
       },
 
       // Analytics
-      analyticsData: [],
       dashboardStats: {
         activeCampaigns: 0,
         impressions: 0,

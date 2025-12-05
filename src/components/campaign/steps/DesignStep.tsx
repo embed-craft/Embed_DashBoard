@@ -334,13 +334,13 @@ const handleDrop = (e: React.DragEvent, targetLayerId: string) => {
 
 
 // Enable auto-save on mount
-useEffect(() => {
-  console.log('DesignStep mounted - AutoSave temporarily disabled for debugging');
-  // initializeAutoSave();
-  return () => {
-    // Cleanup handled by store
-  };
-}, []);
+// useEffect(() => {
+//   console.log('DesignStep mounted - AutoSave temporarily disabled for debugging');
+//   // initializeAutoSave();
+//   return () => {
+//     // Cleanup handled by store
+//   };
+// }, []);
 
 // Sync selectedNudgeType with current campaign
 useEffect(() => {

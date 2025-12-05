@@ -448,6 +448,12 @@ interface EditorStore {
   updateLayerContent: (id: string, content: Partial<LayerContent>) => void;
   updateLayerStyle: (id: string, style: Partial<LayerStyle>) => void;
   updateTrigger: (trigger: string) => void; // ✅ FIX: Add updateTrigger to interface
+  updateCampaignName: (name: string) => void;
+  updateTags: (tags: string[]) => void;
+  updateStatus: (status: 'active' | 'paused' | 'draft') => void;
+  loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
+  createCampaign: (experienceType: string, nudgeType: string) => void;
+  resetCurrentCampaign: () => void;
 
   // Actions - Bottom Sheet Config (Phase 3)
   updateBottomSheetConfig: (config: Partial<BottomSheetConfig>) => void;

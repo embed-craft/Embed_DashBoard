@@ -307,6 +307,46 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // ============================================================================
+  // Segments
+  // ============================================================================
+  public async listSegments(): Promise<{ segments: any[] }> {
+    return this.request('/v1/admin/segments');
+  }
+
+  public async createSegment(segment: any): Promise<any> {
+    return this.request('/v1/admin/segments', {
+      method: 'POST',
+      body: JSON.stringify(segment),
+    });
+  }
+
+  public async deleteSegment(id: string): Promise<any> {
+    return this.request(`/v1/admin/segments/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================================================
+  // Flows
+  // ============================================================================
+  public async listFlows(): Promise<{ flows: any[] }> {
+    return this.request('/v1/admin/flows');
+  }
+
+  public async createFlow(flow: any): Promise<any> {
+    return this.request('/v1/admin/flows', {
+      method: 'POST',
+      body: JSON.stringify(flow),
+    });
+  }
+
+  public async deleteFlow(id: string): Promise<any> {
+    return this.request(`/v1/admin/flows/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Export Singleton Instance

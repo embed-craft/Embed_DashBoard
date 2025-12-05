@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@/lib/api';
 import { persist } from 'zustand/middleware';
 
 export interface Campaign {
@@ -199,15 +200,13 @@ export const useStore = create<Store>()(
       // Segments
       fetchSegments: async () => {
         try {
-          const api = await import('@/lib/api');
-          const { segments } = await api.apiClient.listSegments();
+          const { segments } = await apiClient.listSegments();
           set({ segments });
         } catch (e) { console.error(e); }
       },
       addSegment: async (segment) => {
         try {
-          const api = await import('@/lib/api');
-          const newSegment = await api.apiClient.createSegment(segment);
+          const newSegment = await apiClient.createSegment(segment);
           set((state) => ({ segments: [newSegment, ...state.segments] }));
         } catch (e) { console.error(e); }
       },
@@ -217,8 +216,7 @@ export const useStore = create<Store>()(
         })),
       deleteSegment: async (id) => {
         try {
-          const api = await import('@/lib/api');
-          await api.apiClient.deleteSegment(id);
+          await apiClient.deleteSegment(id);
           set((state) => ({ segments: state.segments.filter((s) => s._id !== id) }));
         } catch (e) { console.error(e); }
       },
@@ -232,8 +230,7 @@ export const useStore = create<Store>()(
       },
       fetchAnalytics: async () => {
         try {
-          const api = await import('@/lib/api');
-          const stats = await api.apiClient.getDashboardStats();
+          const stats = await apiClient.getDashboardStats();
           set({
             analyticsData: stats.daily,
             dashboardStats: {
@@ -286,22 +283,19 @@ export const useStore = create<Store>()(
       templates: [],
       fetchTemplates: async () => {
         try {
-          const api = await import('@/lib/api');
-          const { templates } = await api.apiClient.listTemplates();
+          const { templates } = await apiClient.listTemplates();
           set({ templates });
         } catch (e) { console.error(e); }
       },
       addTemplate: async (template) => {
         try {
-          const api = await import('@/lib/api');
-          const newTemplate = await api.apiClient.createTemplate(template);
+          const newTemplate = await apiClient.createTemplate(template);
           set((state) => ({ templates: [newTemplate, ...state.templates] }));
         } catch (e) { console.error(e); }
       },
       deleteTemplate: async (id) => {
         try {
-          const api = await import('@/lib/api');
-          await api.apiClient.deleteTemplate(id);
+          await apiClient.deleteTemplate(id);
           set((state) => ({ templates: state.templates.filter((t) => t._id !== id) }));
         } catch (e) { console.error(e); }
       },
@@ -337,22 +331,19 @@ export const useStore = create<Store>()(
       flows: [],
       fetchFlows: async () => {
         try {
-          const api = await import('@/lib/api');
-          const { flows } = await api.apiClient.listFlows();
+          const { flows } = await apiClient.listFlows();
           set({ flows });
         } catch (e) { console.error(e); }
       },
       addFlow: async (flow) => {
         try {
-          const api = await import('@/lib/api');
-          const newFlow = await api.apiClient.createFlow(flow);
+          const newFlow = await apiClient.createFlow(flow);
           set((state) => ({ flows: [newFlow, ...state.flows] }));
         } catch (e) { console.error(e); }
       },
       deleteFlow: async (id) => {
         try {
-          const api = await import('@/lib/api');
-          await api.apiClient.deleteFlow(id);
+          await apiClient.deleteFlow(id);
           set((state) => ({ flows: state.flows.filter((f) => f._id !== id) }));
         } catch (e) { console.error(e); }
       },

@@ -40,6 +40,8 @@ export const DesignStep: React.FC = () => {
     updateStatus,
     saveTemplate,
     editorMode,
+    enableAutoSave,
+    saveCampaign,
   } = useEditorStore();
 
   // Local UI state

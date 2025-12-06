@@ -395,6 +395,7 @@ export interface BottomSheetTemplate {
 
 export interface CampaignEditor {
   id: string;
+  _id?: string; // Support for backend ID
   name: string;
   experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey';
   nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater';
@@ -465,6 +466,7 @@ interface EditorStore {
   updateCampaignName: (name: string) => void;
   updateTags: (tags: string[]) => void;
   updateStatus: (status: 'active' | 'paused' | 'draft') => void;
+  updateGoal: (goal: Partial<CampaignGoal>) => void;
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
   createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => void;
   resetCurrentCampaign: () => void;
@@ -897,6 +899,21 @@ export const useEditorStore = create<EditorStore>()(
           currentCampaign: {
             ...currentCampaign,
             status,
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
+      },
+
+      // Update goal
+      updateGoal: (goal) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            goal: { ...currentCampaign.goal, ...goal },
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },

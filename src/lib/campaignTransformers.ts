@@ -64,10 +64,30 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
  */
 export function backendToEditor(backendCampaign: any): CampaignEditor {
   console.log('backendToEditor: Converting campaign:', backendCampaign.id || backendCampaign._id);
+  console.log('backendToEditor: Raw type:', backendCampaign.type, 'Config type:', backendCampaign.config?.type);
 
   const campaignId = backendCampaign.id || backendCampaign._id || `campaign_${Date.now()}`;
   const campaignName = backendCampaign.name || backendCampaign.campaign_name || 'Untitled Campaign';
-  const campaignType = backendCampaign.type || (backendCampaign.config && backendCampaign.config.type) || 'modal';
+
+  // ✅ IMPROVED: Robust Type Detection
+  // 1. Check root `type`
+  // 2. Check `config.type`
+  // 3. Infer from config structure (heuristic)
+  // 4. Fallback to 'modal'
+  let campaignType = backendCampaign.type || (backendCampaign.config && backendCampaign.config.type);
+  if (!campaignType) {
+    if (backendCampaign.config?.height || backendCampaign.config?.mode) {
+      campaignType = 'bottomsheet';
+    } else if (backendCampaign.config?.position) {
+      // Heuristic: PIP usually has position (top-right, etc), Banner has specific ones too
+      campaignType = 'modal'; // Default to modal if ambiguous
+    } else {
+      campaignType = 'modal';
+    }
+  }
+  // Normalize type
+  campaignType = campaignType.toLowerCase();
+
   const campaignStatus = backendCampaign.status || 'draft';
   const campaignTrigger = backendCampaign.trigger || backendCampaign.trigger_event || 'session_start';
   const campaignRules = backendCampaign.rules || [];
@@ -77,7 +97,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     console.log('backendToEditor: Using direct layers from backend');
     layers = backendCampaign.layers;
   } else {
-    console.log('backendToEditor: Reconstructing layers from config');
+    console.log(`backendToEditor: Reconstructing layers from config for type: ${campaignType}`);
     layers = reconstructLayersFromConfig(backendCampaign.config || {}, campaignType);
   }
 
@@ -100,15 +120,15 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     targeting,
     tags: backendCampaign.tags || [], // ✅ FIX: Restore tags from backend
     bottomSheetConfig,
-    bottomSheetConfig,
+    // Store other configs dynamically if needed in future
     displayRules: (backendCampaign.config && backendCampaign.config.displayRules) || getDefaultDisplayRules(),
-    selectedLayerId: layers[0]?.id || null,
+    selectedLayerId: layers[0]?.id || null, // Select first layer if exists
     history: [layers],
     historyIndex: 0,
     createdAt: backendCampaign.createdAt || new Date().toISOString(),
     updatedAt: backendCampaign.updatedAt || new Date().toISOString(),
     lastSaved: backendCampaign.updatedAt || backendCampaign.createdAt || new Date().toISOString(),
-    isDirty: false,
+    isDirty: false, // Ensure we start clean
   };
 
   console.log('backendToEditor: Final campaign editor:', result);
@@ -920,10 +940,11 @@ function parseBoxShadow(boxShadow: string): {
  * Reconstruct layers from backend config
  */
 function reconstructLayersFromConfig(config: Record<string, any>, type: string): Layer[] {
-  if (type !== 'bottomsheet') {
-    // For non-bottomsheet types, create minimal layer structure
-    return [];
-  }
+  // ✅ IMPROVED: Allow reconstruction for all types (or at least attempt it)
+  // Previously this returned [] for anything not 'bottomsheet', causing issues for Modal/Banner
+  // if they relied on config-based reconstruction.
+
+  // if (type !== 'bottomsheet') { return []; } // REMOVED
 
   const baseId = Date.now();
   const layers: Layer[] = [];

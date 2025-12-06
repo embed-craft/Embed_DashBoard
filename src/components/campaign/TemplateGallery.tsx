@@ -18,6 +18,7 @@ interface Template {
   thumbnail: string;
   tags: string[];
   config: any;
+  type?: string; // Add type to interface
   is_system: boolean;
   organization_id: string;
 }
@@ -27,6 +28,7 @@ interface TemplateGalleryProps {
   onClose: () => void;
   onSelectTemplate: (template: Template) => void;
   onStartBlank: () => void;
+  nudgeType?: string | null; // Add nudgeType prop
 }
 
 export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
@@ -34,6 +36,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   onClose,
   onSelectTemplate,
   onStartBlank,
+  nudgeType, // Destructure nudgeType
 }) => {
   const [activeTab, setActiveTab] = useState("system");
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,8 +64,16 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     }
   };
 
-  // Filter templates based on active tab
+  // Filter templates based on active tab and nudge type
   const filteredTemplates = templates.filter((template) => {
+    // Filter by nudge type if provided
+    if (nudgeType) {
+      const templateType = template.type || template.config?.nudgeType;
+      if (templateType && templateType !== nudgeType) {
+        return false;
+      }
+    }
+
     if (activeTab === "system") return template.is_system;
     if (activeTab === "mine") return !template.is_system;
     return true;

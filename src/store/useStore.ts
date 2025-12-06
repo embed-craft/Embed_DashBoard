@@ -138,6 +138,8 @@ export interface Template {
   thumbnail?: string;
   createdAt: string;
   updatedAt: string;
+  createdBy?: { _id: string; name: string; email: string };
+  lastEditedBy?: { _id: string; name: string; email: string };
 }
 
 export const useStore = create<Store>()(

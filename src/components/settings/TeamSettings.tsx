@@ -46,8 +46,17 @@ export const TeamSettings = () => {
 
         setInviteLoading(true);
         try {
-            await apiClient.inviteUser(email, name, role);
-            toast.success('Invitation sent successfully');
+            const res = await apiClient.inviteUser(email, name, role);
+
+            // Show credentials to admin
+            if (res.tempPassword) {
+                // Using a persistent toast or alert for now
+                // ideally this should be a modal step
+                alert(`User invited successfully!\n\nEmail: ${email}\nTemporary Password: ${res.tempPassword}\n\nPlease share these credentials with the user securely.`);
+            } else {
+                toast.success('Invitation sent successfully');
+            }
+
             setInviteOpen(false);
             setName('');
             setEmail('');
@@ -169,31 +178,31 @@ export const TeamSettings = () => {
                     <tbody className="divide-y">
                         {loading ? (
                             <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Loading team...</td></tr>
-                        ) : team.length === 0 ? (
+                        ) : !team || team.length === 0 ? (
                             <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No team members yet. Invite someone!</td></tr>
                         ) : (
-                            team.map(user => (
-                                <tr key={user._id} className="hover:bg-gray-50">
+                            team.map(member => (
+                                <tr key={member._id} className="hover:bg-gray-50">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                                {user.email[0].toUpperCase()}
+                                                {member.email[0].toUpperCase()}
                                             </div>
                                             <div>
-                                                <div className="font-medium text-gray-900">{user.email}</div>
-                                                <div className="text-xs text-gray-500">Joined {new Date(user.createdAt).toLocaleDateString()}</div>
+                                                <div className="font-medium text-gray-900">{member.email}</div>
+                                                <div className="text-xs text-gray-500">Joined {new Date(member.createdAt).toLocaleDateString()}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                      ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                                user.role === 'editor' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                                            {user.role.replace('_', ' ')}
+                      ${member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                                member.role === 'editor' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                                            {member.role.replace('_', ' ')}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {user.googleId ? (
+                                        {member.googleId ? (
                                             <span className="flex items-center gap-1.5 text-green-600 text-xs font-medium">
                                                 <CheckCircle size={14} /> Verified
                                             </span>
@@ -204,12 +213,12 @@ export const TeamSettings = () => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        {user?.role === 'client_admin' && (
+                                        {user?.role === 'client_admin' && member._id !== user?.id && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => handleRemove(user._id)}
+                                                onClick={() => handleRemove(member._id)}
                                             >
                                                 <Trash2 size={14} />
                                             </Button>

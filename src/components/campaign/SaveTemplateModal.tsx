@@ -9,11 +9,13 @@ import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
+import { useEditorStore } from '@/store/useEditorStore';
+
 interface SaveTemplateModalProps {
     isOpen: boolean;
     onClose: () => void;
-    config: any; // The campaign configuration to save
-    nudgeType: string;
+    config?: any; // Deprecated
+    nudgeType?: string; // Deprecated
 }
 
 const CATEGORIES = [
@@ -28,9 +30,8 @@ const CATEGORIES = [
 export const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
     isOpen,
     onClose,
-    config,
-    nudgeType
 }) => {
+    const { currentCampaign } = useEditorStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('marketing');
@@ -43,16 +44,34 @@ export const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
             return;
         }
 
+        if (!currentCampaign) {
+            toast.error('No campaign to save');
+            return;
+        }
+
         setIsSaving(true);
         try {
+            // Determine config based on type
+            let config = {};
+            switch (currentCampaign.nudgeType) {
+                case 'bottomsheet': config = currentCampaign.bottomSheetConfig || {}; break;
+                case 'modal': config = currentCampaign.modalConfig || {}; break;
+                case 'banner': config = currentCampaign.bannerConfig || {}; break;
+                case 'tooltip': config = currentCampaign.tooltipConfig || {}; break;
+                case 'floater': config = currentCampaign.floaterConfig || {}; break;
+                case 'pip': config = currentCampaign.pipConfig || {}; break;
+                default: config = {};
+            }
+
             await apiClient.createTemplate({
                 name,
                 description,
                 category,
                 tags: tags.split(',').map(t => t.trim()).filter(Boolean),
                 config,
-                type: nudgeType,
-                thumbnail: '🎨' // TODO: Generate or allow uploading thumbnail
+                layers: currentCampaign.layers, // Include layers!
+                type: currentCampaign.nudgeType,
+                thumbnail: '🎨' // TODO: Generate thumbnail
             });
             toast.success('Template saved successfully!');
             onClose();

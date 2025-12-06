@@ -38,13 +38,30 @@ const CampaignBuilder: React.FC = () => {
     updateStatus,
     createCampaign,
     resetCurrentCampaign,
-    updateTags
+    updateTags,
+    editorMode,
+    setEditorMode
   } = useEditorStore();
+
+  // Mode detection: Sync store mode with URL param
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'template') {
+      if (editorMode !== 'template') setEditorMode('template');
+      setActiveStep('design');
+    } else {
+      if (editorMode !== 'campaign') setEditorMode('campaign');
+    }
+  }, [searchParams, editorMode, setEditorMode]);
 
   // Load campaign on mount
   useEffect(() => {
     const campaignId = searchParams.get('id');
     const experienceType = searchParams.get('experience');
+    const mode = searchParams.get('mode');
+
+    // Skip loading if in template mode (DesignStep handles this)
+    if (mode === 'template') return;
 
     if (campaignId) {
       // Don't reload if it's already the current campaign (prevents overwriting local drafts)
@@ -58,6 +75,10 @@ const CampaignBuilder: React.FC = () => {
     const experienceType = searchParams.get('experience');
     const nudgeType = searchParams.get('nudge');
     const campaignId = searchParams.get('id');
+    const mode = searchParams.get('mode');
+
+    // Skip if in template mode
+    if (mode === 'template') return;
 
     // If we are in "Create New" mode (experience param exists, but NO campaign ID in URL)
     if (experienceType && !campaignId) {
@@ -123,6 +144,11 @@ const CampaignBuilder: React.FC = () => {
   //   return <DesignStep />;
   // }
 
+  // In Template Mode, show only the editor (fullscreen) - removes unused sidebar/header
+  if (editorMode === 'template') {
+    return <DesignStep />;
+  }
+
   // For other steps, show the Campaign Builder layout with step navigation
   return (
     <div className="flex h-screen bg-background">
@@ -137,24 +163,26 @@ const CampaignBuilder: React.FC = () => {
 
         <div className="flex-1 py-4">
           <nav className="space-y-1 px-2">
-            {steps.map((step) => {
-              const Icon = step.icon;
-              const isActive = activeStep === step.id;
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => setActiveStep(step.id as Step)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {step.label}
-                  {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
-                </button>
-              );
-            })}
+            {steps
+              .filter(step => editorMode !== 'template' || step.id === 'design')
+              .map((step) => {
+                const Icon = step.icon;
+                const isActive = activeStep === step.id;
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => setActiveStep(step.id as Step)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {step.label}
+                    {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
+                  </button>
+                );
+              })}
           </nav>
         </div>
 
@@ -167,85 +195,88 @@ const CampaignBuilder: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-16 border-b bg-card px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
-            <Input
-              value={currentCampaign?.name || ''}
-              onChange={(e) => updateCampaignName(e.target.value)}
-              className="max-w-md font-medium text-lg border-transparent hover:border-input focus:border-input transition-colors px-0"
-              placeholder="Untitled Campaign"
-            />
-            {currentCampaign?.status && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${currentCampaign.status === 'active' ? 'bg-green-100 text-green-700' :
-                currentCampaign.status === 'draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                {currentCampaign.status.toUpperCase()}
-              </span>
-            )}
-          </div>
+        {/* Header - Hidden in Design step */}
+        {activeStep !== 'design' && (
+          <header className="h-16 border-b bg-card px-6 flex items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <Input
+                value={currentCampaign?.name || ''}
+                onChange={(e) => updateCampaignName(e.target.value)}
+                className="max-w-md font-medium text-lg border-transparent hover:border-input focus:border-input transition-colors px-0"
+                placeholder="Untitled Campaign"
+              />
+              {currentCampaign?.status && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${currentCampaign.status === 'active' ? 'bg-green-100 text-green-700' :
+                  currentCampaign.status === 'draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                  {currentCampaign.status.toUpperCase()}
+                </span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Tag className="w-4 h-4" />
-                  {currentCampaign?.tags?.length ? `${currentCampaign.tags.length} Tags` : 'Tags'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" align="end">
-                <div className="space-y-4">
-                  <h4 className="font-medium leading-none">Manage Tags</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {currentCampaign?.tags?.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="gap-1">
-                        {tag}
-                        <X
-                          className="w-3 h-3 cursor-pointer hover:text-red-500"
-                          onClick={() => {
-                            const newTags = currentCampaign.tags?.filter((t) => t !== tag) || [];
-                            updateTags(newTags);
-                          }}
-                        />
-                      </Badge>
-                    ))}
-                    {!currentCampaign?.tags?.length && (
-                      <span className="text-sm text-muted-foreground italic">No tags added</span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add a tag..."
-                      className="h-8"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const input = e.currentTarget;
-                          const val = input.value.trim();
-                          if (val && !currentCampaign?.tags?.includes(val)) {
-                            updateTags([...(currentCampaign?.tags || []), val]);
-                            input.value = '';
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Tag className="w-4 h-4" />
+                    {currentCampaign?.tags?.length ? `${currentCampaign.tags.length} Tags` : 'Tags'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-medium leading-none">Manage Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {currentCampaign?.tags?.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="gap-1">
+                          {tag}
+                          <X
+                            className="w-3 h-3 cursor-pointer hover:text-red-500"
+                            onClick={() => {
+                              const newTags = currentCampaign.tags?.filter((t) => t !== tag) || [];
+                              updateTags(newTags);
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                      {!currentCampaign?.tags?.length && (
+                        <span className="text-sm text-muted-foreground italic">No tags added</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add a tag..."
+                        className="h-8"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const input = e.currentTarget;
+                            const val = input.value.trim();
+                            if (val && !currentCampaign?.tags?.includes(val)) {
+                              updateTags([...(currentCampaign?.tags || []), val]);
+                              input.value = '';
+                            }
                           }
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
 
-            <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save Draft'}
-            </Button>
-            <Button onClick={handleLaunch}>
-              <Rocket className="w-4 h-4 mr-2" />
-              Launch
-            </Button>
-          </div>
-        </header>
+              <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Draft'}
+              </Button>
+              <Button onClick={handleLaunch}>
+                <Rocket className="w-4 h-4 mr-2" />
+                Launch
+              </Button>
+            </div>
+          </header>
+        )}
 
         {/* Step Content */}
         <main className="flex-1 overflow-hidden relative">
-          {!currentCampaign && !searchParams.get('experience') ? (
+          {!currentCampaign && !searchParams.get('experience') && !searchParams.get('mode') ? (
             <div className="flex flex-col items-center justify-center h-full space-y-4">
               <div className="text-center">
                 <h3 className="text-lg font-semibold">No Campaign Loaded</h3>

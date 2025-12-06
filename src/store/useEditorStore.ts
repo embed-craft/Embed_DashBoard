@@ -102,6 +102,9 @@ export interface LayerContent {
   // Container-specific (Phase 1)
   containerPosition?: string;
   maxWidth?: number;
+
+  // PIP Specific
+  pipConfig?: any; // Using any for now to avoid complex type definition, can refine later
 }
 
 export interface LayerStyle {
@@ -427,6 +430,10 @@ export interface CampaignEditor {
   updatedAt: string;
   lastSaved?: string;
   isDirty: boolean;
+
+
+  // Template Source (if created from template)
+  sourceTemplateId?: string;
 }
 
 interface EditorStore {
@@ -544,56 +551,7 @@ export const useEditorStore = create<EditorStore>()(
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
-      saveTemplate: async () => {
-        const { currentCampaign, isSaving } = get();
-        if (!currentCampaign || isSaving) return;
 
-        // Prevent concurrent saves
-        if (saveMutex) return;
-        saveMutex = true;
-
-        set({ isSaving: true, saveError: null });
-
-        try {
-          const api = await import('@/lib/api');
-
-          // Prepare template payload
-          const templatePayload = {
-            id: currentCampaign.id,
-            name: currentCampaign.name,
-            type: currentCampaign.nudgeType,
-            layers: currentCampaign.layers,
-            config: (currentCampaign.nudgeType === 'bottomsheet' ? currentCampaign.bottomSheetConfig :
-              currentCampaign.nudgeType === 'modal' ? currentCampaign.modalConfig :
-                currentCampaign.nudgeType === 'floater' ? currentCampaign.floaterConfig : {}) as any,
-          };
-          if (currentCampaign.id && !currentCampaign.id.startsWith('campaign_')) {
-            // TODO: Add updateTemplate to API
-            // await api.updateTemplate(currentCampaign.id, templatePayload);
-            // For now, we might need to handle this.
-            console.log('Saving template:', templatePayload);
-          } else {
-            await api.apiClient.createTemplate(templatePayload);
-          }
-
-          set({
-            currentCampaign: { ...currentCampaign, isDirty: false, lastSaved: new Date().toISOString() },
-            isSaving: false
-          });
-
-          if (typeof window !== 'undefined' && (window as any).toast) {
-            (window as any).toast.success('Template saved successfully');
-          }
-        } catch (error) {
-          console.error('Failed to save template:', error);
-          set({ isSaving: false, saveError: 'Failed to save template' });
-          if (typeof window !== 'undefined' && (window as any).toast) {
-            (window as any).toast.error('Failed to save template');
-          }
-        } finally {
-          saveMutex = false;
-        }
-      },
 
       // Metadata Initial State
       availableEvents: [],
@@ -687,6 +645,34 @@ export const useEditorStore = create<EditorStore>()(
               duration: 300,
               easing: 'ease-out',
             },
+          } : undefined,
+          // Initialize PIP config for PIP nudge type
+          pipConfig: nudgeType === 'pip' ? {
+            position: 'bottom-right',
+            width: 320,
+            height: 180,
+            borderRadius: 12,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            aspectRatio: '16/9',
+            controls: {
+              showClose: true,
+              showExpand: true,
+              showMute: true,
+              showPlayPause: true,
+              showProgress: true,
+            },
+            behavior: {
+              autoPlay: true,
+              muted: true,
+              loop: false,
+              dragEnabled: true,
+              snapToCorner: true,
+            },
+            style: {
+              borderColor: 'transparent',
+              borderWidth: 0,
+              backgroundColor: '#000000',
+            }
           } : undefined,
           // Initialize modal config for modal nudge type
           modalConfig: nudgeType === 'modal' ? {
@@ -921,7 +907,13 @@ export const useEditorStore = create<EditorStore>()(
 
       // Save campaign
       saveCampaign: async () => {
-        const { currentCampaign } = get();
+        const { currentCampaign, editorMode, saveTemplate } = get();
+
+        // Redirect to template saving logic if in template mode
+        if (editorMode === 'template') {
+          return saveTemplate();
+        }
+
         if (!currentCampaign) {
           console.warn('saveCampaign: No current campaign');
           return;
@@ -1032,6 +1024,70 @@ export const useEditorStore = create<EditorStore>()(
           throw error;
         } finally {
           // FIX #3: Always release mutex lock
+          saveMutex = false;
+        }
+      },
+
+      // Save Template
+      saveTemplate: async () => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        if (saveMutex) {
+          console.warn('saveTemplate: Save already in progress');
+          return;
+        }
+
+        saveMutex = true;
+        set({ isSaving: true, saveError: null });
+
+        try {
+          const api = await import('@/lib/api');
+
+          // Determine config based on type
+          // Determine config based on type (Dynamic)
+          const configKey = `${currentCampaign.nudgeType}Config` as keyof CampaignEditor;
+          const config = (currentCampaign[configKey] as any) || {};
+
+          // FIX: Handle temporary IDs for new templates
+          const isTempId = currentCampaign.id && currentCampaign.id.startsWith('campaign_');
+
+          const templatePayload = {
+            ...currentCampaign, // Spread other props
+            id: isTempId ? undefined : currentCampaign.id,
+            _id: isTempId ? undefined : currentCampaign.id,
+            name: currentCampaign.name,
+            type: currentCampaign.nudgeType,
+            layers: currentCampaign.layers,
+            config: { ...config, type: currentCampaign.nudgeType }, // ✅ FIX: Ensure type is persisted in config for backend
+            updatedAt: new Date().toISOString()
+          };
+
+          const savedTemplate = await api.saveTemplate(templatePayload);
+          console.log('saveTemplate: Success', savedTemplate);
+
+          const newId = savedTemplate._id || savedTemplate.id;
+
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              id: newId,
+              _id: newId,
+              updatedAt: new Date().toISOString(),
+              isDirty: false
+            },
+            isSaving: false,
+            saveError: null
+          });
+
+        } catch (error) {
+          console.error('saveTemplate: Error', error);
+          set({
+            isSaving: false,
+            saveError: error instanceof Error ? error.message : 'Failed to save template'
+          });
+          throw error;
+        } finally {
           saveMutex = false;
         }
       },
@@ -1752,10 +1808,11 @@ export const useEditorStore = create<EditorStore>()(
 );
 
 // Helper functions
-function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeType']): Layer[] {
+export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeType']): Layer[] {
   const baseId = Date.now();
+  const normalizedType = nudgeType?.toLowerCase();
 
-  switch (nudgeType) {
+  switch (normalizedType) {
     case 'bottomsheet':
       return [
         {

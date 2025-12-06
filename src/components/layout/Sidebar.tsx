@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   Megaphone,
   Workflow,
@@ -16,7 +17,8 @@ import {
   ChevronDown,
   ChevronLeft,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  LogOut
 } from 'lucide-react';
 import { theme } from '../../styles/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -24,7 +26,14 @@ import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const navItems = [
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
@@ -180,6 +189,31 @@ const Sidebar = () => {
               <HelpCircle size={20} style={{ marginRight: isCollapsed ? '0' : '12px', flexShrink: 0 }} />
               {!isCollapsed && <span>Support</span>}
             </NavLink>
+          </li>
+          <li>
+            <button
+              onClick={handleLogout}
+              title={isCollapsed ? "Logout" : ""}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: theme.colors.red[600],
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              className="hover:bg-red-50"
+            >
+              <LogOut size={20} style={{ marginRight: isCollapsed ? '0' : '12px', flexShrink: 0 }} />
+              {!isCollapsed && <span>Logout</span>}
+            </button>
           </li>
         </ul>
 

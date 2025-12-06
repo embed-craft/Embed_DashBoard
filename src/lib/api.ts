@@ -132,6 +132,16 @@ class ApiClient {
   }
 
   // ============================================================================
+  // Authentication
+  // ============================================================================
+  public async changePassword(data: any): Promise<any> {
+    return this.request('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================================================
   // Admin / Campaign Management
   // ============================================================================
 
@@ -376,6 +386,15 @@ export const saveCampaign = async (campaign: CampaignEditor): Promise<BackendCam
     return apiClient.updateCampaign(campaign.id, backend);
   } else {
     return apiClient.createCampaign(backend);
+  }
+};
+
+export const saveTemplate = async (template: any): Promise<any> => {
+  const id = template.id || template._id;
+  if (id) {
+    return apiClient.updateTemplate(id, template);
+  } else {
+    return apiClient.createTemplate(template);
   }
 };
 

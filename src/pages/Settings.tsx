@@ -67,6 +67,7 @@ const Settings = () => {
               <TabTrigger value="api" icon={Key} label="API Configuration" />
             )}
             <TabTrigger value="team" icon={Users} label="Team Members" />
+            <TabTrigger value="account" icon={Shield} label="Account Security" />
             <TabTrigger value="sdk" icon={Code} label="SDK Integration" />
             {user?.role === 'client_admin' && (
               <TabTrigger value="webhooks" icon={Webhook} label="Webhooks" />
@@ -91,6 +92,72 @@ const Settings = () => {
 
           <Tabs.Content value="team" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <TeamSettings />
+          </Tabs.Content>
+
+          <Tabs.Content value="account" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: theme.borderRadius.lg,
+              border: `1px solid ${theme.colors.border.default}`,
+              padding: '32px',
+              maxWidth: '800px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: theme.colors.red[50], color: theme.colors.red[600] }}>
+                  <Shield size={24} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: theme.colors.text.primary }}>Account Security</h3>
+                  <p style={{ fontSize: '14px', color: theme.colors.text.secondary }}>Manage your password and security settings</p>
+                </div>
+              </div>
+
+              <div className="space-y-6 max-w-md">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const currentPassword = (form.elements.namedItem('currentPassword') as HTMLInputElement).value;
+                  const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
+                  const confirmPassword = (form.elements.namedItem('confirmPassword') as HTMLInputElement).value;
+
+                  if (newPassword !== confirmPassword) {
+                    toast.error('New passwords do not match');
+                    return;
+                  }
+
+                  if (newPassword.length < 6) {
+                    toast.error('Password must be at least 6 characters');
+                    return;
+                  }
+
+                  try {
+                    const { apiClient } = await import('@/lib/api');
+                    await apiClient.changePassword({ currentPassword, newPassword });
+                    toast.success('Password updated successfully');
+                    form.reset();
+                  } catch (error) {
+                    console.error('Failed to change password', error);
+                    toast.error('Failed to update password. Check your current password.');
+                  }
+                }}>
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Input id="currentPassword" name="currentPassword" type="password" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input id="newPassword" name="newPassword" type="password" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input id="confirmPassword" name="confirmPassword" type="password" required />
+                  </div>
+                  <Button type="submit" className="mt-4">
+                    Update Password
+                  </Button>
+                </form>
+              </div>
+            </div>
           </Tabs.Content>
 
           <Tabs.Content value="sdk" className="animate-in fade-in slide-in-from-bottom-2 duration-300">

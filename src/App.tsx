@@ -25,7 +25,6 @@ import Flows from "./pages/Flows";
 import Pages from "./pages/Pages";
 import NotFound from "./pages/NotFound";
 import ApiPage from "./pages/ApiPage";
-import TemplateEditor from "./pages/TemplateEditor";
 
 const queryClient = new QueryClient();
 
@@ -62,7 +61,6 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/assets" element={<Assets />} />
                 <Route path="/templates" element={<Templates />} />
-                <Route path="/templates/editor/:id" element={<TemplateEditor />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Route>

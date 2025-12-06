@@ -70,7 +70,7 @@ export const DesignStep: React.FC = () => {
     setActiveTab,
     setPropertyTab,
     addLayer,
-    // initializeAutoSave,
+    enableAutoSave: startAutoSave, // Alias to avoid potential shadowing issues
   } = useEditorStore();
 
   // Local UI state
@@ -339,6 +339,16 @@ export const DesignStep: React.FC = () => {
       setSelectedNudgeType(null);
     }
   }, [currentCampaign, selectedNudgeType]);
+
+  // Auto-save initialization
+  useEffect(() => {
+    if (startAutoSave) {
+      console.log('DesignStep: Initializing auto-save...');
+      startAutoSave();
+    } else {
+      console.error('DesignStep: startAutoSave is undefined!');
+    }
+  }, [startAutoSave]);
 
   // Check URL params for experience type (when coming from CreateCampaignModal)
   useEffect(() => {
@@ -6053,6 +6063,10 @@ export const DesignStep: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         <div style={{ flex: 1, overflow: 'auto' }}>
           {/* Design Tab - Nudge Selection Flow */}
+          {(() => {
+            console.log('DesignStep Render: selectedNudgeType=', selectedNudgeType, 'isCreating=', isCreating);
+            return null; // Just for logging
+          })()}
           {!selectedNudgeType && (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray[50] }}>
 

@@ -478,7 +478,7 @@ interface EditorStore {
   setShowEditor: (show: boolean) => void;
 
   // Auto-save
-  initializeAutoSave: () => void;
+  enableAutoSave: () => void;
   disableAutoSave: () => void;
 
   // Metadata (Events & Properties)
@@ -1696,7 +1696,7 @@ export const useEditorStore = create<EditorStore>()(
       setShowEditor: (show) => set({ showEditor: show }),
 
       // Auto-save (debounced to prevent rate limiting)
-      initializeAutoSave: () => {
+      enableAutoSave: () => {
         const debouncedSave = () => {
           if (autoSaveTimeout) {
             clearTimeout(autoSaveTimeout);

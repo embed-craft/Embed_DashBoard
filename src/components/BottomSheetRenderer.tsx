@@ -444,7 +444,7 @@ const ResizableLayerWrapper: React.FC<{
   layer: Layer;
   isSelected: boolean;
   onLayerSelect: (id: string) => void;
-  onLayerUpdate?: (id: string, style: Partial<LayerStyle>) => void;
+  onLayerUpdate?: (id: string, updates: Partial<Layer>) => void;
   baseStyle: React.CSSProperties;
   colors: any;
   children: React.ReactNode;
@@ -462,7 +462,7 @@ const ResizableLayerWrapper: React.FC<{
 
   const handleResizeStop = (e: any, data: ResizeCallbackData) => {
     if (onLayerUpdate) {
-      onLayerUpdate(layer.id, { width: data.size.width, height: data.size.height });
+      onLayerUpdate(layer.id, { style: { width: data.size.width, height: data.size.height } });
       setDimensions({ width: data.size.width, height: data.size.height });
     }
   };
@@ -539,7 +539,7 @@ interface BottomSheetRendererProps {
   colors: ColorTheme;
   config?: BottomSheetConfig;
   onHeightChange?: (height: number | string) => void; // Fix 7: Visual resize
-  onLayerUpdate?: (id: string, style: Partial<LayerStyle>) => void;
+  onLayerUpdate?: (id: string, updates: Partial<Layer>) => void;
 }
 
 /**

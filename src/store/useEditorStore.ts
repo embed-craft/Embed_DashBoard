@@ -33,6 +33,8 @@ export interface LayerContent {
   action?: {
     type: 'close' | 'deeplink' | 'navigate' | 'custom';
     url?: string;
+    screenName?: string;
+    eventName?: string;
     trackConversion?: boolean;
     autoDismiss?: boolean;
   };
@@ -354,6 +356,7 @@ export interface ModalConfig {
   mode?: 'container' | 'image-only';
   width?: number | string;
   height?: 'auto' | number | string;
+  showCloseButton?: boolean;
   backgroundColor: string;
   backgroundImageUrl?: string;
   backgroundSize?: 'cover' | 'contain' | 'fill';
@@ -443,16 +446,20 @@ interface EditorStore {
   selectLayer: (id: string | null) => void;
   toggleLayerVisibility: (id: string) => void;
   toggleLayerLock: (id: string) => void;
+  deleteLayer: (id: string) => void;
+  addLayer: (type: LayerType, parentId: string | null) => void;
 
   // Actions - Content
   updateLayerContent: (id: string, content: Partial<LayerContent>) => void;
   updateLayerStyle: (id: string, style: Partial<LayerStyle>) => void;
+  updateLayer: (id: string, updates: Partial<Layer>) => void;
   updateTrigger: (trigger: string) => void; // ✅ FIX: Add updateTrigger to interface
+  updateScreen: (screen: string) => void;
   updateCampaignName: (name: string) => void;
   updateTags: (tags: string[]) => void;
   updateStatus: (status: 'active' | 'paused' | 'draft') => void;
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
-  createCampaign: (experienceType: string, nudgeType: string) => void;
+  createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => void;
   resetCurrentCampaign: () => void;
 
   // Actions - Bottom Sheet Config (Phase 3)
@@ -631,7 +638,7 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       // Create new campaign
-      createCampaign: (experienceType, nudgeType) => {
+      createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => {
         const defaultLayers = getDefaultLayersForNudgeType(nudgeType);
 
         // FIX #4: Generate unique ID using UUID pattern
@@ -1393,6 +1400,9 @@ export const useEditorStore = create<EditorStore>()(
         // Debounced history save to prevent race conditions
         saveToHistoryDebounced(get, set);
       },
+
+
+
 
       // Update bottom sheet config (Phase 3)
       updateBottomSheetConfig: (config) => {

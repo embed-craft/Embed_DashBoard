@@ -476,7 +476,7 @@ interface BannerRendererProps {
     colors: ColorTheme;
     config?: BannerConfig;
     onHeightChange?: (height: number | string) => void;
-    onLayerUpdate?: (id: string, style: Partial<LayerStyle>) => void;
+    onLayerUpdate?: (id: string, updates: Partial<Layer>) => void;
 }
 
 /**

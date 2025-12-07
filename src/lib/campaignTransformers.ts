@@ -41,6 +41,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
   const config = buildConfigFromLayers(campaign);
 
   config.displayRules = campaign.displayRules;
+  if (campaign.modalConfig) config.modalConfig = campaign.modalConfig;
+  if (campaign.bottomSheetConfig) config.bottomSheetConfig = campaign.bottomSheetConfig;
 
   return {
     id: campaign.id,
@@ -110,6 +112,10 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     ? extractBottomSheetConfig(backendCampaign.config || {})
     : undefined;
 
+  const modalConfig = campaignType === 'modal' || !campaignType
+    ? backendCampaign.config?.modalConfig
+    : undefined;
+
   const result = {
     id: campaignId,
     name: campaignName,
@@ -120,6 +126,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     targeting,
     tags: backendCampaign.tags || [], // ✅ FIX: Restore tags from backend
     bottomSheetConfig,
+    modalConfig,
     // Store other configs dynamically if needed in future
     displayRules: (backendCampaign.config && backendCampaign.config.displayRules) || getDefaultDisplayRules(),
     selectedLayerId: layers[0]?.id || null, // Select first layer if exists
@@ -155,7 +162,7 @@ function transformTargetingRules(targeting: TargetingRule[]): BackendRule[] {
       type: rule.type === 'user_property' ? 'attribute' : 'event',
       field: rule.property || rule.eventProperty || 'unknown',
       operator: mapOperator(rule.operator || 'equals'),
-      value: rule.value || '',
+      value: String(rule.value || ''),
     }));
 }
 
@@ -182,14 +189,13 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     type: campaign.nudgeType,
   };
 
-  // Find key layers
-  const textLayer = campaign.layers.find(l => l.type === 'text' && l.name === 'Title');
+  // ========== TEXT LAYER (Description/Body) ==========
+  const textLayer = campaign.layers.find(l => l.type === 'text' && (l.name.toLowerCase().includes('description') || l.name.toLowerCase().includes('body') || l.name === 'Text'));
   const buttonLayer = campaign.layers.find(l => l.type === 'button');
   const imageLayer = campaign.layers.find(l => l.type === 'media');
   const containerLayer = campaign.layers.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
   const handleLayer = campaign.layers.find(l => l.type === 'handle');
 
-  // ========== TEXT LAYER - ALL PROPERTIES ==========
   if (textLayer) {
     config.showTitle = textLayer.visible !== false;
     config.text = textLayer.content.text || '';
@@ -405,6 +411,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     config.buttonPositionY = buttonLayer.position?.y || 0;
     config.buttonBorderColor = buttonLayer.style?.borderColor;
     config.buttonBorderWidth = buttonLayer.style?.borderWidth || 0;
+    config.buttonBorderStyle = buttonLayer.style?.borderStyle || 'solid';
     config.buttonPaddingVertical = typeof buttonLayer.style?.padding === 'object'
       ? buttonLayer.style.padding.top
       : buttonLayer.style?.padding || 0;
@@ -450,6 +457,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     config.secondaryButtonPositionY = secondaryButtonLayer.position?.y || 0;
     config.secondaryButtonBorderColor = secondaryButtonLayer.style?.borderColor;
     config.secondaryButtonBorderWidth = secondaryButtonLayer.style?.borderWidth || 1;
+    config.secondaryButtonBorderStyle = secondaryButtonLayer.style?.borderStyle || 'solid';
     config.secondaryButtonMarginTop = typeof secondaryButtonLayer.style?.margin === 'object'
       ? secondaryButtonLayer.style.margin.top || 12
       : 12;
@@ -513,6 +521,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
 
     config.imageBorderColor = imageLayer.style?.borderColor;
     config.imageBorderWidth = imageLayer.style?.borderWidth || 0;
+    config.imageBorderStyle = imageLayer.style?.borderStyle || 'solid';
     config.imageOpacity = imageLayer.style?.opacity || 1.0;
 
     // Image filters (blur, brightness, contrast, grayscale)
@@ -549,6 +558,42 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     config.containerPositionX = containerLayer.position?.x || 0;
     config.containerPositionY = containerLayer.position?.y || 0;
     config.containerPositionType = (containerLayer.style as any)?.position || 'relative';
+
+    // Z-Index & Opacity
+    config.containerZIndex = containerLayer.style?.zIndex || 0;
+    config.containerOpacity = containerLayer.style?.opacity !== undefined ? containerLayer.style.opacity : 1.0;
+
+    // Filters
+    if (containerLayer.style?.filter) {
+      config.containerFilterBlur = containerLayer.style.filter.blur || 0;
+      config.containerFilterBrightness = containerLayer.style.filter.brightness || 100;
+      config.containerFilterContrast = containerLayer.style.filter.contrast || 100;
+      config.containerFilterGrayscale = containerLayer.style.filter.grayscale || 0;
+    }
+
+    // Box Shadow
+    if (containerLayer.style?.boxShadow) {
+      const shadow = parseBoxShadow(containerLayer.style.boxShadow);
+      config.containerBoxShadowColor = shadow.color;
+      config.containerBoxShadowOpacity = shadow.opacity;
+      config.containerBoxShadowBlur = shadow.blur;
+      config.containerBoxShadowSpread = shadow.spread;
+      config.containerBoxShadowOffsetX = shadow.offsetX;
+      config.containerBoxShadowOffsetY = shadow.offsetY;
+      config.containerBoxShadowInset = shadow.inset;
+    }
+
+    // Clip Path
+    config.containerClipPath = containerLayer.style?.clipPath;
+
+    // Transform
+    if (containerLayer.style?.transform) {
+      config.containerTranslateX = containerLayer.style.transform.translateX || 0;
+      config.containerTranslateY = containerLayer.style.transform.translateY || 0;
+      config.containerRotate = containerLayer.style.transform.rotate || 0;
+      config.containerScale = containerLayer.style.transform.scale || 1;
+    }
+
 
     config.backgroundColor = containerLayer.style?.backgroundColor || '#FFFFFF';
     config.borderColor = containerLayer.style?.borderColor;
@@ -823,7 +868,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
 
     // Extract video URL
     if (videoLayer) {
-      config.videoUrl = videoLayer.content.url || '';
+      config.videoUrl = (videoLayer.content as any).url || '';
     }
 
     // Extract PIP config

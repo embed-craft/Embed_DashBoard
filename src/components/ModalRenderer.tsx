@@ -1050,204 +1050,209 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         );
     };
 
-                const renderLayer = (layer: Layer) => {
-                    if (layer.visible === false) return null;
-                    const isSelected = selectedLayerId === layer.id;
+    const renderLayer = (layer: Layer) => {
+        if (layer.visible === false) return null;
+        const isSelected = selectedLayerId === layer.id;
 
-                    // Base style for all layers
-                    const baseStyle: React.CSSProperties = {
-                        position: 'relative',
-                        width: layer.style?.width || '100%',
-                        height: layer.style?.height || 'auto',
-                        marginBottom: '12px',
-                        ...(layer.style as any),
-                    };
+        // Base style for all layers
+        const baseStyle: React.CSSProperties = {
+            position: 'relative',
+            width: layer.style?.width || '100%',
+            height: layer.style?.height || 'auto',
+            marginBottom: '12px',
+            ...(layer.style as any),
+        };
 
-                    let content = null;
+        let content = null;
 
-                    switch (layer.type) {
-                        case 'text':
-                            content = (
-                                <div style={{
-                                    fontSize: layer.style?.fontSize ? (typeof layer.style.fontSize === 'number' ? `${layer.style.fontSize}px` : layer.style.fontSize) : `${layer.content.fontSize || 16}px`,
-                                    fontWeight: layer.style?.fontWeight || layer.content.fontWeight || 'normal',
-                                    color: layer.style?.color || layer.content.textColor || '#000000',
-                                    textAlign: (layer.style?.textAlign as any) || layer.content.textAlign || 'left',
-                                    fontFamily: layer.style?.fontFamily || 'inherit',
-                                    lineHeight: layer.style?.lineHeight || '1.5',
-                                    letterSpacing: layer.style?.letterSpacing || 'normal',
-                                    textTransform: (layer.style?.textTransform as any) || 'none',
-                                }}>
-                                    {layer.content.text || 'Text Layer'}
-                                </div>
-                            );
-                            break;
-                        case 'image':
-                            content = (
-                                <img
-                                    src={layer.content.imageUrl || 'https://via.placeholder.com/150'}
-                                    alt={layer.name}
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: (layer.style?.objectFit as any) || 'cover',
-                                        borderRadius: `${layer.style?.borderRadius || 0}px`,
-                                    }}
-                                />
-                            );
-                            break;
-                        case 'button':
-                            content = renderButton(layer);
-                            break;
-                        case 'input':
-                            content = renderInput(layer);
-                            break;
-                        case 'checkbox':
-                            content = renderCheckbox(layer);
-                            break;
-                        case 'list':
-                            content = renderList(layer);
-                            break;
-                        case 'rating':
-                            content = renderRating(layer);
-                            break;
-                        case 'badge':
-                            content = renderBadge(layer);
-                            break;
-                        case 'progress-bar':
-                            content = renderProgressBar(layer);
-                            break;
-                        case 'progress-circle':
-                            content = renderProgressCircle(layer);
-                            break;
-                        case 'statistic':
-                            content = <StatisticLayer layer={layer} />;
-                            break;
-                        case 'countdown':
-                            content = <CountdownLayer layer={layer} />;
-                            break;
-                        case 'gradient-overlay':
-                            content = renderGradientOverlay(layer);
-                            break;
-                        default:
-                            content = null;
-                    }
+        switch (layer.type) {
+            case 'text':
+                content = (
+                    <div style={{
+                        fontSize: layer.style?.fontSize ? (typeof layer.style.fontSize === 'number' ? `${layer.style.fontSize}px` : layer.style.fontSize) : `${layer.content.fontSize || 16}px`,
+                        fontWeight: layer.style?.fontWeight || layer.content.fontWeight || 'normal',
+                        color: layer.style?.color || layer.content.textColor || '#000000',
+                        textAlign: (layer.style?.textAlign as any) || layer.content.textAlign || 'left',
+                        fontFamily: layer.style?.fontFamily || 'inherit',
+                        lineHeight: layer.style?.lineHeight || '1.5',
+                        letterSpacing: layer.style?.letterSpacing || 'normal',
+                        textTransform: (layer.style?.textTransform as any) || 'none',
+                    }}>
+                        {layer.content.text || 'Text Layer'}
+                    </div>
+                );
+                break;
+            case 'image':
+                content = (
+                    <img
+                        src={layer.content.imageUrl || 'https://via.placeholder.com/150'}
+                        alt={layer.name}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: (layer.style?.objectFit as any) || 'cover',
+                            borderRadius: `${layer.style?.borderRadius || 0}px`,
+                        }}
+                    />
+                );
+                break;
+            case 'button':
+                content = renderButton(layer);
+                break;
+            case 'input':
+                content = renderInput(layer);
+                break;
+            case 'checkbox':
+                content = renderCheckbox(layer);
+                break;
+            case 'list':
+                content = renderList(layer);
+                break;
+            case 'rating':
+                content = renderRating(layer);
+                break;
+            case 'badge':
+                content = renderBadge(layer);
+                break;
+            case 'progress-bar':
+                content = renderProgressBar(layer);
+                break;
+            case 'progress-circle':
+                content = renderProgressCircle(layer);
+                break;
+            case 'statistic':
+                content = <StatisticLayer layer={layer} />;
+                break;
+            case 'countdown':
+                content = <CountdownLayer layer={layer} />;
+                break;
+            case 'gradient-overlay':
+                content = renderGradientOverlay(layer);
+                break;
+            default:
+                content = null;
+        }
 
-                    return (
-                        <ResizableLayerWrapper
-                            key={layer.id}
-                            layer={layer}
-                            isSelected={isSelected}
-                            onLayerSelect={onLayerSelect}
-                            onLayerUpdate={onLayerUpdate}
-                            baseStyle={baseStyle}
-                            colors={colors}
-                        >
-                            {content}
-                        </ResizableLayerWrapper>
-                    );
-                };
+        return (
+            <ResizableLayerWrapper
+                key={layer.id}
+                layer={layer}
+                isSelected={isSelected}
+                onLayerSelect={onLayerSelect}
+                onLayerUpdate={onLayerUpdate}
+                baseStyle={baseStyle}
+                colors={colors}
+            >
+                {content}
+            </ResizableLayerWrapper>
+        );
+    };
 
-                return (
-                    <>
-                        {/* Backdrop */}
-                        <div
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                backgroundColor: `rgba(0,0,0,${config?.overlay?.opacity ?? 0.5})`,
-                                zIndex: 0,
-                                pointerEvents: 'auto',
-                                backdropFilter: config?.overlay?.blur ? `blur(${config.overlay.blur}px)` : 'none',
-                                transition: 'opacity 0.3s ease'
-                            }}
-                        />
+    return (
+        <>
+            {/* Backdrop */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: `rgba(0,0,0,${config?.overlay?.opacity ?? 0.5})`,
+                    zIndex: 0,
+                    pointerEvents: 'auto',
+                    backdropFilter: config?.overlay?.blur ? `blur(${config.overlay.blur}px)` : 'none',
+                    transition: 'opacity 0.3s ease'
+                }}
+            />
 
-                        {/* Modal Container */}
-                        <div
-                            ref={containerRef}
-                            style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: `translate(-50%, -50%) ${getTransformString(modalLayer.style?.transform) || ''}`,
-                                width: typeof modalLayer.style?.width === 'number' ? `${modalLayer.style.width}px` :
-                                    (modalLayer.style?.width ||
-                                        (typeof config?.width === 'number' ? `${config.width}px` : (config?.width || (config?.mode === 'image-only' ? 'auto' : '90%')))),
-                                maxWidth: config?.mode === 'image-only' ? '100%' : '400px',
-                                backgroundColor: config?.mode === 'image-only' ? 'transparent' : (modalLayer.style?.backgroundColor || '#FFFFFF'),
-                                backgroundImage: modalLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
-                                backgroundSize: modalLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
-                                backgroundPosition: modalLayer.style?.backgroundPosition || 'center',
-                                backgroundRepeat: modalLayer.style?.backgroundRepeat || 'no-repeat',
-                                borderRadius: config?.mode === 'image-only' ? '0' : (modalLayer.style?.borderRadius ? `${modalLayer.style.borderRadius}px` : '16px'),
+            {/* Modal Container */}
+            <div
+                ref={containerRef}
+                style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: `translate(-50%, -50%) ${getTransformString(modalLayer.style?.transform) || ''}`,
+                    width: typeof modalLayer.style?.width === 'number' ? `${modalLayer.style.width}px` :
+                        (modalLayer.style?.width ||
+                            (typeof config?.width === 'number' ? `${config.width}px` : (config?.width || (config?.mode === 'image-only' ? 'auto' : '90%')))),
+                    maxWidth: config?.mode === 'image-only' ? '100%' : '400px',
+                    backgroundColor: config?.mode === 'image-only' ? 'transparent' : (modalLayer.style?.backgroundColor || config?.backgroundColor || '#FFFFFF'),
+                    backgroundImage: modalLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
+                    backgroundSize: modalLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
+                    backgroundPosition: modalLayer.style?.backgroundPosition || 'center',
+                    backgroundRepeat: modalLayer.style?.backgroundRepeat || 'no-repeat',
+                    borderRadius: config?.mode === 'image-only' ? '0' : (config?.borderRadius ? `${config.borderRadius}px` : (modalLayer.style?.borderRadius ? `${modalLayer.style.borderRadius}px` : '16px')),
+                    borderWidth: modalLayer.style?.borderWidth ? `${modalLayer.style.borderWidth}px` : (config?.borderWidth ? `${config.borderWidth}px` : '0px'),
+                    borderColor: modalLayer.style?.borderColor || config?.borderColor || 'transparent',
+                    borderStyle: modalLayer.style?.borderStyle || config?.borderStyle || 'solid',
 
-                                // Layout & Spacing
-                                display: modalLayer.style?.display || 'flex',
-                                flexDirection: modalLayer.style?.flexDirection || 'column',
-                                alignItems: modalLayer.style?.alignItems || 'stretch',
-                                justifyContent: modalLayer.style?.justifyContent || 'flex-start',
-                                gap: typeof modalLayer.style?.gap === 'number' ? `${modalLayer.style.gap}px` : (modalLayer.style?.gap || '0'),
-                                padding: typeof modalLayer.style?.padding === 'object'
-                                    ? `${modalLayer.style.padding.top}px ${modalLayer.style.padding.right}px ${modalLayer.style.padding.bottom}px ${modalLayer.style.padding.left}px`
-                                    : (modalLayer.style?.padding ? `${modalLayer.style.padding}px` : (config?.mode === 'image-only' ? '0' : '20px')),
+                    // Layout & Spacing
+                    display: modalLayer.style?.display || 'flex',
+                    flexDirection: modalLayer.style?.flexDirection || 'column',
+                    alignItems: modalLayer.style?.alignItems || 'stretch',
+                    justifyContent: modalLayer.style?.justifyContent || 'flex-start',
+                    gap: typeof modalLayer.style?.gap === 'number' ? `${modalLayer.style.gap}px` : (modalLayer.style?.gap || '0'),
+                    padding: typeof modalLayer.style?.padding === 'object'
+                        ? `${modalLayer.style.padding.top}px ${modalLayer.style.padding.right}px ${modalLayer.style.padding.bottom}px ${modalLayer.style.padding.left}px`
+                        : (modalLayer.style?.padding ? `${modalLayer.style.padding}px` : (config?.mode === 'image-only' ? '0' : '20px')),
 
-                                // Visuals
-                                opacity: modalLayer.style?.opacity ?? 1,
-                                filter: getFilterString(modalLayer.style?.filter),
-                                clipPath: modalLayer.style?.clipPath,
-                                boxShadow: config?.mode === 'image-only' ? 'none' : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)'),
+                    // Visuals
+                    opacity: modalLayer.style?.opacity ?? 1,
+                    filter: getFilterString(modalLayer.style?.filter),
+                    clipPath: modalLayer.style?.clipPath,
+                    boxShadow: config?.mode === 'image-only' ? 'none' : (
+                        config?.elevation ? `0px ${config.elevation * 4}px ${config.elevation * 8}px rgba(0,0,0,0.15)` : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)')
+                    ),
 
-                                // Dimensions
-                                minHeight: modalLayer.style?.minHeight || (config as any)?.minHeight || '100px',
-                                height: modalLayer.style?.height || modalLayer.size?.height || (config as any)?.height || 'auto',
-                                maxHeight: modalLayer.style?.maxHeight || (config as any)?.maxHeight || '85vh',
+                    // Dimensions
+                    minHeight: modalLayer.style?.minHeight || (config as any)?.minHeight || '100px',
+                    height: modalLayer.style?.height || modalLayer.size?.height || (config as any)?.height || 'auto',
+                    maxHeight: modalLayer.style?.maxHeight || (config as any)?.maxHeight || '85vh',
 
-                                overflow: modalLayer.style?.overflow || 'hidden',
-                                zIndex: 1,
-                                animation: 'modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                            }}
-                        >
-                            {/* Content Area */}
-                            <div style={{ flex: 1, position: 'relative', overflowY: modalLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto', padding: config?.mode === 'image-only' ? '0' : '20px' }}>
-                                {childLayers.map(layer => (
-                                    <div key={layer.id} style={{ position: layer.style?.position === 'absolute' ? 'absolute' : 'relative', zIndex: layer.zIndex }}>
-                                        {renderLayer(layer)}
-                                    </div>
-                                ))}
-                            </div>
+                    overflow: modalLayer.style?.overflow || 'hidden',
+                    zIndex: 1,
+                    animation: config?.animation ? `${config.animation.type} ${config.animation.duration}ms ${config.animation.easing}` : 'modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}
+            >
+                {/* Content Area */}
+                <div style={{ flex: 1, position: 'relative', overflowY: modalLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto', padding: config?.mode === 'image-only' ? '0' : '20px' }}>
+                    {childLayers.map(layer => (
+                        <div key={layer.id} style={{ position: layer.style?.position === 'absolute' ? 'absolute' : 'relative', zIndex: layer.zIndex }}>
+                            {renderLayer(layer)}
+                        </div>
+                    ))}
+                </div>
 
-                            {/* Close Button (Optional, if configured) */}
-                            {(config as any)?.showCloseButton !== false && (
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        top: '12px',
-                                        right: '12px',
-                                        cursor: 'pointer',
-                                        zIndex: 50,
-                                        padding: '4px',
-                                        borderRadius: '50%',
-                                        backgroundColor: 'rgba(0,0,0,0.05)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                >
-                                    <X size={20} color="#6B7280" />
-                                </div>
-                            )}
-                        </div >
+                {/* Close Button (Optional, if configured) */}
+                {(config as any)?.showCloseButton !== false && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '12px',
+                            right: '12px',
+                            cursor: 'pointer',
+                            zIndex: 50,
+                            padding: '4px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <X size={20} color="#6B7280" />
+                    </div>
+                )}
+            </div >
 
-                        <style>{`
+            <style>{`
             @keyframes modal-pop {
               0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
               100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             }
           `}</style>
-                    </>
-                );
-        };
+        </>
+    );
+};

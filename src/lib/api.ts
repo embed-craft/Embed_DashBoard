@@ -357,6 +357,9 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+  public async getCampaignStats(campaignId: string): Promise<any> {
+    return this.request(`/v1/admin/analytics/campaign/${encodeURIComponent(campaignId)}`);
+  }
 }
 
 // Export Singleton Instance
@@ -372,6 +375,7 @@ export const listUsers = (opts?: { limit?: number; offset?: number }) => apiClie
 export const deleteCampaign = (id: string) => apiClient.deleteCampaign(id);
 export const uploadImage = (file: File) => apiClient.uploadImage(file);
 export const testConnection = () => apiClient.checkHealth();
+export const getCampaignStats = (id: string) => apiClient.getCampaignStats(id);
 
 // Adapter for loadCampaign to return CampaignEditor format
 export const loadCampaign = async (id: string): Promise<CampaignEditor> => {

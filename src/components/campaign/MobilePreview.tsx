@@ -42,7 +42,7 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
           console.log('Autoplay failed:', err);
         });
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [config.videoUrl]);
@@ -54,7 +54,20 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-6">
             <div
               className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl relative animate-in zoom-in-95 duration-300"
-              style={{ backgroundColor: config.backgroundColor, color: config.textColor }}
+              style={{
+                backgroundColor: config.backgroundColor,
+                color: config.textColor,
+                borderRadius: `${config.borderRadius || 20}px`,
+                borderWidth: `${config.borderWidth || 0}px`,
+                borderColor: config.borderColor || 'transparent',
+                borderStyle: config.borderStyle || 'solid',
+                zIndex: config.containerZIndex,
+                opacity: config.containerOpacity,
+                transform: `translate(${config.containerTranslateX || 0}px, ${config.containerTranslateY || 0}px) rotate(${config.containerRotate || 0}deg) scale(${config.containerScale || 1})`,
+                filter: `blur(${config.containerFilterBlur || 0}px) brightness(${config.containerFilterBrightness || 100}%) contrast(${config.containerFilterContrast || 100}%) grayscale(${config.containerFilterGrayscale || 0}%)`,
+                boxShadow: config.containerBoxShadowColor ? `${config.containerBoxShadowOffsetX || 0}px ${config.containerBoxShadowOffsetY || 0}px ${config.containerBoxShadowBlur || 0}px ${config.containerBoxShadowSpread || 0}px ${config.containerBoxShadowColor}${config.containerBoxShadowInset ? ' inset' : ''}` : undefined,
+                clipPath: config.containerClipPath,
+              }}
             >
               {config.showCloseButton !== false && (
                 <button className="absolute top-3 right-3 opacity-60 hover:opacity-100">
@@ -62,9 +75,35 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
                 </button>
               )}
               {config.title && (
-                <h3 className="text-lg font-bold mb-2">{config.title}</h3>
+                <h3
+                  className="mb-2"
+                  style={{
+                    fontSize: `${config.titleFontSize || 18}px`,
+                    fontWeight: config.titleFontWeight || 'bold',
+                    color: config.titleColor || config.textColor,
+                    textAlign: config.titleAlign as any || 'left',
+                  }}
+                >
+                  {config.title}
+                </h3>
               )}
-              <p className="text-sm mb-4">{config.text}</p>
+              <p
+                className="mb-4"
+                style={{
+                  fontSize: `${config.fontSize || 14}px`,
+                  color: config.textColor || '#4B5563',
+                  textAlign: config.textAlign as any || 'left',
+                  fontWeight: config.fontWeight || 'normal',
+                  lineHeight: config.lineHeight || 1.5,
+                  letterSpacing: config.letterSpacing ? `${config.letterSpacing}px` : 'normal',
+                  transform: `translate(${config.textTranslateX || 0}px, ${config.textTranslateY || 0}px) rotate(${config.textRotate || 0}deg) scale(${config.textScale || 1})`,
+                  filter: `blur(${config.textFilterBlur || 0}px) brightness(${config.textFilterBrightness || 100}%) contrast(${config.textFilterContrast || 100}%) grayscale(${config.textFilterGrayscale || 0}%)`,
+                  textShadow: config.textShadowColor ? `${config.textShadowOffsetX || 0}px ${config.textShadowOffsetY || 0}px ${config.textShadowBlur || 0}px ${config.textShadowColor}` : 'none',
+                  opacity: config.textOpacity ?? 1,
+                }}
+              >
+                {config.text}
+              </p>
               <button
                 className="w-full py-2.5 rounded-lg font-medium text-sm"
                 style={{
@@ -86,12 +125,23 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
       case "banner":
         return (
           <div
-            className={`absolute left-0 right-0 ${
-              config.position === "bottom" ? "bottom-4" : "top-12"
-            } mx-0 shadow-lg p-4 animate-in ${
-              config.position === "bottom" ? "slide-in-from-bottom-5" : "slide-in-from-top-5"
-            } duration-500`}
-            style={{ backgroundColor: config.backgroundColor, color: config.textColor }}
+            className={`absolute left-0 right-0 ${config.position === "bottom" ? "bottom-4" : "top-12"
+              } mx-0 shadow-lg p-4 animate-in ${config.position === "bottom" ? "slide-in-from-bottom-5" : "slide-in-from-top-5"
+              } duration-500`}
+            style={{
+              backgroundColor: config.backgroundColor,
+              color: config.textColor,
+              borderRadius: `${config.borderRadius || 0}px`,
+              borderWidth: `${config.borderWidth || 0}px`,
+              borderColor: config.borderColor || 'transparent',
+              borderStyle: config.borderStyle || 'solid',
+              zIndex: config.containerZIndex,
+              opacity: config.containerOpacity,
+              transform: `translate(${config.containerTranslateX || 0}px, ${config.containerTranslateY || 0}px) rotate(${config.containerRotate || 0}deg) scale(${config.containerScale || 1})`,
+              filter: `blur(${config.containerFilterBlur || 0}px) brightness(${config.containerFilterBrightness || 100}%) contrast(${config.containerFilterContrast || 100}%) grayscale(${config.containerFilterGrayscale || 0}%)`,
+              boxShadow: config.containerBoxShadowColor ? `${config.containerBoxShadowOffsetX || 0}px ${config.containerBoxShadowOffsetY || 0}px ${config.containerBoxShadowBlur || 0}px ${config.containerBoxShadowSpread || 0}px ${config.containerBoxShadowColor}${config.containerBoxShadowInset ? ' inset' : ''}` : undefined,
+              clipPath: config.containerClipPath,
+            }}
           >
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
@@ -126,43 +176,43 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
       case "bottom_sheet":
         // Get all bottom sheet customization values with defaults
         const sheetType = config.sheetType || 'draggable';
-        const sheetInitialHeight = config.initialHeight === 'peek' ? 30 : 
-                                   config.initialHeight === 'half' ? 50 : 
-                                   config.initialHeight === 'full' ? 90 : 50;
+        const sheetInitialHeight = config.initialHeight === 'peek' ? 30 :
+          config.initialHeight === 'half' ? 50 :
+            config.initialHeight === 'full' ? 90 : 50;
         const sheetCornerRadius = config.cornerRadius || 20;
         const showHandleBar = config.handleBarVisible !== false;
         const handleBarColor = config.handleBarColor || '#CCCCCC';
         const sheetBackgroundColor = config.backgroundColor || '#FFFFFF';
         const contentType = config.contentType || 'announcement';
         const overlayOpacity = (config.backgroundDimOpacity || 0.5) * 100;
-        
+
         // Check if using visual builder (components array exists)
         const hasComponents = config.components && Array.isArray(config.components) && config.components.length > 0;
-        
+
         // ✅ V2 IMPROVEMENT: Use shared height calculator
         // This ensures perfect sync between Canvas and Preview
-        const calculatedContentHeight = hasComponents 
+        const calculatedContentHeight = hasComponents
           ? calculateRequiredHeight(config.components as Component[])
           : 50;
-        
+
         // ✅ FIX: Calculate proper height for simple mode
         // For simple mode, use a reasonable default height (350px) or config height
-        const contentHeight = hasComponents 
+        const contentHeight = hasComponents
           ? (config.canvasHeight || Math.max(calculatedContentHeight, 80))
           : (config.canvasHeight || 350); // Default 350px for simple mode
-        
+
         // ✅ FIX: Use 375px width for builder mode (canvas width)
         // Simple mode uses full width, builder mode matches canvas
         const contentWidth = hasComponents ? 375 : undefined;
-        
+
         return (
-          <div 
+          <div
             className="absolute inset-0 transition-all duration-300"
             style={{ backgroundColor: `rgba(0, 0, 0, ${overlayOpacity / 100})` }}
           >
             <div
               className={`absolute bottom-0 shadow-2xl animate-in slide-in-from-bottom-10 ${!contentWidth ? 'left-0 right-0' : ''}`}
-              style={{ 
+              style={{
                 backgroundColor: sheetBackgroundColor,
                 color: config.textColor || '#1F2937',
                 borderTopLeftRadius: `${sheetCornerRadius}px`,
@@ -179,9 +229,9 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
               {/* Handle Bar */}
               {showHandleBar && (
                 <div className="flex justify-center pt-3 pb-2">
-                  <div 
-                    className="rounded-full" 
-                    style={{ 
+                  <div
+                    className="rounded-full"
+                    style={{
                       backgroundColor: handleBarColor,
                       width: '40px',
                       height: '4px'
@@ -189,12 +239,12 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
                   />
                 </div>
               )}
-              
+
               {/* Content Area - Visual Builder or Simple Mode */}
               {hasComponents ? (
                 /* ✅ V2 IMPROVEMENT: Use shared ComponentRenderer */
-                <div className="relative" style={{ 
-                  minHeight: '200px', 
+                <div className="relative" style={{
+                  minHeight: '200px',
                   padding: 0,
                   width: '375px', // Match canvas width
                   margin: '0 auto' // Center the content
@@ -222,121 +272,121 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
               ) : (
                 /* Simple Mode - Traditional Content */
                 <div className="space-y-4 p-6 overflow-y-auto" style={{ maxHeight: `${contentHeight - 40}px` }}>
-                {/* Icon (if provided) */}
-                {(config.iconUrl || config.imageUrl) && (
-                  <div className="flex justify-center">
-                    <img 
-                      src={config.iconUrl || config.imageUrl} 
-                      alt="icon" 
-                      className="rounded-full object-cover"
-                      style={{ 
-                        width: '48px',
-                        height: '48px'
-                      }}
-                    />
-                  </div>
-                )}
-                
-                {/* Title */}
-                {config.title && (
-                  <h3 
-                    className="font-bold text-center"
-                    style={{ 
-                      fontSize: '18px',
-                      color: config.textColor || '#1F2937'
-                    }}
-                  >
-                    {config.title}
-                  </h3>
-                )}
-                
-                {/* Main Text/Description */}
-                <p 
-                  className="text-center opacity-90"
-                  style={{ 
-                    fontSize: '14px'
-                  }}
-                >
-                  {config.description || config.text}
-                </p>
-                
-                {/* Content Type Specific Rendering */}
-                {contentType === 'form' && (
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ borderColor: '#E5E7EB' }}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ borderColor: '#E5E7EB' }}
-                    />
-                  </div>
-                )}
-                
-                {contentType === 'product' && (config.iconUrl || config.imageUrl) && (
-                  <div className="space-y-3">
-                    <img 
-                      src={config.iconUrl || config.imageUrl} 
-                      alt="product" 
-                      className="w-full rounded-lg object-cover"
-                      style={{ maxHeight: '120px' }}
-                    />
-                    <p className="text-lg font-bold text-center">$99.99</p>
-                  </div>
-                )}
-                
-                {contentType === 'carousel' && (
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {[1, 2, 3].map((idx) => (
-                      <div key={idx} className="flex-shrink-0 w-24 h-24 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-500">
-                        Slide {idx}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {contentType === 'media' && config.videoUrl && (
-                  <div className="w-full rounded-lg overflow-hidden bg-black" style={{ height: '120px' }}>
-                    <div className="flex items-center justify-center h-full text-white text-xs">
-                      🎥 Video Player
+                  {/* Icon (if provided) */}
+                  {(config.iconUrl || config.imageUrl) && (
+                    <div className="flex justify-center">
+                      <img
+                        src={config.iconUrl || config.imageUrl}
+                        alt="icon"
+                        className="rounded-full object-cover"
+                        style={{
+                          width: '48px',
+                          height: '48px'
+                        }}
+                      />
                     </div>
-                  </div>
-                )}
-                
-                {/* Buttons */}
-                {config.buttonText && (
-                  <div className="space-y-3 pt-2">
-                    <button
-                      className="w-full py-2.5 rounded-lg font-medium text-sm transition-all"
+                  )}
+
+                  {/* Title */}
+                  {config.title && (
+                    <h3
+                      className="font-bold text-center"
                       style={{
-                        backgroundColor: config.buttonColor || config.textColor || '#6366F1',
-                        color: '#FFFFFF',
-                        borderRadius: '8px'
+                        fontSize: '18px',
+                        color: config.textColor || '#1F2937'
                       }}
                     >
-                      {config.buttonText}
-                    </button>
-                    {config.secondaryButtonText && (
-                      <button 
-                        className="w-full py-2.5 rounded-lg text-sm transition-all"
+                      {config.title}
+                    </h3>
+                  )}
+
+                  {/* Main Text/Description */}
+                  <p
+                    className="text-center opacity-90"
+                    style={{
+                      fontSize: '14px'
+                    }}
+                  >
+                    {config.description || config.text}
+                  </p>
+
+                  {/* Content Type Specific Rendering */}
+                  {contentType === 'form' && (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Name"
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                        style={{ borderColor: '#E5E7EB' }}
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                        style={{ borderColor: '#E5E7EB' }}
+                      />
+                    </div>
+                  )}
+
+                  {contentType === 'product' && (config.iconUrl || config.imageUrl) && (
+                    <div className="space-y-3">
+                      <img
+                        src={config.iconUrl || config.imageUrl}
+                        alt="product"
+                        className="w-full rounded-lg object-cover"
+                        style={{ maxHeight: '120px' }}
+                      />
+                      <p className="text-lg font-bold text-center">$99.99</p>
+                    </div>
+                  )}
+
+                  {contentType === 'carousel' && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {[1, 2, 3].map((idx) => (
+                        <div key={idx} className="flex-shrink-0 w-24 h-24 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-500">
+                          Slide {idx}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {contentType === 'media' && config.videoUrl && (
+                    <div className="w-full rounded-lg overflow-hidden bg-black" style={{ height: '120px' }}>
+                      <div className="flex items-center justify-center h-full text-white text-xs">
+                        🎥 Video Player
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Buttons */}
+                  {config.buttonText && (
+                    <div className="space-y-3 pt-2">
+                      <button
+                        className="w-full py-2.5 rounded-lg font-medium text-sm transition-all"
                         style={{
-                          border: `1px solid ${config.textColor || '#6366F1'}`,
-                          color: config.textColor || '#6366F1',
-                          backgroundColor: 'transparent',
+                          backgroundColor: config.buttonColor || config.textColor || '#6366F1',
+                          color: '#FFFFFF',
                           borderRadius: '8px'
                         }}
                       >
-                        {config.secondaryButtonText}
+                        {config.buttonText}
                       </button>
-                    )}
-                  </div>
-                )}
-              </div>
+                      {config.secondaryButtonText && (
+                        <button
+                          className="w-full py-2.5 rounded-lg text-sm transition-all"
+                          style={{
+                            border: `1px solid ${config.textColor || '#6366F1'}`,
+                            color: config.textColor || '#6366F1',
+                            backgroundColor: 'transparent',
+                            borderRadius: '8px'
+                          }}
+                        >
+                          {config.secondaryButtonText}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -346,9 +396,8 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
         return (
           <div className="absolute inset-0 bg-black/20">
             <div
-              className={`absolute ${
-                config.position === "top" ? "top-1/3" : "top-1/2"
-              } left-1/2 -translate-x-1/2 max-w-[200px] animate-in zoom-in-95 duration-300`}
+              className={`absolute ${config.position === "top" ? "top-1/3" : "top-1/2"
+                } left-1/2 -translate-x-1/2 max-w-[200px] animate-in zoom-in-95 duration-300`}
             >
               <div
                 className="rounded-lg p-3 shadow-lg"
@@ -380,7 +429,7 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
       case "pip":
         const hasVideo = config.videoUrl;
         const showAudioControl = config.showAudioControl !== false;
-        
+
         // Get all customization values with defaults
         const pipWidth = config.width || 160;
         const pipHeight = config.height || 220;
@@ -389,29 +438,29 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
         const borderColor = config.borderColor || '#FFFFFF';
         const shadowBlur = config.shadowBlur || 24;
         const glassmorphism = config.glassmorphism !== false;
-        
+
         // Calculate position based on config
         const initialX = config.initialX || 16;
         const initialY = config.initialY || 100;
         const defaultEdge = config.defaultEdge || 'right';
-        
+
         // Position style based on edge preference
-        const positionStyle = defaultEdge === 'left' 
+        const positionStyle = defaultEdge === 'left'
           ? { left: `${initialX}px`, top: `${initialY}px` }
           : defaultEdge === 'right'
-          ? { right: `${initialX}px`, top: `${initialY}px` }
-          : { left: `${initialX}px`, top: `${initialY}px` };
-        
+            ? { right: `${initialX}px`, top: `${initialY}px` }
+            : { left: `${initialX}px`, top: `${initialY}px` };
+
         return (
           <div
             className="absolute shadow-2xl animate-in slide-in-from-bottom-5 duration-500 overflow-hidden"
-            style={{ 
+            style={{
               backgroundColor: config.backgroundColor || '#000',
               width: `${pipWidth}px`,
               height: `${pipHeight}px`,
               borderRadius: `${cornerRadius}px`,
-              border: borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : 'none',
-              boxShadow: `0 ${shadowBlur/2}px ${shadowBlur}px rgba(0, 0, 0, 0.3)`,
+              border: borderWidth > 0 ? `${borderWidth}px ${config.borderStyle || 'solid'} ${borderColor}` : 'none',
+              boxShadow: `0 ${shadowBlur / 2}px ${shadowBlur}px rgba(0, 0, 0, 0.3)`,
               backdropFilter: glassmorphism ? 'blur(10px)' : 'none',
               ...positionStyle
             }}
@@ -458,7 +507,7 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
                 </div>
               ) : (
                 // Fallback content (icon + text)
-                <div 
+                <div
                   className="w-full h-full flex flex-col items-center justify-center p-3"
                   style={{ backgroundColor: config.backgroundColor, color: config.textColor }}
                 >
@@ -487,9 +536,9 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
                       {config.defaultQuality || 'Auto'}
                     </div>
                   )}
-                  
+
                   <div className="flex-1" />
-                  
+
                   {/* Single Maximize/Minimize toggle button */}
                   <button className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full w-6 h-6 flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,7 +570,7 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex items-end justify-between">
                     {/* Text/Title overlay (if video) */}
                     {hasVideo && config.title && (
@@ -531,7 +580,7 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
                         </p>
                       </div>
                     )}
-                    
+
                     {/* Audio control */}
                     {showAudioControl && hasVideo && (
                       <button className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full w-8 h-8 flex items-center justify-center ml-2">
@@ -688,7 +737,7 @@ export const MobilePreview = ({ config }: MobilePreviewProps) => {
       <div className="relative w-[280px] h-[560px] bg-gradient-to-b from-background to-muted rounded-[2.5rem] border-[8px] border-foreground/20 shadow-2xl overflow-hidden">
         {/* Notch */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-foreground/20 rounded-b-2xl z-10" />
-        
+
         {/* Status Bar */}
         <div className="absolute top-0 left-0 right-0 h-12 flex items-center justify-between px-8 text-xs text-foreground/60 z-10">
           <span>9:41</span>

@@ -41,6 +41,16 @@ const Campaigns = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Filter State
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [experienceFilter, setExperienceFilter] = useState<string[]>([]);
+  const [tagsFilter, setTagsFilter] = useState<string[]>([]);
+  const [eventsFilter, setEventsFilter] = useState<string[]>([]);
+
   // Fetch campaigns from backend on mount
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -89,179 +99,238 @@ const Campaigns = () => {
     }
   };
 
-  const handleToggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
-
-    // Optimistic update
-    updateCampaignStatus(id, newStatus);
-
+  const updateStatusApi = async (id: string, status: string) => {
+    updateCampaignStatus(id, status as any); // Optimistic
     try {
       const api = await import('@/lib/api');
-      // Map 'paused' to 'inactive' for backend
-      const backendStatus = newStatus === 'paused' ? 'inactive' : newStatus;
+      const backendStatus = status === 'paused' ? 'inactive' : status;
       await api.updateCampaign(id, { status: backendStatus } as any);
-      toast.success(`Campaign ${newStatus}`);
+      toast.success(`Campaign marked as ${status}`);
     } catch (error) {
       console.error('Failed to update status:', error);
       toast.error('Failed to update status');
-      // Revert on failure
-      updateCampaignStatus(id, currentStatus as any);
+      // Revert logic needed here ideally
     }
   };
 
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+    updateStatusApi(id, newStatus);
+  };
+
+  const handleSetStatus = (id: string, status: string) => {
+    updateStatusApi(id, status);
+  };
+
+
+
+
+  // Filter Logic
   const filteredCampaigns = campaigns.filter(campaign => {
     const name = campaign.name || '';
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+
+    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(campaign.status);
+    const matchesExperience = experienceFilter.length === 0 || experienceFilter.includes(campaign.experience);
+    const matchesTags = tagsFilter.length === 0 || (campaign.tags?.some(tag => tagsFilter.includes(tag)) ?? false);
+    const matchesEvents = eventsFilter.length === 0 || (campaign.events?.some(event => eventsFilter.includes(event)) ?? false);
+
+    return matchesSearch && matchesStatus && matchesExperience && matchesTags && matchesEvents;
   });
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+  const paginatedCampaigns = filteredCampaigns.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Filter Options Handlers
+  const uniqueTags = Array.from(new Set(campaigns.flatMap(c => c.tags || [])));
+  const uniqueEvents = Array.from(new Set(campaigns.flatMap(c => c.events || [])));
+
+
+  // Generate Report Logic
+  const handleGenerateReport = async () => {
+    toast.info('Generating detailed report...');
+    try {
+      const api = await import('@/lib/api');
+
+      const reportData = await Promise.all(filteredCampaigns.map(async (camp) => {
+        try {
+          // Fetch detailed stats including Unique Users & Metadata breakdown
+          const detailedStats = await api.getCampaignStats(camp.id);
+          return {
+            ...camp,
+            ...detailedStats.stats,
+            userList: detailedStats.users.map((u: any) => u.userId).join(', '),
+            topEvents: detailedStats.events.map((e: any) => `${e.type} (${e.count})`).join('; ')
+          };
+        } catch (e) {
+          console.warn(`Failed to fetch stats for ${camp.name}`, e);
+          return camp; // Fallback to basic info
+        }
+      }));
+
+      // Convert to CSV
+      const csvHeader = ['ID', 'Name', 'Status', 'Experience', 'Created At', 'Impressions', 'Clicks', 'Conversions', 'CTR', 'Unique Users Count', 'User IDs', 'Event Breakdown'];
+      const csvRows = reportData.map(row => [
+        row.id,
+        `"${row.name}"`, // Quote strings
+        row.status,
+        row.experience,
+        new Date(row.createdAt).toLocaleDateString(),
+        row.impressions || 0,
+        row.clicks || 0,
+        row.conversions || 0,
+        `${row.ctr || 0}%`,
+        row.uniqueUserCount || 0,
+        `"${row.userList || ''}"`,
+        `"${row.topEvents || ''}"`
+      ].join(','));
+
+      const csvContent = [csvHeader.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `campaign_report_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      toast.success('Report downloaded');
+    } catch (error) {
+      console.error('Report generation failed', error);
+      toast.error('Failed to generate report');
+    }
+  };
 
   const columns = [
     {
       key: 'name',
       header: 'Title',
-      width: '300px',
+      width: '25%', // Dynamic width
       render: (row: any) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}> {/* Reduced gap */}
+          <div onClick={(e) => e.stopPropagation()} style={{ transform: 'scale(0.8)' }}> {/* Compact switch */}
             <Switch
               checked={row.status === 'active'}
               onCheckedChange={() => handleToggleStatus(row.id, row.status)}
             />
           </div>
-          <span style={{ fontWeight: 500, color: theme.colors.text.primary }}>{row.name}</span>
+          <div>
+            <div style={{ fontWeight: 500, fontSize: '13px', color: theme.colors.text.primary }}>{row.name}</div>
+            <div style={{ fontSize: '10px', color: theme.colors.text.tertiary, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              ID: {row.id.substring(0, 8)}...
+              <Copy size={10} className="cursor-pointer hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(row.id); toast.success('Copied'); }} />
+            </div>
+          </div>
         </div>
       )
     },
     {
       key: 'status',
       header: 'Status',
-      width: '120px',
-      render: (row: any) => <StatusBadge status={row.status as any} />
+      width: '10%',
+      render: (row: any) => <div style={{ transform: 'scale(0.9)', transformOrigin: 'left' }}><StatusBadge status={row.status as any} /></div>
     },
     {
       key: 'experience',
       header: 'Experience',
-      width: '150px',
+      width: '15%',
       render: (row: any) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ width: '4px', height: '16px', backgroundColor: row.experience === 'In-App' ? '#3b82f6' : '#ec4899', borderRadius: '2px' }} />
-          <span style={{ fontSize: '13px', color: theme.colors.text.primary }}>{row.experience || 'In-App'}</span>
+          <span style={{ fontSize: '12px', color: theme.colors.text.primary }}>{row.experience || 'In-App'}</span>
         </div>
       )
     },
     {
-      key: 'events',
-      header: 'Events',
-      width: '150px',
+      key: 'stats', // New Stats Column
+      header: 'Metrics',
+      width: '20%',
       render: (row: any) => (
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {(row.events || []).map((tag: string, i: number) => (
-            <span key={i} style={{
-              padding: '2px 8px',
-              backgroundColor: '#e0f2fe',
-              color: '#0284c7',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: 500
-            }}>
-              {tag}
-            </span>
-          ))}
+        <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: theme.colors.text.secondary }}>
+          <span title="Impressions">👁️ 0</span>
+          <span title="Clicks">👆 0</span>
         </div>
       )
     },
     {
       key: 'tags',
       header: 'Tags',
-      width: '150px',
+      width: '15%',
       render: (row: any) => (
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {(row.tags || []).map((tag: string, i: number) => (
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+          {(row.tags || []).slice(0, 2).map((tag: string, i: number) => (
             <span key={i} style={{
-              padding: '2px 8px',
+              padding: '1px 6px', // Compact
               backgroundColor: theme.colors.gray[100],
               color: theme.colors.text.secondary,
-              borderRadius: '4px',
-              fontSize: '11px',
+              borderRadius: '3px',
+              fontSize: '10px',
               fontWeight: 500
             }}>
               {tag}
             </span>
           ))}
+          {(row.tags?.length || 0) > 2 && <span style={{ fontSize: '10px', color: theme.colors.text.tertiary }}>+{row.tags.length - 2}</span>}
         </div>
       )
     },
     {
-      key: 'createdAt',
-      header: 'Created at',
-      width: '180px',
-      render: (row: any) => <span style={{ fontSize: '13px', color: theme.colors.text.secondary }}>{new Date(row.createdAt).toLocaleString()}</span>
-    },
-    {
       key: 'updatedAt',
-      header: 'Updated at',
-      width: '180px',
-      render: (row: any) => <span style={{ fontSize: '13px', color: theme.colors.text.secondary }}>{new Date(row.updatedAt).toLocaleString()}</span>
+      header: 'Updated',
+      width: '15%', // Reduced width
+      render: (row: any) => <span style={{ fontSize: '11px', color: theme.colors.text.secondary }}>{new Date(row.updatedAt).toLocaleDateString()}</span>
     },
     {
       key: 'actions',
       header: '',
-      width: '60px',
+      width: '5%',
       render: (row: any) => (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-gray-500 hover:text-gray-900 gap-1.5"
-              onClick={() => {
-                navigator.clipboard.writeText(row.id);
-                toast.success('Campaign ID copied to clipboard');
-              }}
-            >
-              <Copy className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">Copy ID</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-gray-500 hover:text-gray-900 gap-1.5"
-              onClick={() => handleEdit(row.id)}
-            >
-              <Edit className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">Edit</span>
-            </Button>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" className="h-6 w-6 p-0 hover:bg-gray-100 rounded-full">
                 <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => handleEdit(row.id)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
+                <Edit className="mr-2 h-4 w-4" /> Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                navigator.clipboard.writeText(row.id);
-                toast.success('Campaign ID copied to clipboard');
-              }}>
-                <Copy className="mr-2 h-4 w-4" />
-                Copy ID
+
+              {/* Status Submenu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <CheckCircle className="mr-2 h-4 w-4" /> Change Status
+                  </DropdownMenuItem>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" sideOffset={-5}>
+                  <DropdownMenuItem onClick={() => handleSetStatus(row.id, 'active')}>
+                    <div className="w-2 h-2 rounded-full bg-green-500 mr-2" /> Active
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSetStatus(row.id, 'paused')}>
+                    <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" /> Paused
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSetStatus(row.id, 'draft')}>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" /> Draft
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSetStatus(row.id, 'scheduled')}>
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mr-2" /> Scheduled
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(row.id); toast.success('Copied'); }}>
+                <Copy className="mr-2 h-4 w-4" /> Copy ID
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/analytics')}>
-                <BarChart2 className="mr-2 h-4 w-4" />
-                Report
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { }}>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Mark as Complete
+              <DropdownMenuItem onClick={handleGenerateReport}>
+                <BarChart2 className="mr-2 h-4 w-4" /> Usage Report
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDelete(row.id)} className="text-red-600">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -270,18 +339,40 @@ const Campaigns = () => {
     }
   ];
 
+  // Helper for Dropdown Filters
+  const FilterDropdown = ({ label, options, selected, onChange }: any) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant={selected.length > 0 ? "secondary" : "outline"} className={`gap-2 h-8 text-xs ${selected.length > 0 ? 'text-primary' : 'text-gray-600'}`}>
+          <SlidersHorizontal size={12} />
+          {label} {selected.length > 0 && `(${selected.length})`}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        {options.map((opt: string) => (
+          <DropdownMenuItem key={opt} onClick={(e) => {
+            e.preventDefault();
+            const newSel = selected.includes(opt) ? selected.filter((s: string) => s !== opt) : [...selected, opt];
+            onChange(newSel);
+          }}>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 border rounded-sm ${selected.includes(opt) ? 'bg-primary border-primary' : 'border-gray-400'}`} />
+              {opt}
+            </div>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: theme.colors.gray[50] }}>
       <PageHeader
         title="Campaigns"
-        subtitle=""
+        subtitle="Manage your in-app experiences"
         actions={
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <Plus size={16} />
-            Create Campaign
+          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-sm">
+            <Plus size={16} /> Create Campaign
           </Button>
         }
       />
@@ -292,77 +383,62 @@ const Campaigns = () => {
           borderRadius: theme.borderRadius.lg,
           border: `1px solid ${theme.colors.border.default}`,
           boxShadow: theme.shadows.sm,
-          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          height: 'calc(100vh - 140px)' // Fill remaining height (Header ~80px + Padding ~60px)
+          height: 'calc(100vh - 120px)', // Full height minus header
+          width: '100%', // Full width
+          maxWidth: '100%'
         }}>
           {/* Filters Bar */}
           <div style={{
-            padding: '16px 24px',
+            padding: '12px 16px', // Compact padding
             borderBottom: `1px solid ${theme.colors.border.default}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: '16px',
+            gap: '12px',
             flexWrap: 'wrap'
           }}>
-            <div style={{ width: '300px' }}>
-              <SearchInput
-                placeholder="Search Campaigns (Title or ID)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div style={{ width: '240px' }}>
+              <SearchInput placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <Button variant="outline" className="gap-2 h-9 text-gray-600">
-                <SlidersHorizontal size={14} />
-                Status
-              </Button>
-              <Button variant="outline" className="gap-2 h-9 text-gray-600">
-                <SlidersHorizontal size={14} />
-                Experience
-              </Button>
-              <Button variant="outline" className="gap-2 h-9 text-gray-600">
-                <SlidersHorizontal size={14} />
-                Tags
-              </Button>
-              <Button variant="outline" className="gap-2 h-9 text-gray-600">
-                <SlidersHorizontal size={14} />
-                Events
-              </Button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <FilterDropdown label="Status" options={['active', 'paused', 'draft', 'scheduled']} selected={statusFilter} onChange={setStatusFilter} />
+              <FilterDropdown label="Experience" options={['In-App', 'In-app messages']} selected={experienceFilter} onChange={setExperienceFilter} />
+              <FilterDropdown label="Tags" options={uniqueTags} selected={tagsFilter} onChange={setTagsFilter} />
+              <FilterDropdown label="Events" options={uniqueEvents} selected={eventsFilter} onChange={setEventsFilter} />
             </div>
 
             <div style={{ flex: 1 }} />
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <Button variant="ghost" className="text-gray-500">Select</Button>
-              <Button variant="secondary" className="gap-2 bg-purple-100 text-purple-700 hover:bg-purple-200 border-none">
-                Generate Report
-              </Button>
-              <Button variant="ghost" className="gap-2 text-gray-500">
-                <Columns size={14} />
-                Toggle Columns
-              </Button>
-            </div>
+            <Button variant="secondary" onClick={handleGenerateReport} className="gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border-none h-8 text-xs">
+              <Download size={14} /> Generate Report
+            </Button>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <DataTable
-              data={filteredCampaigns}
+              data={paginatedCampaigns}
               columns={columns}
               onRowClick={(row) => handleEdit(row.id)}
-              emptyMessage="No campaigns found. Get started by creating your first campaign."
+              emptyMessage="No campaigns found."
+              pagination={{
+                page: currentPage,
+                totalPages: totalPages,
+                onPageChange: setCurrentPage,
+                itemsPerPage: itemsPerPage,
+                onItemsPerPageChange: (val) => {
+                  setItemsPerPage(val);
+                  setCurrentPage(1); // Reset to first page
+                }
+              }}
             />
           </div>
         </div>
       </PageContainer>
 
-      <CreateCampaignModal
-        open={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
-      />
+      <CreateCampaignModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
     </div>
   );
 };

@@ -25,7 +25,7 @@ interface EffectsPanelProps {
  * - Opacity & blend modes
  */
 export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
-  const { selectedComponent, addShadow, updateShadow, removeShadow, setGradient, setBlur, setStroke, setOpacity } = state;
+  const { selectedComponent, addShadow, updateShadow, removeShadow, setGradient, setBlur, setStroke, setOpacity, updateComponent } = state;
 
   if (!selectedComponent) {
     return (
@@ -60,7 +60,7 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
 
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <Label className="text-sm font-semibold">Shadows</Label>
           <Button
             size="sm"
@@ -69,8 +69,16 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
             className="h-7 text-xs"
           >
             <Plus className="h-3 w-3 mr-1" />
-            Add Shadow
+            Add
           </Button>
+        </div>
+
+        {/* Shadow Presets */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <Button variant="outline" size="sm" className="text-[10px] h-7 px-0" onClick={() => addShadow(selectedComponent.id, { id: `shadow_${Date.now()}`, enabled: true, type: 'drop-shadow', x: 0, y: 2, blur: 4, spread: 0, color: 'rgba(0,0,0,0.1)' })}>Soft</Button>
+          <Button variant="outline" size="sm" className="text-[10px] h-7 px-0" onClick={() => addShadow(selectedComponent.id, { id: `shadow_${Date.now()}`, enabled: true, type: 'drop-shadow', x: 0, y: 4, blur: 12, spread: 0, color: 'rgba(0,0,0,0.15)' })}>Med</Button>
+          <Button variant="outline" size="sm" className="text-[10px] h-7 px-0" onClick={() => addShadow(selectedComponent.id, { id: `shadow_${Date.now()}`, enabled: true, type: 'drop-shadow', x: 4, y: 4, blur: 0, spread: 0, color: 'rgba(0,0,0,1)' })}>Hard</Button>
+          <Button variant="outline" size="sm" className="text-[10px] h-7 px-0" onClick={() => addShadow(selectedComponent.id, { id: `shadow_${Date.now()}`, enabled: true, type: 'drop-shadow', x: 0, y: 0, blur: 20, spread: 5, color: 'rgba(99, 102, 241, 0.6)' })}>Glow</Button>
         </div>
 
         {shadows.length === 0 && (
@@ -348,8 +356,8 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
                     gradient.type === 'linear'
                       ? `linear-gradient(${gradient.angle}deg, ${gradient.stops.map((s: any) => `${s.color} ${s.position}%`).join(', ')})`
                       : gradient.type === 'radial'
-                      ? `radial-gradient(circle, ${gradient.stops.map((s: any) => `${s.color} ${s.position}%`).join(', ')})`
-                      : `conic-gradient(from ${gradient.angle}deg, ${gradient.stops.map((s: any) => `${s.color} ${s.position}%`).join(', ')})`,
+                        ? `radial-gradient(circle, ${gradient.stops.map((s: any) => `${s.color} ${s.position}%`).join(', ')})`
+                        : `conic-gradient(from ${gradient.angle}deg, ${gradient.stops.map((s: any) => `${s.color} ${s.position}%`).join(', ')})`,
                 }}
               />
             </div>
@@ -441,13 +449,80 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
     );
   };
 
+  // ========== Filters Panel ==========
+  const FiltersPanel = () => {
+    const style = selectedComponent.style || {};
+    const filters = (style.filter as any) || {};
+
+    const updateFilter = (key: string, value: number) => {
+      const newFilters = { ...filters, [key]: value };
+      updateComponent(selectedComponent.id, {
+        style: { ...style, filter: newFilters }
+      });
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700 mb-4">
+          💡 Filters apply to the element and its content.
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label className="text-xs">Brightness</Label>
+              <span className="text-xs text-gray-400">{filters.brightness ?? 100}%</span>
+            </div>
+            <Slider value={[filters.brightness ?? 100]} onValueChange={(v) => updateFilter('brightness', v[0])} min={0} max={200} step={5} />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label className="text-xs">Contrast</Label>
+              <span className="text-xs text-gray-400">{filters.contrast ?? 100}%</span>
+            </div>
+            <Slider value={[filters.contrast ?? 100]} onValueChange={(v) => updateFilter('contrast', v[0])} min={0} max={200} step={5} />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label className="text-xs">Grayscale</Label>
+              <span className="text-xs text-gray-400">{filters.grayscale ?? 0}%</span>
+            </div>
+            <Slider value={[filters.grayscale ?? 0]} onValueChange={(v) => updateFilter('grayscale', v[0])} min={0} max={100} step={1} />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label className="text-xs">Saturation</Label>
+              <span className="text-xs text-gray-400">{filters.saturate ?? 100}%</span>
+            </div>
+            <Slider value={[filters.saturate ?? 100]} onValueChange={(v) => updateFilter('saturate', v[0])} min={0} max={200} step={5} />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label className="text-xs">Sepia</Label>
+              <span className="text-xs text-gray-400">{filters.sepia ?? 0}%</span>
+            </div>
+            <Slider value={[filters.sepia ?? 0]} onValueChange={(v) => updateFilter('sepia', v[0])} min={0} max={100} step={1} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-4">
       <Tabs defaultValue="shadow" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="shadow" className="text-xs">
             <Droplet className="h-3 w-3 mr-1" />
             Shadow
+          </TabsTrigger>
+          <TabsTrigger value="filters" className="text-xs">
+            <Eye className="h-3 w-3 mr-1" />
+            Filters
+          </TabsTrigger>
+          <TabsTrigger value="filters" className="text-xs">
+            <Eye className="h-3 w-3 mr-1" />
+            Filters
           </TabsTrigger>
           <TabsTrigger value="gradient" className="text-xs">
             <Sparkles className="h-3 w-3 mr-1" />
@@ -467,6 +542,13 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
           <GradientPanel />
         </TabsContent>
 
+        <TabsContent value="blur" className="mt-4">
+          <BlurOpacityPanel />
+        </TabsContent>
+
+        <TabsContent value="filters" className="mt-4">
+          <FiltersPanel />
+        </TabsContent>
         <TabsContent value="blur" className="mt-4">
           <BlurOpacityPanel />
         </TabsContent>

@@ -187,7 +187,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           padding: `${(style.paddingVertical as number) || 14}px ${(style.paddingHorizontal as number) || 24}px`,
           width: typeof style.width === 'number' ? `${style.width}px` : ((style.width as string) || '100%'),
           border: style.borderWidth
-            ? `${style.borderWidth}px solid ${(style.borderColor as string) || '#000'}`
+            ? `${style.borderWidth}px ${(style.borderStyle as string) || 'solid'} ${(style.borderColor as string) || '#000'}`
             : 'none',
           cursor: 'pointer',
           textAlign: (style.textAlign as any) || 'center',
@@ -229,7 +229,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             color: (style.color as string) || '#1F2937',
             backgroundColor: (style.backgroundColor as string) || '#F9FAFB',
             borderRadius: (style.borderRadius as number) || 8,
-            border: `${(style.borderWidth as number) || 1}px solid ${(style.borderColor as string) || '#D1D5DB'}`,
+            border: `${(style.borderWidth as number) || 1}px ${(style.borderStyle as string) || 'solid'} ${(style.borderColor as string) || '#D1D5DB'}`,
             padding: `${(style.paddingVertical as number) || 12}px ${(style.paddingHorizontal as number) || 16}px`,
             width: '100%',
             outline: 'none',
@@ -252,7 +252,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           borderRadius: (style.borderRadius as number) || 12,
           padding: flexLayout?.enabled ? undefined : (style.padding as number) || 16,
           border: style.borderWidth
-            ? `${style.borderWidth}px solid ${(style.borderColor as string) || '#E5E7EB'}`
+            ? `${style.borderWidth}px ${(style.borderStyle as string) || 'solid'} ${(style.borderColor as string) || '#E5E7EB'}`
             : 'none',
           ...flexContainerStyles, // Apply flex styles if enabled
         }}
@@ -367,7 +367,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       width: '100%',
       height: '100%',
       backgroundColor: (style.backgroundColor as string) || '#6366F1',
-      border: `${(style.borderWidth as number) || 2}px solid ${(style.borderColor as string) || '#4F46E5'}`,
+      border: `${(style.borderWidth as number) || 2}px ${(style.borderStyle as string) || 'solid'} ${(style.borderColor as string) || '#4F46E5'}`,
     };
 
     if (shapeType === 'circle') {

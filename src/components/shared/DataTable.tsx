@@ -21,6 +21,8 @@ interface DataTableProps<T> {
     page: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    itemsPerPage?: number;
+    onItemsPerPageChange?: (items: number) => void;
   };
 }
 
@@ -55,9 +57,9 @@ function DataTable<T extends { id: string | number }>({
                 <th
                   key={col.key}
                   style={{
-                    padding: '12px 24px',
+                    padding: '8px 16px', // Compact padding
                     textAlign: col.align || 'left',
-                    fontSize: '12px',
+                    fontSize: '11px', // Compact font
                     fontWeight: 600,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
@@ -104,10 +106,11 @@ function DataTable<T extends { id: string | number }>({
                     <td
                       key={`${item.id || index}-${col.key}`}
                       style={{
-                        padding: '16px 24px',
-                        fontSize: '14px',
+                        padding: '8px 16px', // Compact padding
+                        fontSize: '13px',
                         color: theme.colors.text.primary,
                         textAlign: col.align || 'left',
+                        height: '40px', // Fixed compact height
                       }}
                     >
                       {col.render ? col.render(item) : (item as any)[col.key]}
@@ -121,10 +124,10 @@ function DataTable<T extends { id: string | number }>({
       </div>
 
       {/* Pagination Footer */}
-      {pagination && pagination.totalPages > 1 && (
+      {pagination && (
         <div
           style={{
-            padding: '12px 24px',
+            padding: '8px 16px',
             borderTop: `1px solid ${theme.colors.border.default}`,
             display: 'flex',
             alignItems: 'center',
@@ -132,9 +135,37 @@ function DataTable<T extends { id: string | number }>({
             backgroundColor: theme.colors.gray[50],
           }}
         >
-          <span style={{ fontSize: '13px', color: theme.colors.gray[500] }}>
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span style={{ fontSize: '12px', color: theme.colors.gray[500] }}>
+              Page {pagination.page} of {pagination.totalPages || 1}
+            </span>
+            {pagination.onItemsPerPageChange && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: theme.colors.gray[500] }}>Rows:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={pagination.itemsPerPage || 10}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                      pagination.onItemsPerPageChange!(val);
+                    }
+                  }}
+                  style={{
+                    width: '50px',
+                    padding: '2px 4px',
+                    fontSize: '12px',
+                    borderRadius: '4px',
+                    border: `1px solid ${theme.colors.border.default}`,
+                    outline: 'none'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: '8px' }}>
             <IconButton
               icon={ChevronLeft}

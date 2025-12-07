@@ -9,7 +9,8 @@ import {
   Rocket,
   CheckCircle2,
   Tag,
-  X
+  X,
+  Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEditorStore } from '@/store/useEditorStore';
@@ -199,74 +200,48 @@ const CampaignBuilder: React.FC = () => {
         {activeStep !== 'design' && (
           <header className="h-16 border-b bg-card px-6 flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground mr-2" onClick={() => navigate('/campaigns')}>
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <div className="h-6 w-px bg-border mx-2" />
               <Input
                 value={currentCampaign?.name || ''}
                 onChange={(e) => updateCampaignName(e.target.value)}
-                className="max-w-md font-medium text-lg border-transparent hover:border-input focus:border-input transition-colors px-0"
+                className="max-w-md font-semibold text-lg border-transparent hover:border-input focus:border-input transition-colors px-2"
                 placeholder="Untitled Campaign"
               />
               {currentCampaign?.status && (
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${currentCampaign.status === 'active' ? 'bg-green-100 text-green-700' :
-                  currentCampaign.status === 'draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                  {currentCampaign.status.toUpperCase()}
-                </span>
+                <Badge variant="secondary" className="uppercase text-xs font-medium tracking-wide">
+                  {currentCampaign.status}
+                </Badge>
               )}
             </div>
 
             <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Tag className="w-4 h-4" />
-                    {currentCampaign?.tags?.length ? `${currentCampaign.tags.length} Tags` : 'Tags'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" align="end">
-                  <div className="space-y-4">
-                    <h4 className="font-medium leading-none">Manage Tags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {currentCampaign?.tags?.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="gap-1">
-                          {tag}
-                          <X
-                            className="w-3 h-3 cursor-pointer hover:text-red-500"
-                            onClick={() => {
-                              const newTags = currentCampaign.tags?.filter((t) => t !== tag) || [];
-                              updateTags(newTags);
-                            }}
-                          />
-                        </Badge>
-                      ))}
-                      {!currentCampaign?.tags?.length && (
-                        <span className="text-sm text-muted-foreground italic">No tags added</span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add a tag..."
-                        className="h-8"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const input = e.currentTarget;
-                            const val = input.value.trim();
-                            if (val && !currentCampaign?.tags?.includes(val)) {
-                              updateTags([...(currentCampaign?.tags || []), val]);
-                              input.value = '';
-                            }
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <Button variant="outline" onClick={() => toast.info("Opening templates...")}>
+                <Palette className="w-4 h-4 mr-2" />
+                Templates
+              </Button>
+
+              <Button variant="outline" onClick={async () => {
+                try {
+                  await useEditorStore.getState().saveTemplate();
+                  toast.success("Saved as template!");
+                } catch (e) {
+                  toast.error("Failed to save template");
+                }
+              }}>
+                <Copy className="w-4 h-4 mr-2" />
+                Save as Template
+              </Button>
 
               <Button variant="outline" onClick={handleSave} disabled={isSaving}>
                 <Save className="w-4 h-4 mr-2" />
                 {isSaving ? 'Saving...' : 'Save Draft'}
               </Button>
-              <Button onClick={handleLaunch}>
+
+              <Button onClick={handleLaunch} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
                 <Rocket className="w-4 h-4 mr-2" />
                 Launch
               </Button>

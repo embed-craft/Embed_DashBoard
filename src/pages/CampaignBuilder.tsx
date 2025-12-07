@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import TemplateGallery from '@/components/campaign/TemplateGallery';
+import CampaignTemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 
 type Step = 'targeting' | 'goals' | 'design';
@@ -361,7 +361,7 @@ const CampaignBuilder: React.FC = () => {
       </div>
 
       {/* Global Modals for Campaign Builder */}
-      <TemplateGallery
+      <CampaignTemplateGallery
         isOpen={isTemplateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
         onSelectTemplate={(template) => {

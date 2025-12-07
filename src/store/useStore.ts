@@ -58,7 +58,7 @@ interface Store {
   campaigns: Campaign[];
   addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateCampaign: (id: string, campaign: Partial<Campaign>) => void;
-  deleteCampaign: (id: string) => void;
+  deleteCampaign: (id: string) => Promise<void>;
   toggleCampaignStatus: (id: string) => void;
   updateCampaignStatus: (id: string, status: 'active' | 'paused' | 'draft' | 'completed' | 'scheduled') => void;
   syncCampaigns: (campaigns: Campaign[]) => void;
@@ -169,10 +169,19 @@ export const useStore = create<Store>()(
           ),
         })),
 
-      deleteCampaign: (id) =>
-        set((state) => ({
-          campaigns: state.campaigns.filter((c) => c.id !== id),
-        })),
+      deleteCampaign: async (id) => {
+        try {
+          // Optimistically update UI
+          set((state) => ({
+            campaigns: state.campaigns.filter((c) => c.id !== id),
+          }));
+          // Call Backend
+          await apiClient.deleteCampaign(id);
+        } catch (error) {
+          console.error('Failed to delete campaign:', error);
+          // Optional: Re-fetch or revert on error (omitted for now to keep it simple)
+        }
+      },
 
       syncCampaigns: (campaigns) =>
         set(() => ({

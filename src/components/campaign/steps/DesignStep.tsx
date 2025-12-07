@@ -21,6 +21,7 @@ import { PreviewToolbar } from '@/components/editor/PreviewToolbar';
 import { DEVICE_PRESETS, DEFAULT_DEVICE_ID } from '@/lib/devicePresets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import TemplateGallery from '@/components/campaign/TemplateGallery';
+import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 
 
 
@@ -93,6 +94,8 @@ export const DesignStep: React.FC = () => {
     setEditorMode,
     isTemplateModalOpen, // ✅ FIX: Add store state
     setTemplateModalOpen, // ✅ FIX: Add store action
+    isSaveTemplateModalOpen, // ✅ FIX: Add store state
+    setSaveTemplateModalOpen, // ✅ FIX: Add store action
     enableAutoSave: startAutoSave, // Alias to avoid potential shadowing issues
   } = useEditorStore();
 
@@ -6003,8 +6006,8 @@ export const DesignStep: React.FC = () => {
 
       {/* Save Template Modal */}
       <SaveTemplateModal
-        isOpen={showSaveTemplateModal}
-        onClose={() => setShowSaveTemplateModal(false)}
+        isOpen={isSaveTemplateModalOpen}
+        onClose={() => setSaveTemplateModalOpen(false)}
         config={currentCampaign}
         nudgeType={selectedNudgeType || 'unknown'}
       />

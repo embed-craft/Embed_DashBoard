@@ -21,6 +21,11 @@ export interface BackendCampaign {
   createdAt?: string;
   updatedAt?: string;
   tags?: string[]; // ✅ FIX: Add tags
+  schedule?: {
+    start_date?: string;
+    end_date?: string;
+    timezone?: string;
+  };
   targeting?: any[]; // ✅ FIX: Add targeting
 }
 
@@ -49,11 +54,16 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
     name: campaign.name,
     type: campaign.nudgeType,
     experience: campaign.experienceType, // ✅ FIX: Send experience type
-    status: campaign.status === 'paused' ? 'inactive' : (campaign.status || 'draft'), // ✅ FIX: Map paused -> inactive
+    status: campaign.status || 'draft', // ✅ FIX: Pass status directly (active|paused|draft)
     trigger: campaign.trigger || extractTriggerFromTargeting(campaign.targeting), // ✅ FIX: Prefer direct trigger
     rules,
     targeting: campaign.targeting, // ✅ FIX: Preserve full targeting object
     tags: campaign.tags || [], // ✅ FIX: Include tags in backend payload
+    schedule: campaign.schedule ? {
+      start_date: campaign.schedule.startDate,
+      end_date: campaign.schedule.endDate,
+      timezone: campaign.schedule.timeZone
+    } : undefined, // ✅ FIX: Map to snake_case for backend
     config,
     layers: campaign.layers,
     createdAt: campaign.createdAt,
@@ -125,6 +135,11 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     layers,
     targeting,
     tags: backendCampaign.tags || [], // ✅ FIX: Restore tags from backend
+    schedule: backendCampaign.schedule ? {
+      startDate: backendCampaign.schedule.start_date,
+      endDate: backendCampaign.schedule.end_date,
+      timeZone: backendCampaign.schedule.timezone
+    } : undefined, // ✅ FIX: Map from snake_case to camelCase
     bottomSheetConfig,
     modalConfig,
     // Store other configs dynamically if needed in future
@@ -1690,9 +1705,10 @@ function extractBottomSheetConfig(config: Record<string, any>): BottomSheetConfi
  */
 function getDefaultDisplayRules(): DisplayRules {
   return {
-    frequency: { type: 'once' },
+    frequency: { type: 'every_time' },
     interactionLimit: { type: 'unlimited' },
     sessionLimit: { enabled: false },
+    overrideGlobal: false,
     priority: 50,
     platforms: ['ios', 'android'],
   };

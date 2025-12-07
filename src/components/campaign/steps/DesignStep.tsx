@@ -20,8 +20,7 @@ import { PhonePreview } from '@/components/editor/PhonePreview';
 import { PreviewToolbar } from '@/components/editor/PreviewToolbar';
 import { DEVICE_PRESETS, DEFAULT_DEVICE_ID } from '@/lib/devicePresets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { TemplateGallery } from '@/components/campaign/TemplateGallery';
-import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
+
 
 
 const colors = {
@@ -98,8 +97,7 @@ export const DesignStep: React.FC = () => {
 
   const [selectedExperience, setSelectedExperience] = useState<string | null>('nudges');
   const [selectedNudgeType, setSelectedNudgeType] = useState<string | null>(currentCampaign?.nudgeType || null);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+
   const [isCreating, setIsCreating] = useState(!!searchParams.get('experience')); // Auto-open if experience param exists
   const [filterCategory, setFilterCategory] = useState<string>('all'); // Filter state for selection view
   const [selectedExperienceType, setSelectedExperienceType] = useState<string | null>(null); // Track selected experience
@@ -122,69 +120,7 @@ export const DesignStep: React.FC = () => {
   // FIX #20: Debounce timer ref for slider inputs
   const debounceTimerRef = useRef<NodeJS.Timeout>();
 
-  const loadTemplate = (template: any) => {
-    if (!currentCampaign) return;
 
-    // Strip IDs and metadata
-    const { id, _id, createdAt, updatedAt, userId, ...templateData } = template;
-
-    // Determine nudge type (handle both backend template and system template formats)
-    const nudgeType = template.type || template.typeId || template.config?.nudgeType || currentCampaign.nudgeType;
-
-    // Map backend template structure to frontend CampaignEditor structure
-    const mappedData: any = {
-      ...templateData,
-      nudgeType,
-      layers: (template.layers && template.layers.length > 0)
-        ? template.layers
-        : getDefaultLayersForNudgeType(nudgeType),
-    };
-
-    // Map config to specific config objects based on type
-    // Map config to specific config objects based on type (Dynamic)
-    if (template.config) {
-      const type = template.type || currentCampaign.nudgeType;
-      // Convert 'bottomsheet' -> 'bottomSheetConfig', 'modal' -> 'modalConfig', etc.
-      // We assume the store keys follow the pattern `${type}Config` except for maybe casing issues if any.
-      // Current keys: bottomSheetConfig, modalConfig, floaterConfig, bannerConfig, tooltipConfig, pipConfig.
-      // Types: bottomsheet, modal, floater, banner, tooltip, pip.
-      // 'bottomsheet' needs camelCase conversion for the key.
-
-      let configKey = `${type}Config`;
-      if (type === 'bottomsheet') configKey = 'bottomSheetConfig';
-
-      mappedData[configKey] = template.config;
-    }
-
-    // Construct new campaign object merging current state with template data
-    const newCampaign = {
-      ...currentCampaign,
-      ...mappedData,
-      // Ensure we keep the CURRENT campaign ID
-      id: currentCampaign.id,
-      _id: currentCampaign._id,
-      isDirty: true,
-    };
-
-    loadCampaign(newCampaign);
-  };
-
-  // Handle Save
-  const handleSave = async () => {
-    try {
-      if (editorMode === 'template') {
-        await saveTemplate();
-      } else {
-        // FIX: Start by ensuring status is draft (user request: "save draft just dont launch")
-        updateStatus('draft');
-        await saveCampaign();
-        toast.success('Campaign saved as draft');
-      }
-    } catch (error) {
-      console.error('Failed to save:', error);
-      toast.error('Failed to save');
-    }
-  };
 
   // Handle Experience Selection
   const handleExperienceSelect = (id: string) => {
@@ -198,7 +134,7 @@ export const DesignStep: React.FC = () => {
 
     // Show template selection for bottom sheets
     if (id === 'bottomsheet') {
-      setShowTemplateModal(true);
+      useEditorStore.getState().setTemplateModalOpen(true);
     }
 
     // Create new campaign with selected nudge type
@@ -6329,219 +6265,7 @@ export const DesignStep: React.FC = () => {
             {selectedNudgeType && (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Editor Header */}
-                <div style={{
-                  height: '60px',
-                  borderBottom: `1px solid ${colors.border.default}`,
-                  backgroundColor: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0 24px',
-                  flexShrink: 0
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button
-                      onClick={() => navigate('/campaigns')}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        background: 'none',
-                        border: 'none',
-                        color: colors.text.secondary,
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <ArrowLeft size={16} />
-                      Back
-                    </button>
-                    <div style={{ width: '1px', height: '24px', backgroundColor: colors.border.default }} />
-                    <input
-                      value={currentCampaign?.name || ''}
-                      onChange={(e) => updateCampaignName(e.target.value)}
-                      placeholder="Untitled Campaign"
-                      style={{
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: colors.text.primary,
-                        border: 'none',
-                        outline: 'none',
-                        background: 'transparent',
-                        width: '300px'
-                      }}
-                    />
-                    {currentCampaign?.status && (
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: '9999px',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        marginLeft: '12px',
-                        backgroundColor: currentCampaign.status === 'active' ? '#dcfce7' :
-                          currentCampaign.status === 'draft' ? '#f3f4f6' : '#fef9c3',
-                        color: currentCampaign.status === 'active' ? '#15803d' :
-                          currentCampaign.status === 'draft' ? '#374151' : '#a16207'
-                      }}>
-                        {currentCampaign.status.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button
-                      onClick={() => setShowTemplateModal(true)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        backgroundColor: 'white',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: '6px',
-                        color: colors.text.primary,
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <LayoutGrid size={16} />
-                      Templates
-                    </button>
-                    <button
-                      onClick={() => setShowSaveTemplateModal(true)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        backgroundColor: 'white',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: '6px',
-                        color: colors.text.primary,
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Copy size={16} />
-                      Save as Template
-                    </button>
-                    {/* Update Template Button (Only if editing a template instance) */}
-                    {currentCampaign?.sourceTemplateId && (
-                      <button
-                        onClick={async () => {
-                          if (!currentCampaign.sourceTemplateId) return;
-
-                          // We need to implement update logic here or open a confirmation modal
-                          // For now, let's reuse SaveTemplateModal but with an overwrite flag?
-                          // Or simpler: Just a direct update call if we trust the user.
-                          // Let's add an "Update" mode to SaveTemplateModal or just a confirmation.
-
-                          if (window.confirm('This will overwrite the original template. Are you sure?')) {
-                            try {
-                              // Import recursively to avoid circular deps if needed, or just use api
-                              const api = await import('@/lib/api');
-                              // We need to construct the template payload
-                              const payload = {
-                                ...currentCampaign,
-                                // ensure we don't accidentally send campaign ID as template ID (though updateTemplate takes ID from url)
-                              };
-                              // However, api.updateTemplate takes (id, data).
-                              // We need to implement updateTemplate in api.ts first? 
-                              // The user previous task implementation plan said "Add updateTemplate controller method" and "PUT /admin/templates/:id".
-                              // So api.updateTemplate likely exists.
-
-                              await api.apiClient.updateTemplate(currentCampaign.sourceTemplateId, {
-                                name: currentCampaign.name,
-                                config: {
-                                  type: currentCampaign.nudgeType,
-                                  // other configs
-                                  ...((currentCampaign as any)[`${currentCampaign.nudgeType}Config`])
-                                },
-                                layers: currentCampaign.layers
-                              });
-                              toast.success('Template updated successfully');
-                            } catch (err) {
-                              console.error(err);
-                              toast.error('Failed to update template');
-                            }
-                          }
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 16px',
-                          backgroundColor: 'white',
-                          border: `1px solid ${colors.border.default}`,
-                          borderRadius: '6px',
-                          color: colors.primary[600],
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <RefreshCw size={16} />
-                        Update Template
-                      </button>
-                    )}
-                    <button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        backgroundColor: 'white',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: '6px',
-                        color: colors.text.primary,
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: isSaving ? 'not-allowed' : 'pointer',
-                        opacity: isSaving ? 0.7 : 1
-                      }}
-                    >
-                      <Save size={16} />
-                      {isSaving ? 'Saving...' : (editorMode === 'template' ? 'Save Template' : 'Save Draft')}
-                    </button>
-                    {editorMode !== 'template' && (
-                      <button
-                        onClick={async () => {
-                          if (!currentCampaign) return;
-                          try {
-                            updateStatus('active');
-                            await saveCampaign();
-                            toast.success('Campaign launched successfully!');
-                            setTimeout(() => navigate('/campaigns'), 1500);
-                          } catch (error) {
-                            toast.error('Failed to launch campaign');
-                          }
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 16px',
-                          backgroundColor: colors.primary[600],
-                          border: 'none',
-                          borderRadius: '6px',
-                          color: 'white',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                      >
-                        <Rocket size={16} />
-                        Launch
-                      </button>
-                    )}
-                  </div>
-                </div>
 
                 {/* Main Editor Area */}
                 <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>

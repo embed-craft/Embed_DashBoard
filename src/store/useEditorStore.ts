@@ -269,6 +269,7 @@ export interface TargetingRule {
   id: string;
   type: 'user_property' | 'event' | 'group';
   logic?: 'AND' | 'OR'; // For groups
+  combineWith?: string; // ✅ FIX: Add combineWith property
   children?: TargetingRule[]; // For groups
 
   // User Property Logic
@@ -373,11 +374,18 @@ export interface ModalConfig {
     color: string;
     dismissOnClick: boolean;
   };
+
   animation: {
     type: 'pop' | 'fade' | 'slide' | 'scale';
     duration: number;
     easing: string;
   };
+}
+
+export interface CampaignSchedule {
+  startDate?: string;
+  endDate?: string;
+  timeZone?: string;
 }
 
 // Template System (Phase 1)
@@ -405,6 +413,7 @@ export interface CampaignEditor {
   screen?: string; // e.g., 'home', 'product_detail', 'checkout'
   status?: 'active' | 'paused' | 'draft';
   tags?: string[]; // ✅ FIX: Add tags property
+  schedule?: CampaignSchedule; // ✅ FIX: Add schedule property
 
   layers: Layer[];
   targeting: TargetingRule[];
@@ -465,6 +474,7 @@ interface EditorStore {
   updateScreen: (screen: string) => void;
   updateCampaignName: (name: string) => void;
   updateTags: (tags: string[]) => void;
+  updateSchedule: (schedule: CampaignSchedule) => void;
   updateStatus: (status: 'active' | 'paused' | 'draft') => void;
   updateGoal: (goal: Partial<CampaignGoal>) => void;
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
@@ -498,6 +508,14 @@ interface EditorStore {
   createEvent: (event: Partial<EventDefinition>) => Promise<EventDefinition>;
   createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
   saveCampaign: () => Promise<void>;
+
+  applyTemplate: (template: any) => void;
+
+  // UI Modals
+  isTemplateModalOpen: boolean;
+  setTemplateModalOpen: (open: boolean) => void;
+  isSaveTemplateModalOpen: boolean;
+  setSaveTemplateModalOpen: (open: boolean) => void;
 
   // Template Editor Mode
   editorMode: 'campaign' | 'template';
@@ -550,6 +568,8 @@ export const useEditorStore = create<EditorStore>()(
       isSaving: false,
       saveError: null,
       editorMode: 'campaign',
+      isTemplateModalOpen: false,
+      isSaveTemplateModalOpen: false,
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
@@ -796,41 +816,52 @@ export const useEditorStore = create<EditorStore>()(
         }
       },
 
-      // Load template layers into current campaign
-      loadTemplate: (layers) => {
-        const { currentCampaign } = get();
+      setTemplateModalOpen: (open) => set({ isTemplateModalOpen: open }),
+      setSaveTemplateModalOpen: (open) => set({ isSaveTemplateModalOpen: open }),
+
+      // Apply Template Logic (Moved from DesignStep)
+      applyTemplate: (template) => {
+        const { currentCampaign, loadCampaign } = get();
         if (!currentCampaign) return;
 
-        // Validate each layer
-        const validatedLayers = layers.map(layer => {
-          const result = validateLayer(layer);
-          if (!result.isValid) {
-            console.error(`Layer ${layer.id} validation errors:`, result.errors);
-          }
-          if (result.warnings.length > 0) {
-            console.warn(`Layer ${layer.id} warnings:`, result.warnings);
-          }
-          return result.sanitized;
-        });
+        console.log('Applying template:', template.name);
 
-        // Save to history
-        const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
-        newHistory.push(validatedLayers);
+        // Strip IDs and metadata
+        const { id, _id, createdAt, updatedAt, userId, ...templateData } = template;
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: validatedLayers,
-            history: newHistory,
-            historyIndex: newHistory.length - 1,
-            selectedLayerId: layers[0]?.id || null,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+        // Determine nudge type
+        const nudgeType = template.type || template.typeId || template.config?.nudgeType || currentCampaign.nudgeType;
+
+        // Map backend template structure
+        const mappedData: any = {
+          ...templateData,
+          nudgeType,
+          layers: (template.layers && template.layers.length > 0)
+            ? template.layers
+            : getDefaultLayersForNudgeType(nudgeType),
+        };
+
+        // Map config dynamically
+        if (template.config) {
+          const type = template.type || currentCampaign.nudgeType;
+          let configKey = `${type}Config`;
+          if (type === 'bottomsheet') configKey = 'bottomSheetConfig'; // Special case for casing
+          mappedData[configKey] = template.config;
+        }
+
+        // Merge into new campaign
+        const newCampaign = {
+          ...currentCampaign,
+          ...mappedData,
+          id: currentCampaign.id,
+          _id: currentCampaign._id,
+          isDirty: true,
+        };
+
+        // Load it
+        get().loadCampaign(newCampaign);
       },
 
-      // Update campaign name
       updateCampaignName: (name) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
@@ -845,22 +876,6 @@ export const useEditorStore = create<EditorStore>()(
         });
       },
 
-      // Update tags
-      updateTags: (tags) => {
-        const { currentCampaign } = get();
-        if (!currentCampaign) return;
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            tags, // Add tags to campaign
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
-      },
-
-      // Update trigger event
       updateTrigger: (trigger) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
@@ -869,6 +884,34 @@ export const useEditorStore = create<EditorStore>()(
           currentCampaign: {
             ...currentCampaign,
             trigger,
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
+      },
+
+      updateTags: (tags) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            tags,
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
+      },
+
+      updateSchedule: (schedule) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            schedule,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -1694,20 +1737,7 @@ export const useEditorStore = create<EditorStore>()(
         });
       },
 
-      // Update goal
-      updateGoal: (goal) => {
-        const { currentCampaign } = get();
-        if (!currentCampaign) return;
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            goal: { ...currentCampaign.goal, ...goal } as CampaignGoal,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
-      },
 
       // Undo
       undo: () => {

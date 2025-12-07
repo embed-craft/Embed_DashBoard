@@ -10,7 +10,10 @@ import {
   CheckCircle2,
   Tag,
   X,
-  Copy
+  Copy,
+  Calendar,
+  Clock,
+  Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEditorStore } from '@/store/useEditorStore';
@@ -22,6 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { TemplateGallery } from '@/components/campaign/TemplateGallery';
+import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 
 type Step = 'targeting' | 'goals' | 'design';
 
@@ -29,6 +34,9 @@ const CampaignBuilder: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [activeStep, setActiveStep] = useState<Step>('targeting');
+
+  // Local state for tags input
+  const [tagInput, setTagInput] = useState('');
 
   const {
     currentCampaign,
@@ -40,8 +48,14 @@ const CampaignBuilder: React.FC = () => {
     createCampaign,
     resetCurrentCampaign,
     updateTags,
+    updateSchedule,
     editorMode,
-    setEditorMode
+    setEditorMode,
+    setTemplateModalOpen,
+    setSaveTemplateModalOpen,
+    isTemplateModalOpen,
+    isSaveTemplateModalOpen,
+    applyTemplate
   } = useEditorStore();
 
   // Mode detection: Sync store mode with URL param
@@ -58,14 +72,13 @@ const CampaignBuilder: React.FC = () => {
   // Load campaign on mount
   useEffect(() => {
     const campaignId = searchParams.get('id');
-    const experienceType = searchParams.get('experience');
     const mode = searchParams.get('mode');
 
     // Skip loading if in template mode (DesignStep handles this)
     if (mode === 'template') return;
 
     if (campaignId) {
-      // Don't reload if it's already the current campaign (prevents overwriting local drafts)
+      // Don't reload if it's already the current campaign
       if (currentCampaign?.id === campaignId) return;
       loadCampaign(campaignId);
     }
@@ -81,27 +94,22 @@ const CampaignBuilder: React.FC = () => {
     // Skip if in template mode
     if (mode === 'template') return;
 
-    // If we are in "Create New" mode (experience param exists, but NO campaign ID in URL)
+    // If we are in "Create New" mode
     if (experienceType && !campaignId) {
-      // If no nudge type is selected, we MUST reset the current campaign to show the selection screen
       if (!nudgeType) {
         if (currentCampaign) {
           resetCurrentCampaign();
         }
         setActiveStep('design');
       }
-      // If nudge type IS selected, we create the campaign (if not already created matching this type)
       else {
-        // Only create if we don't have a campaign or it's a different type/stale
-        // But simpler: just let the user create it.
-        // To avoid loops, check if currentCampaign matches the intent.
         if (!currentCampaign || currentCampaign.nudgeType !== nudgeType) {
           createCampaign(experienceType as any, nudgeType as any);
           setActiveStep('design');
         }
       }
     }
-  }, [searchParams, createCampaign, resetCurrentCampaign, currentCampaign?.nudgeType]); // Minimized dependencies
+  }, [searchParams, createCampaign, resetCurrentCampaign, currentCampaign?.nudgeType]);
 
   const handleSave = async () => {
     if (!currentCampaign) return;
@@ -125,32 +133,30 @@ const CampaignBuilder: React.FC = () => {
     }
   };
 
+  const handleAddTag = () => {
+    if (!tagInput.trim() || !currentCampaign) return;
+    const newTags = [...(currentCampaign.tags || []), tagInput.trim()];
+    updateTags(newTags);
+    setTagInput('');
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    if (!currentCampaign) return;
+    const newTags = (currentCampaign.tags || []).filter(t => t !== tagToRemove);
+    updateTags(newTags);
+  };
+
   const steps = [
     { id: 'targeting', label: 'Targeting', icon: Target },
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
     { id: 'design', label: 'Design', icon: Palette },
   ];
 
-  if (!currentCampaign && !searchParams.get('id')) {
-    // If no campaign loaded and no ID, maybe redirect or show loading
-    // But CreateCampaignModal should have created one and navigated here with ID?
-    // Actually CreateCampaignModal navigates to /campaign-builder WITHOUT ID in the previous code.
-    // I need to fix CreateCampaignModal to pass the ID, OR handle "new campaign" state here.
-    // If "new campaign", useEditorStore.currentCampaign might be set by CreateCampaignModal before navigation.
-    // Let's assume currentCampaign is set if we came from Modal.
-  }
-
-  // In Design step, show only the editor (fullscreen)
-  // if (activeStep === 'design') {
-  //   return <DesignStep />;
-  // }
-
-  // In Template Mode, show only the editor (fullscreen) - removes unused sidebar/header
+  // In Template Mode, show only the editor (fullscreen)
   if (editorMode === 'template') {
     return <DesignStep />;
   }
 
-  // For other steps, show the Campaign Builder layout with step navigation
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -164,26 +170,24 @@ const CampaignBuilder: React.FC = () => {
 
         <div className="flex-1 py-4">
           <nav className="space-y-1 px-2">
-            {steps
-              .filter(step => editorMode !== 'template' || step.id === 'design')
-              .map((step) => {
-                const Icon = step.icon;
-                const isActive = activeStep === step.id;
-                return (
-                  <button
-                    key={step.id}
-                    onClick={() => setActiveStep(step.id as Step)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted'
-                      }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {step.label}
-                    {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
-                  </button>
-                );
-              })}
+            {steps.map((step) => {
+              const Icon = step.icon;
+              const isActive = activeStep === step.id;
+              return (
+                <button
+                  key={step.id}
+                  onClick={() => setActiveStep(step.id as Step)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {step.label}
+                  {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
@@ -195,59 +199,144 @@ const CampaignBuilder: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        {/* Header - Hidden in Design step */}
-        {activeStep !== 'design' && (
-          <header className="h-16 border-b bg-card px-6 flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground mr-2" onClick={() => navigate('/campaigns')}>
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-              <div className="h-6 w-px bg-border mx-2" />
-              <Input
-                value={currentCampaign?.name || ''}
-                onChange={(e) => updateCampaignName(e.target.value)}
-                className="max-w-md font-semibold text-lg border-transparent hover:border-input focus:border-input transition-colors px-2"
-                placeholder="Untitled Campaign"
-              />
-              {currentCampaign?.status && (
-                <Badge variant="secondary" className="uppercase text-xs font-medium tracking-wide">
-                  {currentCampaign.status}
+        {/* Unified Header */}
+        <header className="h-16 border-b bg-card px-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <Input
+              value={currentCampaign?.name || ''}
+              onChange={(e) => updateCampaignName(e.target.value)}
+              className="max-w-md font-semibold text-lg border-transparent hover:border-input focus:border-input transition-colors px-2"
+              placeholder="Untitled Campaign"
+            />
+
+            {/* Tags Section */}
+            <div className="flex items-center gap-2 overflow-hidden">
+              {currentCampaign?.tags?.map(tag => (
+                <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5 whitespace-nowrap">
+                  {tag}
+                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-destructive">
+                    <X size={12} />
+                  </button>
                 </Badge>
-              )}
+              ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                    <Plus size={14} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" align="start">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add tag..."
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                    />
+                    <Button size="sm" onClick={handleAddTag}>Add</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => toast.info("Opening templates...")}>
-                <Palette className="w-4 h-4 mr-2" />
-                Templates
-              </Button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Templates Button */}
+            <Button variant="outline" size="sm" onClick={() => setTemplateModalOpen(true)}>
+              <Palette className="w-4 h-4 mr-2" />
+              Templates
+            </Button>
 
-              <Button variant="outline" onClick={async () => {
-                try {
-                  await useEditorStore.getState().saveTemplate();
-                  toast.success("Saved as template!");
-                } catch (e) {
-                  toast.error("Failed to save template");
-                }
-              }}>
-                <Copy className="w-4 h-4 mr-2" />
-                Save as Template
-              </Button>
+            {/* Save as Template */}
+            <Button variant="outline" size="sm" onClick={() => setSaveTemplateModalOpen(true)}>
+              <Copy className="w-4 h-4 mr-2" />
+              Save as Template
+            </Button>
 
-              <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-                <Save className="w-4 h-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Draft'}
-              </Button>
+            {/* Schedule Button */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant={currentCampaign?.schedule?.startDate ? "secondary" : "outline"} size="sm">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {currentCampaign?.schedule?.startDate ? 'Scheduled' : 'Schedule'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4" align="end">
+                <div className="space-y-4">
+                  <h4 className="font-medium leading-none">Campaign Schedule</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Set when this campaign should be active.
+                  </p>
 
-              <Button onClick={handleLaunch} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
-                <Rocket className="w-4 h-4 mr-2" />
-                Launch
-              </Button>
-            </div>
-          </header>
-        )}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Start Date</label>
+                    <Input
+                      type="datetime-local"
+                      value={currentCampaign?.schedule?.startDate || ''}
+                      onChange={(e) => updateSchedule({
+                        ...currentCampaign?.schedule,
+                        startDate: e.target.value
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">End Date</label>
+                    <Input
+                      type="datetime-local"
+                      value={currentCampaign?.schedule?.endDate || ''}
+                      onChange={(e) => updateSchedule({
+                        ...currentCampaign?.schedule,
+                        endDate: e.target.value
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Time Zone</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. UTC, Asia/Kolkata"
+                      value={currentCampaign?.schedule?.timeZone || ''}
+                      onChange={(e) => updateSchedule({
+                        ...currentCampaign?.schedule,
+                        timeZone: e.target.value
+                      })}
+                    />
+                  </div>
+
+                  {currentCampaign?.schedule && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-destructive hover:text-destructive"
+                      onClick={() => updateSchedule(undefined as any)}
+                    >
+                      Clear Schedule
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <div className="h-6 w-px bg-border mx-1" />
+
+            <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save Draft'}
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleLaunch}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+              disabled={isSaving}
+            >
+              <Rocket className="w-4 h-4 mr-2" />
+              Launch
+            </Button>
+          </div>
+        </header>
 
         {/* Step Content */}
         <main className="flex-1 overflow-hidden relative">
@@ -270,6 +359,21 @@ const CampaignBuilder: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* Global Modals for Campaign Builder */}
+      <TemplateGallery
+        isOpen={isTemplateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSelect={(template) => {
+          applyTemplate(template);
+          setTemplateModalOpen(false);
+          toast.success(`Applied template: ${template.name}`);
+        }}
+      />
+      <SaveTemplateModal
+        isOpen={isSaveTemplateModalOpen}
+        onClose={() => setSaveTemplateModalOpen(false)}
+      />
     </div>
   );
 };

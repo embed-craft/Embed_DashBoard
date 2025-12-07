@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { TemplateGallery } from '@/components/campaign/TemplateGallery';
+import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 
 type Step = 'targeting' | 'goals' | 'design';
@@ -364,11 +364,16 @@ const CampaignBuilder: React.FC = () => {
       <TemplateGallery
         isOpen={isTemplateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
-        onSelect={(template) => {
+        onSelectTemplate={(template) => {
           applyTemplate(template);
           setTemplateModalOpen(false);
           toast.success(`Applied template: ${template.name}`);
         }}
+        onStartBlank={() => {
+          setTemplateModalOpen(false);
+          // Already blank or handled by reset
+        }}
+        nudgeType={currentCampaign?.nudgeType}
       />
       <SaveTemplateModal
         isOpen={isSaveTemplateModalOpen}

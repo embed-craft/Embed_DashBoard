@@ -91,6 +91,8 @@ export const DesignStep: React.FC = () => {
     setPropertyTab,
     addLayer,
     setEditorMode,
+    isTemplateModalOpen, // ✅ FIX: Add store state
+    setTemplateModalOpen, // ✅ FIX: Add store action
     enableAutoSave: startAutoSave, // Alias to avoid potential shadowing issues
   } = useEditorStore();
 
@@ -5721,7 +5723,7 @@ export const DesignStep: React.FC = () => {
     // Load template layers after campaign is created
     setTimeout(() => {
       loadTemplate(template.layers);
-      setShowTemplateModal(false);
+      setTemplateModalOpen(false);
       setShowEditor(true);
       toast.success(`Template "${template.name}" loaded successfully!`);
     }, 100);
@@ -5740,7 +5742,7 @@ export const DesignStep: React.FC = () => {
       navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
     }
 
-    setShowTemplateModal(false);
+    setTemplateModalOpen(false);
     setShowEditor(true);
     toast.info('Starting with blank canvas...');
   };
@@ -5906,8 +5908,8 @@ export const DesignStep: React.FC = () => {
 
         {/* Template Gallery Modal */}
         <TemplateGallery
-          isOpen={showTemplateModal}
-          onClose={() => setShowTemplateModal(false)}
+          isOpen={isTemplateModalOpen}
+          onClose={() => setTemplateModalOpen(false)}
           onSelectTemplate={(template) => {
             // Create campaign with template
             // FIX: Use template type instead of hardcoded 'bottomsheet'
@@ -5959,9 +5961,9 @@ export const DesignStep: React.FC = () => {
 
       {/* Template Gallery */}
       <TemplateGallery
-        isOpen={showTemplateModal}
+        isOpen={isTemplateModalOpen}
         nudgeType={selectedNudgeType} // Filter templates by current type
-        onClose={() => setShowTemplateModal(false)}
+        onClose={() => setTemplateModalOpen(false)}
         onSelectTemplate={(template) => {
           // If creating new, don't confirm
           if (isCreating) {
@@ -5983,7 +5985,7 @@ export const DesignStep: React.FC = () => {
           }
         }}
         onStartBlank={() => {
-          setShowTemplateModal(false);
+          setTemplateModalOpen(false);
           if (isCreating) {
             setIsCreating(false);
             // FIX: Robustly determine nudge type
@@ -6214,7 +6216,7 @@ export const DesignStep: React.FC = () => {
 
                           {/* Browse More Templates Card */}
                           <div
-                            onClick={() => setShowTemplateModal(true)}
+                            onClick={() => setTemplateModalOpen(true)}
                             style={{ cursor: 'pointer' }}
                           >
                             <div style={{

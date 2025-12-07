@@ -20,6 +20,7 @@ import { PhonePreview } from '@/components/editor/PhonePreview';
 import { PreviewToolbar } from '@/components/editor/PreviewToolbar';
 import { DEVICE_PRESETS, DEFAULT_DEVICE_ID } from '@/lib/devicePresets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import TemplateGallery from '@/components/campaign/TemplateGallery';
 
 
 

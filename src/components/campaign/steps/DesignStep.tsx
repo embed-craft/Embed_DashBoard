@@ -199,7 +199,6 @@ export const DesignStep: React.FC = () => {
     // Show template selection for bottom sheets
     if (id === 'bottomsheet') {
       setShowTemplateModal(true);
-      return;
     }
 
     // Create new campaign with selected nudge type

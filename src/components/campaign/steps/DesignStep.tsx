@@ -5995,9 +5995,10 @@ export const DesignStep: React.FC = () => {
           onStartBlank={() => {
             // Create campaign without template
             // FIX: Use selectedNudgeType or default to modal (safer default for blank)
+            const typeToUse = selectedNudgeType || currentCampaign?.nudgeType || 'modal';
             createCampaign(
               (selectedExperience || selectedExperienceType) as any || 'nudges',
-              (selectedNudgeType as any) || 'modal'
+              typeToUse as any
             );
 
             // Navigate to editor
@@ -6047,15 +6048,15 @@ export const DesignStep: React.FC = () => {
         onStartBlank={() => {
           setShowTemplateModal(false);
           if (isCreating) {
-            // If creating, start with a blank template (no config)
-            // We need to ensure we are in the editor view
             setIsCreating(false);
-            // Default to modal if nothing selected, or keep current selection?
-            // Actually, if they clicked "Browse All", they might not have selected a type yet.
-            // But DesignStep usually forces a type selection before showing the editor.
-            // If we are here, we are likely in the "Browse All" flow.
-            // We should probably just let them proceed with the selected nudge type (or default).
-            if (!selectedNudgeType) setSelectedNudgeType('modal');
+            // FIX: Robustly determine nudge type
+            if (!selectedNudgeType) {
+              if (currentCampaign?.nudgeType) {
+                setSelectedNudgeType(currentCampaign.nudgeType);
+              } else {
+                setSelectedNudgeType('modal');
+              }
+            }
             toast.success('Started with blank canvas');
           }
         }}

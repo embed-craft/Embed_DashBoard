@@ -140,27 +140,26 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
 
                     {/* RIGHT COLUMN: SCREENSHOT */}
                     <div className="w-[400px] bg-gray-50 flex items-center justify-center p-8 relative border-l border-gray-200">
-                        {/* Phone Frame - Standard Look */}
-                        <div className="relative bg-white rounded-[24px] border-[5px] border-gray-800 shadow-xl overflow-hidden"
+                        {/* Plain Screenshot Display */}
+                        <div className="relative shadow-md border border-gray-200 bg-white"
                             style={{
-                                width: '300px',
-                                height: '100%',
                                 maxHeight: '600px',
-                                aspectRatio: '9/19.5'
+                                width: 'auto',
+                                maxWidth: '100%'
                             }}
                         >
                             {/* Screen Content */}
                             <img
                                 src={screenshotUrl}
                                 alt="Page Screenshot"
-                                className="w-full h-full object-cover"
+                                className="max-h-[600px] w-auto max-w-full object-contain"
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x600?text=No+Image';
                                 }}
                             />
 
                             {/* Overlay Count Badge */}
-                            <div className="absolute bottom-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-20 flex items-center gap-1">
+                            <div className="absolute bottom-4 right-4 bg-gray-900 text-white text-xs font-bold px-3 py-1 rounded shadow-lg z-20 flex items-center gap-1">
                                 <span>{page.elements?.length || 0} Products</span>
                             </div>
                         </div>

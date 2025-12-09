@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from '@/lib/api';
 import PageUploadModal from '@/components/pages/PageUploadModal';
+import EditPageModal from '@/components/pages/EditPageModal';
+import EditPageModal from '@/components/pages/EditPageModal';
 
 interface PageDbo {
     _id: string;
@@ -217,7 +219,7 @@ const Pages = () => {
                     </div>
 
                     <DataTable
-                        data={filteredPages}
+                        data={filteredPages.map(p => ({ ...p, id: p._id }))}
                         columns={columns}
                         emptyMessage="No pages captured yet. Scan QR code to start."
                         loading={isLoading}

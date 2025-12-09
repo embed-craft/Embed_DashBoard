@@ -47,9 +47,12 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
         // Robust base URL handling
         let baseUrl = import.meta.env.VITE_API_URL;
 
-        // If baseUrl is missing or looks like an empty protocol (e.g. "https://"), default to localhost
+        const isProd = import.meta.env.PROD;
+
+        // In DEV: Default to localhost:4000 if not set
+        // In PROD: Default to relative path ('') if not set, assuming backend is same origin
         if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') {
-            baseUrl = 'http://localhost:4000';
+            baseUrl = isProd ? '' : 'http://localhost:4000';
         }
 
         // formatting
@@ -71,6 +74,9 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
                     <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto border-r border-gray-100">
                         <DialogHeader className="px-0 pt-0 pb-2">
                             <DialogTitle>Edit Page</DialogTitle>
+                            <DialogDescription>
+                                Review page details, captured elements, and manage this screen.
+                            </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-4">
@@ -96,7 +102,7 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
                                         id="pageTag"
                                         defaultValue={page.pageTag}
                                         readOnly
-                                        className="bg-gray-50 font-mono text-sm text-purple-600 font-semibold"
+                                        className="bg-gray-50 font-mono text-sm text-gray-700 font-semibold"
                                     />
                                     <Button variant="outline" size="icon" onClick={() => copyToClipboard(page.pageTag, 'Tag')}>
                                         <Copy size={14} />
@@ -133,9 +139,9 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
                     </div>
 
                     {/* RIGHT COLUMN: SCREENSHOT */}
-                    <div className="w-[400px] bg-gray-900 flex items-center justify-center p-8 relative">
-                        {/* Phone Frame */}
-                        <div className="relative bg-black rounded-[3rem] border-8 border-gray-800 shadow-2xl overflow-hidden"
+                    <div className="w-[400px] bg-gray-50 flex items-center justify-center p-8 relative border-l border-gray-200">
+                        {/* Phone Frame - Standard Look */}
+                        <div className="relative bg-white rounded-[24px] border-[5px] border-gray-800 shadow-xl overflow-hidden"
                             style={{
                                 width: '300px',
                                 height: '100%',
@@ -143,9 +149,6 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
                                 aspectRatio: '9/19.5'
                             }}
                         >
-                            {/* Notch */}
-                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-6 bg-black rounded-b-xl z-10"></div>
-
                             {/* Screen Content */}
                             <img
                                 src={screenshotUrl}

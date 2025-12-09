@@ -83,11 +83,16 @@ const Pages = () => {
                         src={(() => {
                             const path = row.imageUrl;
                             if (!path) return '';
-                            if (path.startsWith('http')) return path;
+                            if (path?.startsWith('http')) return path;
+
                             let baseUrl = import.meta.env.VITE_API_URL;
-                            if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') baseUrl = 'http://localhost:4000';
+                            const isProd = import.meta.env.PROD;
+
+                            if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') {
+                                baseUrl = isProd ? '' : 'http://localhost:4000';
+                            }
                             baseUrl = baseUrl.replace(/\/$/, '');
-                            return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+                            return `${baseUrl}${path?.startsWith('/') ? path : `/${path}`}`;
                         })()}
                         alt="Page Preview"
                         className="w-full h-full object-cover"
@@ -102,11 +107,11 @@ const Pages = () => {
             render: (row: PageDbo) => (
                 <div>
                     <div className="font-medium text-gray-900">{row.name}</div>
-                    <div className="text-xs text-purple-600 font-mono mt-0.5 flex items-center gap-1 bg-purple-50 px-1.5 py-0.5 rounded w-fit">
+                    <div className="text-xs text-gray-600 font-mono mt-0.5 flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded w-fit border border-gray-200">
                         {row.pageTag}
                         <Copy
                             size={10}
-                            className="cursor-pointer hover:text-purple-800"
+                            className="cursor-pointer hover:text-gray-800"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 copyId(row.pageTag, 'Page Tag');
@@ -188,7 +193,7 @@ const Pages = () => {
                 subtitle="Captured app screens for visual targeting"
                 actions={
                     <Button
-                        className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                        className="gap-2 bg-gray-900 hover:bg-gray-800 text-white"
                         onClick={() => setIsUploadOpen(true)}
                     >
                         <Plus size={16} />

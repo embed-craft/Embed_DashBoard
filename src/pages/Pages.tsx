@@ -41,6 +41,7 @@ const Pages = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isUploadOpen, setIsUploadOpen] = useState(false);
+    const [selectedPage, setSelectedPage] = useState<PageDbo | null>(null);
 
     const fetchPages = async () => {
         try {
@@ -220,6 +221,7 @@ const Pages = () => {
                         columns={columns}
                         emptyMessage="No pages captured yet. Scan QR code to start."
                         loading={isLoading}
+                        onRowClick={(row) => setSelectedPage(row)}
                     />
                 </div>
             </PageContainer>
@@ -228,6 +230,16 @@ const Pages = () => {
                 open={isUploadOpen}
                 onOpenChange={setIsUploadOpen}
                 onSuccess={fetchPages}
+            />
+
+            <EditPageModal
+                open={!!selectedPage}
+                onOpenChange={(open) => !open && setSelectedPage(null)}
+                page={selectedPage}
+                onSuccess={() => {
+                    setSelectedPage(null);
+                    fetchPages();
+                }}
             />
         </div>
     );

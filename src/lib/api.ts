@@ -229,6 +229,12 @@ class ApiClient {
     return this.request(`/api/pages/poll/${encodeURIComponent(token)}`);
   }
 
+  public async deletePage(id: string): Promise<any> {
+    return this.request(`/api/pages/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ============================================================================
   // Analytics / SDK
   // ============================================================================

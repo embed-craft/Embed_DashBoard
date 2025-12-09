@@ -24,7 +24,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from '@/lib/api';
-import PageUploadModal from '@/components/pages/PageUploadModal';
 import EditPageModal from '@/components/pages/EditPageModal';
 
 interface PageDbo {

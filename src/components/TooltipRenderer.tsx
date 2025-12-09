@@ -12,6 +12,7 @@ interface TooltipRendererProps {
         rect: { x: number; y: number; width: number; height: number };
         tagName: string;
     };
+    scale?: number;
 }
 
 export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
@@ -21,7 +22,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     colors,
     config = {},
     onConfigChange,
-    targetElement
+    targetElement,
+    scale
 }) => {
     // Find the root container layer for the Tooltip
     const tooltipContainerLayer = layers.find(l => l.type === 'container' && l.name === 'Tooltip Container');
@@ -223,7 +225,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // Dynamic Positioning Logic
     if (targetElement) {
+        const currentScale = scale || 1;
         const { x, y, width, height } = targetElement.rect;
+
+        // Scale the coordinates
+        const scaledX = x * currentScale;
+        const scaledY = y * currentScale;
+        const scaledWidth = width * currentScale;
+        const scaledHeight = height * currentScale;
+
         const gap = (arrowSize || 8) + 4; // Gap for arrow + spacing
 
         // Calculate wrapper position
@@ -235,22 +245,22 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
         switch (position) {
             case 'top':
-                wrapperStyle = { ...wrapperStyle, top: `${y - gap}px`, left: `${x + width / 2}px`, transform: 'translate(-50%, -100%)' };
+                wrapperStyle = { ...wrapperStyle, top: `${scaledY - gap}px`, left: `${scaledX + scaledWidth / 2}px`, transform: 'translate(-50%, -100%)' };
                 break;
             case 'bottom':
-                wrapperStyle = { ...wrapperStyle, top: `${y + height + gap}px`, left: `${x + width / 2}px`, transform: 'translate(-50%, 0)' };
+                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight + gap}px`, left: `${scaledX + scaledWidth / 2}px`, transform: 'translate(-50%, 0)' };
                 break;
             case 'left':
-                wrapperStyle = { ...wrapperStyle, top: `${y + height / 2}px`, left: `${x - gap}px`, transform: 'translate(-100%, -50%)' };
+                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight / 2}px`, left: `${scaledX - gap}px`, transform: 'translate(-100%, -50%)' };
                 break;
             case 'right':
-                wrapperStyle = { ...wrapperStyle, top: `${y + height / 2}px`, left: `${x + width + gap}px`, transform: 'translate(0, -50%)' };
+                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight / 2}px`, left: `${scaledX + scaledWidth + gap}px`, transform: 'translate(0, -50%)' };
                 break;
             // Configurable offsets support (optional, if config.offsetX/Y exist)
             case 'center-left': // Custom positions if needed map to nearest standard
             case 'center-right':
             default:
-                wrapperStyle = { ...wrapperStyle, top: `${y + height + gap}px`, left: `${x + width / 2}px`, transform: 'translate(-50%, 0)' };
+                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight + gap}px`, left: `${scaledX + scaledWidth / 2}px`, transform: 'translate(-50%, 0)' };
         }
 
         // Apply config offsets if they exist
@@ -264,10 +274,10 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 {/* Target Highlight */}
                 <div style={{
                     position: 'absolute',
-                    left: `${x}px`,
-                    top: `${y}px`,
-                    width: `${width}px`,
-                    height: `${height}px`,
+                    left: `${scaledX}px`,
+                    top: `${scaledY}px`,
+                    width: `${scaledWidth}px`,
+                    height: `${scaledHeight}px`,
                     border: `2px dashed ${colors.primary[500]}`,
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     pointerEvents: 'none',

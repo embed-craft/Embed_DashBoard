@@ -3,6 +3,7 @@ import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api';
 import { useEditorStore, getDefaultLayersForNudgeType } from '@/store/useEditorStore';
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 import { BOTTOM_SHEET_TEMPLATES, getFeaturedTemplates } from '@/lib/bottomSheetTemplates';
@@ -35,10 +36,12 @@ const colors = {
 };
 
 const experienceTypes = [
-  { id: 'nudges', label: 'Nudges', Icon: MessageSquare, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { id: 'walkthrough', label: 'Walkthrough', Icon: Target, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { id: 'checklist', label: 'Checklist', Icon: ClipboardList, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { id: 'survey', label: 'Survey', Icon: ClipboardList, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
+  { id: 'nudges', label: 'In-app nudges', Icon: MessageSquare, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { id: 'messages', label: 'Messages', Icon: Smartphone, gradient: 'linear-gradient(135deg, #FF6B6B 0%, #556270 100%)' },
+  { id: 'stories', label: 'Stories', Icon: Film, gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  { id: 'challenges', label: 'Challenges', Icon: Target, gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+  { id: 'streaks', label: 'Streaks', Icon: Flame, gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { id: 'survey', label: 'Survey', Icon: ClipboardList, gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }
 ];
 
 const nudgeTypes = [
@@ -49,8 +52,21 @@ const nudgeTypes = [
   { id: 'pip', label: 'Picture in Picture', Icon: PictureIcon, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
   { id: 'scratchcard', label: 'Scratch Card', Icon: CreditCard, bg: '#FCE7F3', iconBg: '#F9A8D4', iconColor: '#EC4899' },
   { id: 'carousel', label: 'Story Carousel', Icon: PlayCircle, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
-  { id: 'inline', label: 'Inline Widget', Icon: Grid3x3, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' }
+  { id: 'inline', label: 'Inline Widget', Icon: Grid3x3, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
+  // New types requested
+  { id: 'spotlight', label: 'Spotlight', Icon: Zap, bg: '#F3E8FF', iconBg: '#E9D5FF', iconColor: '#A855F7' },
+  { id: 'coachmark', label: 'Coachmark', Icon: Compass, bg: '#E0F2FE', iconBg: '#BAE6FD', iconColor: '#0EA5E9' },
 ];
+
+const EXPERIENCE_MAPPING: Record<string, string[]> = {
+  'nudges': ['tooltip', 'spotlight', 'coachmark'],
+  'messages': ['modal', 'pip', 'bottomsheet', 'banner', 'scratchcard'],
+  'stories': ['carousel'],
+  // Default fallbacks for others or future types
+  'challenges': [],
+  'streaks': [],
+  'survey': []
+};
 
 export const DesignStep: React.FC = () => {
   const navigate = useNavigate();
@@ -125,6 +141,31 @@ export const DesignStep: React.FC = () => {
 
   // FIX #20: Debounce timer ref for slider inputs
   const debounceTimerRef = useRef<NodeJS.Timeout>();
+
+  // Page Feature State
+  const [pages, setPages] = useState<any[]>([]);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+
+  // Derive selected page object
+  const selectedPage = pages.find(p => p._id === selectedPageId);
+
+  // Fetch Pages on mount
+  useEffect(() => {
+    const fetchPages = async () => {
+      try {
+        const response = await apiClient.listPages();
+        setPages(response.pages);
+      } catch (error) {
+        console.error('Failed to fetch pages:', error);
+      }
+    };
+    fetchPages();
+  }, []);
+
+  useEffect(() => {
+    // Sync Selected Page to Campaign Config (If needed)
+    // currently we just use it for local preview context
+  }, [selectedPageId]);
 
 
 
@@ -5851,6 +5892,28 @@ export const DesignStep: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto space-y-8">
+            {/* Target Page Context Selection (New Feature) */}
+            {!searchParams.get('experience') && (
+              <section className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Target Page Context</h2>
+                <p className="text-sm text-gray-500 mb-4">Select an App Screen to visualize and target specific elements.</p>
+                <div className="w-full max-w-md">
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    value={selectedPageId || ''}
+                    onChange={(e) => setSelectedPageId(e.target.value)}
+                  >
+                    <option value="">-- Select an App Screen --</option>
+                    {pages.map((page) => (
+                      <option key={page._id} value={page._id}>
+                        {page.name} ({page.pageTag})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </section>
+            )}
+
             {/* Experience Selection */}
             {/* Experience Selection - Only show if not pre-selected via URL */}
             {!searchParams.get('experience') && (
@@ -5883,26 +5946,36 @@ export const DesignStep: React.FC = () => {
             )}
 
             {/* Nudge Type Selection (Only if Nudges is selected) */}
-            {(selectedExperience === 'nudges' || !selectedExperience) && (
+            {/* Nudge Type Selection - Show for ANY experience that has mapped types */}
+            {(selectedExperience && EXPERIENCE_MAPPING[selectedExperience]) && (
               <section>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Nudge Type</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {nudgeTypes.map((type) => (
-                    <div
-                      key={type.id}
-                      onClick={() => handleNudgeTypeSelect(type.id)}
-                      className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
-                    >
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {nudgeTypes
+                    .filter(type => {
+                      // FIX: Filter based on selected experience mapping
+                      if (!selectedExperience) return false;
+                      const allowedTypes = EXPERIENCE_MAPPING[selectedExperience];
+                      // If no explicit mapping, show none or all? User requested strict mapping.
+                      // If allowedTypes is undefined (e.g. unknown experience), show nothing.
+                      return allowedTypes?.includes(type.id);
+                    })
+                    .map((type) => (
                       <div
-                        className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                        style={{ backgroundColor: type.bg, color: type.iconColor }}
+                        key={type.id}
+                        onClick={() => handleNudgeTypeSelect(type.id)}
+                        className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
                       >
-                        <type.Icon size={24} />
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
+                          style={{ backgroundColor: type.bg, color: type.iconColor }}
+                        >
+                          <type.Icon size={24} />
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
+                        <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
                       </div>
-                      <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                      <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </section>
             )}
@@ -6445,6 +6518,8 @@ export const DesignStep: React.FC = () => {
                         device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
                         zoom={previewZoom}
                         showGrid={showGrid}
+                        backgroundUrl={selectedPage?.imageUrl}
+                        pageContext={selectedPage}
                       >
                         {renderCanvasPreview()}
                       </PhonePreview>

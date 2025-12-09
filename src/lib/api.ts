@@ -213,6 +213,23 @@ class ApiClient {
   }
 
   // ============================================================================
+  // Pages (Page Feature)
+  // ============================================================================
+  public async listPages(): Promise<{ pages: any[] }> {
+    return this.request('/api/pages');
+  }
+
+  public async createPageSession(): Promise<{ token: string; deepLink: string }> {
+    return this.request('/api/pages/session', {
+      method: 'POST',
+    });
+  }
+
+  public async pollPageStatus(token: string): Promise<{ status: string; pageId?: string }> {
+    return this.request(`/api/pages/poll/${encodeURIComponent(token)}`);
+  }
+
+  // ============================================================================
   // Analytics / SDK
   // ============================================================================
 

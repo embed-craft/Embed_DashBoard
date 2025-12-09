@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { theme } from '@/styles/design-tokens';
 import { toast } from 'sonner';
 import {
@@ -9,114 +9,139 @@ import {
     Trash2,
     ExternalLink,
     FileText,
-    Globe
+    Smartphone,
+    RefreshCw
 } from 'lucide-react';
-import { useStore } from '@/store/useStore';
 import PageHeader from '@/components/layout/PageHeader';
 import PageContainer from '@/components/layout/PageContainer';
 import DataTable from '@/components/shared/DataTable';
 import SearchInput from '@/components/shared/SearchInput';
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { apiClient } from '@/lib/api';
+import PageUploadModal from '@/components/pages/PageUploadModal';
+
+interface PageDbo {
+    _id: string;
+    name: string;
+    pageTag: string;
+    imageUrl: string;
+    elements: any[];
+    deviceMetadata: any;
+    createdAt: string;
+}
 
 const Pages = () => {
-    const { pages, addPage, deletePage } = useStore();
+    const [pages, setPages] = useState<PageDbo[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [newPage, setNewPage] = useState({ name: '', url: '' });
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-    const handleCreate = () => {
-        if (!newPage.name || !newPage.url) {
-            toast.error('Please fill in all fields');
-            return;
+    const fetchPages = async () => {
+        try {
+            setIsLoading(true);
+            const res = await apiClient.listPages();
+            setPages(res.pages || []);
+        } catch (error) {
+            console.error('Failed to fetch pages', error);
+        } finally {
+            setIsLoading(false);
         }
-        addPage(newPage);
-        setNewPage({ name: '', url: '' });
-        setIsCreateOpen(false);
-        toast.success('Page created successfully');
     };
 
-    const handleDelete = (id: string) => {
-        deletePage(id);
-        toast.success('Page deleted');
-    };
+    useEffect(() => {
+        fetchPages();
+    }, []);
 
-    const copyId = (id: string) => {
+    const copyId = (id: string, text: string = 'ID') => {
         navigator.clipboard.writeText(id);
-        toast.success('ID copied to clipboard');
+        toast.success(`\${text} copied`);
     };
 
     const filteredPages = pages.filter(page =>
-        page.name.toLowerCase().includes(searchQuery.toLowerCase())
+        page.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        page.pageTag.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const columns = [
         {
+            key: 'preview',
+            header: 'Preview',
+            width: '10%',
+            render: (row: PageDbo) => (
+                <div className="h-16 w-10 bg-gray-100 rounded overflow-hidden border border-gray-200">
+                    {/* Use backend URL (prepend if relative) */}
+                    <img
+                        src={row.imageUrl.startsWith('http') ? row.imageUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${row.imageUrl}`}
+                        alt="Page Preview"
+                        className="w-full h-full object-cover"
+                    />
+                </div>
+            )
+        },
+        {
             key: 'name',
-            header: 'Name',
-            width: '40%',
-            render: (row: any) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-                        <FileText size={20} />
-                    </div>
-                    <div>
-                        <div className="font-medium text-gray-900">{row.name}</div>
-                        <div className="text-xs text-gray-500 font-mono mt-0.5 flex items-center gap-1">
-                            {row.id}
-                            <Copy
-                                size={10}
-                                className="cursor-pointer hover:text-purple-600"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    copyId(row.id);
-                                }}
-                            />
-                        </div>
+            header: 'Page Name & Tag',
+            width: '35%',
+            render: (row: PageDbo) => (
+                <div>
+                    <div className="font-medium text-gray-900">{row.name}</div>
+                    <div className="text-xs text-purple-600 font-mono mt-0.5 flex items-center gap-1 bg-purple-50 px-1.5 py-0.5 rounded w-fit">
+                        {row.pageTag}
+                        <Copy
+                            size={10}
+                            className="cursor-pointer hover:text-purple-800"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                copyId(row.pageTag, 'Page Tag');
+                            }}
+                        />
                     </div>
                 </div>
             )
         },
         {
-            key: 'createdAt',
-            header: 'Created at',
-            width: '25%',
-            render: (row: any) => (
-                <span className="text-sm text-gray-500">
-                    {new Date(row.createdAt).toLocaleString()}
+            key: 'elements',
+            header: 'Elements',
+            width: '15%',
+            render: (row: PageDbo) => (
+                <span className="text-sm text-gray-600 flex items-center gap-1">
+                    <FileText size={14} />
+                    {row.elements?.length || 0} Targets
                 </span>
             )
         },
         {
-            key: 'updatedAt',
-            header: 'Updated at',
-            width: '25%',
-            render: (row: any) => (
+            key: 'device',
+            header: 'Device',
+            width: '15%',
+            render: (row: PageDbo) => (
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                    <Smartphone size={14} />
+                    {row.deviceMetadata?.deviceType || 'Phone'}
+                </span>
+            )
+        },
+        {
+            key: 'createdAt',
+            header: 'Captured',
+            width: '20%',
+            render: (row: PageDbo) => (
                 <span className="text-sm text-gray-500">
-                    {new Date(row.updatedAt).toLocaleString()}
+                    {new Date(row.createdAt).toLocaleDateString()}
                 </span>
             )
         },
         {
             key: 'actions',
             header: '',
-            width: '10%',
-            render: (row: any) => (
+            width: '5%',
+            render: (row: PageDbo) => (
                 <div className="flex justify-end">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -125,21 +150,19 @@ const Pages = () => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => copyId(row.id)}>
+                            <DropdownMenuItem onClick={() => copyId(row.pageTag, 'Page Tag')}>
                                 <Copy className="mr-2 h-4 w-4" />
-                                Copy ID
+                                Copy Tag
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.open(row.url, '_blank')}>
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                Visit URL
-                            </DropdownMenuItem>
+                            {/* 
                             <DropdownMenuItem
                                 className="text-red-600 focus:text-red-600"
-                                onClick={() => handleDelete(row.id)}
+                                onClick={() => handleDelete(row._id)}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> 
+                            */}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -148,48 +171,18 @@ const Pages = () => {
     ];
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: theme.colors.gray[50] }}>
+        <div style={{ minHeight: '100vh', backgroundColor: theme.colors.background.page }}>
             <PageHeader
                 title="Pages"
-                subtitle="Manage your application pages"
+                subtitle="Captured app screens for visual targeting"
                 actions={
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="gap-2 bg-purple-600 hover:bg-purple-700 text-white">
-                                <Plus size={16} />
-                                New Page
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Create New Page</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Page Name</Label>
-                                    <Input
-                                        id="name"
-                                        placeholder="e.g., Home Page"
-                                        value={newPage.name}
-                                        onChange={(e) => setNewPage({ ...newPage, name: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="url">Page URL / Path</Label>
-                                    <Input
-                                        id="url"
-                                        placeholder="e.g., /home"
-                                        value={newPage.url}
-                                        onChange={(e) => setNewPage({ ...newPage, url: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                                <Button onClick={handleCreate} className="bg-purple-600 hover:bg-purple-700">Create Page</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => setIsUploadOpen(true)}
+                    >
+                        <Plus size={16} />
+                        Capture New Page
+                    </Button>
                 }
             />
 
@@ -199,7 +192,8 @@ const Pages = () => {
                     borderRadius: theme.borderRadius.lg,
                     border: `1px solid ${theme.colors.border.default}`,
                     boxShadow: theme.shadows.sm,
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    minHeight: '400px'
                 }}>
                     <div style={{
                         padding: '16px 24px',
@@ -211,20 +205,30 @@ const Pages = () => {
                     }}>
                         <div style={{ width: '300px' }}>
                             <SearchInput
-                                placeholder="Search Page.."
+                                placeholder="Search by name or tag..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
+                        <Button variant="ghost" size="sm" onClick={fetchPages}>
+                            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                        </Button>
                     </div>
 
                     <DataTable
                         data={filteredPages}
                         columns={columns}
-                        emptyMessage="No pages found. Create one to get started."
+                        emptyMessage="No pages captured yet. Scan QR code to start."
+                        loading={isLoading}
                     />
                 </div>
             </PageContainer>
+
+            <PageUploadModal
+                open={isUploadOpen}
+                onOpenChange={setIsUploadOpen}
+                onSuccess={fetchPages}
+            />
         </div>
     );
 };

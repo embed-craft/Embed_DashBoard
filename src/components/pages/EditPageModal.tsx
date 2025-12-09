@@ -39,9 +39,28 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ open, onOpenChange, page,
     };
 
     // Determine Screenshot URL
-    const screenshotUrl = page.imageUrl?.startsWith('http')
-        ? page.imageUrl
-        : `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${page.imageUrl}`;
+    // Helper to constructing safe image URL
+    const getImageUrl = (path: string) => {
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+
+        // Robust base URL handling
+        let baseUrl = import.meta.env.VITE_API_URL;
+
+        // If baseUrl is missing or looks like an empty protocol (e.g. "https://"), default to localhost
+        if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') {
+            baseUrl = 'http://localhost:4000';
+        }
+
+        // formatting
+        baseUrl = baseUrl.replace(/\/$/, ''); // remove trailing slash
+        const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+        return `${baseUrl}${cleanPath}`;
+    };
+
+    const screenshotUrl = getImageUrl(page.imageUrl);
+    console.log('DEBUG: Image URL:', screenshotUrl, 'Raw:', page.imageUrl);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

@@ -796,8 +796,12 @@ export const DesignStep: React.FC = () => {
       case 'tooltip':
         const device = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
         const deviceMeta = selectedPage?.deviceMetadata || { width: 1080, height: 1920 };
+
         const previewWidth = device.width * previewZoom;
-        const widthScale = previewWidth / deviceMeta.width;
+        const previewHeight = device.height * previewZoom;
+
+        const scaleX = previewWidth / deviceMeta.width;
+        const scaleY = previewHeight / deviceMeta.height;
 
         return (
           <TooltipRenderer
@@ -808,7 +812,8 @@ export const DesignStep: React.FC = () => {
             config={currentCampaign?.tooltipConfig}
             onConfigChange={(config) => updateTooltipConfig(config)}
             targetElement={selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)}
-            scale={widthScale}
+            scaleX={scaleX}
+            scaleY={scaleY}
           />
         );
 

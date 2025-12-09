@@ -12,7 +12,8 @@ interface TooltipRendererProps {
         rect: { x: number; y: number; width: number; height: number };
         tagName: string;
     };
-    scale?: number;
+    scaleX?: number;
+    scaleY?: number;
 }
 
 export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
@@ -23,7 +24,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     config = {},
     onConfigChange,
     targetElement,
-    scale
+    scaleX,
+    scaleY
 }) => {
     // Find the root container layer for the Tooltip
     const tooltipContainerLayer = layers.find(l => l.type === 'container' && l.name === 'Tooltip Container');
@@ -225,14 +227,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // Dynamic Positioning Logic
     if (targetElement) {
-        const currentScale = scale || 1;
+        const currentScaleX = scaleX || 1;
+        const currentScaleY = scaleY || 1;
         const { x, y, width, height } = targetElement.rect;
 
         // Scale the coordinates
-        const scaledX = x * currentScale;
-        const scaledY = y * currentScale;
-        const scaledWidth = width * currentScale;
-        const scaledHeight = height * currentScale;
+        const scaledX = x * currentScaleX;
+        const scaledY = y * currentScaleY;
+        const scaledWidth = width * currentScaleX;
+        const scaledHeight = height * currentScaleY;
 
         const gap = (arrowSize || 8) + 4; // Gap for arrow + spacing
 

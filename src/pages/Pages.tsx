@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import PageContainer from '@/components/layout/PageContainer';
-import DataTable from '@/components/shared/DataTable';
+import DataTable, { Column } from '@/components/shared/DataTable';
 import SearchInput from '@/components/shared/SearchInput';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from '@/lib/api';
+import PageUploadModal from '@/components/pages/PageUploadModal';
 import EditPageModal from '@/components/pages/EditPageModal';
 
 interface PageDbo {
@@ -35,6 +36,8 @@ interface PageDbo {
     deviceMetadata: any;
     createdAt: string;
 }
+
+type PageRow = PageDbo & { id: string };
 
 const Pages = () => {
     const [pages, setPages] = useState<PageDbo[]>([]);
@@ -69,7 +72,7 @@ const Pages = () => {
         page.pageTag.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const columns = [
+    const columns: Column<PageRow>[] = [
         {
             key: 'preview',
             header: 'Preview',
@@ -78,13 +81,13 @@ const Pages = () => {
                 <div className="h-16 w-10 bg-gray-100 rounded overflow-hidden border border-gray-200">
                     <img
                         src={(() => {
-                           const path = row.imageUrl;
-                           if (!path) return '';
-                           if (path.startsWith('http')) return path;
-                           let baseUrl = import.meta.env.VITE_API_URL;
-                           if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') baseUrl = 'http://localhost:4000';
-                           baseUrl = baseUrl.replace(/\/$/, '');
-                           return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+                            const path = row.imageUrl;
+                            if (!path) return '';
+                            if (path.startsWith('http')) return path;
+                            let baseUrl = import.meta.env.VITE_API_URL;
+                            if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') baseUrl = 'http://localhost:4000';
+                            baseUrl = baseUrl.replace(/\/$/, '');
+                            return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
                         })()}
                         alt="Page Preview"
                         className="w-full h-full object-cover"
@@ -139,7 +142,7 @@ const Pages = () => {
             key: 'createdAt',
             header: 'Captured',
             width: '20%',
-            render: (row: PageDbo) => (
+            render: (row) => (
                 <span className="text-sm text-gray-500">
                     {new Date(row.createdAt).toLocaleDateString()}
                 </span>
@@ -227,8 +230,8 @@ const Pages = () => {
                         data={filteredPages.map(p => ({ ...p, id: p._id }))}
                         columns={columns}
                         emptyMessage="No pages captured yet. Scan QR code to start."
-                        loading={isLoading}
-                        onRowClick={(row) => setSelectedPage(row)}
+                        isLoading={isLoading}
+                        onRowClick={(row: PageRow) => setSelectedPage(row)}
                     />
                 </div>
             </PageContainer>

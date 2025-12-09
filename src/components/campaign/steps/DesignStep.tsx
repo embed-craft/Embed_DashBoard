@@ -802,6 +802,7 @@ export const DesignStep: React.FC = () => {
             colors={colors}
             config={currentCampaign?.tooltipConfig}
             onConfigChange={(config) => updateTooltipConfig(config)}
+            targetElement={selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)}
           />
         );
 
@@ -2798,16 +2799,26 @@ export const DesignStep: React.FC = () => {
 
             {/* Element Selection */}
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Element ID</label>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Element</label>
               <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  value={config.targetElementId || ''}
-                  onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)}
-                  placeholder="e.g. home_profile_button"
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'monospace' }}
-                />
-                {/* TODO: Add dropdown if we can fetch elements for the selected page */}
+                {selectedPage && selectedPage.elements && selectedPage.elements.length > 0 ? (
+                  <select
+                    value={config.targetElementId || ''}
+                    onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                  >
+                    <option value="">Select an element...</option>
+                    {selectedPage.elements.map((el: any) => (
+                      <option key={el.id} value={el.id}>
+                        {el.id} {el.tagName ? `(${el.tagName})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={{ padding: '8px 12px', border: `1px dashed ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', color: colors.text.secondary, background: colors.gray[50] }}>
+                    {selectedPage ? 'No elements found on this page' : 'Select a page first'}
+                  </div>
+                )}
               </div>
               <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
                 Enter the ID of the EmbedWidgetWrapper in your app.

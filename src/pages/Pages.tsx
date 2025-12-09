@@ -26,7 +26,6 @@ import {
 import { apiClient } from '@/lib/api';
 import PageUploadModal from '@/components/pages/PageUploadModal';
 import EditPageModal from '@/components/pages/EditPageModal';
-import EditPageModal from '@/components/pages/EditPageModal';
 
 interface PageDbo {
     _id: string;
@@ -78,24 +77,18 @@ const Pages = () => {
             width: '10%',
             render: (row: PageDbo) => (
                 <div className="h-16 w-10 bg-gray-100 rounded overflow-hidden border border-gray-200">
-                    {/* Use backend URL (prepend if relative) */}
-                    {/* Use backend URL (prepend if relative) */}
                     <img
-                        return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
-                        }}
-                    // Self-invoking function hack for JSX inline or just use logic:
-                    src={
-                        row.imageUrl.startsWith('http')
-                            ? row.imageUrl
-                            : (() => {
-                                let baseUrl = import.meta.env.VITE_API_URL;
-                                if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') baseUrl = 'http://localhost:4000';
-                                baseUrl = baseUrl.replace(/\/$/, '');
-                                return `${baseUrl}${row.imageUrl.startsWith('/') ? row.imageUrl : `/${row.imageUrl}`}`;
-                            })()
-                    }
-                    alt="Page Preview"
-                    className="w-full h-full object-cover"
+                        src={(() => {
+                           const path = row.imageUrl;
+                           if (!path) return '';
+                           if (path.startsWith('http')) return path;
+                           let baseUrl = import.meta.env.VITE_API_URL;
+                           if (!baseUrl || baseUrl === 'https://' || baseUrl === 'http://') baseUrl = 'http://localhost:4000';
+                           baseUrl = baseUrl.replace(/\/$/, '');
+                           return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+                        })()}
+                        alt="Page Preview"
+                        className="w-full h-full object-cover"
                     />
                 </div>
             )

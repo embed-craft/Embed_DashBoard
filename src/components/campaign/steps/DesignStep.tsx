@@ -162,7 +162,11 @@ export const DesignStep: React.FC = () => {
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   // Derive selected page object
-  const selectedPage = pages.find(p => p._id === selectedPageId);
+  const activePageId = selectedNudgeType === 'tooltip' && currentCampaign?.tooltipConfig?.targetPageId
+    ? currentCampaign.tooltipConfig.targetPageId
+    : selectedPageId;
+
+  const selectedPage = pages.find(p => p._id === activePageId);
 
   // Fetch Pages on mount
   useEffect(() => {

@@ -2242,6 +2242,55 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
         },
       ];
 
+    case 'tooltip':
+      return [
+        {
+          id: `layer_${baseId}`,
+          type: 'container',
+          name: 'Tooltip Container',
+          parent: null,
+          children: [`layer_${baseId + 1}`],
+          visible: true,
+          locked: false,
+          zIndex: 0,
+          position: { x: 0, y: 0 },
+          size: { width: 'auto', height: 'auto' },
+          content: {},
+          style: {
+            backgroundColor: '#111827',
+            borderRadius: 8,
+            padding: { top: 8, right: 12, bottom: 8, left: 12 },
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        },
+        {
+          id: `layer_${baseId + 1}`,
+          type: 'text',
+          name: 'Tooltip Text',
+          parent: `layer_${baseId}`,
+          children: [],
+          visible: true,
+          locked: false,
+          zIndex: 1,
+          position: { x: 0, y: 0 },
+          size: { width: 'auto', height: 'auto' },
+          content: {
+            text: 'This is a tooltip',
+            fontSize: 14,
+            fontWeight: 'medium',
+            textColor: '#FFFFFF',
+            textAlign: 'center',
+          },
+          style: {
+            padding: 0,
+            margin: 0,
+          },
+        },
+      ];
+
     case 'floater':
       return [
         {

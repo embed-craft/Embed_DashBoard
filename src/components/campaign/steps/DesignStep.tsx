@@ -144,6 +144,21 @@ export const DesignStep: React.FC = () => {
 
   // Page Feature State
   const [pages, setPages] = useState<any[]>([]);
+
+  // Fetch pages on mount
+  useEffect(() => {
+    const fetchPages = async () => {
+      try {
+        const response = await apiClient.listPages();
+        if (response && response.pages) {
+          setPages(response.pages);
+        }
+      } catch (error) {
+        console.error('Failed to fetch pages:', error);
+      }
+    };
+    fetchPages();
+  }, []);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   // Derive selected page object
@@ -717,7 +732,6 @@ export const DesignStep: React.FC = () => {
     }
 
     switch (nudgeTypeToRender) {
-      case 'tooltip':
       case 'bottomsheet':
         // Extract maxHeight from bottom sheet container to pass to renderer
         const bottomSheetContainerLayer = campaignLayers.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
@@ -1089,7 +1103,13 @@ export const DesignStep: React.FC = () => {
 
   // Render properties based on layer type
   const renderLayerProperties = () => {
-    if (!selectedLayerObj) return null;
+    if (!selectedLayerObj) {
+      // Show global config for specific nudge types when no layer is selected
+      if (selectedNudgeType === 'tooltip') return renderTooltipConfig();
+      if (selectedNudgeType === 'pip') return renderPipConfig();
+      if (selectedNudgeType === 'bottomsheet') return renderBottomSheetConfig();
+      return null;
+    }
 
     // Check if layer is locked (Phase A - Fix 1)
     if (selectedLayerObj.locked) {
@@ -2731,6 +2751,218 @@ export const DesignStep: React.FC = () => {
     };
 
     // Floater Configuration
+    // Tooltip Configuration
+    const renderTooltipConfig = () => {
+      if (selectedNudgeType !== 'tooltip') return null;
+
+      const config = currentCampaign?.tooltipConfig || {};
+
+      const handleTooltipUpdate = (field: string, value: any) => {
+        updateTooltipConfig({ [field]: value });
+      };
+
+      // Show tooltip config when:
+      // 1. Tooltip container is selected
+      // 2. No layer is selected
+      const isTooltipContainer = selectedLayerObj?.type === 'container' && selectedLayerObj?.name === 'Tooltip Container';
+      const shouldShowFullConfig = !selectedLayerObj || isTooltipContainer;
+
+      if (!shouldShowFullConfig) return null;
+
+      return (
+        <>
+          {/* Target Selection */}
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🎯 Target
+            </h5>
+
+            {/* Page Selection */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Page</label>
+              <select
+                value={config.targetPageId || ''}
+                onChange={(e) => handleTooltipUpdate('targetPageId', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+              >
+                <option value="">Select a page...</option>
+                {pages.map(page => (
+                  <option key={page._id} value={page._id}>{page.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Element Selection */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Element ID</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={config.targetElementId || ''}
+                  onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)}
+                  placeholder="e.g. home_profile_button"
+                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'monospace' }}
+                />
+                {/* TODO: Add dropdown if we can fetch elements for the selected page */}
+              </div>
+              <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
+                Enter the ID of the EmbedWidgetWrapper in your app.
+              </div>
+            </div>
+
+            {/* Position */}
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Position</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {['top', 'bottom', 'left', 'right'].map((pos) => (
+                  <button
+                    key={pos}
+                    onClick={() => handleTooltipUpdate('position', pos)}
+                    style={{
+                      padding: '8px',
+                      border: `1px solid ${config.position === pos ? colors.primary[500] : colors.border.default}`,
+                      borderRadius: '6px',
+                      background: config.position === pos ? colors.primary[50] : 'white',
+                      color: config.position === pos ? colors.primary[600] : colors.text.secondary,
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      textTransform: 'capitalize'
+                    }}
+                  >
+                    {pos}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance */}
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🎨 Appearance
+            </h5>
+
+            {/* Roundness */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
+              <input
+                type="range"
+                min="0"
+                max="24"
+                value={config.roundness || 8}
+                onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
+            </div>
+
+            {/* Padding */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
+              <input
+                type="range"
+                min="0"
+                max="32"
+                value={config.padding || 12}
+                onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
+            </div>
+          </div>
+
+          {/* Overlay & Highlight */}
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🎭 Overlay & Highlight
+            </h5>
+
+            {/* Overlay Color */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Color</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={config.overlayColor || '#000000'}
+                  onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={config.overlayColor || '#000000'}
+                  onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Overlay Opacity */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Opacity</label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={config.overlayOpacity ?? 0.5}
+                onChange={(e) => handleTooltipUpdate('overlayOpacity', parseFloat(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.overlayOpacity ?? 0.5) * 100)}%</div>
+            </div>
+
+            {/* Target Highlight Color */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Color</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={config.targetHighlightColor || '#FFFFFF'}
+                  onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
+                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={config.targetHighlightColor || '#FFFFFF'}
+                  onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
+                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Target Padding */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Padding</label>
+              <input
+                type="range"
+                min="0"
+                max="24"
+                value={config.targetHighlightPadding || 4}
+                onChange={(e) => handleTooltipUpdate('targetHighlightPadding', parseInt(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetHighlightPadding || 4}px</div>
+            </div>
+
+            {/* Target Roundness */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Roundness</label>
+              <input
+                type="range"
+                min="0"
+                max="50"
+                value={config.targetRoundness || 4}
+                onChange={(e) => handleTooltipUpdate('targetRoundness', parseInt(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetRoundness || 4}px</div>
+            </div>
+          </div>
+        </>
+      );
+    };
+
     const renderFloaterConfig = () => {
       if (selectedNudgeType !== 'floater') return null;
 
@@ -5335,6 +5567,7 @@ export const DesignStep: React.FC = () => {
           {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
           {selectedLayerObj.name === 'Bottom Sheet' && renderBottomSheetConfig()}
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
+          {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
           <div style={{ marginBottom: '20px' }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Container Properties</h5>
 

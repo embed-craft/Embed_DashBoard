@@ -202,7 +202,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 position: 'relative',
                 maxWidth: '250px',
                 minWidth: '120px',
-                boxShadow: config.boxShadow !== undefined ? config.boxShadow : (mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)'),
+                boxShadow: boxShadow,
                 width: 'max-content',
                 ...containerStyle,
                 // Override container position if target provided, handled by wrapper

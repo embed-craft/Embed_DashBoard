@@ -37,7 +37,22 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const imageUrl = config.imageUrl;
 
     const position = config.position || 'bottom'; // top, bottom, left, right
-    const backgroundColor = config.backgroundColor !== undefined ? config.backgroundColor : (mode === 'image' ? 'transparent' : '#1F2937');
+
+
+    // Smart Defaults: Use transparent/none for Image Mode unless user EXPLICITLY sets a non-default value.
+    const defaultBg = '#1F2937';
+    const defaultShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+
+    let backgroundColor = config.backgroundColor || defaultBg;
+    if (mode === 'image' && backgroundColor === defaultBg) {
+        backgroundColor = 'transparent';
+    }
+
+    let boxShadow = config.boxShadow !== undefined ? config.boxShadow : defaultShadow;
+    if (mode === 'image' && boxShadow === defaultShadow) {
+        boxShadow = 'none';
+    }
+
     const borderRadius = config.borderRadius || 8;
     const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;

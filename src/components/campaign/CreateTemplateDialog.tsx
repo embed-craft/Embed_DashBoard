@@ -58,7 +58,7 @@ export const CreateTemplateDialog: React.FC<CreateTemplateDialogProps> = ({
                 category,
                 tags: [],
                 type,
-                type,
+
                 config: { type }, // ✅ FIX: Save type in config as Nudge schema expects it there
                 layers: [], // Empty layers
                 thumbnail: '🎨',

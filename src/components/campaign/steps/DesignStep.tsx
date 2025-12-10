@@ -807,28 +807,17 @@ export const DesignStep: React.FC = () => {
         const scaleY = previewHeight / (deviceMeta.height * density);
 
         return (
-          <>
-            <TooltipRenderer
-              layers={campaignLayers}
-              selectedLayerId={selectedLayerId}
-              onLayerSelect={selectLayer}
-              colors={colors}
-              config={currentCampaign?.tooltipConfig}
-              onConfigChange={(config) => updateTooltipConfig(config)}
-              targetElement={selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)}
-              scaleX={scaleX}
-              scaleY={scaleY}
-            />
-            <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.8)', color: 'lime', fontSize: '10px', padding: 5, zIndex: 9999, pointerEvents: 'none' }}>
-              DEBUG INFO:<br />
-              TargetID: {currentCampaign?.tooltipConfig?.targetElementId}<br />
-              Found Element: {selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)?.tagName || 'NONE'}<br />
-              Rect: {JSON.stringify(selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)?.rect || {})}<br />
-              DeviceMeta: {JSON.stringify(deviceMeta)}<br />
-              Preview: {previewWidth.toFixed(0)} x {previewHeight.toFixed(0)}<br />
-              Scale: {scaleX.toFixed(3)} x {scaleY.toFixed(3)}
-            </div>
-          </>
+          <TooltipRenderer
+            layers={campaignLayers}
+            selectedLayerId={selectedLayerId}
+            onLayerSelect={selectLayer}
+            colors={colors}
+            config={currentCampaign?.tooltipConfig}
+            onConfigChange={(config) => updateTooltipConfig(config)}
+            targetElement={selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)}
+            scaleX={scaleX}
+            scaleY={scaleY}
+          />
         );
 
       case 'pip':
@@ -5644,6 +5633,8 @@ export const DesignStep: React.FC = () => {
                 <option value="Inter">Inter (Default)</option>
                 <option value="Roboto">Roboto</option>
                 <option value="Poppins">Poppins</option>
+                <option value="Caveat">Caveat (Handwritten)</option>
+                <option value="Dancing Script">Dancing Script (Cursive)</option>
                 <option value="serif">Serif</option>
                 <option value="monospace">Monospace</option>
               </select>
@@ -6615,7 +6606,12 @@ export const DesignStep: React.FC = () => {
             {/* Design Tab - Editor (Screenshot 9) */}
             {/* Design Tab - Editor (Screenshot 9) */}
             {selectedNudgeType && (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: colors.background }}>
+                <style>
+                  {`
+                    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap');
+                  `}
+                </style>
                 {/* Editor Header */}
 
 

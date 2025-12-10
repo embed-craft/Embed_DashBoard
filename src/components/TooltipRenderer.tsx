@@ -33,10 +33,13 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const containerStyle = tooltipContainerLayer?.style || {};
 
     // Config defaults
+    const mode = config.mode || 'standard';
+    const imageUrl = config.imageUrl;
+
     const position = config.position || 'bottom'; // top, bottom, left, right
-    const backgroundColor = config.backgroundColor || '#1F2937';
+    const backgroundColor = mode === 'image' ? 'transparent' : (config.backgroundColor || '#1F2937');
     const borderRadius = config.borderRadius || 8;
-    const padding = config.padding || 12;
+    const padding = mode === 'image' ? 0 : (config.padding || 12);
     const arrowSize = config.arrowSize || 8;
 
     const renderLayer = (layer: any) => {
@@ -135,8 +138,10 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         }
     };
 
-    // Arrow Style Calculation
+    // Arrow Style Calculation (Arrow hidden in image mode for now)
     const getArrowStyle = () => {
+        if (mode === 'image') return { display: 'none' };
+
         const base = {
             position: 'absolute' as const,
             width: 0,
@@ -197,7 +202,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 position: 'relative',
                 maxWidth: '250px',
                 minWidth: '120px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                boxShadow: mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 width: 'max-content',
                 ...containerStyle,
                 // Override container position if target provided, handled by wrapper
@@ -212,12 +217,25 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         >
             <div style={getArrowStyle()} />
 
-            {tooltipContainerLayer?.children?.map((childId: string) => {
-                const child = layers.find(l => l.id === childId);
-                return child ? renderLayer(child) : null;
-            })}
+            {mode === 'image' && imageUrl ? (
+                <img
+                    src={imageUrl}
+                    alt="Tooltip"
+                    style={{
+                        maxWidth: '200px',
+                        height: 'auto',
+                        display: 'block',
+                        borderRadius: `${borderRadius}px`
+                    }}
+                />
+            ) : (
+                tooltipContainerLayer?.children?.map((childId: string) => {
+                    const child = layers.find(l => l.id === childId);
+                    return child ? renderLayer(child) : null;
+                })
+            )}
 
-            {!tooltipContainerLayer && (
+            {!tooltipContainerLayer && mode !== 'image' && (
                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
                     Tooltip Content
                 </div>

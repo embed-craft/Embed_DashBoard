@@ -317,19 +317,19 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         return (
             <>
                 {/* Target Highlight */}
-                {/* 
+                {/* Target Highlight */}
                 <div style={{
                     position: 'absolute',
                     left: `${scaledX}px`,
                     top: `${scaledY}px`,
                     width: `${scaledWidth}px`,
                     height: `${scaledHeight}px`,
-                    border: `2px dashed ${colors.primary[500]}`,
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    border: `2px solid ${colors.primary[500]}`, // Restored to solid blue as requested
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)', // Slight blue tint
                     pointerEvents: 'none',
-                    zIndex: 40
+                    zIndex: 40,
+                    borderRadius: '4px' // Added for better aesthetics
                 }} />
-                */}
 
                 {/* Tooltip Wrapper */}
                 <div style={wrapperStyle}>

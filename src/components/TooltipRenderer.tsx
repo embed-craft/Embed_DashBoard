@@ -32,27 +32,40 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     const containerStyle = tooltipContainerLayer?.style || {};
 
-    // Config defaults
+    // --- Configuration & Defaults ---
     const mode = config.mode || 'standard';
+
+    // Standard Defaults
+    const STD_BG = '#1F2937';
+    const STD_SHADOW = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+
+    // 1. Determine Background Color
+    // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
+    let backgroundColor = config.backgroundColor;
+    if (mode === 'image') {
+        // If undefined or matches standard default, force transparent
+        if (!backgroundColor || backgroundColor === STD_BG) {
+            backgroundColor = 'transparent';
+        }
+    } else {
+        // Standard mode: default to dark grey
+        backgroundColor = backgroundColor || STD_BG;
+    }
+
+    // 2. Determine Box Shadow
+    let boxShadow = config.boxShadow;
+    if (mode === 'image') {
+        // If undefined or matches standard default, force none
+        if (boxShadow === undefined || boxShadow === STD_SHADOW) {
+            boxShadow = 'none';
+        }
+    } else {
+         boxShadow = boxShadow !== undefined ? boxShadow : STD_SHADOW;
+    }
+
+    // 3. Other Properties
     const imageUrl = config.imageUrl;
-
-    const position = config.position || 'bottom'; // top, bottom, left, right
-
-
-    // Smart Defaults: Use transparent/none for Image Mode unless user EXPLICITLY sets a non-default value.
-    const defaultBg = '#1F2937';
-    const defaultShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-
-    let backgroundColor = config.backgroundColor || defaultBg;
-    if (mode === 'image' && backgroundColor === defaultBg) {
-        backgroundColor = 'transparent';
-    }
-
-    let boxShadow = config.boxShadow !== undefined ? config.boxShadow : defaultShadow;
-    if (mode === 'image' && boxShadow === defaultShadow) {
-        boxShadow = 'none';
-    }
-
+    const position = config.position || 'bottom';
     const borderRadius = config.borderRadius || 8;
     const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;

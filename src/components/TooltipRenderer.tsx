@@ -258,41 +258,66 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         const gap = (arrowSize || 8) + 4; // Gap for arrow + spacing
 
         // Calculate wrapper position
-        let wrapperStyle: React.CSSProperties = {
-            position: 'absolute',
-            zIndex: 50,
-            pointerEvents: 'auto'
-        };
+        // Base coordinates centered relative to target side
+        let top = 0;
+        let left = 0;
+        let transformStr = ''; // We build transform string manually to combine with offsets
 
         switch (position) {
             case 'top':
-                wrapperStyle = { ...wrapperStyle, top: `${scaledY - gap}px`, left: `${scaledX + scaledWidth / 2}px`, transform: 'translate(-50%, -100%)' };
+                top = scaledY - gap;
+                left = scaledX + scaledWidth / 2;
+                transformStr = 'translate(-50%, -100%)';
                 break;
             case 'bottom':
-                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight + gap}px`, left: `${scaledX + scaledWidth / 2}px`, transform: 'translate(-50%, 0)' };
+                top = scaledY + scaledHeight + gap;
+                left = scaledX + scaledWidth / 2;
+                transformStr = 'translate(-50%, 0)';
                 break;
             case 'left':
-                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight / 2}px`, left: `${scaledX - gap}px`, transform: 'translate(-100%, -50%)' };
+                top = scaledY + scaledHeight / 2;
+                left = scaledX - gap;
+                transformStr = 'translate(-100%, -50%)';
                 break;
             case 'right':
-                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight / 2}px`, left: `${scaledX + scaledWidth + gap}px`, transform: 'translate(0, -50%)' };
+                top = scaledY + scaledHeight / 2;
+                left = scaledX + scaledWidth + gap;
+                transformStr = 'translate(0, -50%)';
                 break;
-            // Configurable offsets support (optional, if config.offsetX/Y exist)
-            case 'center-left': // Custom positions if needed map to nearest standard
-            case 'center-right':
             default:
-                wrapperStyle = { ...wrapperStyle, top: `${scaledY + scaledHeight + gap}px`, left: `${scaledX + scaledWidth / 2}px`, transform: 'translate(-50%, 0)' };
+                top = scaledY + scaledHeight + gap;
+                left = scaledX + scaledWidth / 2;
+                transformStr = 'translate(-50%, 0)';
         }
 
-        // Apply config offsets if they exist
-        if (config.offsetX || config.offsetY) {
-            // This would require more complex transform parsing, keeping it simple for now
-            // Or adding marginLeft / marginTop
-        }
+        // Apply visual offsets (in pixels)
+        // We add these to the CSS top/left values or transform
+        // Adding to transform is smoother for "nudge"
+        const offsetX = config.offsetX || 0;
+        const offsetY = config.offsetY || 0;
+
+        // Append offsets to transform. 
+        // Note: transform order matters, but here we just want to shift the final result.
+        // Existing transforms use % which depends on element size. 
+        // Pixel offsets are absolute.
+        // transform: translate(-50%, -100%) translate(10px, 20px) is valid
+        const finalTransform = `${transformStr} translate(${offsetX}px, ${offsetY}px)`;
+
+        const wrapperStyle: React.CSSProperties = {
+            position: 'absolute',
+            zIndex: 50,
+            pointerEvents: 'auto',
+            top: `${top}px`,
+            left: `${left}px`,
+            transform: finalTransform
+        };
+
+        const imageWidth = config.width ? `${config.width}px` : '200px';
 
         return (
             <>
                 {/* Target Highlight */}
+                {/* 
                 <div style={{
                     position: 'absolute',
                     left: `${scaledX}px`,
@@ -304,10 +329,63 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     pointerEvents: 'none',
                     zIndex: 40
                 }} />
+                */}
 
                 {/* Tooltip Wrapper */}
                 <div style={wrapperStyle}>
-                    {TooltipContent}
+                    <div
+                        style={{
+                            backgroundColor: mode === 'image' ? 'transparent' : backgroundColor,
+                            borderRadius: `${borderRadius}px`,
+                            padding: `${padding}px`,
+                            position: 'relative',
+                            minWidth: '120px',
+                            boxShadow: mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            width: 'max-content',
+                            ...containerStyle,
+                            // CRITICAL FIX: Explicitly override container background/shadow for Image Mode
+                            ...(mode === 'image' ? {
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                border: 'none'
+                            } : {}),
+                            // Override container position if target provided, handled by wrapper
+                            ...(targetElement ? { position: 'relative', top: 'auto', left: 'auto', transform: 'none' } : {})
+                        }}
+                        onClick={(e) => {
+                            if (tooltipContainerLayer) {
+                                e.stopPropagation();
+                                onLayerSelect(tooltipContainerLayer.id);
+                            }
+                        }}
+                    >
+                        <div style={getArrowStyle()} />
+
+                        {mode === 'image' && imageUrl ? (
+                            <img
+                                src={imageUrl}
+                                alt="Tooltip"
+                                style={{
+                                    width: imageWidth,
+                                    maxWidth: '100%', // Prevent overflow if container constraint exists
+                                    height: 'auto',
+                                    display: 'block',
+                                    borderRadius: `${borderRadius}px`
+                                }}
+                            />
+                        ) : (
+                            tooltipContainerLayer?.children?.map((childId: string) => {
+                                const child = layers.find(l => l.id === childId);
+                                return child ? renderLayer(child) : null;
+                            })
+                        )}
+
+                        {!tooltipContainerLayer && mode !== 'image' && (
+                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                                Tooltip Content
+                            </div>
+                        )}
+                    </div>
                 </div>
             </>
         );

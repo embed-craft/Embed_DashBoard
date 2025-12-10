@@ -2887,9 +2887,35 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
           </div>
+          {/* Offsets (Fine Tuning) */}
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px dashed ${colors.border.default}` }}>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '6px' }}>Fine Tune Position (px)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '10px', color: colors.text.secondary, marginBottom: '2px' }}>Offset X</label>
+                <input
+                  type="number"
+                  value={config.offsetX || 0}
+                  onChange={(e) => handleTooltipUpdate('offsetX', parseInt(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '10px', color: colors.text.secondary, marginBottom: '2px' }}>Offset Y</label>
+                <input
+                  type="number"
+                  value={config.offsetY || 0}
+                  onChange={(e) => handleTooltipUpdate('offsetY', parseInt(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px' }}
+                />
+              </div>
+            </div>
+          </div>
+        </div >
 
-          {/* Content Mode (New Feature) */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+          {/* Content Mode (New Feature) */ }
+          < div style = {{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }
+    }>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
               🖼️ Content
             </h5>
@@ -2920,4029 +2946,4048 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
 
-            {
-              config.mode === 'image' && (
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Tooltip Image</label>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <input
-                      type="text"
-                      value={config.imageUrl || ''}
-                      onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
-                      placeholder="Enter image URL..."
-                      style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                    />
-                    <label style={{
-                      padding: '8px 12px',
-                      background: colors.primary[500],
-                      color: 'white',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      Upload
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          // Mock upload for now or reuse existing handler if possible, 
-                          // but for this snippet I'll assumme a direct URL update logic or add a basic handler inline if simple.
-                          // Leveraging handleImageUpload from parent scope if available? 
-                          // Yes, handleImageUpload exists in scope.
-                          handleImageUpload(e, 'tooltip_image_only');
-                        }}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                  </div>
-                  {config.imageUrl && (
-                    <div style={{
-                      width: '100%',
-                      height: '100px',
-                      borderRadius: '6px',
-                      background: `url(${config.imageUrl}) center/cover no-repeat`,
-                      border: `1px solid ${colors.border.default}`
-                    }} />
-                  )}
-                </div>
+    {
+      config.mode === 'image' && (
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Tooltip Image</label>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <input
+              type="text"
+              value={config.imageUrl || ''}
+              onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
+              placeholder="Enter image URL..."
+              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+            <label style={{
+              padding: '8px 12px',
+              background: colors.primary[500],
+              color: 'white',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              whiteSpace: 'nowrap'
+            }}>
+              Upload
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  // Mock upload for now or reuse existing handler if possible, 
+                  // but for this snippet I'll assumme a direct URL update logic or add a basic handler inline if simple.
+                  // Leveraging handleImageUpload from parent scope if available? 
+                  // Yes, handleImageUpload exists in scope.
+                  handleImageUpload(e, 'tooltip_image_only');
+                }}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+          {config.imageUrl && (
+            <div style={{
+              width: '100%',
+              height: '100px',
+              borderRadius: '6px',
+              background: `url(${config.imageUrl}) center/cover no-repeat`,
+              border: `1px solid ${colors.border.default}`
+            }} />
+          )}
+        </div>
+                  {/* Image Width Control */ }
+      <div style={{ marginTop: '8px' }}>
+        <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Image Width</label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="range"
+            min="50"
+            max="350"
+            value={config.width || 200}
+            onChange={(e) => handleTooltipUpdate('width', parseInt(e.target.value))}
+            style={{ flex: 1 }}
+          />
+          <div style={{ fontSize: '12px', color: colors.text.primary, minWidth: '40px', textAlign: 'right' }}>
+            {config.width || 200}px
+          </div>
+        </div>
+      </div>
+                </div >
               )
             }
-          </div>
+          </div >
 
-          {/* Appearance */}
-          {
-            config.mode !== 'image' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  🎨 Appearance
-                </h5>
+  {/* Appearance */ }
+{
+  config.mode !== 'image' && (
+    <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+      <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+        🎨 Appearance
+      </h5>
 
-                {/* Roundness */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="24"
-                    value={config.roundness || 8}
-                    onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
-                </div>
+      {/* Roundness */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
+        <input
+          type="range"
+          min="0"
+          max="24"
+          value={config.roundness || 8}
+          onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
+          style={{ width: '100%', marginBottom: '4px' }}
+        />
+        <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
+      </div>
 
-                {/* Padding */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="32"
-                    value={config.padding || 12}
-                    onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
-                </div>
-              </div>
+      {/* Padding */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
+        <input
+          type="range"
+          min="0"
+          max="32"
+          value={config.padding || 12}
+          onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
+          style={{ width: '100%', marginBottom: '4px' }}
+        />
+        <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
+      </div>
+    </div>
 
-            )}
+  )
+}
 
 
 
-          {/* Overlay & Highlight */}
+{/* Overlay & Highlight */ }
+<div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+  <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+    🎭 Overlay & Highlight
+  </h5>
+
+  {/* Overlay Color */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Color</label>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <input
+        type="color"
+        value={config.overlayColor || '#000000'}
+        onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+        style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+      />
+      <input
+        type="text"
+        value={config.overlayColor || '#000000'}
+        onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+        style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+      />
+    </div>
+  </div>
+
+  {/* Overlay Opacity */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Opacity</label>
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.1"
+      value={config.overlayOpacity ?? 0.5}
+      onChange={(e) => handleTooltipUpdate('overlayOpacity', parseFloat(e.target.value))}
+      style={{ width: '100%', marginBottom: '4px' }}
+    />
+    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.overlayOpacity ?? 0.5) * 100)}%</div>
+  </div>
+
+  {/* Target Highlight Color */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Color</label>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <input
+        type="color"
+        value={config.targetHighlightColor || '#FFFFFF'}
+        onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
+        style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+      />
+      <input
+        type="text"
+        value={config.targetHighlightColor || '#FFFFFF'}
+        onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
+        style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+      />
+    </div>
+  </div>
+
+  {/* Target Padding */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Padding</label>
+    <input
+      type="range"
+      min="0"
+      max="24"
+      value={config.targetHighlightPadding || 4}
+      onChange={(e) => handleTooltipUpdate('targetHighlightPadding', parseInt(e.target.value))}
+      style={{ width: '100%', marginBottom: '4px' }}
+    />
+    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetHighlightPadding || 4}px</div>
+  </div>
+
+  {/* Target Roundness */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Roundness</label>
+    <input
+      type="range"
+      min="0"
+      max="50"
+      value={config.targetRoundness || 4}
+      onChange={(e) => handleTooltipUpdate('targetRoundness', parseInt(e.target.value))}
+      style={{ width: '100%', marginBottom: '4px' }}
+    />
+    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetRoundness || 4}px</div>
+  </div>
+</div>
+        </>
+      );
+    };
+
+const renderFloaterConfig = () => {
+  if (selectedNudgeType !== 'floater') return null;
+
+  const config = currentCampaign?.floaterConfig || {
+    mode: 'default',
+    shape: 'circle',
+    position: 'bottom-right',
+    width: 60,
+    height: 60,
+    backgroundColor: '#10B981',
+    glassmorphism: { enabled: false, blur: 10, opacity: 0.2 },
+    gradient: { enabled: false, startColor: '#10B981', endColor: '#059669', angle: 45 },
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
+  };
+
+  const handleConfigUpdate = (field: string, value: any) => {
+    // If updating mode to image-only, ensure shape is circle by default or keep current?
+    // If updating shape to circle, force width=height?
+    const updates: any = { [field]: value };
+
+    if (field === 'shape' && value === 'circle') {
+      // If switching to circle, maybe sync width/height?
+      // For now, let user decide or use defaults in renderer
+    }
+
+    // Update store
+    useEditorStore.getState().updateFloaterConfig(updates);
+  };
+
+  const handleNestedConfigUpdate = (parent: 'glassmorphism' | 'gradient' | 'animation', field: string, value: any) => {
+    const parentObj = config[parent] as any || {};
+    useEditorStore.getState().updateFloaterConfig({ [parent]: { ...parentObj, [field]: value } });
+  };
+
+  return (
+    <>
+      {/* Mode Selection */}
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+          🎨 Floater Mode
+        </h5>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <button
+            onClick={() => handleConfigUpdate('mode', 'default')}
+            style={{
+              padding: '12px',
+              border: `2px solid ${(config.mode || 'default') === 'default' ? colors.primary[500] : colors.border.default}`,
+              borderRadius: '8px',
+              background: (config.mode || 'default') === 'default' ? colors.primary[50] : 'white',
+              color: (config.mode || 'default') === 'default' ? colors.primary[600] : colors.text.secondary,
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              textAlign: 'center'
+            }}
+          >
+            Default
+          </button>
+          <button
+            onClick={() => {
+              handleConfigUpdate('mode', 'image-only');
+              handleConfigUpdate('shape', 'rectangle'); // Auto-set to rectangle
+
+              // Reset container styles for image-only mode
+              const floaterContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Floater Container');
+              if (floaterContainer) {
+                updateLayerStyle(floaterContainer.id, {
+                  backgroundColor: 'transparent',
+                  boxShadow: 'none',
+                  borderRadius: 0
+                });
+              }
+            }}
+            style={{
+              padding: '12px',
+              border: `2px solid ${config.mode === 'image-only' ? colors.primary[500] : colors.border.default}`,
+              borderRadius: '8px',
+              background: config.mode === 'image-only' ? colors.primary[50] : 'white',
+              color: config.mode === 'image-only' ? colors.primary[600] : colors.text.secondary,
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              textAlign: 'center'
+            }}
+          >
+            Image Only
+          </button>
+        </div>
+      </div >
+
+      {/* Background Image (Image-Only Mode) */}
+      {
+        config.mode === 'image-only' && (
           <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🎭 Overlay & Highlight
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+              🖼️ Floater Image
             </h5>
 
-            {/* Overlay Color */}
+            {/* Image Preview */}
+            {config.backgroundImageUrl && (
+              <div style={{
+                width: '100%',
+                height: '100px',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                marginBottom: '12px',
+                border: `1px solid ${colors.border.default}`,
+                position: 'relative'
+              }}>
+                <img
+                  src={config.backgroundImageUrl}
+                  alt="Floater preview"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    backgroundColor: '#f0f0f0'
+                  }}
+                />
+                <button
+                  onClick={() => handleConfigUpdate('backgroundImageUrl', '')}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(0,0,0,0.5)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Upload Button */}
+            <label style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              border: `2px dashed ${colors.border.default}`,
+              borderRadius: '8px',
+              cursor: 'pointer',
+              background: colors.gray[50],
+              transition: 'all 0.2s'
+            }}>
+              <Upload size={20} color={colors.text.secondary} style={{ marginBottom: '8px' }} />
+              <span style={{ fontSize: '12px', color: colors.text.secondary, fontWeight: 500 }}>
+                {config.backgroundImageUrl ? 'Change Image' : 'Upload Image'}
+              </span>
+              <span style={{ fontSize: '10px', color: colors.text.secondary, marginTop: '4px' }}>
+                PNG, JPG, GIF (Max 5MB)
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  if (file.size > 5 * 1024 * 1024) {
+                    // toast.error('Image size must be less than 5MB');
+                    alert('Image size must be less than 5MB');
+                    return;
+                  }
+
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    handleConfigUpdate('backgroundImageUrl', event.target?.result);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+          </div>
+        )
+      }
+
+      {/* Image URL Input (Image-Only Mode) */}
+      {
+        config.mode === 'image-only' && (
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+              🔗 Image URL
+            </h5>
+            <input
+              type="text"
+              placeholder="https://example.com/image.png"
+              value={config.backgroundImageUrl || ''}
+              onChange={(e) => handleConfigUpdate('backgroundImageUrl', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: `1px solid ${colors.border.default}`,
+                borderRadius: '6px',
+                fontSize: '12px'
+              }}
+            />
+          </div>
+        )
+      }
+
+      {/* Size Control */}
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+            📏 Size
+          </h5>
+          <div style={{ display: 'flex', background: colors.gray[100], borderRadius: '4px', padding: '2px' }}>
+            <button
+              onClick={() => handleConfigUpdate('sizeUnit', 'px')}
+              style={{
+                padding: '2px 8px',
+                fontSize: '10px',
+                borderRadius: '3px',
+                border: 'none',
+                background: (config.sizeUnit || 'px') === 'px' ? 'white' : 'transparent',
+                boxShadow: (config.sizeUnit || 'px') === 'px' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+            >
+              PX
+            </button>
+            <button
+              onClick={() => handleConfigUpdate('sizeUnit', '%')}
+              style={{
+                padding: '2px 8px',
+                fontSize: '10px',
+                borderRadius: '3px',
+                border: 'none',
+                background: config.sizeUnit === '%' ? 'white' : 'transparent',
+                boxShadow: config.sizeUnit === '%' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+            >
+              %
+            </button>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+              Width {(config.sizeUnit || 'px') === '%' ? '(%)' : '(px)'}
+            </label>
+            <input
+              type="number"
+              value={config.width || 60}
+              onChange={(e) => handleConfigUpdate('width', Number(e.target.value))}
+              style={{ width: '100%', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+              Height {(config.sizeUnit || 'px') === '%' ? '(%)' : '(px)'}
+            </label>
+            <input
+              type="number"
+              value={config.height || 60}
+              onChange={(e) => handleConfigUpdate('height', Number(e.target.value))}
+              style={{ width: '100%', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Shape Selection - Hide in Image Only mode if user wants "no circle" */}
+      {
+        config.mode !== 'image-only' && (
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+              📐 Shape
+            </h5>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => handleConfigUpdate('shape', 'circle')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  border: `1px solid ${config.shape === 'circle' ? colors.primary[500] : colors.border.default}`,
+                  borderRadius: '6px',
+                  background: config.shape === 'circle' ? colors.primary[50] : 'white',
+                  color: config.shape === 'circle' ? colors.primary[600] : colors.text.secondary,
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer'
+                }}
+              >
+                Circle (FAB)
+              </button>
+              <button
+                onClick={() => handleConfigUpdate('shape', 'rectangle')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  border: `1px solid ${config.shape === 'rectangle' ? colors.primary[500] : colors.border.default}`,
+                  borderRadius: '6px',
+                  background: config.shape === 'rectangle' ? colors.primary[50] : 'white',
+                  color: config.shape === 'rectangle' ? colors.primary[600] : colors.text.secondary,
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer'
+                }}
+              >
+                Rectangle
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Position Control */}
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+          📍 Position
+        </h5>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          {['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center-left', 'center-right'].map((pos) => (
+            <button
+              key={pos}
+              onClick={() => handleConfigUpdate('position', pos)}
+              style={{
+                padding: '8px',
+                border: `1px solid ${config.position === pos ? colors.primary[500] : colors.border.default}`,
+                borderRadius: '6px',
+                background: config.position === pos ? colors.primary[50] : 'white',
+                color: config.position === pos ? colors.primary[600] : colors.text.secondary,
+                fontSize: '11px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textTransform: 'capitalize'
+              }}
+            >
+              {pos.replace('-', ' ')}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset X</label>
+            <input type="number" value={config.offsetX || 20} onChange={(e) => handleConfigUpdate('offsetX', Number(e.target.value))} style={{ width: '100%', padding: '4px', border: `1px solid ${colors.border.default}`, borderRadius: '4px' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset Y</label>
+            <input type="number" value={config.offsetY || 20} onChange={(e) => handleConfigUpdate('offsetY', Number(e.target.value))} style={{ width: '100%', padding: '4px', border: `1px solid ${colors.border.default}`, borderRadius: '4px' }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Styling - Glassmorphism & Gradient */}
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+          ✨ Styling
+        </h5>
+
+        {/* Glassmorphism Toggle */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: colors.text.secondary }}>Glassmorphism</span>
+            <input type="checkbox" checked={config.glassmorphism?.enabled} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'enabled', e.target.checked)} />
+          </label>
+          {config.glassmorphism?.enabled && (
+            <div style={{ paddingLeft: '8px', borderLeft: `2px solid ${colors.border.default}` }}>
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Blur ({config.glassmorphism.blur}px)</label>
+                <input type="range" min="0" max="20" value={config.glassmorphism.blur} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'blur', Number(e.target.value))} style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Opacity ({Math.round(config.glassmorphism.opacity * 100)}%)</label>
+                <input type="range" min="0" max="1" step="0.1" value={config.glassmorphism.opacity} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'opacity', Number(e.target.value))} style={{ width: '100%' }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Gradient Toggle */}
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: colors.text.secondary }}>Gradient Background</span>
+            <input type="checkbox" checked={config.gradient?.enabled} onChange={(e) => handleNestedConfigUpdate('gradient', 'enabled', e.target.checked)} />
+          </label>
+          {config.gradient?.enabled && (
+            <div style={{ paddingLeft: '8px', borderLeft: `2px solid ${colors.border.default}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Start</label>
+                <input type="color" value={config.gradient.startColor} onChange={(e) => handleNestedConfigUpdate('gradient', 'startColor', e.target.value)} style={{ width: '100%', height: '30px', border: 'none', padding: 0 }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>End</label>
+                <input type="color" value={config.gradient.endColor} onChange={(e) => handleNestedConfigUpdate('gradient', 'endColor', e.target.value)} style={{ width: '100%', height: '30px', border: 'none', padding: 0 }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Angle ({config.gradient.angle}deg)</label>
+                <input type="range" min="0" max="360" value={config.gradient.angle} onChange={(e) => handleNestedConfigUpdate('gradient', 'angle', Number(e.target.value))} style={{ width: '100%' }} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+
+// PIP Configuration (Phase 13)
+function renderPipConfig() { // Converted to function declaration for hoisting
+  if (selectedNudgeType !== 'pip') return null;
+
+  const config = currentCampaign?.pipConfig || {};
+
+  const handleConfigUpdate = (field: string, value: any) => {
+    updatePipConfig({ [field]: value });
+  };
+
+  // Show PIP config when:
+  // 1. PIP container is selected
+  // 2. No layer is selected
+  const isPipContainerSelected = selectedLayerObj?.type === 'container' && selectedLayerObj?.name === 'PIP Container';
+  const shouldShowFullConfig = !selectedLayerObj || isPipContainerSelected;
+
+  if (!shouldShowFullConfig) return null;
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          📺 PIP Settings
+        </h5>
+
+        {/* CTA Text - Removed (Use Button Layer Properties) */}
+        {/* CTA URL - Removed (Use Button Layer Properties) */}
+
+        {/* Position - Removed (Use Standard Layer Properties) */}
+
+        {/* Background Color - Removed (Use Standard Layer Properties) */}
+        {/* Corner Radius - Removed (Use Standard Layer Properties) */}
+
+        {/* Show Close Button */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Close Button</span>
+          <div
+            onClick={() => handleConfigUpdate('showCloseButton', config.showCloseButton !== false ? false : true)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '12px',
+              background: config.showCloseButton !== false ? colors.primary[500] : colors.gray[300],
+              position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.showCloseButton !== false ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Helper to render Size controls
+const renderSizeControls = () => {
+  const parseValue = (val: any) => {
+    if (val === 'auto' || val === undefined) return { num: '', unit: 'auto' };
+    if (val === '100%') return { num: '100', unit: '%' };
+    const str = String(val);
+    if (str.endsWith('%')) return { num: parseFloat(str), unit: '%' };
+    return { num: parseFloat(str), unit: 'px' };
+  };
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        {/* Width */}
+        <div>
+          <label style={{ display: 'block', fontSize: '10px', color: colors.text.secondary, marginBottom: '2px' }}>Width</label>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <select
+              value={(() => {
+                const w = selectedLayerObj?.style?.width;
+                if (w === 'auto' || w === undefined) return 'auto';
+                return 'custom';
+              })()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'auto') handleStyleUpdate('width', 'auto');
+                else if (val === 'custom') {
+                  const current = parseValue(selectedLayerObj?.style?.width);
+                  handleStyleUpdate('width', current.num ? `${current.num}${current.unit === 'auto' ? 'px' : current.unit}` : 200);
+                }
+              }}
+              style={{ flex: 1, padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+            >
+              <option value="auto">Auto</option>
+              <option value="custom">Custom</option>
+            </select>
+            {selectedLayerObj?.style?.width !== 'auto' && selectedLayerObj?.style?.width !== undefined && (
+              <>
+                <input
+                  type="number"
+                  value={parseValue(selectedLayerObj?.style?.width).num}
+                  onChange={(e) => {
+                    const unit = parseValue(selectedLayerObj?.style?.width).unit;
+                    handleStyleUpdate('width', `${e.target.value}${unit === 'auto' ? 'px' : unit}`);
+                  }}
+                  style={{ width: '50px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+                />
+                <select
+                  value={parseValue(selectedLayerObj?.style?.width).unit}
+                  onChange={(e) => {
+                    const num = parseValue(selectedLayerObj?.style?.width).num || 0;
+                    handleStyleUpdate('width', `${num}${e.target.value}`);
+                  }}
+                  style={{ width: '45px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+                >
+                  <option value="px">px</option>
+                  <option value="%">%</option>
+                </select>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Height */}
+        <div>
+          <label style={{ display: 'block', fontSize: '10px', color: colors.text.secondary, marginBottom: '2px' }}>Height</label>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <select
+              value={(() => {
+                const h = selectedLayerObj?.style?.height;
+                if (h === 'auto' || h === undefined) return 'auto';
+                return 'custom';
+              })()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'auto') handleStyleUpdate('height', 'auto');
+                else if (val === 'custom') {
+                  const current = parseValue(selectedLayerObj?.style?.height);
+                  handleStyleUpdate('height', current.num ? `${current.num}${current.unit === 'auto' ? 'px' : current.unit}` : 48);
+                }
+              }}
+              style={{ flex: 1, padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+            >
+              <option value="auto">Auto</option>
+              <option value="custom">Custom</option>
+            </select>
+            {selectedLayerObj?.style?.height !== 'auto' && selectedLayerObj?.style?.height !== undefined && (
+              <>
+                <input
+                  type="number"
+                  value={parseValue(selectedLayerObj?.style?.height).num}
+                  onChange={(e) => {
+                    const unit = parseValue(selectedLayerObj?.style?.height).unit;
+                    handleStyleUpdate('height', `${e.target.value}${unit === 'auto' ? 'px' : unit}`);
+                  }}
+                  style={{ width: '50px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+                />
+                <select
+                  value={parseValue(selectedLayerObj?.style?.height).unit}
+                  onChange={(e) => {
+                    const num = parseValue(selectedLayerObj?.style?.height).num || 0;
+                    handleStyleUpdate('height', `${num}${e.target.value}`);
+                  }}
+                  style={{ width: '45px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+                >
+                  <option value="px">px</option>
+                  <option value="%">%</option>
+                </select>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Common style properties
+const renderCommonStyles = () => {
+  const bgColor = selectedLayerObj?.style?.backgroundColor || '#FFFFFF';
+  const hasBorder = selectedLayerObj?.style?.borderWidth
+    ? typeof selectedLayerObj.style.borderWidth === 'number'
+      ? selectedLayerObj.style.borderWidth > 0
+      : (selectedLayerObj.style.borderWidth.top > 0 ||
+        selectedLayerObj.style.borderWidth.right > 0 ||
+        selectedLayerObj.style.borderWidth.bottom > 0 ||
+        selectedLayerObj.style.borderWidth.left > 0)
+    : false;
+  const positionType = selectedLayerObj?.position?.type || 'relative';
+  const posX = selectedLayerObj?.position?.x || 0;
+  const posY = selectedLayerObj?.position?.y || 0;
+
+  const parentLayer = campaignLayers.find(l => l.id === selectedLayerObj.parent);
+  const isPipLayer = parentLayer?.name === 'PIP Container';
+
+  return (
+    <>
+      {/* Position Controls (Fix 6) */}
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <PositionEditor
+          style={selectedLayerObj.style || {}}
+          onChange={(updates) => updateLayerStyle(selectedLayerId!, updates)}
+          colors={colors}
+          showZIndex={!isPipLayer}
+          showCoordinates={!isPipLayer}
+          showPositionType={!isPipLayer}
+        />
+      </div>
+
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Background</h5>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+          <input
+            type="color"
+            value={bgColor}
+            onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+            style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+          <input
+            type="text"
+            value={bgColor}
+            onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+            style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+      </div>
+
+      {/* Shape Editor (Added to Common Styles) */}
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Shapes & Borders</h5>
+        <ShapeEditor
+          style={selectedLayerObj.style || {}}
+          onChange={(updates) => updateLayerStyle(selectedLayerId!, updates)}
+          colors={colors}
+        />
+      </div>
+
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Border</h5>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ fontSize: '13px', color: colors.text.primary }}>Add Border</span>
+          <div
+            onClick={() => handleStyleUpdate('borderWidth', hasBorder ? 0 : 1)}
+            style={{
+              width: '44px',
+              height: '24px',
+              borderRadius: '12px',
+              background: hasBorder ? colors.primary[500] : colors.gray[300],
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: '#fff',
+              position: 'absolute',
+              top: '2px',
+              left: hasBorder ? '22px' : '2px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              transition: 'left 0.2s'
+            }} />
+          </div>
+        </div>
+        {hasBorder && (
+          <>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Color</label>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+                Border Width: {typeof selectedLayerObj?.style?.borderWidth === 'number' ? selectedLayerObj.style.borderWidth : 1}px
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={typeof selectedLayerObj?.style?.borderWidth === 'number' ? selectedLayerObj.style.borderWidth : 1}
+                onChange={(e) => handleStyleUpdate('borderWidth', Number(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Border Color</label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
                   type="color"
-                  value={config.overlayColor || '#000000'}
-                  onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+                  value={selectedLayerObj?.style?.borderColor || '#000000'}
+                  onChange={(e) => handleStyleUpdate('borderColor', e.target.value)}
                   style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
                 />
                 <input
                   type="text"
-                  value={config.overlayColor || '#000000'}
-                  onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+                  value={selectedLayerObj?.style?.borderColor || '#000000'}
+                  onChange={(e) => handleStyleUpdate('borderColor', e.target.value)}
                   style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
                 />
               </div>
             </div>
-
-            {/* Overlay Opacity */}
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Opacity</label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={config.overlayOpacity ?? 0.5}
-                onChange={(e) => handleTooltipUpdate('overlayOpacity', parseFloat(e.target.value))}
-                style={{ width: '100%', marginBottom: '4px' }}
-              />
-              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.overlayOpacity ?? 0.5) * 100)}%</div>
-            </div>
-
-            {/* Target Highlight Color */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={config.targetHighlightColor || '#FFFFFF'}
-                  onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={config.targetHighlightColor || '#FFFFFF'}
-                  onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Border Style</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {['solid', 'dashed', 'dotted'].map((style) => (
+                  <button
+                    key={style}
+                    onClick={() => handleStyleUpdate('borderStyle', style)}
+                    style={{
+                      padding: '8px',
+                      border: `1px solid ${(selectedLayerObj?.style?.borderStyle || 'solid') === style ? colors.primary[500] : colors.border.default}`,
+                      borderRadius: '6px',
+                      background: (selectedLayerObj?.style?.borderStyle || 'solid') === style ? colors.primary[50] : 'white',
+                      color: (selectedLayerObj?.style?.borderStyle || 'solid') === style ? colors.primary[600] : colors.text.secondary,
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      textTransform: 'capitalize'
+                    }}
+                  >
+                    {style}
+                  </button>
+                ))}
               </div>
             </div>
+          </>
+        )}
+      </div>
 
-            {/* Target Padding */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Padding</label>
+      {/* Filter Controls (Feature 5) */}
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Filters</h5>
+          {(selectedLayerObj?.style?.filter?.blur || selectedLayerObj?.style?.filter?.brightness || selectedLayerObj?.style?.filter?.contrast || selectedLayerObj?.style?.filter?.grayscale) && (
+            <button
+              onClick={() => handleStyleUpdate('filter', {})}
+              style={{
+                padding: '4px 8px',
+                border: `1px solid ${colors.border.default}`,
+                backgroundColor: 'white',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                color: colors.text.secondary
+              }}
+            >
+              Reset All
+            </button>
+          )}
+        </div>
+
+        {/* Blur */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Blur: {selectedLayerObj?.style?.filter?.blur || 0}px
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="20"
+            step="0.5"
+            value={selectedLayerObj?.style?.filter?.blur || 0}
+            onChange={(e) => {
+              const currentFilter = selectedLayerObj?.style?.filter || {};
+              handleStyleUpdate('filter', { ...currentFilter, blur: Number(e.target.value) });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+
+        {/* Brightness */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Brightness: {selectedLayerObj?.style?.filter?.brightness || 100}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            step="5"
+            value={selectedLayerObj?.style?.filter?.brightness || 100}
+            onChange={(e) => {
+              const currentFilter = selectedLayerObj?.style?.filter || {};
+              handleStyleUpdate('filter', { ...currentFilter, brightness: Number(e.target.value) });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+
+        {/* Contrast */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Contrast: {selectedLayerObj?.style?.filter?.contrast || 100}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            step="5"
+            value={selectedLayerObj?.style?.filter?.contrast || 100}
+            onChange={(e) => {
+              const currentFilter = selectedLayerObj?.style?.filter || {};
+              handleStyleUpdate('filter', { ...currentFilter, contrast: Number(e.target.value) });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+
+        {/* Grayscale */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Grayscale: {selectedLayerObj?.style?.filter?.grayscale || 0}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={selectedLayerObj?.style?.filter?.grayscale || 0}
+            onChange={(e) => {
+              const currentFilter = selectedLayerObj?.style?.filter || {};
+              handleStyleUpdate('filter', { ...currentFilter, grayscale: Number(e.target.value) });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+      </div>
+
+      {/* Transform Controls (Feature 6) */}
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Transform</h5>
+          {(selectedLayerObj?.style?.transform?.rotate || selectedLayerObj?.style?.transform?.scale || selectedLayerObj?.style?.transform?.translateX || selectedLayerObj?.style?.transform?.translateY) && (
+            <button
+              onClick={() => handleStyleUpdate('transform', {})}
+              style={{
+                padding: '4px 8px',
+                border: `1px solid ${colors.border.default}`,
+                backgroundColor: 'white',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                color: colors.text.secondary
+              }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* Rotation */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Rotate: {selectedLayerObj?.style?.transform?.rotate || 0}°
+          </label>
+          <input
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value={selectedLayerObj?.style?.transform?.rotate || 0}
+            onChange={(e) => {
+              const currentTransform = selectedLayerObj?.style?.transform || {};
+              handleStyleUpdate('transform', { ...currentTransform, rotate: Number(e.target.value) });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+          <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
+            {[-90, -45, 0, 45, 90, 180].map(angle => (
+              <button
+                key={angle}
+                onClick={() => {
+                  const currentTransform = selectedLayerObj?.style?.transform || {};
+                  handleStyleUpdate('transform', { ...currentTransform, rotate: angle });
+                }}
+                style={{
+                  flex: 1,
+                  padding: '4px 6px',
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  backgroundColor: (selectedLayerObj?.style?.transform?.rotate || 0) === angle ? colors.gray[100] : 'transparent'
+                }}
+              >
+                {angle}°
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Scale */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Scale: {selectedLayerObj?.style?.transform?.scale || 1}x
+          </label>
+          <input
+            type="range"
+            min="0.1"
+            max="3"
+            step="0.1"
+            value={selectedLayerObj?.style?.transform?.scale || 1}
+            onChange={(e) => {
+              const currentTransform = selectedLayerObj?.style?.transform || {};
+              handleStyleUpdate('transform', { ...currentTransform, scale: Number(e.target.value) });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+
+
+      </div>
+
+      {/* Advanced Shadow Builder (Feature 7) */}
+      <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Box Shadow</h5>
+          {selectedLayerObj?.style?.boxShadow && (
+            <button
+              onClick={() => handleStyleUpdate('boxShadow', undefined)}
+              style={{
+                padding: '4px 8px',
+                border: `1px solid ${colors.border.default}`,
+                backgroundColor: 'white',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                color: colors.text.secondary
+              }}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+
+        {/* Shadow Presets */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Quick Presets</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+            {[
+              { name: 'Soft', value: '0 2px 8px rgba(0,0,0,0.1)' },
+              { name: 'Medium', value: '0 4px 12px rgba(0,0,0,0.15)' },
+              { name: 'Hard', value: '0 8px 24px rgba(0,0,0,0.25)' },
+              { name: 'Glow', value: '0 0 20px rgba(99, 102, 241, 0.5)' },
+              { name: 'Inner', value: 'inset 0 2px 4px rgba(0,0,0,0.1)' },
+              { name: 'Lifted', value: '0 10px 40px rgba(0,0,0,0.2)' }
+            ].map((preset) => (
+              <button
+                key={preset.name}
+                onClick={() => handleStyleUpdate('boxShadow', preset.value)}
+                style={{
+                  padding: '8px 12px',
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  backgroundColor: selectedLayerObj?.style?.boxShadow === preset.value ? colors.primary[50] : 'white',
+                  color: selectedLayerObj?.style?.boxShadow === preset.value ? colors.primary[600] : colors.text.primary,
+                  boxShadow: preset.value,
+                  transition: 'all 0.2s'
+                }}
+              >
+                {preset.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Shadow Builder */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Custom Shadow</label>
+          <div style={{
+            padding: '12px',
+            border: `1px solid ${colors.border.default}`,
+            borderRadius: '8px',
+            backgroundColor: colors.gray[50]
+          }}>
+            {/* X Offset */}
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+                X Offset: 0px
+              </label>
               <input
                 type="range"
-                min="0"
-                max="24"
-                value={config.targetHighlightPadding || 4}
-                onChange={(e) => handleTooltipUpdate('targetHighlightPadding', parseInt(e.target.value))}
-                style={{ width: '100%', marginBottom: '4px' }}
+                min="-50"
+                max="50"
+                step="1"
+                defaultValue="0"
+                onChange={(e) => {
+                  const xOffset = Number(e.target.value);
+                  handleStyleUpdate('boxShadow', `${xOffset}px 4px 12px rgba(0,0,0,0.15)`);
+                }}
+                style={{ width: '100%', cursor: 'pointer' }}
               />
-              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetHighlightPadding || 4}px</div>
             </div>
 
-            {/* Target Roundness */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Roundness</label>
+            {/* Y Offset */}
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+                Y Offset: 4px
+              </label>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                step="1"
+                defaultValue="4"
+                onChange={(e) => {
+                  const yOffset = Number(e.target.value);
+                  handleStyleUpdate('boxShadow', `0px ${yOffset}px 12px rgba(0,0,0,0.15)`);
+                }}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* Blur Radius */}
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+                Blur: 12px
+              </label>
               <input
                 type="range"
                 min="0"
                 max="50"
-                value={config.targetRoundness || 4}
-                onChange={(e) => handleTooltipUpdate('targetRoundness', parseInt(e.target.value))}
-                style={{ width: '100%', marginBottom: '4px' }}
+                step="1"
+                defaultValue="12"
+                onChange={(e) => {
+                  const blur = Number(e.target.value);
+                  handleStyleUpdate('boxShadow', `0px 4px ${blur}px rgba(0,0,0,0.15)`);
+                }}
+                style={{ width: '100%', cursor: 'pointer' }}
               />
-              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetRoundness || 4}px</div>
             </div>
-          </div>
-        </>
-      );
-    };
 
-    const renderFloaterConfig = () => {
-      if (selectedNudgeType !== 'floater') return null;
-
-      const config = currentCampaign?.floaterConfig || {
-        mode: 'default',
-        shape: 'circle',
-        position: 'bottom-right',
-        width: 60,
-        height: 60,
-        backgroundColor: '#10B981',
-        glassmorphism: { enabled: false, blur: 10, opacity: 0.2 },
-        gradient: { enabled: false, startColor: '#10B981', endColor: '#059669', angle: 45 },
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
-      };
-
-      const handleConfigUpdate = (field: string, value: any) => {
-        // If updating mode to image-only, ensure shape is circle by default or keep current?
-        // If updating shape to circle, force width=height?
-        const updates: any = { [field]: value };
-
-        if (field === 'shape' && value === 'circle') {
-          // If switching to circle, maybe sync width/height?
-          // For now, let user decide or use defaults in renderer
-        }
-
-        // Update store
-        useEditorStore.getState().updateFloaterConfig(updates);
-      };
-
-      const handleNestedConfigUpdate = (parent: 'glassmorphism' | 'gradient' | 'animation', field: string, value: any) => {
-        const parentObj = config[parent] as any || {};
-        useEditorStore.getState().updateFloaterConfig({ [parent]: { ...parentObj, [field]: value } });
-      };
-
-      return (
-        <>
-          {/* Mode Selection */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              🎨 Floater Mode
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                onClick={() => handleConfigUpdate('mode', 'default')}
-                style={{
-                  padding: '12px',
-                  border: `2px solid ${(config.mode || 'default') === 'default' ? colors.primary[500] : colors.border.default}`,
-                  borderRadius: '8px',
-                  background: (config.mode || 'default') === 'default' ? colors.primary[50] : 'white',
-                  color: (config.mode || 'default') === 'default' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                Default
-              </button>
-              <button
-                onClick={() => {
-                  handleConfigUpdate('mode', 'image-only');
-                  handleConfigUpdate('shape', 'rectangle'); // Auto-set to rectangle
-
-                  // Reset container styles for image-only mode
-                  const floaterContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Floater Container');
-                  if (floaterContainer) {
-                    updateLayerStyle(floaterContainer.id, {
-                      backgroundColor: 'transparent',
-                      boxShadow: 'none',
-                      borderRadius: 0
-                    });
-                  }
-                }}
-                style={{
-                  padding: '12px',
-                  border: `2px solid ${config.mode === 'image-only' ? colors.primary[500] : colors.border.default}`,
-                  borderRadius: '8px',
-                  background: config.mode === 'image-only' ? colors.primary[50] : 'white',
-                  color: config.mode === 'image-only' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                Image Only
-              </button>
-            </div>
-          </div >
-
-          {/* Background Image (Image-Only Mode) */}
-          {
-            config.mode === 'image-only' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                  🖼️ Floater Image
-                </h5>
-
-                {/* Image Preview */}
-                {config.backgroundImageUrl && (
-                  <div style={{
-                    width: '100%',
-                    height: '100px',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    marginBottom: '12px',
-                    border: `1px solid ${colors.border.default}`,
-                    position: 'relative'
-                  }}>
-                    <img
-                      src={config.backgroundImageUrl}
-                      alt="Floater preview"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        backgroundColor: '#f0f0f0'
-                      }}
-                    />
-                    <button
-                      onClick={() => handleConfigUpdate('backgroundImageUrl', '')}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '24px',
-                        height: '24px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-
-                {/* Upload Button */}
-                <label style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '20px',
-                  border: `2px dashed ${colors.border.default}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  background: colors.gray[50],
-                  transition: 'all 0.2s'
-                }}>
-                  <Upload size={20} color={colors.text.secondary} style={{ marginBottom: '8px' }} />
-                  <span style={{ fontSize: '12px', color: colors.text.secondary, fontWeight: 500 }}>
-                    {config.backgroundImageUrl ? 'Change Image' : 'Upload Image'}
-                  </span>
-                  <span style={{ fontSize: '10px', color: colors.text.secondary, marginTop: '4px' }}>
-                    PNG, JPG, GIF (Max 5MB)
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      if (file.size > 5 * 1024 * 1024) {
-                        // toast.error('Image size must be less than 5MB');
-                        alert('Image size must be less than 5MB');
-                        return;
-                      }
-
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        handleConfigUpdate('backgroundImageUrl', event.target?.result);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
-              </div>
-            )
-          }
-
-          {/* Image URL Input (Image-Only Mode) */}
-          {
-            config.mode === 'image-only' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                  🔗 Image URL
-                </h5>
+            {/* Shadow Color */}
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+                Shadow Color
+              </label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="color"
+                  defaultValue="#000000"
+                  onChange={(e) => {
+                    const color = e.target.value;
+                    handleStyleUpdate('boxShadow', `0px 4px 12px ${color}26`);
+                  }}
+                  style={{ width: '36px', height: '32px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', cursor: 'pointer' }}
+                />
                 <input
                   type="text"
-                  placeholder="https://example.com/image.png"
-                  value={config.backgroundImageUrl || ''}
-                  onChange={(e) => handleConfigUpdate('backgroundImageUrl', e.target.value)}
+                  placeholder="rgba(0,0,0,0.15)"
+                  defaultValue="rgba(0,0,0,0.15)"
+                  onChange={(e) => {
+                    handleStyleUpdate('boxShadow', `0px 4px 12px ${e.target.value}`);
+                  }}
                   style={{
-                    width: '100%',
-                    padding: '8px 12px',
+                    flex: 1,
+                    padding: '6px 10px',
                     border: `1px solid ${colors.border.default}`,
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                />
-              </div>
-            )
-          }
-
-          {/* Size Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                📏 Size
-              </h5>
-              <div style={{ display: 'flex', background: colors.gray[100], borderRadius: '4px', padding: '2px' }}>
-                <button
-                  onClick={() => handleConfigUpdate('sizeUnit', 'px')}
-                  style={{
-                    padding: '2px 8px',
-                    fontSize: '10px',
-                    borderRadius: '3px',
-                    border: 'none',
-                    background: (config.sizeUnit || 'px') === 'px' ? 'white' : 'transparent',
-                    boxShadow: (config.sizeUnit || 'px') === 'px' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  PX
-                </button>
-                <button
-                  onClick={() => handleConfigUpdate('sizeUnit', '%')}
-                  style={{
-                    padding: '2px 8px',
-                    fontSize: '10px',
-                    borderRadius: '3px',
-                    border: 'none',
-                    background: config.sizeUnit === '%' ? 'white' : 'transparent',
-                    boxShadow: config.sizeUnit === '%' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  %
-                </button>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                  Width {(config.sizeUnit || 'px') === '%' ? '(%)' : '(px)'}
-                </label>
-                <input
-                  type="number"
-                  value={config.width || 60}
-                  onChange={(e) => handleConfigUpdate('width', Number(e.target.value))}
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                  Height {(config.sizeUnit || 'px') === '%' ? '(%)' : '(px)'}
-                </label>
-                <input
-                  type="number"
-                  value={config.height || 60}
-                  onChange={(e) => handleConfigUpdate('height', Number(e.target.value))}
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Shape Selection - Hide in Image Only mode if user wants "no circle" */}
-          {
-            config.mode !== 'image-only' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                  📐 Shape
-                </h5>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => handleConfigUpdate('shape', 'circle')}
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: `1px solid ${config.shape === 'circle' ? colors.primary[500] : colors.border.default}`,
-                      borderRadius: '6px',
-                      background: config.shape === 'circle' ? colors.primary[50] : 'white',
-                      color: config.shape === 'circle' ? colors.primary[600] : colors.text.secondary,
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Circle (FAB)
-                  </button>
-                  <button
-                    onClick={() => handleConfigUpdate('shape', 'rectangle')}
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: `1px solid ${config.shape === 'rectangle' ? colors.primary[500] : colors.border.default}`,
-                      borderRadius: '6px',
-                      background: config.shape === 'rectangle' ? colors.primary[50] : 'white',
-                      color: config.shape === 'rectangle' ? colors.primary[600] : colors.text.secondary,
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Rectangle
-                  </button>
-                </div>
-              </div>
-            )
-          }
-
-          {/* Position Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              📍 Position
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              {['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center-left', 'center-right'].map((pos) => (
-                <button
-                  key={pos}
-                  onClick={() => handleConfigUpdate('position', pos)}
-                  style={{
-                    padding: '8px',
-                    border: `1px solid ${config.position === pos ? colors.primary[500] : colors.border.default}`,
-                    borderRadius: '6px',
-                    background: config.position === pos ? colors.primary[50] : 'white',
-                    color: config.position === pos ? colors.primary[600] : colors.text.secondary,
+                    borderRadius: '4px',
                     fontSize: '11px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize'
+                    fontFamily: 'monospace'
                   }}
-                >
-                  {pos.replace('-', ' ')}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset X</label>
-                <input type="number" value={config.offsetX || 20} onChange={(e) => handleConfigUpdate('offsetX', Number(e.target.value))} style={{ width: '100%', padding: '4px', border: `1px solid ${colors.border.default}`, borderRadius: '4px' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset Y</label>
-                <input type="number" value={config.offsetY || 20} onChange={(e) => handleConfigUpdate('offsetY', Number(e.target.value))} style={{ width: '100%', padding: '4px', border: `1px solid ${colors.border.default}`, borderRadius: '4px' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Styling - Glassmorphism & Gradient */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              ✨ Styling
-            </h5>
-
-            {/* Glassmorphism Toggle */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: colors.text.secondary }}>Glassmorphism</span>
-                <input type="checkbox" checked={config.glassmorphism?.enabled} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'enabled', e.target.checked)} />
-              </label>
-              {config.glassmorphism?.enabled && (
-                <div style={{ paddingLeft: '8px', borderLeft: `2px solid ${colors.border.default}` }}>
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Blur ({config.glassmorphism.blur}px)</label>
-                    <input type="range" min="0" max="20" value={config.glassmorphism.blur} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'blur', Number(e.target.value))} style={{ width: '100%' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Opacity ({Math.round(config.glassmorphism.opacity * 100)}%)</label>
-                    <input type="range" min="0" max="1" step="0.1" value={config.glassmorphism.opacity} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'opacity', Number(e.target.value))} style={{ width: '100%' }} />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Gradient Toggle */}
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: colors.text.secondary }}>Gradient Background</span>
-                <input type="checkbox" checked={config.gradient?.enabled} onChange={(e) => handleNestedConfigUpdate('gradient', 'enabled', e.target.checked)} />
-              </label>
-              {config.gradient?.enabled && (
-                <div style={{ paddingLeft: '8px', borderLeft: `2px solid ${colors.border.default}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Start</label>
-                    <input type="color" value={config.gradient.startColor} onChange={(e) => handleNestedConfigUpdate('gradient', 'startColor', e.target.value)} style={{ width: '100%', height: '30px', border: 'none', padding: 0 }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>End</label>
-                    <input type="color" value={config.gradient.endColor} onChange={(e) => handleNestedConfigUpdate('gradient', 'endColor', e.target.value)} style={{ width: '100%', height: '30px', border: 'none', padding: 0 }} />
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Angle ({config.gradient.angle}deg)</label>
-                    <input type="range" min="0" max="360" value={config.gradient.angle} onChange={(e) => handleNestedConfigUpdate('gradient', 'angle', Number(e.target.value))} style={{ width: '100%' }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      );
-    };
-
-    // PIP Configuration (Phase 13)
-    function renderPipConfig() { // Converted to function declaration for hoisting
-      if (selectedNudgeType !== 'pip') return null;
-
-      const config = currentCampaign?.pipConfig || {};
-
-      const handleConfigUpdate = (field: string, value: any) => {
-        updatePipConfig({ [field]: value });
-      };
-
-      // Show PIP config when:
-      // 1. PIP container is selected
-      // 2. No layer is selected
-      const isPipContainerSelected = selectedLayerObj?.type === 'container' && selectedLayerObj?.name === 'PIP Container';
-      const shouldShowFullConfig = !selectedLayerObj || isPipContainerSelected;
-
-      if (!shouldShowFullConfig) return null;
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              📺 PIP Settings
-            </h5>
-
-            {/* CTA Text - Removed (Use Button Layer Properties) */}
-            {/* CTA URL - Removed (Use Button Layer Properties) */}
-
-            {/* Position - Removed (Use Standard Layer Properties) */}
-
-            {/* Background Color - Removed (Use Standard Layer Properties) */}
-            {/* Corner Radius - Removed (Use Standard Layer Properties) */}
-
-            {/* Show Close Button */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Close Button</span>
-              <div
-                onClick={() => handleConfigUpdate('showCloseButton', config.showCloseButton !== false ? false : true)}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: config.showCloseButton !== false ? colors.primary[500] : colors.gray[300],
-                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-              >
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.showCloseButton !== false ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
-              </div>
-            </div>
-          </div>
-        </>
-      );
-    };
-
-    // Helper to render Size controls
-    const renderSizeControls = () => {
-      const parseValue = (val: any) => {
-        if (val === 'auto' || val === undefined) return { num: '', unit: 'auto' };
-        if (val === '100%') return { num: '100', unit: '%' };
-        const str = String(val);
-        if (str.endsWith('%')) return { num: parseFloat(str), unit: '%' };
-        return { num: parseFloat(str), unit: 'px' };
-      };
-
-      return (
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {/* Width */}
-            <div>
-              <label style={{ display: 'block', fontSize: '10px', color: colors.text.secondary, marginBottom: '2px' }}>Width</label>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <select
-                  value={(() => {
-                    const w = selectedLayerObj?.style?.width;
-                    if (w === 'auto' || w === undefined) return 'auto';
-                    return 'custom';
-                  })()}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'auto') handleStyleUpdate('width', 'auto');
-                    else if (val === 'custom') {
-                      const current = parseValue(selectedLayerObj?.style?.width);
-                      handleStyleUpdate('width', current.num ? `${current.num}${current.unit === 'auto' ? 'px' : current.unit}` : 200);
-                    }
-                  }}
-                  style={{ flex: 1, padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                >
-                  <option value="auto">Auto</option>
-                  <option value="custom">Custom</option>
-                </select>
-                {selectedLayerObj?.style?.width !== 'auto' && selectedLayerObj?.style?.width !== undefined && (
-                  <>
-                    <input
-                      type="number"
-                      value={parseValue(selectedLayerObj?.style?.width).num}
-                      onChange={(e) => {
-                        const unit = parseValue(selectedLayerObj?.style?.width).unit;
-                        handleStyleUpdate('width', `${e.target.value}${unit === 'auto' ? 'px' : unit}`);
-                      }}
-                      style={{ width: '50px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                    />
-                    <select
-                      value={parseValue(selectedLayerObj?.style?.width).unit}
-                      onChange={(e) => {
-                        const num = parseValue(selectedLayerObj?.style?.width).num || 0;
-                        handleStyleUpdate('width', `${num}${e.target.value}`);
-                      }}
-                      style={{ width: '45px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                    >
-                      <option value="px">px</option>
-                      <option value="%">%</option>
-                    </select>
-                  </>
-                )}
+                />
               </div>
             </div>
 
-            {/* Height */}
-            <div>
-              <label style={{ display: 'block', fontSize: '10px', color: colors.text.secondary, marginBottom: '2px' }}>Height</label>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <select
-                  value={(() => {
-                    const h = selectedLayerObj?.style?.height;
-                    if (h === 'auto' || h === undefined) return 'auto';
-                    return 'custom';
-                  })()}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'auto') handleStyleUpdate('height', 'auto');
-                    else if (val === 'custom') {
-                      const current = parseValue(selectedLayerObj?.style?.height);
-                      handleStyleUpdate('height', current.num ? `${current.num}${current.unit === 'auto' ? 'px' : current.unit}` : 48);
-                    }
-                  }}
-                  style={{ flex: 1, padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                >
-                  <option value="auto">Auto</option>
-                  <option value="custom">Custom</option>
-                </select>
-                {selectedLayerObj?.style?.height !== 'auto' && selectedLayerObj?.style?.height !== undefined && (
-                  <>
-                    <input
-                      type="number"
-                      value={parseValue(selectedLayerObj?.style?.height).num}
-                      onChange={(e) => {
-                        const unit = parseValue(selectedLayerObj?.style?.height).unit;
-                        handleStyleUpdate('height', `${e.target.value}${unit === 'auto' ? 'px' : unit}`);
-                      }}
-                      style={{ width: '50px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                    />
-                    <select
-                      value={parseValue(selectedLayerObj?.style?.height).unit}
-                      onChange={(e) => {
-                        const num = parseValue(selectedLayerObj?.style?.height).num || 0;
-                        handleStyleUpdate('height', `${num}${e.target.value}`);
-                      }}
-                      style={{ width: '45px', padding: '6px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                    >
-                      <option value="px">px</option>
-                      <option value="%">%</option>
-                    </select>
-                  </>
-                )}
+            {/* Preview */}
+            <div style={{ marginTop: '12px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '6px' }}>Preview</label>
+              <div style={{
+                width: '100%',
+                height: '60px',
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                boxShadow: selectedLayerObj?.style?.boxShadow || '0 2px 8px rgba(0,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                color: colors.text.secondary
+              }}>
+                Shadow Preview
               </div>
             </div>
           </div>
         </div>
-      );
-    };
+      </div>
+    </>
+  );
+};
 
-    // Common style properties
-    const renderCommonStyles = () => {
-      const bgColor = selectedLayerObj?.style?.backgroundColor || '#FFFFFF';
-      const hasBorder = selectedLayerObj?.style?.borderWidth
-        ? typeof selectedLayerObj.style.borderWidth === 'number'
-          ? selectedLayerObj.style.borderWidth > 0
-          : (selectedLayerObj.style.borderWidth.top > 0 ||
-            selectedLayerObj.style.borderWidth.right > 0 ||
-            selectedLayerObj.style.borderWidth.bottom > 0 ||
-            selectedLayerObj.style.borderWidth.left > 0)
-        : false;
-      const positionType = selectedLayerObj?.position?.type || 'relative';
-      const posX = selectedLayerObj?.position?.x || 0;
-      const posY = selectedLayerObj?.position?.y || 0;
+// Media/Image properties
+if (selectedLayerObj.type === 'media' || selectedLayerObj.type === 'video' || selectedLayerObj.type === 'icon' || selectedLayerObj.type === 'overlay') {
+  const imageUrl = selectedLayerObj?.content?.imageUrl || selectedLayerObj?.content?.videoUrl || '';
+  const width = selectedLayerObj?.size?.width || 720;
+  const height = selectedLayerObj?.size?.height || 640;
+  const hasUrl = !!imageUrl;
 
-      const parentLayer = campaignLayers.find(l => l.id === selectedLayerObj.parent);
-      const isPipLayer = parentLayer?.name === 'PIP Container';
-
-      return (
-        <>
-          {/* Position Controls (Fix 6) */}
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <PositionEditor
-              style={selectedLayerObj.style || {}}
-              onChange={(updates) => updateLayerStyle(selectedLayerId!, updates)}
-              colors={colors}
-              showZIndex={!isPipLayer}
-              showCoordinates={!isPipLayer}
-              showPositionType={!isPipLayer}
-            />
-          </div>
-
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Background</h5>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
-              <input
-                type="color"
-                value={bgColor}
-                onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-              />
-              <input
-                type="text"
-                value={bgColor}
-                onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Media Properties</h5>
+        <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px', border: `1px solid ${colors.border.default}`, backgroundColor: colors.gray[100] }}>
+          {imageUrl ? (
+            <img src={imageUrl} alt="Media preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.text.secondary, fontSize: '13px' }}>
+              Upload Image
             </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ fontSize: '13px', color: colors.text.primary }}>Add URL</span>
+          <div
+            onClick={() => {
+              // Toggle URL input visibility (for now just toggle state)
+            }}
+            style={{
+              width: '44px',
+              height: '24px',
+              borderRadius: '12px',
+              background: hasUrl ? colors.primary[500] : colors.gray[300],
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: '#fff',
+              position: 'absolute',
+              top: '2px',
+              left: hasUrl ? '22px' : '2px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              transition: 'left 0.2s'
+            }} />
           </div>
-
-          {/* Shape Editor (Added to Common Styles) */}
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Shapes & Borders</h5>
-            <ShapeEditor
-              style={selectedLayerObj.style || {}}
-              onChange={(updates) => updateLayerStyle(selectedLayerId!, updates)}
-              colors={colors}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <input
+            type="text"
+            value={imageUrl}
+            onChange={(e) => handleContentUpdate(selectedLayerObj.type === 'video' ? 'videoUrl' : 'imageUrl', e.target.value)}
+            placeholder="https://example.com/image.png"
+            style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+          <label style={{
+            padding: '8px 16px',
+            background: colors.primary[500],
+            color: 'white',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            whiteSpace: 'nowrap'
+          }}>
+            Upload
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, 'layer')}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+        {renderSizeControls()}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Width</label>
+            <input
+              type="number"
+              value={width}
+              onChange={(e) => handleContentUpdate('imageSize', { width: Number(e.target.value), height })}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
             />
           </div>
+          <Lock size={16} color={colors.gray[400]} style={{ marginTop: '20px' }} />
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Height</label>
+            <input
+              type="number"
+              value={height}
+              onChange={(e) => handleContentUpdate('imageSize', { width, height: Number(e.target.value) })}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
 
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Border</h5>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', color: colors.text.primary }}>Add Border</span>
-              <div
-                onClick={() => handleStyleUpdate('borderWidth', hasBorder ? 0 : 1)}
+// Text properties
+if (selectedLayerObj.type === 'text') {
+  const textContent = selectedLayerObj?.content?.text || '';
+  const fontSize = selectedLayerObj?.content?.fontSize || 16;
+  const fontWeight = selectedLayerObj?.content?.fontWeight || 'semibold';
+  const textColor = selectedLayerObj?.content?.textColor || '#111827';
+  const textAlign = selectedLayerObj?.content?.textAlign || 'center';
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Text Properties</h5>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Content</label>
+          <textarea
+            placeholder="Enter text content..."
+            value={textContent}
+            onChange={(e) => handleContentUpdate('text', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', minHeight: '80px', resize: 'vertical' }}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
+            <input
+              type="number"
+              value={fontSize}
+              onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Weight</label>
+            <select
+              value={fontWeight}
+              onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="normal">Normal</option>
+              <option value="medium">Medium</option>
+              <option value="semibold">Semibold</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+              style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
+            <input
+              type="text"
+              value={textColor}
+              onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Align</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            {['left', 'center', 'right'].map(align => (
+              <button
+                key={align}
+                onClick={() => handleStyleUpdate('textAlign', align)}
                 style={{
-                  width: '44px',
-                  height: '24px',
-                  borderRadius: '12px',
-                  background: hasBorder ? colors.primary[500] : colors.gray[300],
-                  position: 'relative',
+                  padding: '8px',
+                  border: `1px solid ${align === textAlign ? colors.primary[500] : colors.border.default}`,
+                  borderRadius: '6px',
+                  background: align === textAlign ? colors.primary[50] : 'transparent',
+                  fontSize: '12px',
                   cursor: 'pointer',
-                  transition: 'background 0.2s'
+                  color: align === textAlign ? colors.primary[500] : colors.text.secondary,
+                  textTransform: 'capitalize'
                 }}
               >
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  background: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: hasBorder ? '22px' : '2px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  transition: 'left 0.2s'
-                }} />
-              </div>
-            </div>
-            {hasBorder && (
-              <>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                    Border Width: {typeof selectedLayerObj?.style?.borderWidth === 'number' ? selectedLayerObj.style.borderWidth : 1}px
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={typeof selectedLayerObj?.style?.borderWidth === 'number' ? selectedLayerObj.style.borderWidth : 1}
-                    onChange={(e) => handleStyleUpdate('borderWidth', Number(e.target.value))}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Border Color</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={selectedLayerObj?.style?.borderColor || '#000000'}
-                      onChange={(e) => handleStyleUpdate('borderColor', e.target.value)}
-                      style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={selectedLayerObj?.style?.borderColor || '#000000'}
-                      onChange={(e) => handleStyleUpdate('borderColor', e.target.value)}
-                      style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                    />
-                  </div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Border Style</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                    {['solid', 'dashed', 'dotted'].map((style) => (
-                      <button
-                        key={style}
-                        onClick={() => handleStyleUpdate('borderStyle', style)}
-                        style={{
-                          padding: '8px',
-                          border: `1px solid ${(selectedLayerObj?.style?.borderStyle || 'solid') === style ? colors.primary[500] : colors.border.default}`,
-                          borderRadius: '6px',
-                          background: (selectedLayerObj?.style?.borderStyle || 'solid') === style ? colors.primary[50] : 'white',
-                          color: (selectedLayerObj?.style?.borderStyle || 'solid') === style ? colors.primary[600] : colors.text.secondary,
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          textTransform: 'capitalize'
-                        }}
-                      >
-                        {style}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+                {align}
+              </button>
+            ))}
           </div>
+        </div>
+        {renderSizeControls()}
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
 
-          {/* Filter Controls (Feature 5) */}
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Filters</h5>
-              {(selectedLayerObj?.style?.filter?.blur || selectedLayerObj?.style?.filter?.brightness || selectedLayerObj?.style?.filter?.contrast || selectedLayerObj?.style?.filter?.grayscale) && (
-                <button
-                  onClick={() => handleStyleUpdate('filter', {})}
-                  style={{
-                    padding: '4px 8px',
-                    border: `1px solid ${colors.border.default}`,
-                    backgroundColor: 'white',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    color: colors.text.secondary
-                  }}
-                >
-                  Reset All
-                </button>
-              )}
-            </div>
+// Button/CTA properties
+if (selectedLayerObj.type === 'button') {
+  const buttonText = selectedLayerObj?.content?.label || 'Got it';
+  const buttonStyle = selectedLayerObj?.content?.buttonStyle || 'primary';
+  const buttonColor = selectedLayerObj?.style?.backgroundColor || '#6366F1';
+  const buttonTextColor = selectedLayerObj?.content?.textColor || '#FFFFFF';
+  const buttonBorderRadius = typeof selectedLayerObj?.style?.borderRadius === 'number'
+    ? selectedLayerObj.style.borderRadius
+    : 8;
 
-            {/* Blur */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Blur: {selectedLayerObj?.style?.filter?.blur || 0}px
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                step="0.5"
-                value={selectedLayerObj?.style?.filter?.blur || 0}
-                onChange={(e) => {
-                  const currentFilter = selectedLayerObj?.style?.filter || {};
-                  handleStyleUpdate('filter', { ...currentFilter, blur: Number(e.target.value) });
-                }}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* Brightness */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Brightness: {selectedLayerObj?.style?.filter?.brightness || 100}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="200"
-                step="5"
-                value={selectedLayerObj?.style?.filter?.brightness || 100}
-                onChange={(e) => {
-                  const currentFilter = selectedLayerObj?.style?.filter || {};
-                  handleStyleUpdate('filter', { ...currentFilter, brightness: Number(e.target.value) });
-                }}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* Contrast */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Contrast: {selectedLayerObj?.style?.filter?.contrast || 100}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="200"
-                step="5"
-                value={selectedLayerObj?.style?.filter?.contrast || 100}
-                onChange={(e) => {
-                  const currentFilter = selectedLayerObj?.style?.filter || {};
-                  handleStyleUpdate('filter', { ...currentFilter, contrast: Number(e.target.value) });
-                }}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* Grayscale */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Grayscale: {selectedLayerObj?.style?.filter?.grayscale || 0}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={selectedLayerObj?.style?.filter?.grayscale || 0}
-                onChange={(e) => {
-                  const currentFilter = selectedLayerObj?.style?.filter || {};
-                  handleStyleUpdate('filter', { ...currentFilter, grayscale: Number(e.target.value) });
-                }}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Button Properties</h5>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Button Text</label>
+          <input
+            type="text"
+            value={buttonText}
+            onChange={(e) => handleContentUpdate('label', e.target.value)}
+            placeholder="Enter button text"
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
+            <input
+              type="number"
+              value={selectedLayerObj?.content?.fontSize || 14}
+              onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
           </div>
-
-          {/* Transform Controls (Feature 6) */}
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Transform</h5>
-              {(selectedLayerObj?.style?.transform?.rotate || selectedLayerObj?.style?.transform?.scale || selectedLayerObj?.style?.transform?.translateX || selectedLayerObj?.style?.transform?.translateY) && (
-                <button
-                  onClick={() => handleStyleUpdate('transform', {})}
-                  style={{
-                    padding: '4px 8px',
-                    border: `1px solid ${colors.border.default}`,
-                    backgroundColor: 'white',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    color: colors.text.secondary
-                  }}
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-
-            {/* Rotation */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Rotate: {selectedLayerObj?.style?.transform?.rotate || 0}°
-              </label>
-              <input
-                type="range"
-                min="-180"
-                max="180"
-                step="1"
-                value={selectedLayerObj?.style?.transform?.rotate || 0}
-                onChange={(e) => {
-                  const currentTransform = selectedLayerObj?.style?.transform || {};
-                  handleStyleUpdate('transform', { ...currentTransform, rotate: Number(e.target.value) });
-                }}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-              <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-                {[-90, -45, 0, 45, 90, 180].map(angle => (
-                  <button
-                    key={angle}
-                    onClick={() => {
-                      const currentTransform = selectedLayerObj?.style?.transform || {};
-                      handleStyleUpdate('transform', { ...currentTransform, rotate: angle });
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: '4px 6px',
-                      border: `1px solid ${colors.border.default}`,
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      cursor: 'pointer',
-                      backgroundColor: (selectedLayerObj?.style?.transform?.rotate || 0) === angle ? colors.gray[100] : 'transparent'
-                    }}
-                  >
-                    {angle}°
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Scale */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Scale: {selectedLayerObj?.style?.transform?.scale || 1}x
-              </label>
-              <input
-                type="range"
-                min="0.1"
-                max="3"
-                step="0.1"
-                value={selectedLayerObj?.style?.transform?.scale || 1}
-                onChange={(e) => {
-                  const currentTransform = selectedLayerObj?.style?.transform || {};
-                  handleStyleUpdate('transform', { ...currentTransform, scale: Number(e.target.value) });
-                }}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Weight</label>
+            <select
+              value={selectedLayerObj?.content?.fontWeight || 'medium'}
+              onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="normal">Normal</option>
+              <option value="medium">Medium</option>
+              <option value="semibold">Semibold</option>
+              <option value="bold">Bold</option>
+            </select>
           </div>
+        </div>
 
-          {/* Advanced Shadow Builder (Feature 7) */}
-          <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Box Shadow</h5>
-              {selectedLayerObj?.style?.boxShadow && (
-                <button
-                  onClick={() => handleStyleUpdate('boxShadow', undefined)}
-                  style={{
-                    padding: '4px 8px',
-                    border: `1px solid ${colors.border.default}`,
-                    backgroundColor: 'white',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    color: colors.text.secondary
-                  }}
-                >
-                  Remove
-                </button>
-              )}
-            </div>
+        {renderSizeControls()}
 
-            {/* Shadow Presets */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Quick Presets</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-                {[
-                  { name: 'Soft', value: '0 2px 8px rgba(0,0,0,0.1)' },
-                  { name: 'Medium', value: '0 4px 12px rgba(0,0,0,0.15)' },
-                  { name: 'Hard', value: '0 8px 24px rgba(0,0,0,0.25)' },
-                  { name: 'Glow', value: '0 0 20px rgba(99, 102, 241, 0.5)' },
-                  { name: 'Inner', value: 'inset 0 2px 4px rgba(0,0,0,0.1)' },
-                  { name: 'Lifted', value: '0 10px 40px rgba(0,0,0,0.2)' }
-                ].map((preset) => (
-                  <button
-                    key={preset.name}
-                    onClick={() => handleStyleUpdate('boxShadow', preset.value)}
-                    style={{
-                      padding: '8px 12px',
-                      border: `1px solid ${colors.border.default}`,
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      fontWeight: 500,
-                      backgroundColor: selectedLayerObj?.style?.boxShadow === preset.value ? colors.primary[50] : 'white',
-                      color: selectedLayerObj?.style?.boxShadow === preset.value ? colors.primary[600] : colors.text.primary,
-                      boxShadow: preset.value,
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Button Style</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+            {['primary', 'secondary'].map(style => (
+              <button
+                key={style}
+                onClick={() => handleContentUpdate('buttonStyle', style)}
+                style={{
+                  padding: '8px',
+                  border: `1px solid ${style === buttonStyle ? colors.primary[500] : colors.border.default}`,
+                  borderRadius: '6px',
+                  background: style === buttonStyle ? colors.primary[50] : 'transparent',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  color: style === buttonStyle ? colors.primary[500] : colors.text.secondary
+                }}
+              >
+                {style.charAt(0).toUpperCase() + style.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
+          <select
+            value={selectedLayerObj.content?.buttonVariant || 'primary'}
+            onChange={(e) => handleContentUpdate('buttonVariant', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="primary">Primary (Solid)</option>
+            <option value="secondary">Secondary (Soft)</option>
+            <option value="outline">Outline</option>
+            <option value="ghost">Ghost</option>
+            <option value="soft">Soft</option>
+            <option value="glass">Glass</option>
+            <option value="gradient">Gradient</option>
+            <option value="shine">Shine</option>
+            <option value="3d">3D</option>
+            <option value="elevated">Elevated</option>
+            <option value="neumorphic">Neumorphic</option>
+            <option value="pill">Pill</option>
+            <option value="underline">Underline</option>
+            <option value="glow">Glow</option>
+            <option value="cyberpunk">Cyberpunk</option>
+            <option value="two-tone">Two Tone</option>
+            <option value="comic">Comic</option>
+            <option value="skeuomorphic">Skeuomorphic</option>
+            <option value="liquid">Liquid</option>
+            <option value="block">Block</option>
+          </select>
+        </div>
 
-            {/* Custom Shadow Builder */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Custom Shadow</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Icon</label>
+            <select
+              value={selectedLayerObj.content?.buttonIcon || ''}
+              onChange={(e) => handleContentUpdate('buttonIcon', e.target.value)}
+              style={{ width: '100%', padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="">None</option>
+              <option value="ArrowRight">Arrow Right</option>
+              <option value="ArrowLeft">Arrow Left</option>
+              <option value="Play">Play</option>
+              <option value="Search">Search</option>
+              <option value="Home">Home</option>
+              <option value="Check">Check</option>
+              <option value="X">X</option>
+              <option value="Download">Download</option>
+              <option value="Upload">Upload</option>
+              <option value="User">User</option>
+              <option value="Settings">Settings</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Position</label>
+            <select
+              value={selectedLayerObj.content?.buttonIconPosition || 'right'}
+              onChange={(e) => handleContentUpdate('buttonIconPosition', e.target.value)}
+              style={{ width: '100%', padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Theme Color</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="color"
+              value={selectedLayerObj.content?.themeColor || '#6366F1'}
+              onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
+              style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
+            <input
+              type="text"
+              value={selectedLayerObj.content?.themeColor || '#6366F1'}
+              onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Button Color</label>
+            <input
+              type="color"
+              value={buttonColor}
+              onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+              style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
+            <input
+              type="color"
+              value={buttonTextColor}
+              onChange={(e) => handleContentUpdate('color', e.target.value)}
+              style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            <span>Border Radius</span>
+            <span style={{ fontWeight: 600, color: colors.text.primary }}>{buttonBorderRadius}px</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="40"
+            value={buttonBorderRadius}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setBorderRadiusValue(value);
+              handleStyleUpdate('borderRadius', value);
+            }}
+            style={{ width: '100%', accentColor: colors.primary[500] }}
+          />
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Progress Bar properties (Phase 2)
+if (selectedLayerObj.type === 'progress-bar') {
+  const value = selectedLayerObj.content?.value || 0;
+  const max = selectedLayerObj.content?.max || 100;
+  const showPercentage = selectedLayerObj.content?.showPercentage || false;
+  const barColor = selectedLayerObj.style?.backgroundColor || '#22C55E';
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Progress Bar Properties</h5>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Current Value</label>
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => handleContentUpdate('value', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Max Value</label>
+          <input
+            type="number"
+            value={max}
+            onChange={(e) => handleContentUpdate('max', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
+          <select
+            value={selectedLayerObj.content?.progressBarVariant || 'simple'}
+            onChange={(e) => handleContentUpdate('progressBarVariant', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="simple">Simple</option>
+            <option value="rounded">Rounded</option>
+            <option value="striped">Striped</option>
+            <option value="animated">Animated Striped</option>
+            <option value="gradient">Gradient</option>
+            <option value="segmented">Segmented</option>
+            <option value="glow">Glow</option>
+          </select>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Theme Color</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="color"
+              value={selectedLayerObj.content?.themeColor || '#22C55E'}
+              onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
+              style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
+            <input
+              type="text"
+              value={selectedLayerObj.content?.themeColor || '#22C55E'}
+              onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Bar Color (Legacy)</label>
+          <input
+            type="color"
+            value={barColor}
+            onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+            style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('showPercentage', !showPercentage)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: showPercentage ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
               <div style={{
-                padding: '12px',
-                border: `1px solid ${colors.border.default}`,
-                borderRadius: '8px',
-                backgroundColor: colors.gray[50]
-              }}>
-                {/* X Offset */}
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                    X Offset: 0px
-                  </label>
-                  <input
-                    type="range"
-                    min="-50"
-                    max="50"
-                    step="1"
-                    defaultValue="0"
-                    onChange={(e) => {
-                      const xOffset = Number(e.target.value);
-                      handleStyleUpdate('boxShadow', `${xOffset}px 4px 12px rgba(0,0,0,0.15)`);
-                    }}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </div>
-
-                {/* Y Offset */}
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                    Y Offset: 4px
-                  </label>
-                  <input
-                    type="range"
-                    min="-50"
-                    max="50"
-                    step="1"
-                    defaultValue="4"
-                    onChange={(e) => {
-                      const yOffset = Number(e.target.value);
-                      handleStyleUpdate('boxShadow', `0px ${yOffset}px 12px rgba(0,0,0,0.15)`);
-                    }}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </div>
-
-                {/* Blur Radius */}
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                    Blur: 12px
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    step="1"
-                    defaultValue="12"
-                    onChange={(e) => {
-                      const blur = Number(e.target.value);
-                      handleStyleUpdate('boxShadow', `0px 4px ${blur}px rgba(0,0,0,0.15)`);
-                    }}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </div>
-
-                {/* Shadow Color */}
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                    Shadow Color
-                  </label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                      type="color"
-                      defaultValue="#000000"
-                      onChange={(e) => {
-                        const color = e.target.value;
-                        handleStyleUpdate('boxShadow', `0px 4px 12px ${color}26`);
-                      }}
-                      style={{ width: '36px', height: '32px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="rgba(0,0,0,0.15)"
-                      defaultValue="rgba(0,0,0,0.15)"
-                      onChange={(e) => {
-                        handleStyleUpdate('boxShadow', `0px 4px 12px ${e.target.value}`);
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontFamily: 'monospace'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Preview */}
-                <div style={{ marginTop: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '6px' }}>Preview</label>
-                  <div style={{
-                    width: '100%',
-                    height: '60px',
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    boxShadow: selectedLayerObj?.style?.boxShadow || '0 2px 8px rgba(0,0,0,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '10px',
-                    color: colors.text.secondary
-                  }}>
-                    Shadow Preview
-                  </div>
-                </div>
-              </div>
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: showPercentage ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
             </div>
+            <span>Show Percentage</span>
+          </label>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Progress Circle properties (Phase 2)
+if (selectedLayerObj.type === 'progress-circle') {
+  const value = selectedLayerObj.content?.value || 0;
+  const max = selectedLayerObj.content?.max || 100;
+  const showPercentage = selectedLayerObj.content?.showPercentage !== false;
+  const circleColor = selectedLayerObj.style?.backgroundColor || '#6366F1';
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Progress Circle Properties</h5>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Current Value</label>
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => handleContentUpdate('value', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
+          <select
+            value={selectedLayerObj.content?.progressVariant || 'simple'}
+            onChange={(e) => handleContentUpdate('progressVariant', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="simple">Simple Ring</option>
+            <option value="semicircle">Semicircle (Gauge)</option>
+            <option value="thick">Thick Ring (Donut)</option>
+            <option value="dashed">Dashed Ring</option>
+          </select>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Max Value</label>
+          <input
+            type="number"
+            value={max}
+            onChange={(e) => handleContentUpdate('max', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Theme Color</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="color"
+              value={selectedLayerObj.content?.themeColor || '#6366F1'}
+              onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
+              style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
+            <input
+              type="text"
+              value={selectedLayerObj.content?.themeColor || '#6366F1'}
+              onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
           </div>
-        </>
-      );
-    };
-
-    // Media/Image properties
-    if (selectedLayerObj.type === 'media' || selectedLayerObj.type === 'video' || selectedLayerObj.type === 'icon' || selectedLayerObj.type === 'overlay') {
-      const imageUrl = selectedLayerObj?.content?.imageUrl || selectedLayerObj?.content?.videoUrl || '';
-      const width = selectedLayerObj?.size?.width || 720;
-      const height = selectedLayerObj?.size?.height || 640;
-      const hasUrl = !!imageUrl;
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Media Properties</h5>
-            <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px', border: `1px solid ${colors.border.default}`, backgroundColor: colors.gray[100] }}>
-              {imageUrl ? (
-                <img src={imageUrl} alt="Media preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.text.secondary, fontSize: '13px' }}>
-                  Upload Image
-                </div>
-              )}
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Circle Color (Legacy)</label>
+          <input
+            type="color"
+            value={circleColor}
+            onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+            style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('showPercentage', !showPercentage)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: showPercentage ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: showPercentage ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', color: colors.text.primary }}>Add URL</span>
-              <div
-                onClick={() => {
-                  // Toggle URL input visibility (for now just toggle state)
-                }}
-                style={{
-                  width: '44px',
-                  height: '24px',
-                  borderRadius: '12px',
-                  background: hasUrl ? colors.primary[500] : colors.gray[300],
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-              >
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  background: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: hasUrl ? '22px' : '2px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  transition: 'left 0.2s'
-                }} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <span>Show Percentage</span>
+          </label>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+
+
+// List properties (Phase 2)
+if (selectedLayerObj.type === 'list') {
+  const items = selectedLayerObj.content?.items || [];
+  const listStyle = selectedLayerObj.content?.listStyle || 'bullet';
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>List Properties</h5>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>List Style</label>
+          <select
+            value={listStyle}
+            onChange={(e) => handleContentUpdate('listStyle', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', background: 'white' }}
+          >
+            <option value="bullet">Bullet</option>
+            <option value="numbered">Numbered</option>
+            <option value="checkmark">Checkmark</option>
+          </select>
+        </div>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>List Items</label>
+          {items.map((item: string, index: number) => (
+            <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
               <input
                 type="text"
-                value={imageUrl}
-                onChange={(e) => handleContentUpdate(selectedLayerObj.type === 'video' ? 'videoUrl' : 'imageUrl', e.target.value)}
-                placeholder="https://example.com/image.png"
-                style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-              <label style={{
-                padding: '8px 16px',
-                background: colors.primary[500],
-                color: 'white',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                whiteSpace: 'nowrap'
-              }}>
-                Upload
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, 'layer')}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
-            {renderSizeControls()}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Width</label>
-                <input
-                  type="number"
-                  value={width}
-                  onChange={(e) => handleContentUpdate('imageSize', { width: Number(e.target.value), height })}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <Lock size={16} color={colors.gray[400]} style={{ marginTop: '20px' }} />
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Height</label>
-                <input
-                  type="number"
-                  value={height}
-                  onChange={(e) => handleContentUpdate('imageSize', { width, height: Number(e.target.value) })}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Text properties
-    if (selectedLayerObj.type === 'text') {
-      const textContent = selectedLayerObj?.content?.text || '';
-      const fontSize = selectedLayerObj?.content?.fontSize || 16;
-      const fontWeight = selectedLayerObj?.content?.fontWeight || 'semibold';
-      const textColor = selectedLayerObj?.content?.textColor || '#111827';
-      const textAlign = selectedLayerObj?.content?.textAlign || 'center';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Text Properties</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Content</label>
-              <textarea
-                placeholder="Enter text content..."
-                value={textContent}
-                onChange={(e) => handleContentUpdate('text', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', minHeight: '80px', resize: 'vertical' }}
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
-                <input
-                  type="number"
-                  value={fontSize}
-                  onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Weight</label>
-                <select
-                  value={fontWeight}
-                  onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="medium">Medium</option>
-                  <option value="semibold">Semibold</option>
-                  <option value="bold">Bold</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={textColor}
-                  onChange={(e) => handleContentUpdate('textColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={textColor}
-                  onChange={(e) => handleContentUpdate('textColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Align</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                {['left', 'center', 'right'].map(align => (
-                  <button
-                    key={align}
-                    onClick={() => handleStyleUpdate('textAlign', align)}
-                    style={{
-                      padding: '8px',
-                      border: `1px solid ${align === textAlign ? colors.primary[500] : colors.border.default}`,
-                      borderRadius: '6px',
-                      background: align === textAlign ? colors.primary[50] : 'transparent',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      color: align === textAlign ? colors.primary[500] : colors.text.secondary,
-                      textTransform: 'capitalize'
-                    }}
-                  >
-                    {align}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {renderSizeControls()}
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Button/CTA properties
-    if (selectedLayerObj.type === 'button') {
-      const buttonText = selectedLayerObj?.content?.label || 'Got it';
-      const buttonStyle = selectedLayerObj?.content?.buttonStyle || 'primary';
-      const buttonColor = selectedLayerObj?.style?.backgroundColor || '#6366F1';
-      const buttonTextColor = selectedLayerObj?.content?.textColor || '#FFFFFF';
-      const buttonBorderRadius = typeof selectedLayerObj?.style?.borderRadius === 'number'
-        ? selectedLayerObj.style.borderRadius
-        : 8;
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Button Properties</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Button Text</label>
-              <input
-                type="text"
-                value={buttonText}
-                onChange={(e) => handleContentUpdate('label', e.target.value)}
-                placeholder="Enter button text"
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
-                <input
-                  type="number"
-                  value={selectedLayerObj?.content?.fontSize || 14}
-                  onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Weight</label>
-                <select
-                  value={selectedLayerObj?.content?.fontWeight || 'medium'}
-                  onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="medium">Medium</option>
-                  <option value="semibold">Semibold</option>
-                  <option value="bold">Bold</option>
-                </select>
-              </div>
-            </div>
-
-            {renderSizeControls()}
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Button Style</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                {['primary', 'secondary'].map(style => (
-                  <button
-                    key={style}
-                    onClick={() => handleContentUpdate('buttonStyle', style)}
-                    style={{
-                      padding: '8px',
-                      border: `1px solid ${style === buttonStyle ? colors.primary[500] : colors.border.default}`,
-                      borderRadius: '6px',
-                      background: style === buttonStyle ? colors.primary[50] : 'transparent',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      color: style === buttonStyle ? colors.primary[500] : colors.text.secondary
-                    }}
-                  >
-                    {style.charAt(0).toUpperCase() + style.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
-              <select
-                value={selectedLayerObj.content?.buttonVariant || 'primary'}
-                onChange={(e) => handleContentUpdate('buttonVariant', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="primary">Primary (Solid)</option>
-                <option value="secondary">Secondary (Soft)</option>
-                <option value="outline">Outline</option>
-                <option value="ghost">Ghost</option>
-                <option value="soft">Soft</option>
-                <option value="glass">Glass</option>
-                <option value="gradient">Gradient</option>
-                <option value="shine">Shine</option>
-                <option value="3d">3D</option>
-                <option value="elevated">Elevated</option>
-                <option value="neumorphic">Neumorphic</option>
-                <option value="pill">Pill</option>
-                <option value="underline">Underline</option>
-                <option value="glow">Glow</option>
-                <option value="cyberpunk">Cyberpunk</option>
-                <option value="two-tone">Two Tone</option>
-                <option value="comic">Comic</option>
-                <option value="skeuomorphic">Skeuomorphic</option>
-                <option value="liquid">Liquid</option>
-                <option value="block">Block</option>
-              </select>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Icon</label>
-                <select
-                  value={selectedLayerObj.content?.buttonIcon || ''}
-                  onChange={(e) => handleContentUpdate('buttonIcon', e.target.value)}
-                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                >
-                  <option value="">None</option>
-                  <option value="ArrowRight">Arrow Right</option>
-                  <option value="ArrowLeft">Arrow Left</option>
-                  <option value="Play">Play</option>
-                  <option value="Search">Search</option>
-                  <option value="Home">Home</option>
-                  <option value="Check">Check</option>
-                  <option value="X">X</option>
-                  <option value="Download">Download</option>
-                  <option value="Upload">Upload</option>
-                  <option value="User">User</option>
-                  <option value="Settings">Settings</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Position</label>
-                <select
-                  value={selectedLayerObj.content?.buttonIconPosition || 'right'}
-                  onChange={(e) => handleContentUpdate('buttonIconPosition', e.target.value)}
-                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                >
-                  <option value="left">Left</option>
-                  <option value="right">Right</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Theme Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={selectedLayerObj.content?.themeColor || '#6366F1'}
-                  onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={selectedLayerObj.content?.themeColor || '#6366F1'}
-                  onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Button Color</label>
-                <input
-                  type="color"
-                  value={buttonColor}
-                  onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                  style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
-                <input
-                  type="color"
-                  value={buttonTextColor}
-                  onChange={(e) => handleContentUpdate('color', e.target.value)}
-                  style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                <span>Border Radius</span>
-                <span style={{ fontWeight: 600, color: colors.text.primary }}>{buttonBorderRadius}px</span>
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="40"
-                value={buttonBorderRadius}
+                value={item}
                 onChange={(e) => {
-                  const value = Number(e.target.value);
-                  setBorderRadiusValue(value);
-                  handleStyleUpdate('borderRadius', value);
+                  const newItems = [...items];
+                  newItems[index] = e.target.value;
+                  handleContentUpdate('items', newItems);
                 }}
-                style={{ width: '100%', accentColor: colors.primary[500] }}
+                style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                placeholder={`Item ${index + 1}`}
               />
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Progress Bar properties (Phase 2)
-    if (selectedLayerObj.type === 'progress-bar') {
-      const value = selectedLayerObj.content?.value || 0;
-      const max = selectedLayerObj.content?.max || 100;
-      const showPercentage = selectedLayerObj.content?.showPercentage || false;
-      const barColor = selectedLayerObj.style?.backgroundColor || '#22C55E';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Progress Bar Properties</h5>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Current Value</label>
-              <input
-                type="number"
-                value={value}
-                onChange={(e) => handleContentUpdate('value', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Max Value</label>
-              <input
-                type="number"
-                value={max}
-                onChange={(e) => handleContentUpdate('max', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
-              <select
-                value={selectedLayerObj.content?.progressBarVariant || 'simple'}
-                onChange={(e) => handleContentUpdate('progressBarVariant', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="simple">Simple</option>
-                <option value="rounded">Rounded</option>
-                <option value="striped">Striped</option>
-                <option value="animated">Animated Striped</option>
-                <option value="gradient">Gradient</option>
-                <option value="segmented">Segmented</option>
-                <option value="glow">Glow</option>
-              </select>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Theme Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={selectedLayerObj.content?.themeColor || '#22C55E'}
-                  onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={selectedLayerObj.content?.themeColor || '#22C55E'}
-                  onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Bar Color (Legacy)</label>
-              <input
-                type="color"
-                value={barColor}
-                onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('showPercentage', !showPercentage)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: showPercentage ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: showPercentage ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Show Percentage</span>
-              </label>
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Progress Circle properties (Phase 2)
-    if (selectedLayerObj.type === 'progress-circle') {
-      const value = selectedLayerObj.content?.value || 0;
-      const max = selectedLayerObj.content?.max || 100;
-      const showPercentage = selectedLayerObj.content?.showPercentage !== false;
-      const circleColor = selectedLayerObj.style?.backgroundColor || '#6366F1';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Progress Circle Properties</h5>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Current Value</label>
-              <input
-                type="number"
-                value={value}
-                onChange={(e) => handleContentUpdate('value', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
-              <select
-                value={selectedLayerObj.content?.progressVariant || 'simple'}
-                onChange={(e) => handleContentUpdate('progressVariant', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="simple">Simple Ring</option>
-                <option value="semicircle">Semicircle (Gauge)</option>
-                <option value="thick">Thick Ring (Donut)</option>
-                <option value="dashed">Dashed Ring</option>
-              </select>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Max Value</label>
-              <input
-                type="number"
-                value={max}
-                onChange={(e) => handleContentUpdate('max', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Theme Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={selectedLayerObj.content?.themeColor || '#6366F1'}
-                  onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={selectedLayerObj.content?.themeColor || '#6366F1'}
-                  onChange={(e) => handleContentUpdate('themeColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Circle Color (Legacy)</label>
-              <input
-                type="color"
-                value={circleColor}
-                onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('showPercentage', !showPercentage)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: showPercentage ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: showPercentage ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Show Percentage</span>
-              </label>
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-
-
-    // List properties (Phase 2)
-    if (selectedLayerObj.type === 'list') {
-      const items = selectedLayerObj.content?.items || [];
-      const listStyle = selectedLayerObj.content?.listStyle || 'bullet';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>List Properties</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>List Style</label>
-              <select
-                value={listStyle}
-                onChange={(e) => handleContentUpdate('listStyle', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', background: 'white' }}
-              >
-                <option value="bullet">Bullet</option>
-                <option value="numbered">Numbered</option>
-                <option value="checkmark">Checkmark</option>
-              </select>
-            </div>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>List Items</label>
-              {items.map((item: string, index: number) => (
-                <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => {
-                      const newItems = [...items];
-                      newItems[index] = e.target.value;
-                      handleContentUpdate('items', newItems);
-                    }}
-                    style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                    placeholder={`Item ${index + 1}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newItems = items.filter((_: any, i: number) => i !== index);
-                      handleContentUpdate('items', newItems);
-                    }}
-                    style={{ padding: '8px', border: 'none', background: colors.gray[100], borderRadius: '6px', cursor: 'pointer', color: colors.gray[600] }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
               <button
                 type="button"
-                onClick={() => handleContentUpdate('items', [...items, ''])}
-                style={{ width: '100%', padding: '8px 12px', border: `1px dashed ${colors.border.default}`, borderRadius: '6px', background: 'transparent', fontSize: '13px', color: colors.text.secondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                onClick={() => {
+                  const newItems = items.filter((_: any, i: number) => i !== index);
+                  handleContentUpdate('items', newItems);
+                }}
+                style={{ padding: '8px', border: 'none', background: colors.gray[100], borderRadius: '6px', cursor: 'pointer', color: colors.gray[600] }}
               >
-                <Plus size={16} /> Add Item
+                <Trash2 size={16} />
               </button>
             </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleContentUpdate('items', [...items, ''])}
+            style={{ width: '100%', padding: '8px 12px', border: `1px dashed ${colors.border.default}`, borderRadius: '6px', background: 'transparent', fontSize: '13px', color: colors.text.secondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+          >
+            <Plus size={16} /> Add Item
+          </button>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Input properties (Phase 2)
+if (selectedLayerObj.type === 'input') {
+  const inputType = selectedLayerObj.content?.inputType || 'text';
+  const placeholder = selectedLayerObj.content?.placeholder || '';
+  const required = selectedLayerObj.content?.required || false;
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Input Field Properties</h5>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Input Type</label>
+          <select
+            value={inputType}
+            onChange={(e) => handleContentUpdate('inputType', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', background: 'white' }}
+          >
+            <option value="text">Text</option>
+            <option value="email">Email</option>
+            <option value="number">Number</option>
+            <option value="textarea">Textarea</option>
+          </select>
+        </div>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Placeholder Text</label>
+          <input
+            type="text"
+            value={placeholder}
+            onChange={(e) => handleContentUpdate('placeholder', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('required', !required)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: required ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: required ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
+            </div>
+            <span>Required Field</span>
+          </label>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Checkbox properties
+if (selectedLayerObj.type === 'checkbox') {
+  const checkboxLabel = selectedLayerObj.content?.checkboxLabel || 'I agree to terms';
+  const checked = selectedLayerObj.content?.checked || false;
+  const checkboxColor = selectedLayerObj.content?.checkboxColor || '#6366F1';
+  const fontSize = selectedLayerObj.content?.fontSize || 14;
+  const textColor = selectedLayerObj.content?.textColor || '#374151';
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Checkbox Properties</h5>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Label Text</label>
+          <input
+            type="text"
+            value={checkboxLabel}
+            onChange={(e) => handleContentUpdate('checkboxLabel', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('checked', !checked)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: checked ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: checked ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
+            </div>
+            <span>Checked by Default</span>
+          </label>
+        </div>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Checkbox Color</label>
+          <input
+            type="color"
+            value={checkboxColor}
+            onChange={(e) => handleContentUpdate('checkboxColor', e.target.value)}
+            style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
+            <input
+              type="number"
+              value={fontSize}
+              onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
           </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Input properties (Phase 2)
-    if (selectedLayerObj.type === 'input') {
-      const inputType = selectedLayerObj.content?.inputType || 'text';
-      const placeholder = selectedLayerObj.content?.placeholder || '';
-      const required = selectedLayerObj.content?.required || false;
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Input Field Properties</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Input Type</label>
-              <select
-                value={inputType}
-                onChange={(e) => handleContentUpdate('inputType', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none', background: 'white' }}
-              >
-                <option value="text">Text</option>
-                <option value="email">Email</option>
-                <option value="number">Number</option>
-                <option value="textarea">Textarea</option>
-              </select>
-            </div>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Placeholder Text</label>
-              <input
-                type="text"
-                value={placeholder}
-                onChange={(e) => handleContentUpdate('placeholder', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('required', !required)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: required ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: required ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Required Field</span>
-              </label>
-            </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+              style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+            />
           </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
 
-    // Checkbox properties
-    if (selectedLayerObj.type === 'checkbox') {
-      const checkboxLabel = selectedLayerObj.content?.checkboxLabel || 'I agree to terms';
-      const checked = selectedLayerObj.content?.checked || false;
-      const checkboxColor = selectedLayerObj.content?.checkboxColor || '#6366F1';
-      const fontSize = selectedLayerObj.content?.fontSize || 14;
-      const textColor = selectedLayerObj.content?.textColor || '#374151';
+// Statistic properties (Phase 2)
+if (selectedLayerObj.type === 'statistic') {
+  const value = selectedLayerObj.content?.value || 0;
+  const prefix = selectedLayerObj.content?.prefix || '';
+  const suffix = selectedLayerObj.content?.suffix || '';
+  const animateOnLoad = selectedLayerObj.content?.animateOnLoad !== false;
+  const fontSize = selectedLayerObj.content?.fontSize || 36;
+  const textColor = selectedLayerObj.content?.textColor || '#111827';
 
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Checkbox Properties</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Label Text</label>
-              <input
-                type="text"
-                value={checkboxLabel}
-                onChange={(e) => handleContentUpdate('checkboxLabel', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Statistic Properties</h5>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Value</label>
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => handleContentUpdate('value', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Prefix</label>
+            <input
+              type="text"
+              value={prefix}
+              onChange={(e) => handleContentUpdate('prefix', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+              placeholder="₹"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Suffix</label>
+            <input
+              type="text"
+              value={suffix}
+              onChange={(e) => handleContentUpdate('suffix', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+              placeholder="saved"
+            />
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
+          <input
+            type="number"
+            value={fontSize}
+            onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
+          <input
+            type="color"
+            value={textColor}
+            onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+            style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('animateOnLoad', !animateOnLoad)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: animateOnLoad ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: animateOnLoad ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
             </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('checked', !checked)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: checked ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: checked ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Checked by Default</span>
-              </label>
+            <span>Animate on Load</span>
+          </label>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Rating properties (Phase 3.5)
+if (selectedLayerObj.type === 'rating') {
+  const maxStars = selectedLayerObj.content?.maxStars || 5;
+  const rating = selectedLayerObj.content?.rating || 0;
+  const reviewCount = selectedLayerObj.content?.reviewCount || 0;
+  const showReviewCount = selectedLayerObj.content?.showReviewCount !== false;
+  const starColor = selectedLayerObj.style?.starColor || '#FFB800';
+  const starSize = selectedLayerObj.style?.starSize || 20;
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>⭐ Rating Properties</h5>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Rating Value (0-5)</label>
+          <input
+            type="number"
+            min="0"
+            max={maxStars}
+            step="0.5"
+            value={rating}
+            onChange={(e) => handleContentUpdate('rating', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Max Stars</label>
+          <input
+            type="number"
+            min="3"
+            max="10"
+            value={maxStars}
+            onChange={(e) => handleContentUpdate('maxStars', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Review Count</label>
+          <input
+            type="number"
+            value={reviewCount}
+            onChange={(e) => handleContentUpdate('reviewCount', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            placeholder="2847"
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Star Color</label>
+          <input
+            type="color"
+            value={starColor}
+            onChange={(e) => handleStyleUpdate('starColor', e.target.value)}
+            style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Star Size (px)</label>
+          <input
+            type="number"
+            value={starSize}
+            onChange={(e) => handleStyleUpdate('starSize', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('showReviewCount', !showReviewCount)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: showReviewCount ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: showReviewCount ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
             </div>
-            {renderSizeControls()}
+            <span>Show Review Count</span>
+          </label>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Badge properties (Phase 3.5)
+if (selectedLayerObj.type === 'badge') {
+  const badgeText = selectedLayerObj.content?.badgeText || 'NEW';
+  const badgeVariant = selectedLayerObj.content?.badgeVariant || 'custom';
+  const pulse = selectedLayerObj.content?.pulse !== false;
+  const badgeBackgroundColor = selectedLayerObj.style?.badgeBackgroundColor || '#EF4444';
+  const badgeTextColor = selectedLayerObj.style?.badgeTextColor || '#FFFFFF';
+  const badgeBorderRadius = selectedLayerObj.style?.badgeBorderRadius || 12;
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🏷️ Badge Properties</h5>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Badge Text</label>
+          <input
+            type="text"
+            value={badgeText}
+            onChange={(e) => handleContentUpdate('badgeText', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            placeholder="30% OFF"
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Variant</label>
+          <select
+            value={badgeVariant}
+            onChange={(e) => handleContentUpdate('badgeVariant', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="success">Success (Green)</option>
+            <option value="error">Error (Red)</option>
+            <option value="warning">Warning (Orange)</option>
+            <option value="info">Info (Blue)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        {badgeVariant === 'custom' && (
+          <>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Checkbox Color</label>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Background Color</label>
               <input
                 type="color"
-                value={checkboxColor}
-                onChange={(e) => handleContentUpdate('checkboxColor', e.target.value)}
+                value={badgeBackgroundColor}
+                onChange={(e) => handleStyleUpdate('badgeBackgroundColor', e.target.value)}
                 style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
-                <input
-                  type="number"
-                  value={fontSize}
-                  onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
-                <input
-                  type="color"
-                  value={textColor}
-                  onChange={(e) => handleContentUpdate('textColor', e.target.value)}
-                  style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-              </div>
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Statistic properties (Phase 2)
-    if (selectedLayerObj.type === 'statistic') {
-      const value = selectedLayerObj.content?.value || 0;
-      const prefix = selectedLayerObj.content?.prefix || '';
-      const suffix = selectedLayerObj.content?.suffix || '';
-      const animateOnLoad = selectedLayerObj.content?.animateOnLoad !== false;
-      const fontSize = selectedLayerObj.content?.fontSize || 36;
-      const textColor = selectedLayerObj.content?.textColor || '#111827';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Statistic Properties</h5>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Value</label>
-              <input
-                type="number"
-                value={value}
-                onChange={(e) => handleContentUpdate('value', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Prefix</label>
-                <input
-                  type="text"
-                  value={prefix}
-                  onChange={(e) => handleContentUpdate('prefix', e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                  placeholder="₹"
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Suffix</label>
-                <input
-                  type="text"
-                  value={suffix}
-                  onChange={(e) => handleContentUpdate('suffix', e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                  placeholder="saved"
-                />
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
-              <input
-                type="number"
-                value={fontSize}
-                onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
               />
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
               <input
                 type="color"
-                value={textColor}
-                onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+                value={badgeTextColor}
+                onChange={(e) => handleStyleUpdate('badgeTextColor', e.target.value)}
                 style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
               />
             </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('animateOnLoad', !animateOnLoad)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: animateOnLoad ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: animateOnLoad ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Animate on Load</span>
-              </label>
+          </>
+        )}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Border Radius</label>
+          <input
+            type="number"
+            value={badgeBorderRadius}
+            onChange={(e) => handleStyleUpdate('badgeBorderRadius', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
+            <div
+              onClick={() => handleContentUpdate('pulse', !pulse)}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: pulse ? colors.primary[500] : colors.gray[300],
+                position: 'relative',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: pulse ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
             </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
+            <span>Pulse Animation</span>
+          </label>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+// Gradient Overlay properties (Feature 4 - Gradient Builder UI)
+if (selectedLayerObj.type === 'gradient-overlay') {
+  const gradientType = selectedLayerObj.content?.gradientType || 'linear';
+  const gradientDirection = selectedLayerObj.content?.gradientDirection || 180;
+  const gradientStops = selectedLayerObj.content?.gradientStops || [
+    { color: '#667eea', position: 0 },
+    { color: '#764ba2', position: 100 }
+  ];
+
+  const addGradientStop = () => {
+    const newStops = [...gradientStops, { color: '#000000', position: 50 }].sort((a, b) => a.position - b.position);
+    handleContentUpdate('gradientStops', newStops);
+  };
+
+  const removeGradientStop = (index: number) => {
+    if (gradientStops.length > 2) { // Minimum 2 stops
+      const newStops = gradientStops.filter((_, i) => i !== index);
+      handleContentUpdate('gradientStops', newStops);
     }
+  };
 
-    // Rating properties (Phase 3.5)
-    if (selectedLayerObj.type === 'rating') {
-      const maxStars = selectedLayerObj.content?.maxStars || 5;
-      const rating = selectedLayerObj.content?.rating || 0;
-      const reviewCount = selectedLayerObj.content?.reviewCount || 0;
-      const showReviewCount = selectedLayerObj.content?.showReviewCount !== false;
-      const starColor = selectedLayerObj.style?.starColor || '#FFB800';
-      const starSize = selectedLayerObj.style?.starSize || 20;
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>⭐ Rating Properties</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Rating Value (0-5)</label>
-              <input
-                type="number"
-                min="0"
-                max={maxStars}
-                step="0.5"
-                value={rating}
-                onChange={(e) => handleContentUpdate('rating', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Max Stars</label>
-              <input
-                type="number"
-                min="3"
-                max="10"
-                value={maxStars}
-                onChange={(e) => handleContentUpdate('maxStars', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Review Count</label>
-              <input
-                type="number"
-                value={reviewCount}
-                onChange={(e) => handleContentUpdate('reviewCount', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                placeholder="2847"
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Star Color</label>
-              <input
-                type="color"
-                value={starColor}
-                onChange={(e) => handleStyleUpdate('starColor', e.target.value)}
-                style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Star Size (px)</label>
-              <input
-                type="number"
-                value={starSize}
-                onChange={(e) => handleStyleUpdate('starSize', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('showReviewCount', !showReviewCount)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: showReviewCount ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: showReviewCount ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Show Review Count</span>
-              </label>
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
+  const updateGradientStop = (index: number, field: 'color' | 'position', value: any) => {
+    const newStops = [...gradientStops];
+    newStops[index] = { ...newStops[index], [field]: value };
+    if (field === 'position') {
+      newStops.sort((a, b) => a.position - b.position);
     }
+    handleContentUpdate('gradientStops', newStops);
+  };
 
-    // Badge properties (Phase 3.5)
-    if (selectedLayerObj.type === 'badge') {
-      const badgeText = selectedLayerObj.content?.badgeText || 'NEW';
-      const badgeVariant = selectedLayerObj.content?.badgeVariant || 'custom';
-      const pulse = selectedLayerObj.content?.pulse !== false;
-      const badgeBackgroundColor = selectedLayerObj.style?.badgeBackgroundColor || '#EF4444';
-      const badgeTextColor = selectedLayerObj.style?.badgeTextColor || '#FFFFFF';
-      const badgeBorderRadius = selectedLayerObj.style?.badgeBorderRadius || 12;
+  // Generate gradient preview
+  const gradientPreview = gradientType === 'linear'
+    ? `linear-gradient(${typeof gradientDirection === 'number' ? gradientDirection + 'deg' : gradientDirection}, ${gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+    : `radial-gradient(circle, ${gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
 
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🏷️ Badge Properties</h5>
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Badge Text</label>
-              <input
-                type="text"
-                value={badgeText}
-                onChange={(e) => handleContentUpdate('badgeText', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                placeholder="30% OFF"
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Variant</label>
-              <select
-                value={badgeVariant}
-                onChange={(e) => handleContentUpdate('badgeVariant', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="success">Success (Green)</option>
-                <option value="error">Error (Red)</option>
-                <option value="warning">Warning (Orange)</option>
-                <option value="info">Info (Blue)</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-            {badgeVariant === 'custom' && (
-              <>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Background Color</label>
-                  <input
-                    type="color"
-                    value={badgeBackgroundColor}
-                    onChange={(e) => handleStyleUpdate('badgeBackgroundColor', e.target.value)}
-                    style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                  />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
-                  <input
-                    type="color"
-                    value={badgeTextColor}
-                    onChange={(e) => handleStyleUpdate('badgeTextColor', e.target.value)}
-                    style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-                  />
-                </div>
-              </>
-            )}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Border Radius</label>
-              <input
-                type="number"
-                value={badgeBorderRadius}
-                onChange={(e) => handleStyleUpdate('badgeBorderRadius', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: colors.text.secondary, cursor: 'pointer' }}>
-                <div
-                  onClick={() => handleContentUpdate('pulse', !pulse)}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: pulse ? colors.primary[500] : colors.gray[300],
-                    position: 'relative',
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: pulse ? '22px' : '2px',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-                <span>Pulse Animation</span>
-              </label>
-            </div>
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🌈 Gradient Properties</h5>
+
+        {/* Gradient Type */}
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Gradient Type</label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => handleContentUpdate('gradientType', 'linear')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: `1px solid ${gradientType === 'linear' ? colors.primary[500] : colors.border.default}`,
+                backgroundColor: gradientType === 'linear' ? colors.primary[50] : 'transparent',
+                color: gradientType === 'linear' ? colors.primary[600] : colors.text.primary,
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              Linear
+            </button>
+            <button
+              onClick={() => handleContentUpdate('gradientType', 'radial')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: `1px solid ${gradientType === 'radial' ? colors.primary[500] : colors.border.default}`,
+                backgroundColor: gradientType === 'radial' ? colors.primary[50] : 'transparent',
+                color: gradientType === 'radial' ? colors.primary[600] : colors.text.primary,
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              Radial
+            </button>
           </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
+        </div>
 
-    // Gradient Overlay properties (Feature 4 - Gradient Builder UI)
-    if (selectedLayerObj.type === 'gradient-overlay') {
-      const gradientType = selectedLayerObj.content?.gradientType || 'linear';
-      const gradientDirection = selectedLayerObj.content?.gradientDirection || 180;
-      const gradientStops = selectedLayerObj.content?.gradientStops || [
-        { color: '#667eea', position: 0 },
-        { color: '#764ba2', position: 100 }
-      ];
-
-      const addGradientStop = () => {
-        const newStops = [...gradientStops, { color: '#000000', position: 50 }].sort((a, b) => a.position - b.position);
-        handleContentUpdate('gradientStops', newStops);
-      };
-
-      const removeGradientStop = (index: number) => {
-        if (gradientStops.length > 2) { // Minimum 2 stops
-          const newStops = gradientStops.filter((_, i) => i !== index);
-          handleContentUpdate('gradientStops', newStops);
-        }
-      };
-
-      const updateGradientStop = (index: number, field: 'color' | 'position', value: any) => {
-        const newStops = [...gradientStops];
-        newStops[index] = { ...newStops[index], [field]: value };
-        if (field === 'position') {
-          newStops.sort((a, b) => a.position - b.position);
-        }
-        handleContentUpdate('gradientStops', newStops);
-      };
-
-      // Generate gradient preview
-      const gradientPreview = gradientType === 'linear'
-        ? `linear-gradient(${typeof gradientDirection === 'number' ? gradientDirection + 'deg' : gradientDirection}, ${gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
-        : `radial-gradient(circle, ${gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🌈 Gradient Properties</h5>
-
-            {/* Gradient Type */}
-            {renderSizeControls()}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Gradient Type</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Angle/Direction (for linear) */}
+        {gradientType === 'linear' && (
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>
+              Angle: {typeof gradientDirection === 'number' ? gradientDirection : 0}°
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="360"
+              value={typeof gradientDirection === 'number' ? gradientDirection : 180}
+              onChange={(e) => handleContentUpdate('gradientDirection', Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+              {[0, 90, 180, 270].map(angle => (
                 <button
-                  onClick={() => handleContentUpdate('gradientType', 'linear')}
+                  key={angle}
+                  onClick={() => handleContentUpdate('gradientDirection', angle)}
                   style={{
                     flex: 1,
-                    padding: '8px 12px',
-                    border: `1px solid ${gradientType === 'linear' ? colors.primary[500] : colors.border.default}`,
-                    backgroundColor: gradientType === 'linear' ? colors.primary[50] : 'transparent',
-                    color: gradientType === 'linear' ? colors.primary[600] : colors.text.primary,
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: 500,
+                    padding: '4px 8px',
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: '4px',
+                    fontSize: '11px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    backgroundColor: gradientDirection === angle ? colors.gray[100] : 'transparent'
                   }}
                 >
-                  Linear
+                  {angle}°
                 </button>
-                <button
-                  onClick={() => handleContentUpdate('gradientType', 'radial')}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    border: `1px solid ${gradientType === 'radial' ? colors.primary[500] : colors.border.default}`,
-                    backgroundColor: gradientType === 'radial' ? colors.primary[50] : 'transparent',
-                    color: gradientType === 'radial' ? colors.primary[600] : colors.text.primary,
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  Radial
-                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Live Preview */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Preview</label>
+          <div style={{
+            width: '100%',
+            height: '80px',
+            borderRadius: '8px',
+            background: gradientPreview,
+            border: `1px solid ${colors.border.default}`,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }} />
+        </div>
+
+        {/* Color Stops */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ fontSize: '12px', color: colors.text.secondary }}>Color Stops</label>
+            <button
+              onClick={addGradientStop}
+              style={{
+                padding: '4px 12px',
+                border: `1px solid ${colors.primary[500]}`,
+                backgroundColor: colors.primary[50],
+                color: colors.primary[600],
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 500,
+                cursor: 'pointer'
+              }}
+            >
+              + Add Stop
+            </button>
+          </div>
+
+          {gradientStops.map((stop, index) => (
+            <div key={index} style={{
+              marginBottom: '12px',
+              padding: '12px',
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: '6px',
+              backgroundColor: colors.gray[50]
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <input
+                  type="color"
+                  value={stop.color}
+                  onChange={(e) => updateGradientStop(index, 'color', e.target.value)}
+                  style={{ width: '40px', height: '32px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={stop.color}
+                  onChange={(e) => updateGradientStop(index, 'color', e.target.value)}
+                  style={{ flex: 1, padding: '6px 10px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}
+                />
+                {gradientStops.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => removeGradientStop(index)}
+                    style={{
+                      padding: '6px 10px',
+                      border: `1px solid ${colors.border.default}`,
+                      backgroundColor: 'white',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      color: colors.text.secondary
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-            </div>
-
-            {/* Angle/Direction (for linear) */}
-            {gradientType === 'linear' && (
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>
-                  Angle: {typeof gradientDirection === 'number' ? gradientDirection : 0}°
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
+                  Position: {stop.position}%
                 </label>
                 <input
                   type="range"
                   min="0"
-                  max="360"
-                  value={typeof gradientDirection === 'number' ? gradientDirection : 180}
-                  onChange={(e) => handleContentUpdate('gradientDirection', Number(e.target.value))}
+                  max="100"
+                  value={stop.position}
+                  onChange={(e) => updateGradientStop(index, 'position', Number(e.target.value))}
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
-                <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-                  {[0, 90, 180, 270].map(angle => (
-                    <button
-                      key={angle}
-                      onClick={() => handleContentUpdate('gradientDirection', angle)}
-                      style={{
-                        flex: 1,
-                        padding: '4px 8px',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        cursor: 'pointer',
-                        backgroundColor: gradientDirection === angle ? colors.gray[100] : 'transparent'
-                      }}
-                    >
-                      {angle}°
-                    </button>
-                  ))}
-                </div>
               </div>
-            )}
-
-            {/* Live Preview */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Preview</label>
-              <div style={{
-                width: '100%',
-                height: '80px',
-                borderRadius: '8px',
-                background: gradientPreview,
-                border: `1px solid ${colors.border.default}`,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }} />
             </div>
+          ))}
+        </div>
 
-            {/* Color Stops */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '12px', color: colors.text.secondary }}>Color Stops</label>
-                <button
-                  onClick={addGradientStop}
-                  style={{
-                    padding: '4px 12px',
-                    border: `1px solid ${colors.primary[500]}`,
-                    backgroundColor: colors.primary[50],
-                    color: colors.primary[600],
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: 500,
-                    cursor: 'pointer'
-                  }}
-                >
-                  + Add Stop
-                </button>
-              </div>
-
-              {gradientStops.map((stop, index) => (
-                <div key={index} style={{
-                  marginBottom: '12px',
-                  padding: '12px',
+        {/* Preset Gradients */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Presets</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[
+              { name: 'Sunset', stops: [{ color: '#ff6b6b', position: 0 }, { color: '#feca57', position: 100 }] },
+              { name: 'Ocean', stops: [{ color: '#1e3c72', position: 0 }, { color: '#2a5298', position: 100 }] },
+              { name: 'Purple', stops: [{ color: '#667eea', position: 0 }, { color: '#764ba2', position: 100 }] },
+              { name: 'Fire', stops: [{ color: '#f12711', position: 0 }, { color: '#f5af19', position: 100 }] },
+              { name: 'Ice', stops: [{ color: '#74ebd5', position: 0 }, { color: '#ACB6E5', position: 100 }] },
+              { name: 'Aurora', stops: [{ color: '#00c6ff', position: 0 }, { color: '#0072ff', position: 100 }] }
+            ].map((preset) => (
+              <button
+                type="button"
+                key={preset.name}
+                onClick={() => handleContentUpdate('gradientStops', preset.stops)}
+                style={{
+                  padding: '8px',
                   border: `1px solid ${colors.border.default}`,
                   borderRadius: '6px',
-                  backgroundColor: colors.gray[50]
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <input
-                      type="color"
-                      value={stop.color}
-                      onChange={(e) => updateGradientStop(index, 'color', e.target.value)}
-                      style={{ width: '40px', height: '32px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={stop.color}
-                      onChange={(e) => updateGradientStop(index, 'color', e.target.value)}
-                      style={{ flex: 1, padding: '6px 10px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}
-                    />
-                    {gradientStops.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => removeGradientStop(index)}
-                        style={{
-                          padding: '6px 10px',
-                          border: `1px solid ${colors.border.default}`,
-                          backgroundColor: 'white',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          color: colors.text.secondary
-                        }}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                      Position: {stop.position}%
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={stop.position}
-                      onChange={(e) => updateGradientStop(index, 'position', Number(e.target.value))}
-                      style={{ width: '100%', cursor: 'pointer' }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: 'white'
+                }}
+              >
+                <div style={{
+                  width: '100%',
+                  height: '24px',
+                  borderRadius: '4px',
+                  background: `linear-gradient(90deg, ${preset.stops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+                }} />
+                <span style={{ fontSize: '10px', color: colors.text.secondary }}>{preset.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
 
-            {/* Preset Gradients */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Presets</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                {[
-                  { name: 'Sunset', stops: [{ color: '#ff6b6b', position: 0 }, { color: '#feca57', position: 100 }] },
-                  { name: 'Ocean', stops: [{ color: '#1e3c72', position: 0 }, { color: '#2a5298', position: 100 }] },
-                  { name: 'Purple', stops: [{ color: '#667eea', position: 0 }, { color: '#764ba2', position: 100 }] },
-                  { name: 'Fire', stops: [{ color: '#f12711', position: 0 }, { color: '#f5af19', position: 100 }] },
-                  { name: 'Ice', stops: [{ color: '#74ebd5', position: 0 }, { color: '#ACB6E5', position: 100 }] },
-                  { name: 'Aurora', stops: [{ color: '#00c6ff', position: 0 }, { color: '#0072ff', position: 100 }] }
-                ].map((preset) => (
+// Countdown properties
+if (selectedLayerObj.type === 'countdown') {
+  const endTime = selectedLayerObj.content?.endTime || new Date(Date.now() + 86400000).toISOString();
+  const format = selectedLayerObj.content?.format || 'HH:MM:SS';
+  const urgencyThreshold = selectedLayerObj.content?.urgencyThreshold || 3600;
+  const fontSize = selectedLayerObj.content?.fontSize || 24;
+  const fontWeight = selectedLayerObj.content?.fontWeight || 'bold';
+  const textColor = selectedLayerObj.content?.textColor || '#111827';
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>⏳ Countdown Properties</h5>
+        {renderSizeControls()}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>End Time</label>
+          <input
+            type="datetime-local"
+            value={endTime.slice(0, 16)}
+            onChange={(e) => handleContentUpdate('endTime', new Date(e.target.value).toISOString())}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
+          <select
+            value={selectedLayerObj.content?.timerVariant || 'text'}
+            onChange={(e) => handleContentUpdate('timerVariant', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="text">Simple Text</option>
+            <option value="card">Card (Boxed)</option>
+            <option value="circular">Circular Progress</option>
+            <option value="flip">Flip Clock</option>
+            <option value="digital">Digital (LED)</option>
+            <option value="bubble">Bubble (Round)</option>
+            <option value="minimal">Minimal (Clean)</option>
+            <option value="neon">Neon Glow</option>
+          </select>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Format</label>
+          <select
+            value={format}
+            onChange={(e) => handleContentUpdate('format', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="HH:MM:SS">HH:MM:SS</option>
+            <option value="MM:SS">MM:SS</option>
+          </select>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Urgency Threshold (seconds)</label>
+          <input
+            type="number"
+            value={urgencyThreshold}
+            onChange={(e) => handleContentUpdate('urgencyThreshold', Number(e.target.value))}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
+            <input
+              type="number"
+              value={fontSize}
+              onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Weight</label>
+            <select
+              value={fontWeight}
+              onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="normal">Normal</option>
+              <option value="medium">Medium</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
+          <input
+            type="color"
+            value={textColor}
+            onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+            style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+          />
+        </div>
+      </div>
+      {renderCommonStyles()}
+    </>
+  );
+}
+
+
+
+
+
+
+
+// Container properties
+if (selectedLayerObj.type === 'container') {
+  const containerPosition = (selectedLayerObj.content as any)?.containerPosition || 'bottom-center';
+
+  // Size properties from layer.size
+  const currentWidth = selectedLayerObj.size?.width || '100%';
+  const currentHeight = selectedLayerObj.size?.height || 'auto';
+
+  const padding = selectedLayerObj.style?.padding || { top: 16, right: 16, bottom: 16, left: 16 };
+  const paddingObj = typeof padding === 'object' ? padding : { top: padding, right: padding, bottom: padding, left: padding };
+  const paddingTop = paddingObj.top || 16;
+  const paddingRight = paddingObj.right || 16;
+  const paddingBottom = paddingObj.bottom || 16;
+  const paddingLeft = paddingObj.left || 16;
+
+  return (
+    <>
+      {selectedLayerObj.name === 'Modal Container' && renderModalConfig()}
+      {selectedLayerObj.name === 'Banner Container' && renderBannerConfig()}
+      {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
+      {selectedLayerObj.name === 'Bottom Sheet' && renderBottomSheetConfig()}
+      {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
+      {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
+      <div style={{ marginBottom: '20px' }}>
+        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Container Properties</h5>
+
+        {/* Width & Height - Removed (Use Standard Size Controls below) */}
+
+
+
+        {/* Opacity Control */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
+            Opacity: {Math.round((selectedLayerObj.style?.opacity ?? 1) * 100)}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={selectedLayerObj.style?.opacity ?? 1}
+            onChange={(e) => handleStyleUpdate('opacity', parseFloat(e.target.value))}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+
+
+
+        {/* Typography Controls */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Family</label>
+          <select
+            value={selectedLayerObj.style?.fontFamily || 'Inter'}
+            onChange={(e) => handleStyleUpdate('fontFamily', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="Inter">Inter (Default)</option>
+            <option value="Roboto">Roboto</option>
+            <option value="Poppins">Poppins</option>
+            <option value="Caveat">Caveat (Handwritten)</option>
+            <option value="Dancing Script">Dancing Script (Cursive)</option>
+            <option value="serif">Serif</option>
+            <option value="monospace">Monospace</option>
+          </select>
+        </div>
+
+        {/* Display Mode */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Display Mode</label>
+          <select
+            value={selectedLayerObj.style?.display || 'flex'}
+            onChange={(e) => handleStyleUpdate('display', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="flex">Flex</option>
+            <option value="block">Block</option>
+            <option value="inline-block">Inline Block</option>
+            <option value="grid">Grid</option>
+          </select>
+        </div>
+
+        {/* Flexbox Controls (when display is flex) */}
+        {selectedLayerObj.style?.display === 'flex' && (
+          <>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Flex Direction</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {['row', 'column'].map((dir) => (
                   <button
                     type="button"
-                    key={preset.name}
-                    onClick={() => handleContentUpdate('gradientStops', preset.stops)}
+                    key={dir}
+                    onClick={() => handleStyleUpdate('flexDirection', dir)}
                     style={{
                       padding: '8px',
-                      border: `1px solid ${colors.border.default}`,
+                      border: `1px solid ${(selectedLayerObj.style?.flexDirection || 'column') === dir ? colors.primary[500] : colors.border.default}`,
                       borderRadius: '6px',
+                      background: (selectedLayerObj.style?.flexDirection || 'column') === dir ? colors.primary[50] : 'white',
+                      color: (selectedLayerObj.style?.flexDirection || 'column') === dir ? colors.primary[600] : colors.text.secondary,
+                      fontSize: '12px',
+                      fontWeight: 500,
                       cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '4px',
-                      backgroundColor: 'white'
+                      textTransform: 'capitalize'
                     }}
                   >
-                    <div style={{
-                      width: '100%',
-                      height: '24px',
-                      borderRadius: '4px',
-                      background: `linear-gradient(90deg, ${preset.stops.map(s => `${s.color} ${s.position}%`).join(', ')})`
-                    }} />
-                    <span style={{ fontSize: '10px', color: colors.text.secondary }}>{preset.name}</span>
+                    {dir}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
-
-    // Countdown properties
-    if (selectedLayerObj.type === 'countdown') {
-      const endTime = selectedLayerObj.content?.endTime || new Date(Date.now() + 86400000).toISOString();
-      const format = selectedLayerObj.content?.format || 'HH:MM:SS';
-      const urgencyThreshold = selectedLayerObj.content?.urgencyThreshold || 3600;
-      const fontSize = selectedLayerObj.content?.fontSize || 24;
-      const fontWeight = selectedLayerObj.content?.fontWeight || 'bold';
-      const textColor = selectedLayerObj.content?.textColor || '#111827';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>⏳ Countdown Properties</h5>
-            {renderSizeControls()}
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>End Time</label>
-              <input
-                type="datetime-local"
-                value={endTime.slice(0, 16)}
-                onChange={(e) => handleContentUpdate('endTime', new Date(e.target.value).toISOString())}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Style Variant</label>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Align Items</label>
               <select
-                value={selectedLayerObj.content?.timerVariant || 'text'}
-                onChange={(e) => handleContentUpdate('timerVariant', e.target.value)}
+                value={selectedLayerObj.style?.alignItems || 'flex-start'}
+                onChange={(e) => handleStyleUpdate('alignItems', e.target.value)}
                 style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
               >
-                <option value="text">Simple Text</option>
-                <option value="card">Card (Boxed)</option>
-                <option value="circular">Circular Progress</option>
-                <option value="flip">Flip Clock</option>
-                <option value="digital">Digital (LED)</option>
-                <option value="bubble">Bubble (Round)</option>
-                <option value="minimal">Minimal (Clean)</option>
-                <option value="neon">Neon Glow</option>
+                <option value="flex-start">Start</option>
+                <option value="center">Center</option>
+                <option value="flex-end">End</option>
+                <option value="stretch">Stretch</option>
               </select>
             </div>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Format</label>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Justify Content</label>
               <select
-                value={format}
-                onChange={(e) => handleContentUpdate('format', e.target.value)}
+                value={selectedLayerObj.style?.justifyContent || 'flex-start'}
+                onChange={(e) => handleStyleUpdate('justifyContent', e.target.value)}
                 style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
               >
-                <option value="HH:MM:SS">HH:MM:SS</option>
-                <option value="MM:SS">MM:SS</option>
+                <option value="flex-start">Start</option>
+                <option value="center">Center</option>
+                <option value="flex-end">End</option>
+                <option value="space-between">Space Between</option>
+                <option value="space-around">Space Around</option>
+                <option value="space-evenly">Space Evenly</option>
               </select>
             </div>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Urgency Threshold (seconds)</label>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Gap (px)</label>
               <input
                 type="number"
-                value={urgencyThreshold}
-                onChange={(e) => handleContentUpdate('urgencyThreshold', Number(e.target.value))}
+                value={selectedLayerObj.style?.gap || 0}
+                onChange={(e) => handleStyleUpdate('gap', Number(e.target.value))}
                 style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Size</label>
-                <input
-                  type="number"
-                  value={fontSize}
-                  onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Weight</label>
-                <select
-                  value={fontWeight}
-                  onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="medium">Medium</option>
-                  <option value="bold">Bold</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Text Color</label>
+          </>
+        )}
+
+        {/* Overflow Control */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Overflow</label>
+          <select
+            value={selectedLayerObj.style?.overflow || 'visible'}
+            onChange={(e) => handleStyleUpdate('overflow', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="visible">Visible</option>
+            <option value="hidden">Hidden</option>
+            <option value="scroll">Scroll</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
+
+        {/* Cursor Control */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Cursor Style</label>
+          <select
+            value={selectedLayerObj.style?.cursor || 'default'}
+            onChange={(e) => handleStyleUpdate('cursor', e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="default">Default</option>
+            <option value="pointer">Pointer</option>
+            <option value="not-allowed">Not Allowed</option>
+            <option value="grab">Grab</option>
+            <option value="text">Text</option>
+            <option value="move">Move</option>
+          </select>
+        </div>
+
+        {/* Background Image Controls */}
+        <div style={{ marginBottom: '16px', padding: '12px', background: colors.gray[50], borderRadius: '6px' }}>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>Background Image</label>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <input
+              type="text"
+              value={selectedLayerObj.style?.backgroundImage?.replace(/^url\(['"]?|['"]?\)$/g, '') || ''}
+              onChange={(e) => handleStyleUpdate('backgroundImage', e.target.value ? `url('${e.target.value}')` : undefined)}
+              placeholder="Enter image URL"
+              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+            />
+            <label style={{
+              padding: '8px 16px',
+              background: colors.primary[500],
+              color: 'white',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              whiteSpace: 'nowrap'
+            }}>
+              Upload
               <input
-                type="color"
-                value={textColor}
-                onChange={(e) => handleContentUpdate('textColor', e.target.value)}
-                style={{ width: '100%', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, 'background')}
+                style={{ display: 'none' }}
               />
+            </label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
+              <select
+                value={(() => {
+                  const size = selectedLayerObj.style?.backgroundSize;
+                  if (!size || size === 'cover' || size === 'contain' || size === 'auto' || size === '100% 100%') return size || 'cover';
+                  return 'custom';
+                })()}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    handleStyleUpdate('backgroundSize', '100% auto');
+                  } else {
+                    handleStyleUpdate('backgroundSize', e.target.value);
+                  }
+                }}
+                style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
+              >
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+                <option value="auto">Auto</option>
+                <option value="100% 100%">Stretch</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Repeat</label>
+              <select
+                value={selectedLayerObj.style?.backgroundRepeat || 'no-repeat'}
+                onChange={(e) => handleStyleUpdate('backgroundRepeat', e.target.value)}
+                style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
+              >
+                <option value="no-repeat">No Repeat</option>
+                <option value="repeat">Repeat</option>
+                <option value="repeat-x">Repeat X</option>
+                <option value="repeat-y">Repeat Y</option>
+              </select>
             </div>
           </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
 
-
-
-
-
-
-
-    // Container properties
-    if (selectedLayerObj.type === 'container') {
-      const containerPosition = (selectedLayerObj.content as any)?.containerPosition || 'bottom-center';
-
-      // Size properties from layer.size
-      const currentWidth = selectedLayerObj.size?.width || '100%';
-      const currentHeight = selectedLayerObj.size?.height || 'auto';
-
-      const padding = selectedLayerObj.style?.padding || { top: 16, right: 16, bottom: 16, left: 16 };
-      const paddingObj = typeof padding === 'object' ? padding : { top: padding, right: padding, bottom: padding, left: padding };
-      const paddingTop = paddingObj.top || 16;
-      const paddingRight = paddingObj.right || 16;
-      const paddingBottom = paddingObj.bottom || 16;
-      const paddingLeft = paddingObj.left || 16;
-
-      return (
-        <>
-          {selectedLayerObj.name === 'Modal Container' && renderModalConfig()}
-          {selectedLayerObj.name === 'Banner Container' && renderBannerConfig()}
-          {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
-          {selectedLayerObj.name === 'Bottom Sheet' && renderBottomSheetConfig()}
-          {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
-          {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Container Properties</h5>
-
-            {/* Width & Height - Removed (Use Standard Size Controls below) */}
-
-
-
-            {/* Opacity Control */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>
-                Opacity: {Math.round((selectedLayerObj.style?.opacity ?? 1) * 100)}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={selectedLayerObj.style?.opacity ?? 1}
-                onChange={(e) => handleStyleUpdate('opacity', parseFloat(e.target.value))}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-
-
-            {/* Typography Controls */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Font Family</label>
-              <select
-                value={selectedLayerObj.style?.fontFamily || 'Inter'}
-                onChange={(e) => handleStyleUpdate('fontFamily', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="Inter">Inter (Default)</option>
-                <option value="Roboto">Roboto</option>
-                <option value="Poppins">Poppins</option>
-                <option value="Caveat">Caveat (Handwritten)</option>
-                <option value="Dancing Script">Dancing Script (Cursive)</option>
-                <option value="serif">Serif</option>
-                <option value="monospace">Monospace</option>
-              </select>
-            </div>
-
-            {/* Display Mode */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Display Mode</label>
-              <select
-                value={selectedLayerObj.style?.display || 'flex'}
-                onChange={(e) => handleStyleUpdate('display', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="flex">Flex</option>
-                <option value="block">Block</option>
-                <option value="inline-block">Inline Block</option>
-                <option value="grid">Grid</option>
-              </select>
-            </div>
-
-            {/* Flexbox Controls (when display is flex) */}
-            {selectedLayerObj.style?.display === 'flex' && (
-              <>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Flex Direction</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    {['row', 'column'].map((dir) => (
-                      <button
-                        type="button"
-                        key={dir}
-                        onClick={() => handleStyleUpdate('flexDirection', dir)}
-                        style={{
-                          padding: '8px',
-                          border: `1px solid ${(selectedLayerObj.style?.flexDirection || 'column') === dir ? colors.primary[500] : colors.border.default}`,
-                          borderRadius: '6px',
-                          background: (selectedLayerObj.style?.flexDirection || 'column') === dir ? colors.primary[50] : 'white',
-                          color: (selectedLayerObj.style?.flexDirection || 'column') === dir ? colors.primary[600] : colors.text.secondary,
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          textTransform: 'capitalize'
-                        }}
-                      >
-                        {dir}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Align Items</label>
-                  <select
-                    value={selectedLayerObj.style?.alignItems || 'flex-start'}
-                    onChange={(e) => handleStyleUpdate('alignItems', e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                  >
-                    <option value="flex-start">Start</option>
-                    <option value="center">Center</option>
-                    <option value="flex-end">End</option>
-                    <option value="stretch">Stretch</option>
-                  </select>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Justify Content</label>
-                  <select
-                    value={selectedLayerObj.style?.justifyContent || 'flex-start'}
-                    onChange={(e) => handleStyleUpdate('justifyContent', e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                  >
-                    <option value="flex-start">Start</option>
-                    <option value="center">Center</option>
-                    <option value="flex-end">End</option>
-                    <option value="space-between">Space Between</option>
-                    <option value="space-around">Space Around</option>
-                    <option value="space-evenly">Space Evenly</option>
-                  </select>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Gap (px)</label>
-                  <input
-                    type="number"
-                    value={selectedLayerObj.style?.gap || 0}
-                    onChange={(e) => handleStyleUpdate('gap', Number(e.target.value))}
-                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Overflow Control */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Overflow</label>
-              <select
-                value={selectedLayerObj.style?.overflow || 'visible'}
-                onChange={(e) => handleStyleUpdate('overflow', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="visible">Visible</option>
-                <option value="hidden">Hidden</option>
-                <option value="scroll">Scroll</option>
-                <option value="auto">Auto</option>
-              </select>
-            </div>
-
-            {/* Cursor Control */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Cursor Style</label>
-              <select
-                value={selectedLayerObj.style?.cursor || 'default'}
-                onChange={(e) => handleStyleUpdate('cursor', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="default">Default</option>
-                <option value="pointer">Pointer</option>
-                <option value="not-allowed">Not Allowed</option>
-                <option value="grab">Grab</option>
-                <option value="text">Text</option>
-                <option value="move">Move</option>
-              </select>
-            </div>
-
-            {/* Background Image Controls */}
-            <div style={{ marginBottom: '16px', padding: '12px', background: colors.gray[50], borderRadius: '6px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>Background Image</label>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                <input
-                  type="text"
-                  value={selectedLayerObj.style?.backgroundImage?.replace(/^url\(['"]?|['"]?\)$/g, '') || ''}
-                  onChange={(e) => handleStyleUpdate('backgroundImage', e.target.value ? `url('${e.target.value}')` : undefined)}
-                  placeholder="Enter image URL"
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                />
-                <label style={{
-                  padding: '8px 16px',
-                  background: colors.primary[500],
-                  color: 'white',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  whiteSpace: 'nowrap'
-                }}>
-                  Upload
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, 'background')}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              </div>
+          {/* Custom Size Controls */}
+          {(() => {
+            const size = selectedLayerObj.style?.backgroundSize;
+            const isCustom = size && typeof size === 'string' && !['cover', 'contain', 'auto', '100% 100%'].includes(size);
+            return isCustom ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
-                  <select
+                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px or %)</label>
+                  <input
+                    type="text"
                     value={(() => {
-                      const size = selectedLayerObj.style?.backgroundSize;
-                      if (!size || size === 'cover' || size === 'contain' || size === 'auto' || size === '100% 100%') return size || 'cover';
-                      return 'custom';
+                      if (typeof size === 'string') {
+                        const parts = size.split(' ');
+                        return parts[0] || '100%';
+                      }
+                      return '100%';
                     })()}
                     onChange={(e) => {
-                      if (e.target.value === 'custom') {
-                        handleStyleUpdate('backgroundSize', '100% auto');
-                      } else {
-                        handleStyleUpdate('backgroundSize', e.target.value);
-                      }
+                      const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
+                      const newValue = e.target.value.trim() || '100%';
+                      handleStyleUpdate('backgroundSize', `${newValue} ${parts[1] || 'auto'}`);
                     }}
-                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                  >
-                    <option value="cover">Cover</option>
-                    <option value="contain">Contain</option>
-                    <option value="auto">Auto</option>
-                    <option value="100% 100%">Stretch</option>
-                    <option value="custom">Custom</option>
-                  </select>
+                    placeholder="100% or 200px"
+                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Repeat</label>
-                  <select
-                    value={selectedLayerObj.style?.backgroundRepeat || 'no-repeat'}
-                    onChange={(e) => handleStyleUpdate('backgroundRepeat', e.target.value)}
-                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                  >
-                    <option value="no-repeat">No Repeat</option>
-                    <option value="repeat">Repeat</option>
-                    <option value="repeat-x">Repeat X</option>
-                    <option value="repeat-y">Repeat Y</option>
-                  </select>
+                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px or %)</label>
+                  <input
+                    type="text"
+                    value={(() => {
+                      if (typeof size === 'string') {
+                        const parts = size.split(' ');
+                        return parts[1] || 'auto';
+                      }
+                      return 'auto';
+                    })()}
+                    onChange={(e) => {
+                      const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
+                      const newValue = e.target.value.trim() || 'auto';
+                      handleStyleUpdate('backgroundSize', `${parts[0] || '100%'} ${newValue}`);
+                    }}
+                    placeholder="auto or 200px"
+                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                  />
                 </div>
               </div>
+            ) : null;
+          })()}
 
-              {/* Custom Size Controls */}
-              {(() => {
-                const size = selectedLayerObj.style?.backgroundSize;
-                const isCustom = size && typeof size === 'string' && !['cover', 'contain', 'auto', '100% 100%'].includes(size);
-                return isCustom ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px or %)</label>
-                      <input
-                        type="text"
-                        value={(() => {
-                          if (typeof size === 'string') {
-                            const parts = size.split(' ');
-                            return parts[0] || '100%';
-                          }
-                          return '100%';
-                        })()}
-                        onChange={(e) => {
-                          const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
-                          const newValue = e.target.value.trim() || '100%';
-                          handleStyleUpdate('backgroundSize', `${newValue} ${parts[1] || 'auto'}`);
-                        }}
-                        placeholder="100% or 200px"
-                        style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px or %)</label>
-                      <input
-                        type="text"
-                        value={(() => {
-                          if (typeof size === 'string') {
-                            const parts = size.split(' ');
-                            return parts[1] || 'auto';
-                          }
-                          return 'auto';
-                        })()}
-                        onChange={(e) => {
-                          const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
-                          const newValue = e.target.value.trim() || 'auto';
-                          handleStyleUpdate('backgroundSize', `${parts[0] || '100%'} ${newValue}`);
-                        }}
-                        placeholder="auto or 200px"
-                        style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.border.default}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Position Presets</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '8px' }}>
-                  {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((pos) => (
-                    <button
-                      key={pos}
-                      onClick={() => handleStyleUpdate('backgroundPosition', pos)}
-                      style={{
-                        padding: '6px',
-                        border: `1px solid ${selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[500] : colors.border.default}`,
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        cursor: 'pointer',
-                        background: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[50] : 'white',
-                        color: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[700] : colors.text.secondary
-                      }}
-                    >
-                      {pos.split(' ').map(w => w[0].toUpperCase()).join('')}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Position Presets</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '8px' }}>
+              {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((pos) => (
+                <button
+                  key={pos}
+                  onClick={() => handleStyleUpdate('backgroundPosition', pos)}
+                  style={{
+                    padding: '6px',
+                    border: `1px solid ${selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[500] : colors.border.default}`,
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    cursor: 'pointer',
+                    background: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[50] : 'white',
+                    color: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[700] : colors.text.secondary
+                  }}
+                >
+                  {pos.split(' ').map(w => w[0].toUpperCase()).join('')}
+                </button>
+              ))}
             </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Padding</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                <input
-                  type="number"
-                  value={paddingTop}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, top: Number(e.target.value) })}
-                  placeholder="Top"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={paddingRight}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, right: Number(e.target.value) })}
-                  placeholder="Right"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={paddingBottom}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, bottom: Number(e.target.value) })}
-                  placeholder="Bottom"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={paddingLeft}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, left: Number(e.target.value) })}
-                  placeholder="Left"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-              </div>
-            </div>
-
-            {/* Margin Controls */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Margin</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                <input
-                  type="number"
-                  value={(selectedLayerObj.style?.margin as any)?.top || 0}
-                  onChange={(e) => {
-                    const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
-                    handleStyleUpdate('margin', { ...marginObj, top: Number(e.target.value) });
-                  }}
-                  placeholder="Top"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={(selectedLayerObj.style?.margin as any)?.right || 0}
-                  onChange={(e) => {
-                    const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
-                    handleStyleUpdate('margin', { ...marginObj, right: Number(e.target.value) });
-                  }}
-                  placeholder="Right"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={(selectedLayerObj.style?.margin as any)?.bottom || 0}
-                  onChange={(e) => {
-                    const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
-                    handleStyleUpdate('margin', { ...marginObj, bottom: Number(e.target.value) });
-                  }}
-                  placeholder="Bottom"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={(selectedLayerObj.style?.margin as any)?.left || 0}
-                  onChange={(e) => {
-                    const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
-                    handleStyleUpdate('margin', { ...marginObj, left: Number(e.target.value) });
-                  }}
-                  placeholder="Left"
-                  style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-              </div>
-            </div>
-
-            {renderSizeControls()}
-            {renderCommonStyles()}
           </div>
-        </>
-      );
-    }
-
-    // Default properties
-    return (
-      <>
-        {renderBottomSheetConfig()}
-        {renderModalConfig()}
-        {renderPipConfig()}
-        <div style={{ marginBottom: '20px' }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Layer Properties</h5>
-          <p style={{ fontSize: '13px', color: colors.text.secondary }}>Select a layer to edit its properties</p>
         </div>
+
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Padding</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            <input
+              type="number"
+              value={paddingTop}
+              onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, top: Number(e.target.value) })}
+              placeholder="Top"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+            <input
+              type="number"
+              value={paddingRight}
+              onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, right: Number(e.target.value) })}
+              placeholder="Right"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+            <input
+              type="number"
+              value={paddingBottom}
+              onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, bottom: Number(e.target.value) })}
+              placeholder="Bottom"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+            <input
+              type="number"
+              value={paddingLeft}
+              onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, left: Number(e.target.value) })}
+              placeholder="Left"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+          </div>
+        </div>
+
+        {/* Margin Controls */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Margin</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            <input
+              type="number"
+              value={(selectedLayerObj.style?.margin as any)?.top || 0}
+              onChange={(e) => {
+                const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
+                handleStyleUpdate('margin', { ...marginObj, top: Number(e.target.value) });
+              }}
+              placeholder="Top"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+            <input
+              type="number"
+              value={(selectedLayerObj.style?.margin as any)?.right || 0}
+              onChange={(e) => {
+                const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
+                handleStyleUpdate('margin', { ...marginObj, right: Number(e.target.value) });
+              }}
+              placeholder="Right"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+            <input
+              type="number"
+              value={(selectedLayerObj.style?.margin as any)?.bottom || 0}
+              onChange={(e) => {
+                const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
+                handleStyleUpdate('margin', { ...marginObj, bottom: Number(e.target.value) });
+              }}
+              placeholder="Bottom"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+            <input
+              type="number"
+              value={(selectedLayerObj.style?.margin as any)?.left || 0}
+              onChange={(e) => {
+                const marginObj = typeof selectedLayerObj.style?.margin === 'object' ? selectedLayerObj.style.margin : { top: 0, right: 0, bottom: 0, left: 0 };
+                handleStyleUpdate('margin', { ...marginObj, left: Number(e.target.value) });
+              }}
+              placeholder="Left"
+              style={{ padding: '8px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+            />
+          </div>
+        </div>
+
+        {renderSizeControls()}
         {renderCommonStyles()}
-      </>
-    );
+      </div>
+    </>
+  );
+}
+
+// Default properties
+return (
+  <>
+    {renderBottomSheetConfig()}
+    {renderModalConfig()}
+    {renderPipConfig()}
+    <div style={{ marginBottom: '20px' }}>
+      <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Layer Properties</h5>
+      <p style={{ fontSize: '13px', color: colors.text.secondary }}>Select a layer to edit its properties</p>
+    </div>
+    {renderCommonStyles()}
+  </>
+);
 
   };
 
 
 
-  // Handler for template selection
-  const handleTemplateSelect = (templateId: string) => {
-    const template = BOTTOM_SHEET_TEMPLATES.find(t => t.id === templateId);
+// Handler for template selection
+const handleTemplateSelect = (templateId: string) => {
+  const template = BOTTOM_SHEET_TEMPLATES.find(t => t.id === templateId);
 
-    if (!template) {
-      toast.error('Template not found');
-      return;
-    }
+  if (!template) {
+    toast.error('Template not found');
+    return;
+  }
 
-    // Create campaign first
-    createCampaign(
-      selectedExperience as any || 'nudges',
-      'bottomsheet' as any
-    );
+  // Create campaign first
+  createCampaign(
+    selectedExperience as any || 'nudges',
+    'bottomsheet' as any
+  );
 
-    // FIX: Navigate to the new campaign ID immediately
-    const { currentCampaign } = useEditorStore.getState();
-    if (currentCampaign?.id) {
-      navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
-    }
+  // FIX: Navigate to the new campaign ID immediately
+  const { currentCampaign } = useEditorStore.getState();
+  if (currentCampaign?.id) {
+    navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
+  }
 
-    // Load template layers after campaign is created
-    setTimeout(() => {
-      loadTemplate(template.layers);
-      setTemplateModalOpen(false);
-      setShowEditor(true);
-      toast.success(`Template "${template.name}" loaded successfully!`);
-    }, 100);
-  };
-
-  // Handler for starting from scratch
-  const handleStartFromScratch = () => {
-    createCampaign(
-      selectedExperience as any || 'nudges',
-      'bottomsheet' as any
-    );
-
-    // FIX: Navigate to the new campaign ID immediately
-    const { currentCampaign } = useEditorStore.getState();
-    if (currentCampaign?.id) {
-      navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
-    }
-
+  // Load template layers after campaign is created
+  setTimeout(() => {
+    loadTemplate(template.layers);
     setTemplateModalOpen(false);
     setShowEditor(true);
-    toast.info('Starting with blank canvas...');
-  };
+    toast.success(`Template "${template.name}" loaded successfully!`);
+  }, 100);
+};
 
-  // Handler for saving campaign
-  const handleSaveCampaign = async () => {
-    if (!currentCampaign) {
-      toast.error('No campaign to save');
-      return;
+// Handler for starting from scratch
+const handleStartFromScratch = () => {
+  createCampaign(
+    selectedExperience as any || 'nudges',
+    'bottomsheet' as any
+  );
+
+  // FIX: Navigate to the new campaign ID immediately
+  const { currentCampaign } = useEditorStore.getState();
+  if (currentCampaign?.id) {
+    navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
+  }
+
+  setTemplateModalOpen(false);
+  setShowEditor(true);
+  toast.info('Starting with blank canvas...');
+};
+
+// Handler for saving campaign
+const handleSaveCampaign = async () => {
+  if (!currentCampaign) {
+    toast.error('No campaign to save');
+    return;
+  }
+
+  // FIX #5: Validate before save
+  if (!currentCampaign.name || currentCampaign.name.trim() === '') {
+    toast.error('Please enter a campaign name');
+    return;
+  }
+
+  if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
+    toast.error('Campaign must have at least one layer');
+    return;
+  }
+
+  try {
+    const oldId = currentCampaign.id;
+    await saveCampaign();
+    toast.success('Campaign saved successfully!');
+
+    // FIX #2: Update URL parameter if campaign ID changed
+    const { currentCampaign: updatedCampaign } = useEditorStore.getState();
+    const newId = updatedCampaign?.id;
+    if (newId && newId !== oldId) {
+      navigate(`/campaign-builder?id=${newId}`, { replace: true });
     }
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : 'Failed to save campaign');
+  }
+};
 
-    // FIX #5: Validate before save
-    if (!currentCampaign.name || currentCampaign.name.trim() === '') {
-      toast.error('Please enter a campaign name');
-      return;
-    }
+// Handler for loading campaign (for testing)
+const handleLoadCampaign = async () => {
+  const campaignId = prompt('Enter campaign ID to load:');
+  if (!campaignId) return;
 
-    if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
-      toast.error('Campaign must have at least one layer');
-      return;
-    }
+  try {
+    const { loadCampaign } = useEditorStore.getState();
+    await loadCampaign(campaignId);
+    toast.success('Campaign loaded successfully!');
+  } catch (error) {
+    toast.error('Failed to load campaign');
+    console.error('Load error:', error);
+  }
+};
 
-    try {
-      const oldId = currentCampaign.id;
-      await saveCampaign();
-      toast.success('Campaign saved successfully!');
+// Handler for launching campaign
+const handleLaunchCampaign = async () => {
+  if (!currentCampaign) {
+    toast.error('No campaign to launch');
+    return;
+  }
 
-      // FIX #2: Update URL parameter if campaign ID changed
-      const { currentCampaign: updatedCampaign } = useEditorStore.getState();
-      const newId = updatedCampaign?.id;
-      if (newId && newId !== oldId) {
-        navigate(`/campaign-builder?id=${newId}`, { replace: true });
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save campaign');
-    }
-  };
+  // FIX #5: Validate before launch
+  if (!currentCampaign.name || currentCampaign.name.trim() === '') {
+    toast.error('Please enter a campaign name before launching');
+    return;
+  }
 
-  // Handler for loading campaign (for testing)
-  const handleLoadCampaign = async () => {
-    const campaignId = prompt('Enter campaign ID to load:');
-    if (!campaignId) return;
+  if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
+    toast.error('Campaign must have at least one layer');
+    return;
+  }
 
-    try {
-      const { loadCampaign } = useEditorStore.getState();
-      await loadCampaign(campaignId);
-      toast.success('Campaign loaded successfully!');
-    } catch (error) {
-      toast.error('Failed to load campaign');
-      console.error('Load error:', error);
-    }
-  };
+  try {
+    // Update campaign status to active in the store
+    updateStatus('active');
 
-  // Handler for launching campaign
-  const handleLaunchCampaign = async () => {
-    if (!currentCampaign) {
-      toast.error('No campaign to launch');
-      return;
-    }
+    // Save the campaign with active status
+    await saveCampaign();
 
-    // FIX #5: Validate before launch
-    if (!currentCampaign.name || currentCampaign.name.trim() === '') {
-      toast.error('Please enter a campaign name before launching');
-      return;
-    }
+    toast.success('🚀 Campaign launched successfully!');
 
-    if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
-      toast.error('Campaign must have at least one layer');
-      return;
-    }
+    // Navigate to campaigns page after short delay
+    setTimeout(() => {
+      navigate('/campaigns');
+    }, 1500);
+  } catch (error) {
+    console.error('Launch campaign error:', error);
+    toast.error(error instanceof Error ? error.message : 'Failed to launch campaign');
+  }
+};
 
-    try {
-      // Update campaign status to active in the store
-      updateStatus('active');
+// Early return for campaign creation flow - AFTER all hooks
+if (!showEditor) {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate('/campaigns')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <ArrowLeft size={20} className="text-gray-600" />
+          </button>
+          <h1 className="text-xl font-semibold text-gray-900">Create New Campaign</h1>
+        </div>
+      </header>
 
-      // Save the campaign with active status
-      await saveCampaign();
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Target Page Context Selection (New Feature) */}
+          {!searchParams.get('experience') && (
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Target Page Context</h2>
+              <p className="text-sm text-gray-500 mb-4">Select an App Screen to visualize and target specific elements.</p>
+              <div className="w-full max-w-md">
+                <select
+                  className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  value={selectedPageId || ''}
+                  onChange={(e) => setSelectedPageId(e.target.value)}
+                >
+                  <option value="">-- Select an App Screen --</option>
+                  {pages.map((page) => (
+                    <option key={page._id} value={page._id}>
+                      {page.name} ({page.pageTag})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </section>
+          )}
 
-      toast.success('🚀 Campaign launched successfully!');
-
-      // Navigate to campaigns page after short delay
-      setTimeout(() => {
-        navigate('/campaigns');
-      }, 1500);
-    } catch (error) {
-      console.error('Launch campaign error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to launch campaign');
-    }
-  };
-
-  // Early return for campaign creation flow - AFTER all hooks
-  if (!showEditor) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/campaigns')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ArrowLeft size={20} className="text-gray-600" />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-900">Create New Campaign</h1>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-6xl mx-auto space-y-8">
-            {/* Target Page Context Selection (New Feature) */}
-            {!searchParams.get('experience') && (
-              <section className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Target Page Context</h2>
-                <p className="text-sm text-gray-500 mb-4">Select an App Screen to visualize and target specific elements.</p>
-                <div className="w-full max-w-md">
-                  <select
-                    className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                    value={selectedPageId || ''}
-                    onChange={(e) => setSelectedPageId(e.target.value)}
-                  >
-                    <option value="">-- Select an App Screen --</option>
-                    {pages.map((page) => (
-                      <option key={page._id} value={page._id}>
-                        {page.name} ({page.pageTag})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </section>
-            )}
-
-            {/* Experience Selection */}
-            {/* Experience Selection - Only show if not pre-selected via URL */}
-            {!searchParams.get('experience') && (
-              <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Experience</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {experienceTypes.map((type) => (
-                    <div
-                      key={type.id}
-                      onClick={() => handleExperienceSelect(type.id)}
-                      className={`
+          {/* Experience Selection */}
+          {/* Experience Selection - Only show if not pre-selected via URL */}
+          {!searchParams.get('experience') && (
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Experience</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {experienceTypes.map((type) => (
+                  <div
+                    key={type.id}
+                    onClick={() => handleExperienceSelect(type.id)}
+                    className={`
                       relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 group
                       ${selectedExperience === type.id
-                          ? 'border-indigo-600 bg-indigo-50 shadow-md'
-                          : 'border-white bg-white hover:border-indigo-200 hover:shadow-lg'}
+                        ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                        : 'border-white bg-white hover:border-indigo-200 hover:shadow-lg'}
                     `}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white shadow-sm"
+                      style={{ background: type.gradient }}
+                    >
+                      <type.Icon size={24} />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
+                    <p className="text-sm text-gray-500">Create engaging {type.label.toLowerCase()} for your users</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Nudge Type Selection (Only if Nudges is selected) */}
+          {/* Nudge Type Selection - Show for ANY experience that has mapped types */}
+          {(selectedExperience && EXPERIENCE_MAPPING[selectedExperience]) && (
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Nudge Type</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {nudgeTypes
+                  .filter(type => {
+                    // FIX: Filter based on selected experience mapping
+                    if (!selectedExperience) return false;
+                    const allowedTypes = EXPERIENCE_MAPPING[selectedExperience];
+                    // If no explicit mapping, show none or all? User requested strict mapping.
+                    // If allowedTypes is undefined (e.g. unknown experience), show nothing.
+                    return allowedTypes?.includes(type.id);
+                  })
+                  .map((type) => (
+                    <div
+                      key={type.id}
+                      onClick={() => handleNudgeTypeSelect(type.id)}
+                      className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
                     >
                       <div
-                        className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white shadow-sm"
-                        style={{ background: type.gradient }}
+                        className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
+                        style={{ backgroundColor: type.bg, color: type.iconColor }}
                       >
                         <type.Icon size={24} />
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                      <p className="text-sm text-gray-500">Create engaging {type.label.toLowerCase()} for your users</p>
+                      <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
                     </div>
                   ))}
-                </div>
-              </section>
-            )}
+              </div>
+            </section>
+          )}
+        </div>
+      </main>
 
-            {/* Nudge Type Selection (Only if Nudges is selected) */}
-            {/* Nudge Type Selection - Show for ANY experience that has mapped types */}
-            {(selectedExperience && EXPERIENCE_MAPPING[selectedExperience]) && (
-              <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Nudge Type</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {nudgeTypes
-                    .filter(type => {
-                      // FIX: Filter based on selected experience mapping
-                      if (!selectedExperience) return false;
-                      const allowedTypes = EXPERIENCE_MAPPING[selectedExperience];
-                      // If no explicit mapping, show none or all? User requested strict mapping.
-                      // If allowedTypes is undefined (e.g. unknown experience), show nothing.
-                      return allowedTypes?.includes(type.id);
-                    })
-                    .map((type) => (
-                      <div
-                        key={type.id}
-                        onClick={() => handleNudgeTypeSelect(type.id)}
-                        className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
-                      >
-                        <div
-                          className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                          style={{ backgroundColor: type.bg, color: type.iconColor }}
-                        >
-                          <type.Icon size={24} />
-                        </div>
-                        <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                        <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
-                      </div>
-                    ))}
-                </div>
-              </section>
-            )}
-          </div>
-        </main>
-
-        {/* Template Gallery Modal */}
-        <TemplateGallery
-          isOpen={isTemplateModalOpen}
-          onClose={() => setTemplateModalOpen(false)}
-          onSelectTemplate={(template) => {
-            // Create campaign with template
-            // FIX: Use template type instead of hardcoded 'bottomsheet'
-            const type = template.type || template.config?.nudgeType || template.config?.type || 'bottomsheet';
-            createCampaign(
-              (selectedExperience || selectedExperienceType) as any || 'nudges',
-              type as any
-            );
-
-            // Load template
-            loadTemplate(template);
-
-            // Navigate to editor
-            const { currentCampaign } = useEditorStore.getState();
-            if (currentCampaign?.id) {
-              navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
-            }
-
-            setShowEditor(true);
-            toast.success('Template loaded successfully');
-          }}
-          onStartBlank={() => {
-            // Create campaign without template
-            // FIX: Use selectedNudgeType or default to modal (safer default for blank)
-            const typeToUse = selectedNudgeType || currentCampaign?.nudgeType || 'modal';
-            createCampaign(
-              (selectedExperience || selectedExperienceType) as any || 'nudges',
-              typeToUse as any
-            );
-
-            // Navigate to editor
-            const { currentCampaign: updatedCampaign } = useEditorStore.getState();
-            if (updatedCampaign?.id) {
-              navigate(`/campaign-builder?id=${updatedCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
-            }
-
-            setShowEditor(true);
-            toast.success('Started with blank canvas');
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-
-
-
-      {/* Template Gallery */}
+      {/* Template Gallery Modal */}
       <TemplateGallery
         isOpen={isTemplateModalOpen}
-        nudgeType={selectedNudgeType} // Filter templates by current type
         onClose={() => setTemplateModalOpen(false)}
         onSelectTemplate={(template) => {
-          // If creating new, don't confirm
-          if (isCreating) {
-            loadTemplate(template);
-            setIsCreating(false);
-            // Also set the nudge type based on the template
-            // Fix: Safely access nudgeType, fallback to template.type (which matches backend schema)
-            const type = template.config?.nudgeType || template.type;
-            if (type) {
-              setSelectedNudgeType(type);
-            }
-            toast.success('Template loaded successfully');
-          } else {
-            // Existing flow
-            if (window.confirm('Loading a template will overwrite your current design. Continue?')) {
-              loadTemplate(template);
-              toast.success('Template loaded successfully');
-            }
+          // Create campaign with template
+          // FIX: Use template type instead of hardcoded 'bottomsheet'
+          const type = template.type || template.config?.nudgeType || template.config?.type || 'bottomsheet';
+          createCampaign(
+            (selectedExperience || selectedExperienceType) as any || 'nudges',
+            type as any
+          );
+
+          // Load template
+          loadTemplate(template);
+
+          // Navigate to editor
+          const { currentCampaign } = useEditorStore.getState();
+          if (currentCampaign?.id) {
+            navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
           }
+
+          setShowEditor(true);
+          toast.success('Template loaded successfully');
         }}
         onStartBlank={() => {
-          setTemplateModalOpen(false);
-          if (isCreating) {
-            setIsCreating(false);
-            // FIX: Robustly determine nudge type
-            if (!selectedNudgeType) {
-              if (currentCampaign?.nudgeType) {
-                setSelectedNudgeType(currentCampaign.nudgeType);
-              } else {
-                setSelectedNudgeType('modal');
-              }
-            }
-            toast.success('Started with blank canvas');
+          // Create campaign without template
+          // FIX: Use selectedNudgeType or default to modal (safer default for blank)
+          const typeToUse = selectedNudgeType || currentCampaign?.nudgeType || 'modal';
+          createCampaign(
+            (selectedExperience || selectedExperienceType) as any || 'nudges',
+            typeToUse as any
+          );
+
+          // Navigate to editor
+          const { currentCampaign: updatedCampaign } = useEditorStore.getState();
+          if (updatedCampaign?.id) {
+            navigate(`/campaign-builder?id=${updatedCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
           }
+
+          setShowEditor(true);
+          toast.success('Started with blank canvas');
         }}
       />
+    </div>
+  );
+}
 
-      {/* Save Template Modal */}
-      <SaveTemplateModal
-        isOpen={isSaveTemplateModalOpen}
-        onClose={() => setSaveTemplateModalOpen(false)}
-        config={currentCampaign}
-        nudgeType={selectedNudgeType || 'unknown'}
-      />
+return (
+  <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
 
 
 
+    {/* Template Gallery */}
+    <TemplateGallery
+      isOpen={isTemplateModalOpen}
+      nudgeType={selectedNudgeType} // Filter templates by current type
+      onClose={() => setTemplateModalOpen(false)}
+      onSelectTemplate={(template) => {
+        // If creating new, don't confirm
+        if (isCreating) {
+          loadTemplate(template);
+          setIsCreating(false);
+          // Also set the nudge type based on the template
+          // Fix: Safely access nudgeType, fallback to template.type (which matches backend schema)
+          const type = template.config?.nudgeType || template.type;
+          if (type) {
+            setSelectedNudgeType(type);
+          }
+          toast.success('Template loaded successfully');
+        } else {
+          // Existing flow
+          if (window.confirm('Loading a template will overwrite your current design. Continue?')) {
+            loadTemplate(template);
+            toast.success('Template loaded successfully');
+          }
+        }
+      }}
+      onStartBlank={() => {
+        setTemplateModalOpen(false);
+        if (isCreating) {
+          setIsCreating(false);
+          // FIX: Robustly determine nudge type
+          if (!selectedNudgeType) {
+            if (currentCampaign?.nudgeType) {
+              setSelectedNudgeType(currentCampaign.nudgeType);
+            } else {
+              setSelectedNudgeType('modal');
+            }
+          }
+          toast.success('Started with blank canvas');
+        }
+      }}
+    />
+
+    {/* Save Template Modal */}
+    <SaveTemplateModal
+      isOpen={isSaveTemplateModalOpen}
+      onClose={() => setSaveTemplateModalOpen(false)}
+      config={currentCampaign}
+      nudgeType={selectedNudgeType || 'unknown'}
+    />
 
 
-      <ErrorBoundary>
-        {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {/* Design Tab - Nudge Selection Flow */}
-            {(() => {
-              console.log('DesignStep Render: selectedNudgeType=', selectedNudgeType, 'isCreating=', isCreating);
-              return null; // Just for logging
-            })()}
-            {!selectedNudgeType && (
-              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray[50] }}>
 
-                {/* 1. Empty State (Image 3) */}
-                {!isCreating && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      width: '64px',
-                      height: '64px',
-                      margin: '0 auto 24px',
-                      backgroundColor: 'white',
-                      borderRadius: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                    }}>
-                      <Layout size={32} color={colors.gray[400]} />
-                    </div>
-                    <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: colors.text.primary }}>
-                      No interfaces found
-                    </h3>
-                    <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: colors.text.secondary }}>
-                      Begin by adding an interface.
-                    </p>
-                    <button
-                      onClick={() => setIsCreating(true)}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: colors.gray[100],
-                        color: colors.text.primary,
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.gray[200]; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.gray[100]; }}
-                    >
-                      <Plus size={16} />
-                      Create Interface
-                    </button>
+
+
+    <ErrorBoundary>
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {/* Design Tab - Nudge Selection Flow */}
+          {(() => {
+            console.log('DesignStep Render: selectedNudgeType=', selectedNudgeType, 'isCreating=', isCreating);
+            return null; // Just for logging
+          })()}
+          {!selectedNudgeType && (
+            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray[50] }}>
+
+              {/* 1. Empty State (Image 3) */}
+              {!isCreating && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    margin: '0 auto 24px',
+                    backgroundColor: 'white',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                  }}>
+                    <Layout size={32} color={colors.gray[400]} />
                   </div>
-                )}
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: colors.text.primary }}>
+                    No interfaces found
+                  </h3>
+                  <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: colors.text.secondary }}>
+                    Begin by adding an interface.
+                  </p>
+                  <button
+                    onClick={() => setIsCreating(true)}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: colors.gray[100],
+                      color: colors.text.primary,
+                      border: `1px solid ${colors.border.default}`,
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.gray[200]; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.gray[100]; }}
+                  >
+                    <Plus size={16} />
+                    Create Interface
+                  </button>
+                </div>
+              )}
 
-                {/* 2. Selection State (Image 4) */}
-                {isCreating && (
-                  <div style={{ width: '100%', height: '100%', padding: '40px', overflowY: 'auto', backgroundColor: 'white' }}>
-                    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                      <div style={{ marginBottom: '32px' }}>
+              {/* 2. Selection State (Image 4) */}
+              {isCreating && (
+                <div style={{ width: '100%', height: '100%', padding: '40px', overflowY: 'auto', backgroundColor: 'white' }}>
+                  <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ marginBottom: '32px' }}>
+                      <button
+                        onClick={() => setIsCreating(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: 'none',
+                          border: 'none',
+                          color: colors.text.secondary,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          marginBottom: '16px'
+                        }}
+                      >
+                        <ArrowLeft size={16} /> Back
+                      </button>
+                      <h2 style={{ fontSize: '24px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>
+                        Create a Design
+                      </h2>
+                    </div>
+
+                    {/* Dynamic Filter Bar */}
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
+                      {DESIGN_CATEGORIES.map((category) => (
                         <button
-                          onClick={() => setIsCreating(false)}
+                          key={category.id}
+                          onClick={() => setFilterCategory(category.id)}
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            background: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            backgroundColor: filterCategory === category.id ? colors.gray[900] : colors.gray[100],
+                            color: filterCategory === category.id ? 'white' : colors.text.secondary,
                             border: 'none',
-                            color: colors.text.secondary,
                             fontSize: '14px',
+                            fontWeight: 500,
                             cursor: 'pointer',
-                            marginBottom: '16px'
+                            transition: 'all 0.2s'
                           }}
                         >
-                          <ArrowLeft size={16} /> Back
+                          {category.label}
                         </button>
-                        <h2 style={{ fontSize: '24px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>
-                          Create a Design
-                        </h2>
-                      </div>
+                      ))}
+                    </div>
 
-                      {/* Dynamic Filter Bar */}
-                      <div style={{ display: 'flex', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
-                        {DESIGN_CATEGORIES.map((category) => (
-                          <button
-                            key={category.id}
-                            onClick={() => setFilterCategory(category.id)}
-                            style={{
-                              padding: '8px 16px',
-                              borderRadius: '8px',
-                              backgroundColor: filterCategory === category.id ? colors.gray[900] : colors.gray[100],
-                              color: filterCategory === category.id ? 'white' : colors.text.secondary,
-                              border: 'none',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              cursor: 'pointer',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            {category.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Dynamic Type Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px', marginBottom: '48px' }}>
-                        {DESIGN_TYPES
-                          .filter(type => filterCategory === 'all' || type.category === filterCategory)
-                          .map((type) => {
-                            const Icon = type.icon;
-                            return (
-                              <div
-                                key={type.id}
-                                onClick={() => handleNudgeTypeSelect(type.id)}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                <div style={{
-                                  aspectRatio: '9/16',
-                                  backgroundColor: type.bg || colors.primary[50],
-                                  borderRadius: '12px',
-                                  border: `1px solid ${type.iconBg || colors.primary[100]}`,
-                                  marginBottom: '12px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  position: 'relative',
-                                  overflow: 'hidden',
-                                  transition: 'all 0.2s'
-                                }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = type.color; e.currentTarget.style.boxShadow = `0 4px 12px ${type.color}20`; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = type.iconBg || colors.primary[100]; e.currentTarget.style.boxShadow = 'none'; }}
-                                >
-                                  {/* Visual representation based on type */}
-                                  {type.id === 'fullpage' && <div style={{ width: '100%', height: '100%', backgroundColor: type.iconBg }} />}
-                                  {type.id === 'bottomsheet' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.color, borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }} />}
-                                  {type.id === 'modal' && <div style={{ width: '70%', height: '30%', backgroundColor: type.color, borderRadius: '8px' }} />}
-                                  {type.id === 'banner' && <div style={{ position: 'absolute', top: '20px', left: '10px', right: '10px', height: '60px', backgroundColor: type.color, borderRadius: '8px' }} />}
-                                  {type.id === 'floater' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '48px', height: '48px', backgroundColor: type.color, borderRadius: '50%' }} />}
-                                  {type.id === 'pip' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '80px', height: '45px', backgroundColor: type.color, borderRadius: '8px' }} />}
-
-                                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} className="group-hover:opacity-100">
-                                    <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 600, color: type.color }}>
-                                      Select
-                                    </div>
-                                  </div>
-                                </div>
-                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{type.label}</h4>
-                              </div>
-                            );
-                          })}
-                      </div>
-
-                      {/* Dynamic Template Grid */}
-                      <div style={{ marginBottom: '24px' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.text.primary, marginBottom: '24px' }}>
-                          Start with a template
-                        </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
-                          {TEMPLATES
-                            .filter(template => {
-                              if (filterCategory === 'all') return true;
-                              const type = DESIGN_TYPES.find(t => t.id === template.typeId);
-                              return type?.category === filterCategory;
-                            })
-                            .map((template) => (
-                              <div
-                                key={template.id}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleNudgeTypeSelect(template.typeId)} // For now, just selects the type
-                              >
-                                <div style={{
-                                  aspectRatio: '3/4',
-                                  backgroundColor: colors.gray[100],
-                                  borderRadius: '12px',
-                                  marginBottom: '12px',
-                                  overflow: 'hidden',
-                                  position: 'relative',
-                                  border: `1px solid ${colors.gray[200]}`,
-                                  transition: 'all 0.2s'
-                                }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.gray[200]; e.currentTarget.style.transform = 'none'; }}
-                                >
-                                  {/* Placeholder content */}
-                                  <div style={{ position: 'absolute', inset: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                    <div style={{ height: '60%', backgroundColor: colors.gray[200], borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }} />
-                                    <div style={{ padding: '12px' }}>
-                                      <div style={{ height: '8px', width: '80%', backgroundColor: colors.gray[200], borderRadius: '4px', marginBottom: '8px' }} />
-                                      <div style={{ height: '8px', width: '50%', backgroundColor: colors.gray[200], borderRadius: '4px' }} />
-                                    </div>
-                                  </div>
-                                </div>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{template.label}</h4>
-                                <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary }}>{template.description}</p>
-                              </div>
-                            ))}
-
-                          {/* Browse More Templates Card */}
-                          <div
-                            onClick={() => setTemplateModalOpen(true)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div style={{
-                              aspectRatio: '3/4',
-                              backgroundColor: 'white',
-                              borderRadius: '12px',
-                              marginBottom: '12px',
-                              overflow: 'hidden',
-                              position: 'relative',
-                              border: `2px dashed ${colors.primary[200]}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexDirection: 'column',
-                              gap: '12px',
-                              transition: 'all 0.2s'
-                            }}
-                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.backgroundColor = colors.primary[50]; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.primary[200]; e.currentTarget.style.backgroundColor = 'white'; }}
+                    {/* Dynamic Type Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+                      {DESIGN_TYPES
+                        .filter(type => filterCategory === 'all' || type.category === filterCategory)
+                        .map((type) => {
+                          const Icon = type.icon;
+                          return (
+                            <div
+                              key={type.id}
+                              onClick={() => handleNudgeTypeSelect(type.id)}
+                              style={{ cursor: 'pointer' }}
                             >
                               <div style={{
-                                width: '48px',
-                                height: '48px',
-                                borderRadius: '50%',
-                                backgroundColor: colors.primary[100],
+                                aspectRatio: '9/16',
+                                backgroundColor: type.bg || colors.primary[50],
+                                borderRadius: '12px',
+                                border: `1px solid ${type.iconBg || colors.primary[100]}`,
+                                marginBottom: '12px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center'
-                              }}>
-                                <LayoutGrid size={24} color={colors.primary[600]} />
+                                justifyContent: 'center',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                transition: 'all 0.2s'
+                              }}
+                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = type.color; e.currentTarget.style.boxShadow = `0 4px 12px ${type.color}20`; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = type.iconBg || colors.primary[100]; e.currentTarget.style.boxShadow = 'none'; }}
+                              >
+                                {/* Visual representation based on type */}
+                                {type.id === 'fullpage' && <div style={{ width: '100%', height: '100%', backgroundColor: type.iconBg }} />}
+                                {type.id === 'bottomsheet' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.color, borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }} />}
+                                {type.id === 'modal' && <div style={{ width: '70%', height: '30%', backgroundColor: type.color, borderRadius: '8px' }} />}
+                                {type.id === 'banner' && <div style={{ position: 'absolute', top: '20px', left: '10px', right: '10px', height: '60px', backgroundColor: type.color, borderRadius: '8px' }} />}
+                                {type.id === 'floater' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '48px', height: '48px', backgroundColor: type.color, borderRadius: '50%' }} />}
+                                {type.id === 'pip' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '80px', height: '45px', backgroundColor: type.color, borderRadius: '8px' }} />}
+
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} className="group-hover:opacity-100">
+                                  <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 600, color: type.color }}>
+                                    Select
+                                  </div>
+                                </div>
                               </div>
-                              <div style={{ textAlign: 'center', padding: '0 16px' }}>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: colors.primary[700] }}>Browse All</h4>
-                                <p style={{ margin: 0, fontSize: '12px', color: colors.primary[600] }}>View System & My Templates</p>
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{type.label}</h4>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Dynamic Template Grid */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.text.primary, marginBottom: '24px' }}>
+                        Start with a template
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
+                        {TEMPLATES
+                          .filter(template => {
+                            if (filterCategory === 'all') return true;
+                            const type = DESIGN_TYPES.find(t => t.id === template.typeId);
+                            return type?.category === filterCategory;
+                          })
+                          .map((template) => (
+                            <div
+                              key={template.id}
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => handleNudgeTypeSelect(template.typeId)} // For now, just selects the type
+                            >
+                              <div style={{
+                                aspectRatio: '3/4',
+                                backgroundColor: colors.gray[100],
+                                borderRadius: '12px',
+                                marginBottom: '12px',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                border: `1px solid ${colors.gray[200]}`,
+                                transition: 'all 0.2s'
+                              }}
+                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.gray[200]; e.currentTarget.style.transform = 'none'; }}
+                              >
+                                {/* Placeholder content */}
+                                <div style={{ position: 'absolute', inset: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                  <div style={{ height: '60%', backgroundColor: colors.gray[200], borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }} />
+                                  <div style={{ padding: '12px' }}>
+                                    <div style={{ height: '8px', width: '80%', backgroundColor: colors.gray[200], borderRadius: '4px', marginBottom: '8px' }} />
+                                    <div style={{ height: '8px', width: '50%', backgroundColor: colors.gray[200], borderRadius: '4px' }} />
+                                  </div>
+                                </div>
                               </div>
+                              <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{template.label}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary }}>{template.description}</p>
+                            </div>
+                          ))}
+
+                        {/* Browse More Templates Card */}
+                        <div
+                          onClick={() => setTemplateModalOpen(true)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div style={{
+                            aspectRatio: '3/4',
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            marginBottom: '12px',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            border: `2px dashed ${colors.primary[200]}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            transition: 'all 0.2s'
+                          }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.backgroundColor = colors.primary[50]; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.primary[200]; e.currentTarget.style.backgroundColor = 'white'; }}
+                          >
+                            <div style={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              backgroundColor: colors.primary[100],
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <LayoutGrid size={24} color={colors.primary[600]} />
+                            </div>
+                            <div style={{ textAlign: 'center', padding: '0 16px' }}>
+                              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: colors.primary[700] }}>Browse All</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: colors.primary[600] }}>View System & My Templates</p>
                             </div>
                           </div>
                         </div>
                       </div>
-
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Design Tab - Editor (Screenshot 9) */}
-            {/* Design Tab - Editor (Screenshot 9) */}
-            {selectedNudgeType && (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: colors.background.page }}>
-                <style>
-                  {`
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Design Tab - Editor (Screenshot 9) */}
+          {/* Design Tab - Editor (Screenshot 9) */}
+          {selectedNudgeType && (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: colors.background.page }}>
+              <style>
+                {`
                     @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap');
                   `}
-                </style>
-                {/* Editor Header */}
+              </style>
+              {/* Editor Header */}
 
 
-                {/* Main Editor Area */}
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                  {/* Left Panel - Layers */}
-                  <div style={{ width: '280px', borderRight: `1px solid ${colors.border.default}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
-                    {/* Determine root container ID based on nudge type */}
-                    {(() => {
-                      // Find the root container layer based on nudge type
-                      const getRootContainerId = () => {
-                        const containerNames = {
-                          'bottomsheet': 'Bottom Sheet',
-                          'modal': 'Modal Container',
-                          'banner': 'Banner Container',
-                          'tooltip': 'Tooltip Container',
-                          'pip': 'PIP Container'
-                        };
-
-                        const containerName = containerNames[selectedNudgeType as keyof typeof containerNames];
-                        const rootContainer = currentCampaign?.layers?.find(
-                          (l: any) => l.type === 'container' && l.name === containerName
-                        );
-
-                        return rootContainer?.id || null;
+              {/* Main Editor Area */}
+              <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                {/* Left Panel - Layers */}
+                <div style={{ width: '280px', borderRight: `1px solid ${colors.border.default}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                  {/* Determine root container ID based on nudge type */}
+                  {(() => {
+                    // Find the root container layer based on nudge type
+                    const getRootContainerId = () => {
+                      const containerNames = {
+                        'bottomsheet': 'Bottom Sheet',
+                        'modal': 'Modal Container',
+                        'banner': 'Banner Container',
+                        'tooltip': 'Tooltip Container',
+                        'pip': 'PIP Container'
                       };
 
-                      const rootContainerId = getRootContainerId();
+                      const containerName = containerNames[selectedNudgeType as keyof typeof containerNames];
+                      const rootContainer = currentCampaign?.layers?.find(
+                        (l: any) => l.type === 'container' && l.name === containerName
+                      );
 
-                      return (
-                        <>
-                          <div style={{ padding: '16px', borderBottom: `1px solid ${colors.border.default}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
-                              Layers ({campaignLayers.length})
-                              <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
-                                Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
-                              </span>
-                            </h4>
-                            <div style={{ position: 'relative' }}>
-                              <button
-                                onClick={() => setShowLayerMenu(!showLayerMenu)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
-                                title="Add new layer"
-                              >
-                                <Plus size={18} />
-                              </button>
+                      return rootContainer?.id || null;
+                    };
 
-                              {/* Layer Type Dropdown Menu - Phase 2 */}
-                              {showLayerMenu && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  right: 0,
-                                  marginTop: '4px',
-                                  backgroundColor: 'white',
-                                  border: `1px solid ${colors.border.default}`,
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                  zIndex: 50,
-                                  minWidth: '200px',
-                                  overflow: 'hidden'
-                                }}>
-                                  <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.border.default}`, backgroundColor: colors.gray[50] }}>
-                                    <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
-                                  </div>
+                    const rootContainerId = getRootContainerId();
 
-                                  {/* Basic Layers */}
-                                  <div style={{ padding: '4px' }}>
-                                    <button type="button" onClick={() => { addLayer('handle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Menu size={16} color={colors.gray[600]} />
-                                      Drag Handle
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Layout size={16} color={colors.gray[600]} />
-                                      Container
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <ImageIcon size={16} color={colors.gray[600]} />
-                                      Image
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Type size={16} color={colors.gray[600]} />
-                                      Text
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Square size={16} color={colors.gray[600]} />
-                                      Button
-                                    </button>
-                                  </div>
+                    return (
+                      <>
+                        <div style={{ padding: '16px', borderBottom: `1px solid ${colors.border.default}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
+                            Layers ({campaignLayers.length})
+                            <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
+                              Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
+                            </span>
+                          </h4>
+                          <div style={{ position: 'relative' }}>
+                            <button
+                              onClick={() => setShowLayerMenu(!showLayerMenu)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
+                              title="Add new layer"
+                            >
+                              <Plus size={18} />
+                            </button>
 
-                                  {/* Divider */}
-                                  <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
-
-                                  {/* Advanced Layers - Phase 2 */}
-                                  <div style={{ padding: '4px' }}>
-                                    <div style={{ padding: '4px 12px', marginBottom: '4px' }}>
-                                      <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Advanced</p>
-                                    </div>
-                                    <button type="button" onClick={() => { addLayer('progress-bar', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                                      Progress Bar
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('progress-circle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎯</span>
-                                      Progress Circle
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('countdown', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱️</span>
-                                      Countdown Timer
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('list', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</span>
-                                      List
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('input', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</span>
-                                      Input Field
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('statistic', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💯</span>
-                                      Statistic
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('rating', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⭐</span>
-                                      Rating Stars
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('badge', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏷️</span>
-                                      Badge
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('gradient-overlay', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌈</span>
-                                      Gradient Overlay
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('checkbox', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☑️</span>
-                                      Checkbox
-                                    </button>
-                                  </div>
+                            {/* Layer Type Dropdown Menu - Phase 2 */}
+                            {showLayerMenu && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: '4px',
+                                backgroundColor: 'white',
+                                border: `1px solid ${colors.border.default}`,
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                zIndex: 50,
+                                minWidth: '200px',
+                                overflow: 'hidden'
+                              }}>
+                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.border.default}`, backgroundColor: colors.gray[50] }}>
+                                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
                                 </div>
-                              )}
-                            </div>
+
+                                {/* Basic Layers */}
+                                <div style={{ padding: '4px' }}>
+                                  <button type="button" onClick={() => { addLayer('handle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <Menu size={16} color={colors.gray[600]} />
+                                    Drag Handle
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <Layout size={16} color={colors.gray[600]} />
+                                    Container
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <ImageIcon size={16} color={colors.gray[600]} />
+                                    Image
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <Type size={16} color={colors.gray[600]} />
+                                    Text
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <Square size={16} color={colors.gray[600]} />
+                                    Button
+                                  </button>
+                                </div>
+
+                                {/* Divider */}
+                                <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+
+                                {/* Advanced Layers - Phase 2 */}
+                                <div style={{ padding: '4px' }}>
+                                  <div style={{ padding: '4px 12px', marginBottom: '4px' }}>
+                                    <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Advanced</p>
+                                  </div>
+                                  <button type="button" onClick={() => { addLayer('progress-bar', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                                    Progress Bar
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('progress-circle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎯</span>
+                                    Progress Circle
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('countdown', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱️</span>
+                                    Countdown Timer
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('list', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</span>
+                                    List
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('input', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</span>
+                                    Input Field
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('statistic', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💯</span>
+                                    Statistic
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('rating', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⭐</span>
+                                    Rating Stars
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('badge', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏷️</span>
+                                    Badge
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('gradient-overlay', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌈</span>
+                                    Gradient Overlay
+                                  </button>
+                                  <button type="button" onClick={() => { addLayer('checkbox', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☑️</span>
+                                    Checkbox
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-                            {campaignLayers
-                              .filter(layer => !layer.parent || layer.parent === 'null') // Robust check for root layers
-                              .map(layer => renderLayerTreeItem(layer, 0))}
-                          </div>
-                        </>
-                      )
-                    })()}
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                          {campaignLayers
+                            .filter(layer => !layer.parent || layer.parent === 'null') // Robust check for root layers
+                            .map(layer => renderLayerTreeItem(layer, 0))}
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+
+                {/* Center Panel - Canvas (Enhanced with Device Selection) */}
+                <div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  {/* Preview Toolbar */}
+                  <PreviewToolbar
+                    selectedDevice={selectedDevice}
+                    onDeviceChange={setSelectedDevice}
+                    zoom={previewZoom}
+                    onZoomChange={setPreviewZoom}
+                    showGrid={showGrid}
+                    onGridToggle={() => setShowGrid(!showGrid)}
+                    onScreenshot={() => {
+                      // TODO: Implement screenshot functionality
+                      toast.info('Screenshot feature coming soon!');
+                    }}
+                  />
+
+                  {/* Phone Preview */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
+                    <PhonePreview
+                      device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
+                      zoom={previewZoom}
+                      showGrid={showGrid}
+                      backgroundUrl={selectedPage?.imageUrl}
+                      pageContext={selectedPage}
+                    >
+                      {renderCanvasPreview()}
+                    </PhonePreview>
                   </div>
 
-                  {/* Center Panel - Canvas (Enhanced with Device Selection) */}
-                  <div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {/* Preview Toolbar */}
-                    <PreviewToolbar
-                      selectedDevice={selectedDevice}
-                      onDeviceChange={setSelectedDevice}
-                      zoom={previewZoom}
-                      onZoomChange={setPreviewZoom}
-                      showGrid={showGrid}
-                      onGridToggle={() => setShowGrid(!showGrid)}
-                      onScreenshot={() => {
-                        // TODO: Implement screenshot functionality
-                        toast.info('Screenshot feature coming soon!');
-                      }}
-                    />
-
-                    {/* Phone Preview */}
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
-                      <PhonePreview
-                        device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
-                        zoom={previewZoom}
-                        showGrid={showGrid}
-                        backgroundUrl={selectedPage?.imageUrl}
-                        pageContext={selectedPage}
-                      >
-                        {renderCanvasPreview()}
-                      </PhonePreview>
+                  {selectedLayerObj && (
+                    <div style={{ position: 'absolute', bottom: '60px', right: '60px', padding: '6px 12px', backgroundColor: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 500, color: colors.text.secondary, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                      {selectedLayerObj.name}
                     </div>
+                  )}
+                </div>
 
-                    {selectedLayerObj && (
-                      <div style={{ position: 'absolute', bottom: '60px', right: '60px', padding: '6px 12px', backgroundColor: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 500, color: colors.text.secondary, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                        {selectedLayerObj.name}
+                {/* Right Panel - Properties */}
+                <div style={{ width: '320px', borderLeft: `1px solid ${colors.border.default}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ borderBottom: `1px solid ${colors.border.default}`, display: 'flex' }}>
+                    <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
+                      Style
+                    </button>
+                    <button onClick={() => setPropertyTab('actions')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'actions' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'actions' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
+                      Actions
+                    </button>
+                  </div>
+                  <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                    {propertyTab === 'style' && renderLayerProperties()}
+                    {propertyTab === 'actions' && (
+                      <div style={{ padding: '0 4px' }}>
+                        {renderLayerActions()}
                       </div>
                     )}
                   </div>
-
-                  {/* Right Panel - Properties */}
-                  <div style={{ width: '320px', borderLeft: `1px solid ${colors.border.default}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ borderBottom: `1px solid ${colors.border.default}`, display: 'flex' }}>
-                      <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
-                        Style
-                      </button>
-                      <button onClick={() => setPropertyTab('actions')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'actions' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'actions' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
-                        Actions
-                      </button>
-                    </div>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                      {propertyTab === 'style' && renderLayerProperties()}
-                      {propertyTab === 'actions' && (
-                        <div style={{ padding: '0 4px' }}>
-                          {renderLayerActions()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
 
-          </div>
         </div>
-      </ErrorBoundary>
-    </div>
-  );
+      </div>
+    </ErrorBoundary>
+  </div>
+);
 };
 
 

@@ -3018,44 +3018,39 @@ export const DesignStep: React.FC = () => {
           </div>
 
           {/* Appearance */}
-          {
-            config.mode !== 'image' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  🎨 Appearance
-                </h5>
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🎨 Appearance
+            </h5>
 
-                {/* Roundness */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="24"
-                    value={config.roundness || 8}
-                    onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
-                </div>
+            {/* Roundness */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
+              <input
+                type="range"
+                min="0"
+                max="24"
+                value={config.roundness || 8}
+                onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
+            </div>
 
-                {/* Padding */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="32"
-                    value={config.padding || 12}
-                    onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
-                </div>
-              </div>
-
-            )
-          }
+            {/* Padding */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
+              <input
+                type="range"
+                min="0"
+                max="32"
+                value={config.padding || 12}
+                onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
+                style={{ width: '100%', marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
+            </div>
+          </div>
 
 
 

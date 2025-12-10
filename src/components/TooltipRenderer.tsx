@@ -37,9 +37,9 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const imageUrl = config.imageUrl;
 
     const position = config.position || 'bottom'; // top, bottom, left, right
-    const backgroundColor = mode === 'image' ? 'transparent' : (config.backgroundColor || '#1F2937');
+    const backgroundColor = config.backgroundColor || '#1F2937';
     const borderRadius = config.borderRadius || 8;
-    const padding = mode === 'image' ? 0 : (config.padding || 12);
+    const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;
 
     const renderLayer = (layer: any) => {
@@ -343,12 +343,6 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                             boxShadow: mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                             width: 'max-content',
                             ...containerStyle,
-                            // CRITICAL FIX: Explicitly override container background/shadow for Image Mode
-                            ...(mode === 'image' ? {
-                                backgroundColor: 'transparent',
-                                boxShadow: 'none',
-                                border: 'none'
-                            } : {}),
                             // Override container position if target provided, handled by wrapper
                             ...(targetElement ? { position: 'relative', top: 'auto', left: 'auto', transform: 'none' } : {})
                         }}

@@ -2865,11 +2865,9 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
           </div>
-        </div >
 
-          {/* Content Mode (New Feature) */ }
-          < div style = {{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }
-    }>
+          {/* Content Mode (New Feature) */}
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
               🖼️ Content
             </h5>
@@ -2900,186 +2898,187 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
 
-    {
-      config.mode === 'image' && (
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Tooltip Image</label>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <input
-              type="text"
-              value={config.imageUrl || ''}
-              onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
-              placeholder="Enter image URL..."
-              style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-            />
-            <label style={{
-              padding: '8px 12px',
-              background: colors.primary[500],
-              color: 'white',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              whiteSpace: 'nowrap'
-            }}>
-              Upload
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  // Mock upload for now or reuse existing handler if possible, 
-                  // but for this snippet I'll assumme a direct URL update logic or add a basic handler inline if simple.
-                  // Leveraging handleImageUpload from parent scope if available? 
-                  // Yes, handleImageUpload exists in scope.
-                  handleImageUpload(e, 'tooltip_image_only');
-                }}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-          {config.imageUrl && (
-            <div style={{
-              width: '100%',
-              height: '100px',
-              borderRadius: '6px',
-              background: `url(${config.imageUrl}) center/cover no-repeat`,
-              border: `1px solid ${colors.border.default}`
-            }} />
-          )}
-        </div>
-      )
-    }
+            {
+              config.mode === 'image' && (
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Tooltip Image</label>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="text"
+                      value={config.imageUrl || ''}
+                      onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
+                      placeholder="Enter image URL..."
+                      style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                    />
+                    <label style={{
+                      padding: '8px 12px',
+                      background: colors.primary[500],
+                      color: 'white',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          // Mock upload for now or reuse existing handler if possible, 
+                          // but for this snippet I'll assumme a direct URL update logic or add a basic handler inline if simple.
+                          // Leveraging handleImageUpload from parent scope if available? 
+                          // Yes, handleImageUpload exists in scope.
+                          handleImageUpload(e, 'tooltip_image_only');
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  {config.imageUrl && (
+                    <div style={{
+                      width: '100%',
+                      height: '100px',
+                      borderRadius: '6px',
+                      background: `url(${config.imageUrl}) center/cover no-repeat`,
+                      border: `1px solid ${colors.border.default}`
+                    }} />
+                  )}
+                </div>
+              )
+            }
           </div >
 
-  {/* Appearance */ }
-{
-  config.mode !== 'image' && (
-    <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-      <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-        🎨 Appearance
-      </h5>
+          {/* Appearance */}
+          {
+            config.mode !== 'image' && (
+              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎨 Appearance
+                </h5>
 
-      {/* Roundness */}
-      <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
-        <input
-          type="range"
-          min="0"
-          max="24"
-          value={config.roundness || 8}
-          onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
-          style={{ width: '100%', marginBottom: '4px' }}
-        />
-        <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
-      </div>
+                {/* Roundness */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Roundness</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="24"
+                    value={config.roundness || 8}
+                    onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
+                    style={{ width: '100%', marginBottom: '4px' }}
+                  />
+                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
+                </div>
 
-      {/* Padding */}
-      <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
-        <input
-          type="range"
-          min="0"
-          max="32"
-          value={config.padding || 12}
-          onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
-          style={{ width: '100%', marginBottom: '4px' }}
-        />
-        <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
-      </div>
-    </div>
+                {/* Padding */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Padding</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="32"
+                    value={config.padding || 12}
+                    onChange={(e) => handleTooltipUpdate('padding', parseInt(e.target.value))}
+                    style={{ width: '100%', marginBottom: '4px' }}
+                  />
+                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.padding || 12}px</div>
+                </div>
+              </div>
 
-    </div>
+    </div >
   )}
+}
 
-  {/* Overlay & Highlight */}
-  <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
-    <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-      🎭 Overlay & Highlight
-    </h5>
+{/* Overlay & Highlight */ }
+<div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.border.default}` }}>
+  <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+    🎭 Overlay & Highlight
+  </h5>
 
-    {/* Overlay Color */}
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Color</label>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <input
-          type="color"
-          value={config.overlayColor || '#000000'}
-          onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
-          style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-        />
-        <input
-          type="text"
-          value={config.overlayColor || '#000000'}
-          onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
-          style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-        />
-      </div>
-    </div>
-
-    {/* Overlay Opacity */}
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Opacity</label>
+  {/* Overlay Color */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Color</label>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
       <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.1"
-        value={config.overlayOpacity ?? 0.5}
-        onChange={(e) => handleTooltipUpdate('overlayOpacity', parseFloat(e.target.value))}
-        style={{ width: '100%', marginBottom: '4px' }}
+        type="color"
+        value={config.overlayColor || '#000000'}
+        onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+        style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
       />
-      <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.overlayOpacity ?? 0.5) * 100)}%</div>
-    </div>
-
-    {/* Target Highlight Color */}
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Color</label>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <input
-          type="color"
-          value={config.targetHighlightColor || '#FFFFFF'}
-          onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
-          style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
-        />
-        <input
-          type="text"
-          value={config.targetHighlightColor || '#FFFFFF'}
-          onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
-          style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-        />
-      </div>
-    </div>
-
-    {/* Target Padding */}
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Padding</label>
       <input
-        type="range"
-        min="0"
-        max="24"
-        value={config.targetHighlightPadding || 4}
-        onChange={(e) => handleTooltipUpdate('targetHighlightPadding', parseInt(e.target.value))}
-        style={{ width: '100%', marginBottom: '4px' }}
+        type="text"
+        value={config.overlayColor || '#000000'}
+        onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)}
+        style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
       />
-      <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetHighlightPadding || 4}px</div>
-    </div>
-
-    {/* Target Roundness */}
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Roundness</label>
-      <input
-        type="range"
-        min="0"
-        max="50"
-        value={config.targetRoundness || 4}
-        onChange={(e) => handleTooltipUpdate('targetRoundness', parseInt(e.target.value))}
-        style={{ width: '100%', marginBottom: '4px' }}
-      />
-      <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetRoundness || 4}px</div>
     </div>
   </div>
+
+  {/* Overlay Opacity */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Overlay Opacity</label>
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.1"
+      value={config.overlayOpacity ?? 0.5}
+      onChange={(e) => handleTooltipUpdate('overlayOpacity', parseFloat(e.target.value))}
+      style={{ width: '100%', marginBottom: '4px' }}
+    />
+    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.overlayOpacity ?? 0.5) * 100)}%</div>
+  </div>
+
+  {/* Target Highlight Color */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Color</label>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <input
+        type="color"
+        value={config.targetHighlightColor || '#FFFFFF'}
+        onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
+        style={{ width: '40px', height: '40px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', cursor: 'pointer' }}
+      />
+      <input
+        type="text"
+        value={config.targetHighlightColor || '#FFFFFF'}
+        onChange={(e) => handleTooltipUpdate('targetHighlightColor', e.target.value)}
+        style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.border.default}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+      />
+    </div>
+  </div>
+
+  {/* Target Padding */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Padding</label>
+    <input
+      type="range"
+      min="0"
+      max="24"
+      value={config.targetHighlightPadding || 4}
+      onChange={(e) => handleTooltipUpdate('targetHighlightPadding', parseInt(e.target.value))}
+      style={{ width: '100%', marginBottom: '4px' }}
+    />
+    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetHighlightPadding || 4}px</div>
+  </div>
+
+  {/* Target Roundness */}
+  <div style={{ marginBottom: '12px' }}>
+    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Highlight Roundness</label>
+    <input
+      type="range"
+      min="0"
+      max="50"
+      value={config.targetRoundness || 4}
+      onChange={(e) => handleTooltipUpdate('targetRoundness', parseInt(e.target.value))}
+      style={{ width: '100%', marginBottom: '4px' }}
+    />
+    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.targetRoundness || 4}px</div>
+  </div>
+</div>
         </>
       );
 };

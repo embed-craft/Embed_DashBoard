@@ -37,7 +37,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const imageUrl = config.imageUrl;
 
     const position = config.position || 'bottom'; // top, bottom, left, right
-    const backgroundColor = config.backgroundColor || '#1F2937';
+    const backgroundColor = config.backgroundColor || (mode === 'image' ? 'transparent' : '#1F2937');
     const borderRadius = config.borderRadius || 8;
     const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;

@@ -37,7 +37,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const imageUrl = config.imageUrl;
 
     const position = config.position || 'bottom'; // top, bottom, left, right
-    const backgroundColor = config.backgroundColor || (mode === 'image' ? 'transparent' : '#1F2937');
+    const backgroundColor = config.backgroundColor !== undefined ? config.backgroundColor : (mode === 'image' ? 'transparent' : '#1F2937');
     const borderRadius = config.borderRadius || 8;
     const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;
@@ -202,7 +202,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 position: 'relative',
                 maxWidth: '250px',
                 minWidth: '120px',
-                boxShadow: mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                boxShadow: config.boxShadow !== undefined ? config.boxShadow : (mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)'),
                 width: 'max-content',
                 ...containerStyle,
                 // Override container position if target provided, handled by wrapper

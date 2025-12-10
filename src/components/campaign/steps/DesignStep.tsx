@@ -2924,7 +2924,14 @@ export const DesignStep: React.FC = () => {
                 {['standard', 'image'].map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => handleTooltipUpdate('mode', mode)}
+                    onClick={() => {
+                      handleTooltipUpdate('mode', mode);
+                      if (mode === 'image') {
+                        // Auto-clear background and shadow for cleaner PNG look
+                        handleTooltipUpdate('backgroundColor', 'transparent');
+                        handleTooltipUpdate('boxShadow', 'none');
+                      }
+                    }}
                     style={{
                       flex: 1,
                       padding: '6px',

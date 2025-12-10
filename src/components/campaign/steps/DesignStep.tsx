@@ -800,8 +800,11 @@ export const DesignStep: React.FC = () => {
         const previewWidth = device.width * previewZoom;
         const previewHeight = device.height * previewZoom;
 
-        const scaleX = previewWidth / deviceMeta.width;
-        const scaleY = previewHeight / deviceMeta.height;
+        // Coordinates are Physical (from SDK), DeviceMeta is Logical.
+        // We must divide by density to normalize, or divide preview by physical width.
+        const density = deviceMeta.density || 1;
+        const scaleX = previewWidth / (deviceMeta.width * density);
+        const scaleY = previewHeight / (deviceMeta.height * density);
 
         return (
           <>

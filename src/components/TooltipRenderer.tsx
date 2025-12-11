@@ -269,11 +269,24 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 position: 'relative',
                 maxWidth: '250px',
                 minWidth: '120px',
-                boxShadow: boxShadow,
                 width: 'max-content',
+                // Apply container styles first
                 ...containerStyle,
-                // Override container position if target provided, handled by wrapper
-                ...(targetElement ? { position: 'relative', top: 'auto', left: 'auto', transform: 'none' } : {})
+                // Apply Config Box Shadow LAST to ensure it overrides container defaults
+                boxShadow: boxShadow,
+
+                // transform logic
+                ...(targetElement ? {
+                    position: 'relative',
+                    top: 'auto',
+                    left: 'auto',
+                    // Compose user transform with necessary reset
+                    transform: `rotate(${config.rotate || 0}deg) scale(${config.scale || 1})`
+                } : {
+                    // For manual positioning, we might need to preserve existing transforms if any, 
+                    // but usually TooltipContent is inner. Let's apply user transform here too.
+                    transform: `rotate(${config.rotate || 0}deg) scale(${config.scale || 1})`
+                })
             }}
             onClick={(e) => {
                 if (tooltipContainerLayer) {

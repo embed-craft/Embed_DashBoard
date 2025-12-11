@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
+import { TooltipDesignEditor } from '../designers/TooltipDesignEditor';
 import { useEditorStore, getDefaultLayersForNudgeType } from '@/store/useEditorStore';
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 import { BOTTOM_SHEET_TEMPLATES, getFeaturedTemplates } from '@/lib/bottomSheetTemplates';
@@ -6852,220 +6853,223 @@ export const DesignStep: React.FC = () => {
                     @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap');
                   `}
                 </style>
-                {/* Editor Header */}
 
+                {/* Conditional Rendering for Tooltip Editor (Refactor) */}
+                {selectedNudgeType === 'tooltip' ? (
+                  <TooltipDesignEditor />
+                ) : (
+                  /* Existing Generic Editor */
+                  <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                    {/* Left Panel - Layers */}
+                    <div style={{ width: '280px', borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                      {/* Determine root container ID based on nudge type */}
+                      {(() => {
+                        // Find the root container layer based on nudge type
+                        const getRootContainerId = () => {
+                          const containerNames: Record<string, string> = {
+                            'bottomsheet': 'Bottom Sheet',
+                            'modal': 'Modal Container',
+                            'banner': 'Banner Container',
+                            'tooltip': 'Tooltip Container',
+                            'pip': 'PIP Container'
+                          };
 
-                {/* Main Editor Area */}
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                  {/* Left Panel - Layers */}
-                  <div style={{ width: '280px', borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
-                    {/* Determine root container ID based on nudge type */}
-                    {(() => {
-                      // Find the root container layer based on nudge type
-                      const getRootContainerId = () => {
-                        const containerNames: Record<string, string> = {
-                          'bottomsheet': 'Bottom Sheet',
-                          'modal': 'Modal Container',
-                          'banner': 'Banner Container',
-                          'tooltip': 'Tooltip Container',
-                          'pip': 'PIP Container'
+                          // Robustly determine type
+                          const type = selectedNudgeType || currentCampaign?.nudgeType || '';
+                          const containerName = containerNames[type];
+
+                          if (!containerName) return null;
+
+                          const rootContainer = currentCampaign?.layers?.find(
+                            (l: any) => l.type === 'container' && l.name === containerName
+                          );
+
+                          return rootContainer?.id || null;
                         };
 
-                        // Robustly determine type
-                        const type = selectedNudgeType || currentCampaign?.nudgeType || '';
-                        const containerName = containerNames[type];
+                        const rootContainerId = getRootContainerId();
 
-                        if (!containerName) return null;
+                        return (
+                          <>
+                            <div style={{ padding: '16px', borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
+                                Layers ({campaignLayers.length})
+                                <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
+                                  Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
+                                </span>
+                              </h4>
+                              <div style={{ position: 'relative' }}>
+                                <button
+                                  onClick={() => setShowLayerMenu(!showLayerMenu)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
+                                  title="Add new layer"
+                                >
+                                  <Plus size={18} />
+                                </button>
 
-                        const rootContainer = currentCampaign?.layers?.find(
-                          (l: any) => l.type === 'container' && l.name === containerName
-                        );
-
-                        return rootContainer?.id || null;
-                      };
-
-                      const rootContainerId = getRootContainerId();
-
-                      return (
-                        <>
-                          <div style={{ padding: '16px', borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
-                              Layers ({campaignLayers.length})
-                              <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
-                                Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
-                              </span>
-                            </h4>
-                            <div style={{ position: 'relative' }}>
-                              <button
-                                onClick={() => setShowLayerMenu(!showLayerMenu)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
-                                title="Add new layer"
-                              >
-                                <Plus size={18} />
-                              </button>
-
-                              {/* Layer Type Dropdown Menu - Phase 2 */}
-                              {showLayerMenu && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  right: 0,
-                                  marginTop: '4px',
-                                  backgroundColor: 'white',
-                                  border: `1px solid ${colors.gray[200]}`,
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                  zIndex: 50,
-                                  minWidth: '200px',
-                                  overflow: 'hidden'
-                                }}>
-                                  <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.gray[200]}`, backgroundColor: colors.gray[50] }}>
-                                    <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
-                                  </div>
-
-                                  {/* Basic Layers */}
-                                  <div style={{ padding: '4px' }}>
-                                    <button type="button" onClick={() => { addLayer('handle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Menu size={16} color={colors.gray[600]} />
-                                      Drag Handle
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Layout size={16} color={colors.gray[600]} />
-                                      Container
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <ImageIcon size={16} color={colors.gray[600]} />
-                                      Image
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Type size={16} color={colors.gray[600]} />
-                                      Text
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Square size={16} color={colors.gray[600]} />
-                                      Button
-                                    </button>
-                                  </div>
-
-                                  {/* Divider */}
-                                  <div style={{ height: '1px', backgroundColor: colors.gray[200], margin: '4px 0' }} />
-
-                                  {/* Advanced Layers - Phase 2 */}
-                                  <div style={{ padding: '4px' }}>
-                                    <div style={{ padding: '4px 12px', marginBottom: '4px' }}>
-                                      <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Advanced</p>
+                                {/* Layer Type Dropdown Menu - Phase 2 */}
+                                {showLayerMenu && (
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: 0,
+                                    marginTop: '4px',
+                                    backgroundColor: 'white',
+                                    border: `1px solid ${colors.gray[200]}`,
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                    zIndex: 50,
+                                    minWidth: '200px',
+                                    overflow: 'hidden'
+                                  }}>
+                                    <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.gray[200]}`, backgroundColor: colors.gray[50] }}>
+                                      <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
                                     </div>
-                                    <button type="button" onClick={() => { addLayer('progress-bar', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                                      Progress Bar
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('progress-circle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎯</span>
-                                      Progress Circle
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('countdown', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱️</span>
-                                      Countdown Timer
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('list', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</span>
-                                      List
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('input', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</span>
-                                      Input Field
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('statistic', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💯</span>
-                                      Statistic
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('rating', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⭐</span>
-                                      Rating Stars
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('badge', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏷️</span>
-                                      Badge
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('gradient-overlay', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌈</span>
-                                      Gradient Overlay
-                                    </button>
-                                    <button type="button" onClick={() => { addLayer('checkbox', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☑️</span>
-                                      Checkbox
-                                    </button>
+
+                                    {/* Basic Layers */}
+                                    <div style={{ padding: '4px' }}>
+                                      <button type="button" onClick={() => { addLayer('handle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <Menu size={16} color={colors.gray[600]} />
+                                        Drag Handle
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <Layout size={16} color={colors.gray[600]} />
+                                        Container
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <ImageIcon size={16} color={colors.gray[600]} />
+                                        Image
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <Type size={16} color={colors.gray[600]} />
+                                        Text
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <Square size={16} color={colors.gray[600]} />
+                                        Button
+                                      </button>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div style={{ height: '1px', backgroundColor: colors.gray[200], margin: '4px 0' }} />
+
+                                    {/* Advanced Layers - Phase 2 */}
+                                    <div style={{ padding: '4px' }}>
+                                      <div style={{ padding: '4px 12px', marginBottom: '4px' }}>
+                                        <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Advanced</p>
+                                      </div>
+                                      <button type="button" onClick={() => { addLayer('progress-bar', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                                        Progress Bar
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('progress-circle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎯</span>
+                                        Progress Circle
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('countdown', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱️</span>
+                                        Countdown Timer
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('list', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</span>
+                                        List
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('input', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</span>
+                                        Input Field
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('statistic', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💯</span>
+                                        Statistic
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('rating', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⭐</span>
+                                        Rating Stars
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('badge', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏷️</span>
+                                        Badge
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('gradient-overlay', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌈</span>
+                                        Gradient Overlay
+                                      </button>
+                                      <button type="button" onClick={() => { addLayer('checkbox', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☑️</span>
+                                        Checkbox
+                                      </button>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-                            {campaignLayers
-                              .filter(layer => !layer.parent || layer.parent === 'null') // Robust check for root layers
-                              .map(layer => renderLayerTreeItem(layer, 0))}
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                              {campaignLayers
+                                .filter(layer => !layer.parent || layer.parent === 'null') // Robust check for root layers
+                                .map(layer => renderLayerTreeItem(layer, 0))}
+                            </div>
+                          </>
+                        )
+                      })()}
+                    </div>
 
-                  {/* Center Panel - Canvas (Enhanced with Device Selection) */}
-                  <div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {/* Preview Toolbar */}
-                    <PreviewToolbar
-                      selectedDevice={selectedDevice}
-                      onDeviceChange={setSelectedDevice}
-                      zoom={previewZoom}
-                      onZoomChange={setPreviewZoom}
-                      showGrid={showGrid}
-                      onGridToggle={() => setShowGrid(!showGrid)}
-                      onScreenshot={() => {
-                        // TODO: Implement screenshot functionality
-                        toast.info('Screenshot feature coming soon!');
-                      }}
-                    />
-
-                    {/* Phone Preview */}
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
-                      <PhonePreview
-                        device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
+                    {/* Center Panel - Canvas (Enhanced with Device Selection) */}
+                    <div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      {/* Preview Toolbar */}
+                      <PreviewToolbar
+                        selectedDevice={selectedDevice}
+                        onDeviceChange={setSelectedDevice}
                         zoom={previewZoom}
+                        onZoomChange={setPreviewZoom}
                         showGrid={showGrid}
-                        backgroundUrl={selectedPage?.imageUrl}
-                        pageContext={selectedPage}
-                      >
-                        {renderCanvasPreview()}
-                      </PhonePreview>
-                    </div>
+                        onGridToggle={() => setShowGrid(!showGrid)}
+                        onScreenshot={() => {
+                          // TODO: Implement screenshot functionality
+                          toast.info('Screenshot feature coming soon!');
+                        }}
+                      />
 
-                    {selectedLayerObj && (
-                      <div style={{ position: 'absolute', bottom: '60px', right: '60px', padding: '6px 12px', backgroundColor: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 500, color: colors.text.secondary, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                        {selectedLayerObj.name}
+                      {/* Phone Preview */}
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
+                        <PhonePreview
+                          device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
+                          zoom={previewZoom}
+                          showGrid={showGrid}
+                          backgroundUrl={selectedPage?.imageUrl}
+                          pageContext={selectedPage}
+                        >
+                          {renderCanvasPreview()}
+                        </PhonePreview>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Right Panel - Properties */}
-                  <div style={{ width: '320px', borderLeft: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex' }}>
-                      <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
-                        Style
-                      </button>
-                      <button onClick={() => setPropertyTab('actions')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'actions' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'actions' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
-                        Actions
-                      </button>
-                    </div>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                      {propertyTab === 'style' && renderLayerProperties()}
-                      {propertyTab === 'actions' && (
-                        <div style={{ padding: '0 4px' }}>
-                          {renderLayerActions()}
+                      {selectedLayerObj && (
+                        <div style={{ position: 'absolute', bottom: '60px', right: '60px', padding: '6px 12px', backgroundColor: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 500, color: colors.text.secondary, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                          {selectedLayerObj.name}
                         </div>
                       )}
                     </div>
+
+                    {/* Right Panel - Properties */}
+                    <div style={{ width: '320px', borderLeft: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex' }}>
+                        <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
+                          Style
+                        </button>
+                        <button onClick={() => setPropertyTab('actions')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'actions' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'actions' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
+                          Actions
+                        </button>
+                      </div>
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                        {propertyTab === 'style' && renderLayerProperties()}
+                        {propertyTab === 'actions' && (
+                          <div style={{ padding: '0 4px' }}>
+                            {renderLayerActions()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 

@@ -37,7 +37,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const containerStyle = mode === 'image' ? { ...rawContainerStyle, backgroundColor: undefined, boxShadow: undefined, border: undefined } : rawContainerStyle;
 
     // --- Configuration & Defaults ---
-    const mode = config.mode || 'standard';
+    // mode is already defined above
 
     // Standard Defaults
     const STD_BG = '#1F2937';

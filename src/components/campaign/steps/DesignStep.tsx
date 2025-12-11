@@ -6863,7 +6863,7 @@ export const DesignStep: React.FC = () => {
                     {(() => {
                       // Find the root container layer based on nudge type
                       const getRootContainerId = () => {
-                        const containerNames = {
+                        const containerNames: Record<string, string> = {
                           'bottomsheet': 'Bottom Sheet',
                           'modal': 'Modal Container',
                           'banner': 'Banner Container',
@@ -6871,7 +6871,12 @@ export const DesignStep: React.FC = () => {
                           'pip': 'PIP Container'
                         };
 
-                        const containerName = containerNames[selectedNudgeType as keyof typeof containerNames];
+                        // Robustly determine type
+                        const type = selectedNudgeType || currentCampaign?.nudgeType || '';
+                        const containerName = containerNames[type];
+
+                        if (!containerName) return null;
+
                         const rootContainer = currentCampaign?.layers?.find(
                           (l: any) => l.type === 'container' && l.name === containerName
                         );

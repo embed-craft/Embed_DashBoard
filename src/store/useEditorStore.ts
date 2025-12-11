@@ -749,6 +749,24 @@ export const useEditorStore = create<EditorStore>()(
               duration: 300,
             },
           } : undefined,
+          // Initialize tooltip config for tooltip nudge type
+          tooltipConfig: nudgeType === 'tooltip' ? {
+            position: 'top',
+            arrowSize: 10,
+            showArrow: true,
+            backgroundColor: '#111827',
+            textColor: '#FFFFFF',
+            borderRadius: 8,
+            padding: 12,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            animation: { type: 'fade', duration: 200 },
+            maxWidth: 300,
+            // Initialize transform properties (Fix for rotation/scale issues)
+            rotate: 0,
+            scale: 1,
+            offsetX: 0,
+            offsetY: 0
+          } : undefined,
           selectedLayerId: defaultLayers[0]?.id || null,
           history: [defaultLayers],
           historyIndex: 0,

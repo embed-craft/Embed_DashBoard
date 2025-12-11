@@ -45,7 +45,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // 1. Determine Background Color
     // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
-    let backgroundColor = config.backgroundColor;
+    // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
+    let backgroundColor = config.backgroundColor || tooltipContainerLayer?.style?.backgroundColor;
     if (mode === 'image') {
         // STRICTER CHECK: If explicitly transparent OR undefined OR standard default, force transparent
         if (!backgroundColor || backgroundColor === STD_BG || backgroundColor === 'transparent') {
@@ -57,7 +58,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     }
 
     // 2. Determine Box Shadow
-    let boxShadow = config.boxShadow;
+    let boxShadow = config.boxShadow || tooltipContainerLayer?.style?.boxShadow;
     if (mode === 'image') {
         // STRICTER CHECK: If undefined or standard default or 'none', force none
         if (boxShadow === undefined || boxShadow === STD_SHADOW || boxShadow === 'none') {
@@ -75,6 +76,29 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;
 
+
+    // Helper: Convert structured filter object to CSS string
+    const getFilterString = (filterObj: any) => {
+        if (!filterObj || typeof filterObj !== 'object') return filterObj;
+        return [
+            filterObj.blur ? `blur(${filterObj.blur}px)` : '',
+            filterObj.brightness ? `brightness(${filterObj.brightness}%)` : '',
+            filterObj.contrast ? `contrast(${filterObj.contrast}%)` : '',
+            filterObj.grayscale ? `grayscale(${filterObj.grayscale}%)` : ''
+        ].filter(Boolean).join(' ') || undefined;
+    };
+
+    // Helper: Convert structured transform object to CSS string
+    const getTransformString = (transformObj: any) => {
+        if (!transformObj || typeof transformObj !== 'object') return transformObj;
+        return [
+            transformObj.rotate ? `rotate(${transformObj.rotate}deg)` : '',
+            transformObj.scale ? `scale(${transformObj.scale})` : '',
+            transformObj.translateX ? `translateX(${transformObj.translateX}px)` : '',
+            transformObj.translateY ? `translateY(${transformObj.translateY}px)` : ''
+        ].filter(Boolean).join(' ') || undefined;
+    };
+
     const renderLayer = (layer: any) => {
         const isSelected = selectedLayerId === layer.id;
         const style = layer.style || {};
@@ -85,27 +109,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             zIndex: 10
         } : {};
 
-        // Helper: Convert structured filter object to CSS string
-        const getFilterString = (filterObj: any) => {
-            if (!filterObj || typeof filterObj !== 'object') return filterObj;
-            return [
-                filterObj.blur ? `blur(${filterObj.blur}px)` : '',
-                filterObj.brightness ? `brightness(${filterObj.brightness}%)` : '',
-                filterObj.contrast ? `contrast(${filterObj.contrast}%)` : '',
-                filterObj.grayscale ? `grayscale(${filterObj.grayscale}%)` : ''
-            ].filter(Boolean).join(' ') || undefined;
-        };
 
-        // Helper: Convert structured transform object to CSS string
-        const getTransformString = (transformObj: any) => {
-            if (!transformObj || typeof transformObj !== 'object') return transformObj;
-            return [
-                transformObj.rotate ? `rotate(${transformObj.rotate}deg)` : '',
-                transformObj.scale ? `scale(${transformObj.scale})` : '',
-                transformObj.translateX ? `translateX(${transformObj.translateX}px)` : '',
-                transformObj.translateY ? `translateY(${transformObj.translateY}px)` : ''
-            ].filter(Boolean).join(' ') || undefined;
-        };
 
         const commonStyles: React.CSSProperties = {
             ...style, // Spread basic props first
@@ -292,8 +296,9 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     src={imageUrl}
                     alt="Tooltip"
                     style={{
-                        maxWidth: '200px',
-                        height: 'auto',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
                         display: 'block',
                         borderRadius: `${borderRadius}px`
                     }}
@@ -337,15 +342,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     config.brightness ? `brightness(${config.brightness}%)` : '',
                     config.contrast ? `contrast(${config.contrast}%)` : '',
                     config.grayscale ? `grayscale(${config.grayscale}%)` : ''
-                ].filter(Boolean).join(' ') || undefined,
+                ].filter(Boolean).join(' ') || (tooltipContainerLayer?.style?.filter ? getFilterString(tooltipContainerLayer.style.filter) : undefined),
 
                 // Container Props
-                opacity: config.opacity !== undefined ? config.opacity / 100 : undefined,
+                opacity: config.opacity !== undefined ? config.opacity / 100 : (tooltipContainerLayer?.style?.opacity !== undefined ? tooltipContainerLayer.style.opacity : undefined),
                 zIndex: config.zIndex,
                 cursor: config.cursor,
                 overflow: config.overflow,
-                border: config.border, // Assuming string or handled by containerStyle usually, but allowing override
-                clipPath: config.clipPath,
+                border: config.border || (tooltipContainerLayer?.style?.borderWidth ? `${typeof tooltipContainerLayer.style.borderWidth === 'object' ? 1 : tooltipContainerLayer.style.borderWidth}px solid ${tooltipContainerLayer.style.borderColor || '#000000'}` : undefined),
+                clipPath: config.clipPath || tooltipContainerLayer?.style?.clipPath,
 
                 // Background Image
                 backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,

@@ -270,8 +270,40 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 maxWidth: '250px',
                 minWidth: '120px',
                 width: 'max-content',
-                // Apply container styles first
+
+                // --- Full Property Support ---
+                // Filters
+                filter: [
+                    config.blur ? `blur(${config.blur}px)` : '',
+                    config.brightness ? `brightness(${config.brightness}%)` : '',
+                    config.contrast ? `contrast(${config.contrast}%)` : '',
+                    config.grayscale ? `grayscale(${config.grayscale}%)` : ''
+                ].filter(Boolean).join(' ') || undefined,
+
+                // Container Props
+                opacity: config.opacity !== undefined ? config.opacity / 100 : undefined,
+                zIndex: config.zIndex,
+                cursor: config.cursor,
+                overflow: config.overflow,
+                border: config.border, // Assuming string or handled by containerStyle usually, but allowing override
+                clipPath: config.clipPath,
+
+                // Background Image
+                backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,
+                backgroundSize: config.backgroundSize,
+                backgroundRepeat: config.backgroundRepeat,
+                backgroundPosition: config.backgroundPosition,
+
+                // Layout
+                display: config.display || 'flex',
+                flexDirection: config.flexDirection || 'column',
+                alignItems: config.alignItems,
+                justifyContent: config.justifyContent,
+                gap: config.gap !== undefined ? `${config.gap}px` : undefined,
+
+                // Apply container styles first (layer defaults)
                 ...containerStyle,
+
                 // Apply Config Box Shadow LAST to ensure it overrides container defaults
                 boxShadow: boxShadow,
 

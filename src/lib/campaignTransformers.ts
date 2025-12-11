@@ -143,7 +143,17 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     } : undefined, // ✅ FIX: Map from snake_case to camelCase
     bottomSheetConfig,
     modalConfig,
-    tooltipConfig: campaignType === 'tooltip' ? backendCampaign.config?.tooltipConfig : undefined,
+    bottomSheetConfig,
+    modalConfig,
+    tooltipConfig: campaignType === 'tooltip' ? (backendCampaign.config?.tooltipConfig || {
+      // Fallback/Legacy migration: check if properties exist on root config
+      targetPageId: backendCampaign.config?.targetPageId,
+      targetElementId: backendCampaign.config?.targetElementId,
+      position: backendCampaign.config?.position,
+      maxWidth: backendCampaign.config?.maxWidth,
+      width: backendCampaign.config?.width,
+      height: backendCampaign.config?.height,
+    }) : undefined,
     // Store other configs dynamically if needed in future
     displayRules: (backendCampaign.config && backendCampaign.config.displayRules) || getDefaultDisplayRules(),
     selectedLayerId: layers[0]?.id || null, // Select first layer if exists

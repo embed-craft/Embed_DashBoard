@@ -3009,6 +3009,18 @@ export const DesignStep: React.FC = () => {
                         // Auto-clear background and shadow for cleaner PNG look
                         handleTooltipUpdate('backgroundColor', 'transparent');
                         handleTooltipUpdate('boxShadow', 'none');
+
+                        // FIX: Explicitly clear layer styles too, as they now have priority over config
+                        if (tooltipContainerLayer) {
+                          updateLayer(tooltipContainerLayer.id, {
+                            style: {
+                              ...tooltipContainerLayer.style,
+                              backgroundColor: undefined,
+                              boxShadow: undefined,
+                              border: undefined
+                            }
+                          });
+                        }
                       }
                     }}
                     style={{

@@ -46,7 +46,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // 1. Determine Background Color
     // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
     // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
-    let backgroundColor = config.backgroundColor || tooltipContainerLayer?.style?.backgroundColor;
+    // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
+    let backgroundColor = tooltipContainerLayer?.style?.backgroundColor || config.backgroundColor;
     if (mode === 'image') {
         // STRICTER CHECK: If explicitly transparent OR undefined OR standard default, force transparent
         if (!backgroundColor || backgroundColor === STD_BG || backgroundColor === 'transparent') {
@@ -58,7 +59,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     }
 
     // 2. Determine Box Shadow
-    let boxShadow = config.boxShadow || tooltipContainerLayer?.style?.boxShadow;
+    // 2. Determine Box Shadow
+    let boxShadow = tooltipContainerLayer?.style?.boxShadow || config.boxShadow;
     if (mode === 'image') {
         // STRICTER CHECK: If undefined or standard default or 'none', force none
         if (boxShadow === undefined || boxShadow === STD_SHADOW || boxShadow === 'none') {
@@ -73,7 +75,12 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const position = config.position || 'bottom';
     const borderRadius = config.borderRadius || 8;
     // Fix duplicate declaration issue by using this single source of truth
-    const padding = config.padding !== undefined ? config.padding : 12;
+    // Fix duplicate declaration issue by using this single source of truth
+    // Fix duplicate declaration issue by using this single source of truth
+    const rawPadding = tooltipContainerLayer?.style?.padding !== undefined ? tooltipContainerLayer?.style?.padding : config.padding;
+    const computedPadding = typeof rawPadding === 'object'
+        ? `${rawPadding.top || 0}px ${rawPadding.right || 0}px ${rawPadding.bottom || 0}px ${rawPadding.left || 0}px`
+        : `${rawPadding !== undefined ? rawPadding : 12}px`;
     const arrowSize = config.arrowSize || 8;
 
 
@@ -328,7 +335,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 } : {}),
                 backgroundColor: backgroundColor,
                 borderRadius: `${borderRadius}px`,
-                padding: `${padding}px`,
+                padding: computedPadding,
                 position: 'relative',
                 maxWidth: config.maxWidth || '250px',
                 minWidth: config.minWidth || '120px',
@@ -345,12 +352,12 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 ].filter(Boolean).join(' ') || (tooltipContainerLayer?.style?.filter ? getFilterString(tooltipContainerLayer.style.filter) : undefined),
 
                 // Container Props
-                opacity: config.opacity !== undefined ? config.opacity / 100 : (tooltipContainerLayer?.style?.opacity !== undefined ? tooltipContainerLayer.style.opacity : undefined),
+                opacity: tooltipContainerLayer?.style?.opacity !== undefined ? tooltipContainerLayer.style.opacity : (config.opacity !== undefined ? config.opacity / 100 : undefined),
                 zIndex: config.zIndex,
                 cursor: config.cursor,
                 overflow: config.overflow,
-                border: config.border || (tooltipContainerLayer?.style?.borderWidth ? `${typeof tooltipContainerLayer.style.borderWidth === 'object' ? 1 : tooltipContainerLayer.style.borderWidth}px solid ${tooltipContainerLayer.style.borderColor || '#000000'}` : undefined),
-                clipPath: config.clipPath || tooltipContainerLayer?.style?.clipPath,
+                border: (tooltipContainerLayer?.style?.borderWidth ? `${typeof tooltipContainerLayer.style.borderWidth === 'object' ? 1 : tooltipContainerLayer.style.borderWidth}px solid ${tooltipContainerLayer.style.borderColor || '#000000'}` : undefined) || config.border,
+                clipPath: tooltipContainerLayer?.style?.clipPath || config.clipPath,
 
                 // Background Image
                 backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,
@@ -359,11 +366,20 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 backgroundPosition: config.backgroundPosition,
 
                 // Layout
-                display: config.display || 'flex',
-                flexDirection: config.flexDirection || 'column',
-                alignItems: config.alignItems,
-                justifyContent: config.justifyContent,
-                gap: config.gap !== undefined ? `${config.gap}px` : undefined,
+                // Layout
+                // Layout
+                display: tooltipContainerLayer?.style?.display || config.display || 'flex',
+                flexDirection: tooltipContainerLayer?.style?.flexDirection || tooltipContainerLayer?.style?.direction || config.flexDirection || 'column',
+                alignItems: tooltipContainerLayer?.style?.alignItems || config.alignItems,
+                justifyContent: tooltipContainerLayer?.style?.justifyContent || config.justifyContent,
+                gap: (tooltipContainerLayer?.style?.gap ? `${tooltipContainerLayer.style.gap}px` : undefined) || (config.gap !== undefined ? `${config.gap}px` : undefined),
+
+                // Typography (Inherited)
+                // Typography (Inherited)
+                fontFamily: tooltipContainerLayer?.style?.fontFamily || config.fontFamily,
+                fontSize: (tooltipContainerLayer?.style?.fontSize) || (config.fontSize ? `${config.fontSize}px` : undefined),
+                color: tooltipContainerLayer?.style?.color || config.textColor,
+                textAlign: tooltipContainerLayer?.style?.textAlign || config.textAlign,
 
                 // Apply container styles first (layer defaults)
                 // Omit 'transform' from spread because it might be an object which is invalid for React style
@@ -503,58 +519,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
                 {/* Tooltip Wrapper */}
                 <div style={wrapperStyle}>
-                    <div
-                        style={{
-                            backgroundColor: mode === 'image' ? 'transparent' : backgroundColor,
-                            borderRadius: `${borderRadius}px`,
-                            padding: `${padding}px`,
-                            position: 'relative',
-                            minWidth: '120px',
-                            boxShadow: mode === 'image' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                            width: 'max-content',
-                            ...containerStyle,
-                            // Override container position if target provided, handled by wrapper
-                            ...(targetElement ? { position: 'relative', top: 'auto', left: 'auto', transform: 'none' } : {})
-                        }}
-                        onClick={(e) => {
-                            if (tooltipContainerLayer) {
-                                e.stopPropagation();
-                                onLayerSelect(tooltipContainerLayer.id);
-                            }
-                        }}
-                    >
-                        <div style={getArrowStyle()} />
-
-                        {mode === 'image' && imageUrl && (
-                            <img
-                                src={imageUrl}
-                                alt="Tooltip"
-                                style={{
-                                    position: 'absolute',
-                                    inset: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    borderRadius: `${borderRadius}px`,
-                                    zIndex: 0
-                                }}
-                            />
-                        )}
-
-                        {/* Always render children, even in image mode (they will be on top due to natural stacking or explicit z-Index) */}
-                        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
-                            {tooltipContainerLayer?.children?.map((childId: string) => {
-                                const child = layers.find(l => l.id === childId);
-                                return child ? renderLayer(child) : null;
-                            })}
-                        </div>
-
-                        {!tooltipContainerLayer && mode !== 'image' && (
-                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
-                                Tooltip Content
-                            </div>
-                        )}
-                    </div>
+                    {TooltipContent}
                 </div>
             </>
         );

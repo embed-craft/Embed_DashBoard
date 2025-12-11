@@ -232,6 +232,10 @@ export const DesignStep: React.FC = () => {
     updateLayerStyle(selectedLayerId, { [field]: value });
   };
 
+  const handleTooltipUpdate = (field: string, value: any) => {
+    updateTooltipConfig({ [field]: value });
+  };
+
   // Image upload handler (Fix 1)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'background' | 'tooltip_image_only') => {
     const file = e.target.files?.[0];

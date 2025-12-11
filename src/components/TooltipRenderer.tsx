@@ -302,23 +302,33 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 gap: config.gap !== undefined ? `${config.gap}px` : undefined,
 
                 // Apply container styles first (layer defaults)
-                ...containerStyle,
+                // Omit 'transform' from spread because it might be an object which is invalid for React style
+                ...(() => {
+                    const { transform, ...rest } = containerStyle;
+                    return rest;
+                })(),
 
                 // Apply Config Box Shadow LAST to ensure it overrides container defaults
                 boxShadow: boxShadow,
 
                 // transform logic
-                ...(targetElement ? {
-                    position: 'relative',
-                    top: 'auto',
-                    left: 'auto',
-                    // Compose user transform with necessary reset
-                    transform: `rotate(${config.rotate || 0}deg) scale(${config.scale || 1})`
-                } : {
-                    // For manual positioning, we might need to preserve existing transforms if any, 
-                    // but usually TooltipContent is inner. Let's apply user transform here too.
-                    transform: `rotate(${config.rotate || 0}deg) scale(${config.scale || 1})`
-                })
+                // Prioritize Layer Style Transform (from Advanced Panel) over Config
+                ...(() => {
+                    const layerTransform = containerStyle.transform || {};
+                    const rotate = layerTransform.rotate !== undefined ? layerTransform.rotate : (config.rotate || 0);
+                    const scale = layerTransform.scale !== undefined ? layerTransform.scale : (config.scale || 1);
+
+                    const transformString = `rotate(${rotate}deg) scale(${scale})`;
+
+                    return targetElement ? {
+                        position: 'relative',
+                        top: 'auto',
+                        left: 'auto',
+                        transform: transformString
+                    } : {
+                        transform: transformString
+                    };
+                })()
             }}
             onClick={(e) => {
                 if (tooltipContainerLayer) {

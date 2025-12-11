@@ -3028,10 +3028,10 @@ export const DesignStep: React.FC = () => {
           {
             config.mode === 'advanced' && (
               <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-                 <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   ✨ Advanced Style
                 </h5>
-                
+
                 {/* Gradient */}
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Gradient Flow</label>
@@ -3042,29 +3042,29 @@ export const DesignStep: React.FC = () => {
                   <input type="range" min="0" max="360" value={config.gradientAngle || 45} onChange={(e) => handleTooltipUpdate('gradientAngle', Number(e.target.value))} style={{ width: '100%' }} />
                 </div>
 
-                 {/* Arrow Style */}
+                {/* Arrow Style */}
                 <div style={{ marginBottom: '12px' }}>
-                   <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Arrow Style</label>
-                   <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        onClick={() => handleTooltipUpdate('arrowStyle', 'triangle')}
-                        style={{ padding: '6px', border: `1px solid ${config.arrowStyle === 'bubble' ? colors.gray[200] : colors.primary[500]}`, borderRadius: '4px', background: config.arrowStyle !== 'bubble' ? colors.primary[50] : 'white' }}
-                      >Triangle</button>
-                      <button 
-                        onClick={() => handleTooltipUpdate('arrowStyle', 'bubble')}
-                        style={{ padding: '6px', border: `1px solid ${config.arrowStyle === 'bubble' ? colors.primary[500] : colors.gray[200]}`, borderRadius: '4px', background: config.arrowStyle === 'bubble' ? colors.primary[50] : 'white' }}
-                      >Speech Bubble</button>
-                   </div>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Arrow Style</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleTooltipUpdate('arrowStyle', 'triangle')}
+                      style={{ padding: '6px', border: `1px solid ${config.arrowStyle === 'bubble' ? colors.gray[200] : colors.primary[500]}`, borderRadius: '4px', background: config.arrowStyle !== 'bubble' ? colors.primary[50] : 'white' }}
+                    >Triangle</button>
+                    <button
+                      onClick={() => handleTooltipUpdate('arrowStyle', 'bubble')}
+                      style={{ padding: '6px', border: `1px solid ${config.arrowStyle === 'bubble' ? colors.primary[500] : colors.gray[200]}`, borderRadius: '4px', background: config.arrowStyle === 'bubble' ? colors.primary[50] : 'white' }}
+                    >Speech Bubble</button>
+                  </div>
                 </div>
               </div>
             )
           }
 
           {/* HTML Mode: Code Editor */}
-           {
+          {
             config.mode === 'html' && (
               <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-                 <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   💻 Custom HTML
                 </h5>
                 <textarea
@@ -4080,8 +4080,13 @@ export const DesignStep: React.FC = () => {
                 step="1"
                 value={selectedLayerObj?.style?.transform?.rotate || 0}
                 onChange={(e) => {
+                  const val = Number(e.target.value);
                   const currentTransform = selectedLayerObj?.style?.transform || {};
-                  handleStyleUpdate('transform', { ...currentTransform, rotate: Number(e.target.value) });
+                  handleStyleUpdate('transform', { ...currentTransform, rotate: val });
+                  // Sync to main config for SDK compatibility
+                  if (selectedLayerObj.name === 'Tooltip Container') {
+                    handleTooltipUpdate('rotate', val);
+                  }
                 }}
                 style={{ width: '100%', cursor: 'pointer' }}
               />
@@ -4092,6 +4097,10 @@ export const DesignStep: React.FC = () => {
                     onClick={() => {
                       const currentTransform = selectedLayerObj?.style?.transform || {};
                       handleStyleUpdate('transform', { ...currentTransform, rotate: angle });
+                      // Sync to main config for SDK compatibility
+                      if (selectedLayerObj.name === 'Tooltip Container') {
+                        handleTooltipUpdate('rotate', angle);
+                      }
                     }}
                     style={{
                       flex: 1,
@@ -4121,8 +4130,13 @@ export const DesignStep: React.FC = () => {
                 step="0.1"
                 value={selectedLayerObj?.style?.transform?.scale || 1}
                 onChange={(e) => {
+                  const val = Number(e.target.value);
                   const currentTransform = selectedLayerObj?.style?.transform || {};
-                  handleStyleUpdate('transform', { ...currentTransform, scale: Number(e.target.value) });
+                  handleStyleUpdate('transform', { ...currentTransform, scale: val });
+                  // Sync to main config for SDK compatibility
+                  if (selectedLayerObj.name === 'Tooltip Container') {
+                    handleTooltipUpdate('scale', val);
+                  }
                 }}
                 style={{ width: '100%', cursor: 'pointer' }}
               />

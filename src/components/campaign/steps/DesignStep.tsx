@@ -3178,11 +3178,11 @@ export const DesignStep: React.FC = () => {
                 type="range"
                 min="0"
                 max="24"
-                value={config.roundness || 8}
-                onChange={(e) => handleTooltipUpdate('roundness', parseInt(e.target.value))}
+                value={config.borderRadius || 8}
+                onChange={(e) => handleTooltipUpdate('borderRadius', parseInt(e.target.value))}
                 style={{ width: '100%', marginBottom: '4px' }}
               />
-              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.roundness || 8}px</div>
+              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.borderRadius || 8}px</div>
             </div>
 
             {/* Padding */}
@@ -3894,20 +3894,23 @@ export const DesignStep: React.FC = () => {
 
       const parentLayer = campaignLayers.find(l => l.id === selectedLayerObj.parent);
       const isPipLayer = parentLayer?.name === 'PIP Container';
+      const isTooltipContainer = selectedLayerObj?.name === 'Tooltip Container' && selectedNudgeType === 'tooltip';
 
       return (
         <>
           {/* Position Controls (Fix 6) */}
-          <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
-            <PositionEditor
-              style={selectedLayerObj.style || {}}
-              onChange={(updates) => updateLayerStyle(selectedLayerId!, updates)}
-              colors={colors}
-              showZIndex={!isPipLayer}
-              showCoordinates={!isPipLayer}
-              showPositionType={!isPipLayer}
-            />
-          </div>
+          {!isTooltipContainer && (
+            <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
+              <PositionEditor
+                style={selectedLayerObj.style || {}}
+                onChange={(updates) => updateLayerStyle(selectedLayerId!, updates)}
+                colors={colors}
+                showZIndex={!isPipLayer}
+                showCoordinates={!isPipLayer}
+                showPositionType={!isPipLayer}
+              />
+            </div>
+          )}
 
           <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Background</h5>
@@ -5913,7 +5916,9 @@ export const DesignStep: React.FC = () => {
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
           {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
           <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Container Properties</h5>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+              {selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip' ? 'Internal Layout' : 'Container Properties'}
+            </h5>
 
             {/* Width & Height - Removed (Use Standard Size Controls below) */}
 
@@ -6216,39 +6221,41 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Padding</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                <input
-                  type="number"
-                  value={paddingTop}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, top: Number(e.target.value) })}
-                  placeholder="Top"
-                  style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={paddingRight}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, right: Number(e.target.value) })}
-                  placeholder="Right"
-                  style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={paddingBottom}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, bottom: Number(e.target.value) })}
-                  placeholder="Bottom"
-                  style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
-                <input
-                  type="number"
-                  value={paddingLeft}
-                  onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, left: Number(e.target.value) })}
-                  placeholder="Left"
-                  style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
-                />
+            {/* Padding Controls */}
+            {!(selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip') && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '8px' }}>Padding</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  <input
+                    type="number"
+                    value={paddingTop}
+                    onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, top: Number(e.target.value) })}
+                    placeholder="Top"
+                    style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+                  />
+                  <input
+                    type="number"
+                    value={paddingRight}
+                    onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, right: Number(e.target.value) })}
+                    placeholder="Right"
+                    style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+                  />
+                  <input
+                    type="number"
+                    value={paddingBottom}
+                    onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, bottom: Number(e.target.value) })}
+                    placeholder="Bottom"
+                    style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+                  />
+                  <input
+                    type="number"
+                    value={paddingLeft}
+                    onChange={(e) => handleStyleUpdate('padding', { ...paddingObj, left: Number(e.target.value) })}
+                    placeholder="Left"
+                    style={{ padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', textAlign: 'center', outline: 'none' }}
+                  />
+                </div>
               </div>
-            </div>
 
             {/* Margin Controls */}
             <div style={{ marginBottom: '16px' }}>
@@ -6296,8 +6303,9 @@ export const DesignStep: React.FC = () => {
                 />
               </div>
             </div>
+            )}
 
-            {renderSizeControls()}
+            {!(selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip') && renderSizeControls()}
             {renderCommonStyles()}
           </div>
         </>

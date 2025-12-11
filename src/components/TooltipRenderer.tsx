@@ -85,6 +85,44 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             zIndex: 10
         } : {};
 
+        // Helper: Convert structured filter object to CSS string
+        const getFilterString = (filterObj: any) => {
+            if (!filterObj || typeof filterObj !== 'object') return filterObj;
+            return [
+                filterObj.blur ? `blur(${filterObj.blur}px)` : '',
+                filterObj.brightness ? `brightness(${filterObj.brightness}%)` : '',
+                filterObj.contrast ? `contrast(${filterObj.contrast}%)` : '',
+                filterObj.grayscale ? `grayscale(${filterObj.grayscale}%)` : ''
+            ].filter(Boolean).join(' ') || undefined;
+        };
+
+        // Helper: Convert structured transform object to CSS string
+        const getTransformString = (transformObj: any) => {
+            if (!transformObj || typeof transformObj !== 'object') return transformObj;
+            return [
+                transformObj.rotate ? `rotate(${transformObj.rotate}deg)` : '',
+                transformObj.scale ? `scale(${transformObj.scale})` : '',
+                transformObj.translateX ? `translateX(${transformObj.translateX}px)` : '',
+                transformObj.translateY ? `translateY(${transformObj.translateY}px)` : ''
+            ].filter(Boolean).join(' ') || undefined;
+        };
+
+        const commonStyles: React.CSSProperties = {
+            ...style, // Spread basic props first
+
+            // Override strictly typed or structured properties
+            filter: getFilterString(style.filter),
+            transform: getTransformString(style.transform),
+            boxShadow: style.boxShadow, // Usually a string already, but ensuring it's picked up
+
+            // Positioning overrides if present in style
+            position: style.position || 'relative',
+            zIndex: style.zIndex,
+
+            ...selectionStyle,
+            cursor: 'pointer',
+        };
+
         switch (layer.type) {
             case 'text':
                 return (
@@ -92,13 +130,22 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         key={layer.id}
                         onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...style,
-                            ...selectionStyle,
-                            cursor: 'pointer',
+                            ...commonStyles,
                             color: style.color || 'white',
                             fontSize: style.fontSize || '14px',
                             fontWeight: style.fontWeight,
                             textAlign: style.textAlign,
+                            lineHeight: style.lineHeight,
+                            letterSpacing: style.letterSpacing ? `${style.letterSpacing}px` : undefined,
+
+                            // Size might be in 'size' prop or style
+                            width: layer.size?.width || style.width || 'auto',
+                            height: layer.size?.height || style.height || 'auto',
+
+                            // Explicitly handle these if they are in the style object but not React CSS props directly
+                            border: style.border,
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : style.borderRadius,
+                            backgroundColor: style.backgroundColor,
                         }}
                     >
                         {layer.content?.text || 'Tooltip Text'}
@@ -112,15 +159,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         key={layer.id}
                         onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...style,
-                            ...selectionStyle,
-                            cursor: 'pointer',
+                            ...commonStyles,
                             overflow: 'hidden',
-                            borderRadius: '4px'
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : (style.borderRadius || '4px'),
+                            width: layer.size?.width || style.width || '100%',
+                            height: layer.size?.height || style.height || 'auto',
                         }}
                     >
                         {layer.content?.imageUrl ? (
-                            <img src={layer.content.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Tooltip media" />
+                            <img src={layer.content.imageUrl} style={{ width: '100%', height: '100%', objectFit: style.objectFit || 'cover', objectPosition: style.objectPosition }} alt="Tooltip media" />
                         ) : (
                             <div style={{ width: '100%', height: '100%', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <span style={{ fontSize: '10px', color: '#9CA3AF' }}>Image</span>
@@ -135,11 +182,16 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         key={layer.id}
                         onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...style,
-                            ...selectionStyle,
-                            cursor: 'pointer',
-                            border: 'none',
+                            ...commonStyles,
+                            border: style.border || 'none',
                             outline: 'none',
+                            backgroundColor: style.backgroundColor,
+                            color: style.color,
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : style.borderRadius,
+
+                            // Size
+                            width: layer.size?.width || style.width || 'auto',
+                            height: layer.size?.height || style.height || 'auto',
                         }}
                     >
                         {layer.content?.label || 'Button'}
@@ -152,11 +204,17 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         key={layer.id}
                         onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...style,
-                            ...selectionStyle,
-                            display: 'flex',
-                            flexDirection: style.direction || 'column',
-                            gap: style.gap ? `${style.gap}px` : '4px'
+                            ...commonStyles,
+                            display: style.display || 'flex',
+                            flexDirection: style.direction || style.flexDirection || 'column',
+                            gap: style.gap ? `${style.gap}px` : '4px',
+                            backgroundColor: style.backgroundColor,
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : style.borderRadius,
+                            padding: style.padding,
+
+                            // Size
+                            width: layer.size?.width || style.width || '100%',
+                            height: layer.size?.height || style.height || 'auto',
                         }}
                     >
                         {layer.children?.map((childId: string) => {

@@ -2917,54 +2917,95 @@ export const DesignStep: React.FC = () => {
           </div>
 
           {/* Size */}
+          {/* Size */}
           <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
               📏 Size
             </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Width</label>
-                <input
-                  type="text"
-                  value={config.width || ''}
-                  onChange={(e) => handleTooltipUpdate('width', e.target.value)}
-                  placeholder="e.g. 300px"
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Height</label>
-                <input
-                  type="text"
-                  value={config.height || ''}
-                  onChange={(e) => handleTooltipUpdate('height', e.target.value)}
-                  placeholder="e.g. 150px"
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Min Width</label>
-                <input
-                  type="text"
-                  value={config.minWidth || ''}
-                  onChange={(e) => handleTooltipUpdate('minWidth', e.target.value)}
-                  placeholder="e.g. 100px"
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Max Width</label>
-                <input
-                  type="text"
-                  value={config.maxWidth || ''}
-                  onChange={(e) => handleTooltipUpdate('maxWidth', e.target.value)}
-                  placeholder="e.g. 400px"
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-            </div>
+
+            {(() => {
+              const renderSizeInput = (label: string, field: 'width' | 'height', placeholder: string) => {
+                const rawValue = config[field] || '';
+                const isAuto = rawValue === 'auto' || rawValue === 'max-content';
+                const isPercent = typeof rawValue === 'string' && rawValue.endsWith('%');
+                const isPx = !isAuto && !isPercent; // Default or explicit 'px'
+
+                const numValue = isAuto ? '' : parseInt(rawValue) || '';
+
+                return (
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '11px', color: colors.text.secondary }}>{label}</label>
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <input
+                        type="number"
+                        value={numValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const unit = isPercent ? '%' : 'px';
+                          handleTooltipUpdate(field, val ? `${val}${unit}` : (label === 'Width' ? 'max-content' : 'auto'));
+                        }}
+                        placeholder={isAuto ? 'Auto' : placeholder}
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          border: `1px solid ${colors.gray[200]}`,
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          outline: 'none',
+                          backgroundColor: isAuto ? colors.gray[50] : 'white'
+                        }}
+                      />
+                      <div style={{ display: 'flex', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', overflow: 'hidden' }}>
+                        <button
+                          onClick={() => handleTooltipUpdate(field, numValue ? `${numValue}px` : '200px')}
+                          style={{
+                            padding: '4px 8px',
+                            background: isPx ? colors.primary[50] : 'white',
+                            color: isPx ? colors.primary[600] : colors.text.secondary,
+                            border: 'none',
+                            fontSize: '10px',
+                            cursor: 'pointer',
+                            borderRight: `1px solid ${colors.gray[200]}`
+                          }}
+                        >PX</button>
+                        <button
+                          onClick={() => handleTooltipUpdate(field, numValue ? `${numValue}%` : '50%')}
+                          style={{
+                            padding: '4px 8px',
+                            background: isPercent ? colors.primary[50] : 'white',
+                            color: isPercent ? colors.primary[600] : colors.text.secondary,
+                            border: 'none',
+                            fontSize: '10px',
+                            cursor: 'pointer',
+                            borderRight: `1px solid ${colors.gray[200]}`
+                          }}
+                        >%</button>
+                        <button
+                          onClick={() => handleTooltipUpdate(field, label === 'Width' ? 'max-content' : 'auto')}
+                          style={{
+                            padding: '4px 8px',
+                            background: isAuto ? colors.primary[50] : 'white',
+                            color: isAuto ? colors.primary[600] : colors.text.secondary,
+                            border: 'none',
+                            fontSize: '10px',
+                            cursor: 'pointer'
+                          }}
+                        >Auto</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              };
+
+              return (
+                <div>
+                  {renderSizeInput('Width', 'width', '300')}
+                  {renderSizeInput('Height', 'height', '150')}
+                </div>
+              );
+            })()}
           </div>
 
 

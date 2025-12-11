@@ -461,24 +461,29 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     >
                         <div style={getArrowStyle()} />
 
-                        {mode === 'image' && imageUrl ? (
+                        {mode === 'image' && imageUrl && (
                             <img
                                 src={imageUrl}
                                 alt="Tooltip"
                                 style={{
-                                    width: imageWidth,
-                                    maxWidth: '100%', // Prevent overflow if container constraint exists
-                                    height: 'auto',
-                                    display: 'block',
-                                    borderRadius: `${borderRadius}px`
+                                    position: 'absolute',
+                                    inset: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: `${borderRadius}px`,
+                                    zIndex: 0
                                 }}
                             />
-                        ) : (
-                            tooltipContainerLayer?.children?.map((childId: string) => {
+                        )}
+
+                        {/* Always render children, even in image mode (they will be on top due to natural stacking or explicit z-Index) */}
+                        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+                            {tooltipContainerLayer?.children?.map((childId: string) => {
                                 const child = layers.find(l => l.id === childId);
                                 return child ? renderLayer(child) : null;
-                            })
-                        )}
+                            })}
+                        </div>
 
                         {!tooltipContainerLayer && mode !== 'image' && (
                             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>

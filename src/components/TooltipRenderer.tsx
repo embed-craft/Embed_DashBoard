@@ -32,9 +32,10 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // If Image Mode, we must IGNORE the container layer styles (which often contain a default bg)
     // unless strictly needed. Ideally, we just rely on config.
+    // If Image Mode, we used to ignore container styles, BUT now we want to support full customization (borders, etc).
+    // So we use rawContainerStyle. The "Smart Defaults" logic for bg/shadow handles the initial clean state.
     const mode = config.mode || 'standard';
-    const rawContainerStyle = tooltipContainerLayer?.style || {};
-    const containerStyle = mode === 'image' ? { ...rawContainerStyle, backgroundColor: undefined, boxShadow: undefined, border: undefined } : rawContainerStyle;
+    const containerStyle = tooltipContainerLayer?.style || {};
 
     // --- Configuration & Defaults ---
     // mode is already defined above
@@ -272,31 +273,35 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 width: 'max-content',
 
                 // --- Full Property Support ---
-                // Filters
-                filter: [
-                    config.blur ? `blur(${config.blur}px)` : '',
-                    config.brightness ? `brightness(${config.brightness}%)` : '',
-                    config.contrast ? `contrast(${config.contrast}%)` : '',
-                    config.grayscale ? `grayscale(${config.grayscale}%)` : ''
-                ].filter(Boolean).join(' ') || undefined,
+                // Filters - READ FROM CONTAINER STYLE (Layer Style) FIRST
+                filter: (() => {
+                    const f = containerStyle.filter || {};
+                    const filters = [
+                        f.blur !== undefined ? `blur(${f.blur}px)` : (config.blur ? `blur(${config.blur}px)` : ''),
+                        f.brightness !== undefined ? `brightness(${f.brightness}%)` : (config.brightness ? `brightness(${config.brightness}%)` : ''),
+                        f.contrast !== undefined ? `contrast(${f.contrast}%)` : (config.contrast ? `contrast(${config.contrast}%)` : ''),
+                        f.grayscale !== undefined ? `grayscale(${f.grayscale}%)` : (config.grayscale ? `grayscale(${config.grayscale}%)` : '')
+                    ].filter(Boolean).join(' ');
+                    return filters || undefined;
+                })(),
 
-                // Container Props
-                opacity: config.opacity !== undefined ? config.opacity / 100 : undefined,
-                zIndex: config.zIndex,
-                cursor: config.cursor,
-                overflow: config.overflow,
-                border: config.border, // Assuming string or handled by containerStyle usually, but allowing override
-                clipPath: config.clipPath,
+                // Container Props - Prefer Container Style (User UI) over Config
+                opacity: containerStyle.opacity !== undefined ? containerStyle.opacity : (config.opacity !== undefined ? config.opacity / 100 : undefined),
+                zIndex: containerStyle.zIndex !== undefined ? containerStyle.zIndex : config.zIndex,
+                cursor: containerStyle.cursor || config.cursor,
+                overflow: containerStyle.overflow || config.overflow,
+                border: containerStyle.border || config.border,
+                clipPath: containerStyle.clipPath || config.clipPath,
 
                 // Background Image
-                backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,
-                backgroundSize: config.backgroundSize,
-                backgroundRepeat: config.backgroundRepeat,
-                backgroundPosition: config.backgroundPosition,
+                backgroundImage: containerStyle.backgroundImage || (config.backgroundImage ? `url(${config.backgroundImage})` : undefined),
+                backgroundSize: containerStyle.backgroundSize || config.backgroundSize,
+                backgroundRepeat: containerStyle.backgroundRepeat || config.backgroundRepeat,
+                backgroundPosition: containerStyle.backgroundPosition || config.backgroundPosition,
 
                 // Layout
-                display: config.display || 'flex',
-                flexDirection: config.flexDirection || 'column',
+                display: containerStyle.display || config.display || 'flex',
+                flexDirection: containerStyle.flexDirection || config.flexDirection || 'column',
                 alignItems: config.alignItems,
                 justifyContent: config.justifyContent,
                 gap: config.gap !== undefined ? `${config.gap}px` : undefined,

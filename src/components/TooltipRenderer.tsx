@@ -60,13 +60,14 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             boxShadow = 'none';
         }
     } else {
-         boxShadow = boxShadow !== undefined ? boxShadow : STD_SHADOW;
+        boxShadow = boxShadow !== undefined ? boxShadow : STD_SHADOW;
     }
 
     // 3. Other Properties
     const imageUrl = config.imageUrl;
     const position = config.position || 'bottom';
     const borderRadius = config.borderRadius || 8;
+    // Fix duplicate declaration issue by using this single source of truth
     const padding = config.padding !== undefined ? config.padding : 12;
     const arrowSize = config.arrowSize || 8;
 
@@ -221,30 +222,9 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // --- RENDER ---
 
-    const TooltipContent = (
-        <div
-            style={{
-                backgroundColor: backgroundColor,
-                borderRadius: `${borderRadius}px`,
-                padding: `${padding}px`,
-                position: 'relative',
-                maxWidth: '250px',
-                minWidth: '120px',
-                boxShadow: boxShadow,
-                width: 'max-content',
-                ...containerStyle,
-                // Override container position if target provided, handled by wrapper
-                ...(targetElement ? { position: 'relative', top: 'auto', left: 'auto', transform: 'none' } : {})
-            }}
-            onClick={(e) => {
-                if (tooltipContainerLayer) {
-                    e.stopPropagation();
-                    onLayerSelect(tooltipContainerLayer.id);
-                }
-            }}
-        >
-            <div style={getArrowStyle()} />
-
+    // Helper function to render the actual tooltip content based on mode (excluding HTML)
+    const renderTooltipContent = () => (
+        <>
             {mode === 'image' && imageUrl ? (
                 <img
                     src={imageUrl}
@@ -267,6 +247,45 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
                     Tooltip Content
                 </div>
+            )}
+        </>
+    );
+
+    const TooltipContent = (
+        <div
+            style={{
+                // Advanced Mode: Gradient Override
+                ...(mode === 'advanced' && config.gradientWith && config.gradientTo ? {
+                    background: `linear-gradient(${config.gradientAngle || 45}deg, ${config.gradientWith}, ${config.gradientTo})`,
+                    backgroundColor: 'transparent' // Clear fallback
+                } : {}),
+                backgroundColor: backgroundColor,
+                borderRadius: `${borderRadius}px`,
+                padding: `${padding}px`,
+                position: 'relative',
+                maxWidth: '250px',
+                minWidth: '120px',
+                boxShadow: boxShadow,
+                width: 'max-content',
+                ...containerStyle,
+                // Override container position if target provided, handled by wrapper
+                ...(targetElement ? { position: 'relative', top: 'auto', left: 'auto', transform: 'none' } : {})
+            }}
+            onClick={(e) => {
+                if (tooltipContainerLayer) {
+                    e.stopPropagation();
+                    onLayerSelect(tooltipContainerLayer.id);
+                }
+            }}
+        >
+            <div style={getArrowStyle()} />
+
+            {/* HTML Mode Content */}
+            {mode === 'html' ? (
+                <div dangerouslySetInnerHTML={{ __html: config.htmlContent || '<div>Custom HTML</div>' }} />
+            ) : (
+                // Standard/Image/Advanced Content
+                renderTooltipContent()
             )}
         </div>
     );

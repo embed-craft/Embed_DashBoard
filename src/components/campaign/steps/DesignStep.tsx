@@ -2921,7 +2921,7 @@ export const DesignStep: React.FC = () => {
             <div style={{ marginBottom: '12px' }}>
               <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Mode</label>
               <div style={{ display: 'flex', background: colors.gray[100], padding: '2px', borderRadius: '6px' }}>
-                {['standard', 'image'].map((mode) => (
+                {['standard', 'image', 'advanced', 'html'].map((mode) => (
                   <button
                     key={mode}
                     onClick={() => {
@@ -3023,6 +3023,68 @@ export const DesignStep: React.FC = () => {
               )
             }
           </div>
+
+          {/* Advanced Mode: Brand of the Day Panel */}
+          {
+            config.mode === 'advanced' && (
+              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+                 <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  ✨ Advanced Style
+                </h5>
+                
+                {/* Gradient */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Gradient Flow</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                    <input type="color" value={config.gradientWith || '#84cc16'} onChange={(e) => handleTooltipUpdate('gradientWith', e.target.value)} style={{ width: '100%', height: '30px' }} />
+                    <input type="color" value={config.gradientTo || '#15803d'} onChange={(e) => handleTooltipUpdate('gradientTo', e.target.value)} style={{ width: '100%', height: '30px' }} />
+                  </div>
+                  <input type="range" min="0" max="360" value={config.gradientAngle || 45} onChange={(e) => handleTooltipUpdate('gradientAngle', Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                 {/* Arrow Style */}
+                <div style={{ marginBottom: '12px' }}>
+                   <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Arrow Style</label>
+                   <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        onClick={() => handleTooltipUpdate('arrowStyle', 'triangle')}
+                        style={{ padding: '6px', border: `1px solid ${config.arrowStyle === 'bubble' ? colors.gray[200] : colors.primary[500]}`, borderRadius: '4px', background: config.arrowStyle !== 'bubble' ? colors.primary[50] : 'white' }}
+                      >Triangle</button>
+                      <button 
+                        onClick={() => handleTooltipUpdate('arrowStyle', 'bubble')}
+                        style={{ padding: '6px', border: `1px solid ${config.arrowStyle === 'bubble' ? colors.primary[500] : colors.gray[200]}`, borderRadius: '4px', background: config.arrowStyle === 'bubble' ? colors.primary[50] : 'white' }}
+                      >Speech Bubble</button>
+                   </div>
+                </div>
+              </div>
+            )
+          }
+
+          {/* HTML Mode: Code Editor */}
+           {
+            config.mode === 'html' && (
+              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+                 <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  💻 Custom HTML
+                </h5>
+                <textarea
+                  value={config.htmlContent || '<div style="padding:10px; background:white; color:black; border-radius:8px;">Hello World</div>'}
+                  onChange={(e) => handleTooltipUpdate('htmlContent', e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    padding: '8px',
+                    border: `1px solid ${colors.gray[300]}`,
+                    borderRadius: '6px',
+                    resize: 'vertical'
+                  }}
+                  placeholder="Enter HTML/CSS here..."
+                />
+              </div>
+            )
+          }
 
           {/* Appearance */}
           <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>

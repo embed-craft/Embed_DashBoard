@@ -30,7 +30,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // Find the root container layer for the Tooltip
     const tooltipContainerLayer = layers.find(l => l.type === 'container' && l.name === 'Tooltip Container');
 
-    const containerStyle = tooltipContainerLayer?.style || {};
+    // If Image Mode, we must IGNORE the container layer styles (which often contain a default bg)
+    // unless strictly needed. Ideally, we just rely on config.
+    const mode = config.mode || 'standard';
+    const rawContainerStyle = tooltipContainerLayer?.style || {};
+    const containerStyle = mode === 'image' ? { ...rawContainerStyle, backgroundColor: undefined, boxShadow: undefined, border: undefined } : rawContainerStyle;
 
     // --- Configuration & Defaults ---
     const mode = config.mode || 'standard';

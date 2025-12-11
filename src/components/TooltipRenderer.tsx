@@ -267,9 +267,10 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 borderRadius: `${borderRadius}px`,
                 padding: `${padding}px`,
                 position: 'relative',
-                maxWidth: '250px',
-                minWidth: '120px',
-                width: 'max-content',
+                maxWidth: config.maxWidth || '250px',
+                minWidth: config.minWidth || '120px',
+                width: config.width || 'max-content',
+                height: config.height || 'auto',
 
                 // --- Full Property Support ---
                 // Filters

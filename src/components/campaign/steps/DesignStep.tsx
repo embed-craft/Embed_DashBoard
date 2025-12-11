@@ -2916,6 +2916,57 @@ export const DesignStep: React.FC = () => {
             </div>
           </div>
 
+          {/* Size */}
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              📏 Size
+            </h5>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Width</label>
+                <input
+                  type="text"
+                  value={config.width || ''}
+                  onChange={(e) => handleTooltipUpdate('width', e.target.value)}
+                  placeholder="e.g. 300px"
+                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Height</label>
+                <input
+                  type="text"
+                  value={config.height || ''}
+                  onChange={(e) => handleTooltipUpdate('height', e.target.value)}
+                  placeholder="e.g. 150px"
+                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Min Width</label>
+                <input
+                  type="text"
+                  value={config.minWidth || ''}
+                  onChange={(e) => handleTooltipUpdate('minWidth', e.target.value)}
+                  placeholder="e.g. 100px"
+                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>Max Width</label>
+                <input
+                  type="text"
+                  value={config.maxWidth || ''}
+                  onChange={(e) => handleTooltipUpdate('maxWidth', e.target.value)}
+                  placeholder="e.g. 400px"
+                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
+                />
+              </div>
+            </div>
+          </div>
+
 
           {/* Content Mode (New Feature) */}
           <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
@@ -6235,6 +6286,7 @@ export const DesignStep: React.FC = () => {
         {renderBottomSheetConfig()}
         {renderModalConfig()}
         {renderPipConfig()}
+        {renderTooltipConfig()}
         <div style={{ marginBottom: '20px' }}>
           <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Layer Properties</h5>
           <p style={{ fontSize: '13px', color: colors.text.secondary }}>Select a layer to edit its properties</p>

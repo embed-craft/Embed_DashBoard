@@ -43,8 +43,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
     let backgroundColor = config.backgroundColor;
     if (mode === 'image') {
-        // If undefined or matches standard default, force transparent
-        if (!backgroundColor || backgroundColor === STD_BG) {
+        // STRICTER CHECK: If explicitly transparent OR undefined OR standard default, force transparent
+        if (!backgroundColor || backgroundColor === STD_BG || backgroundColor === 'transparent') {
             backgroundColor = 'transparent';
         }
     } else {
@@ -55,8 +55,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // 2. Determine Box Shadow
     let boxShadow = config.boxShadow;
     if (mode === 'image') {
-        // If undefined or matches standard default, force none
-        if (boxShadow === undefined || boxShadow === STD_SHADOW) {
+        // STRICTER CHECK: If undefined or standard default or 'none', force none
+        if (boxShadow === undefined || boxShadow === STD_SHADOW || boxShadow === 'none') {
             boxShadow = 'none';
         }
     } else {

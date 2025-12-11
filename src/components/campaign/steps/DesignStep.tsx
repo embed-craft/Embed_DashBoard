@@ -3081,23 +3081,7 @@ export const DesignStep: React.FC = () => {
                       }} />
                     )}
                   </div>
-                  {/* Image Width Control */}
-                  <div style={{ marginTop: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Image Width</label>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input
-                        type="range"
-                        min="50"
-                        max="350"
-                        value={config.width || 200}
-                        onChange={(e) => handleTooltipUpdate('width', parseInt(e.target.value))}
-                        style={{ flex: 1 }}
-                      />
-                      <div style={{ fontSize: '12px', color: colors.text.primary, minWidth: '40px', textAlign: 'right' }}>
-                        {config.width || 200}px
-                      </div>
-                    </div>
-                  </div>
+
                 </>
               )
             }
@@ -6304,30 +6288,30 @@ export const DesignStep: React.FC = () => {
                     />
                   </div>
                 </div>
-            </>
+              </>
             )}
 
-                {!(selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip') && renderSizeControls()}
-                {renderCommonStyles()}
-              </div>
-          </>
-          );
+            {!(selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip') && renderSizeControls()}
+            {renderCommonStyles()}
+          </div>
+        </>
+      );
     }
 
-          // Default properties
-          return (
-          <>
-            {renderBottomSheetConfig()}
-            {renderModalConfig()}
-            {renderPipConfig()}
-            {renderTooltipConfig()}
-            <div style={{ marginBottom: '20px' }}>
-              <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Layer Properties</h5>
-              <p style={{ fontSize: '13px', color: colors.text.secondary }}>Select a layer to edit its properties</p>
-            </div>
-            {renderCommonStyles()}
-          </>
-          );
+    // Default properties
+    return (
+      <>
+        {renderBottomSheetConfig()}
+        {renderModalConfig()}
+        {renderPipConfig()}
+        {renderTooltipConfig()}
+        <div style={{ marginBottom: '20px' }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Layer Properties</h5>
+          <p style={{ fontSize: '13px', color: colors.text.secondary }}>Select a layer to edit its properties</p>
+        </div>
+        {renderCommonStyles()}
+      </>
+    );
 
   };
 
@@ -6337,830 +6321,830 @@ export const DesignStep: React.FC = () => {
   const handleTemplateSelect = (templateId: string) => {
     const template = BOTTOM_SHEET_TEMPLATES.find(t => t.id === templateId);
 
-          if (!template) {
-            toast.error('Template not found');
-          return;
+    if (!template) {
+      toast.error('Template not found');
+      return;
     }
 
-          // Create campaign first
-          createCampaign(
-          selectedExperience as any || 'nudges',
-          'bottomsheet' as any
-          );
+    // Create campaign first
+    createCampaign(
+      selectedExperience as any || 'nudges',
+      'bottomsheet' as any
+    );
 
-          // FIX: Navigate to the new campaign ID immediately
-          const {currentCampaign} = useEditorStore.getState();
-          if (currentCampaign?.id) {
-            navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
+    // FIX: Navigate to the new campaign ID immediately
+    const { currentCampaign } = useEditorStore.getState();
+    if (currentCampaign?.id) {
+      navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
     }
 
     // Load template layers after campaign is created
     setTimeout(() => {
-            loadTemplate(template.layers);
-          setTemplateModalOpen(false);
-          setShowEditor(true);
-          toast.success(`Template "${template.name}" loaded successfully!`);
+      loadTemplate(template.layers);
+      setTemplateModalOpen(false);
+      setShowEditor(true);
+      toast.success(`Template "${template.name}" loaded successfully!`);
     }, 100);
   };
 
   // Handler for starting from scratch
   const handleStartFromScratch = () => {
-            createCampaign(
-              selectedExperience as any || 'nudges',
-              'bottomsheet' as any
-            );
+    createCampaign(
+      selectedExperience as any || 'nudges',
+      'bottomsheet' as any
+    );
 
-          // FIX: Navigate to the new campaign ID immediately
-          const {currentCampaign} = useEditorStore.getState();
-          if (currentCampaign?.id) {
-            navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
+    // FIX: Navigate to the new campaign ID immediately
+    const { currentCampaign } = useEditorStore.getState();
+    if (currentCampaign?.id) {
+      navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
     }
 
-          setTemplateModalOpen(false);
-          setShowEditor(true);
-          toast.info('Starting with blank canvas...');
+    setTemplateModalOpen(false);
+    setShowEditor(true);
+    toast.info('Starting with blank canvas...');
   };
 
   // Handler for saving campaign
   const handleSaveCampaign = async () => {
     if (!currentCampaign) {
-            toast.error('No campaign to save');
-          return;
+      toast.error('No campaign to save');
+      return;
     }
 
-          // FIX #5: Validate before save
-          if (!currentCampaign.name || currentCampaign.name.trim() === '') {
-            toast.error('Please enter a campaign name');
-          return;
+    // FIX #5: Validate before save
+    if (!currentCampaign.name || currentCampaign.name.trim() === '') {
+      toast.error('Please enter a campaign name');
+      return;
     }
 
-          if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
-            toast.error('Campaign must have at least one layer');
-          return;
+    if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
+      toast.error('Campaign must have at least one layer');
+      return;
     }
 
-          try {
+    try {
       const oldId = currentCampaign.id;
-          await saveCampaign();
-          toast.success('Campaign saved successfully!');
+      await saveCampaign();
+      toast.success('Campaign saved successfully!');
 
-          // FIX #2: Update URL parameter if campaign ID changed
-          const {currentCampaign: updatedCampaign } = useEditorStore.getState();
-          const newId = updatedCampaign?.id;
-          if (newId && newId !== oldId) {
-            navigate(`/campaign-builder?id=${newId}`, { replace: true });
+      // FIX #2: Update URL parameter if campaign ID changed
+      const { currentCampaign: updatedCampaign } = useEditorStore.getState();
+      const newId = updatedCampaign?.id;
+      if (newId && newId !== oldId) {
+        navigate(`/campaign-builder?id=${newId}`, { replace: true });
       }
     } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save campaign');
+      toast.error(error instanceof Error ? error.message : 'Failed to save campaign');
     }
   };
 
   // Handler for loading campaign (for testing)
   const handleLoadCampaign = async () => {
     const campaignId = prompt('Enter campaign ID to load:');
-          if (!campaignId) return;
+    if (!campaignId) return;
 
-          try {
-      const {loadCampaign} = useEditorStore.getState();
-          await loadCampaign(campaignId);
-          toast.success('Campaign loaded successfully!');
+    try {
+      const { loadCampaign } = useEditorStore.getState();
+      await loadCampaign(campaignId);
+      toast.success('Campaign loaded successfully!');
     } catch (error) {
-            toast.error('Failed to load campaign');
-          console.error('Load error:', error);
+      toast.error('Failed to load campaign');
+      console.error('Load error:', error);
     }
   };
 
   // Handler for launching campaign
   const handleLaunchCampaign = async () => {
     if (!currentCampaign) {
-            toast.error('No campaign to launch');
-          return;
+      toast.error('No campaign to launch');
+      return;
     }
 
-          // FIX #5: Validate before launch
-          if (!currentCampaign.name || currentCampaign.name.trim() === '') {
-            toast.error('Please enter a campaign name before launching');
-          return;
+    // FIX #5: Validate before launch
+    if (!currentCampaign.name || currentCampaign.name.trim() === '') {
+      toast.error('Please enter a campaign name before launching');
+      return;
     }
 
-          if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
-            toast.error('Campaign must have at least one layer');
-          return;
+    if (!currentCampaign.layers || currentCampaign.layers.length === 0) {
+      toast.error('Campaign must have at least one layer');
+      return;
     }
 
-          try {
-            // Update campaign status to active in the store
-            updateStatus('active');
+    try {
+      // Update campaign status to active in the store
+      updateStatus('active');
 
-          // Save the campaign with active status
-          await saveCampaign();
+      // Save the campaign with active status
+      await saveCampaign();
 
-          toast.success('🚀 Campaign launched successfully!');
+      toast.success('🚀 Campaign launched successfully!');
 
       // Navigate to campaigns page after short delay
       setTimeout(() => {
-            navigate('/campaigns');
+        navigate('/campaigns');
       }, 1500);
     } catch (error) {
-            console.error('Launch campaign error:', error);
-          toast.error(error instanceof Error ? error.message : 'Failed to launch campaign');
+      console.error('Launch campaign error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to launch campaign');
     }
   };
 
-          // Early return for campaign creation flow - AFTER all hooks
-          if (!showEditor) {
+  // Early return for campaign creation flow - AFTER all hooks
+  if (!showEditor) {
     return (
-          <div className="min-h-screen bg-gray-50 flex flex-col">
-            <header className="bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center gap-4">
-                <button onClick={() => navigate('/campaigns')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <ArrowLeft size={20} className="text-gray-600" />
-                </button>
-                <h1 className="text-xl font-semibold text-gray-900">Create New Campaign</h1>
-              </div>
-            </header>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/campaigns')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ArrowLeft size={20} className="text-gray-600" />
+            </button>
+            <h1 className="text-xl font-semibold text-gray-900">Create New Campaign</h1>
+          </div>
+        </header>
 
-            <main className="flex-1 overflow-y-auto p-8">
-              <div className="max-w-6xl mx-auto space-y-8">
-                {/* Target Page Context Selection (New Feature) */}
-                {!searchParams.get('experience') && (
-                  <section className="mb-8">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Target Page Context</h2>
-                    <p className="text-sm text-gray-500 mb-4">Select an App Screen to visualize and target specific elements.</p>
-                    <div className="w-full max-w-md">
-                      <select
-                        className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                        value={selectedPageId || ''}
-                        onChange={(e) => setSelectedPageId(e.target.value)}
-                      >
-                        <option value="">-- Select an App Screen --</option>
-                        {pages.map((page) => (
-                          <option key={page._id} value={page._id}>
-                            {page.name} ({page.pageTag})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </section>
-                )}
+        <main className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* Target Page Context Selection (New Feature) */}
+            {!searchParams.get('experience') && (
+              <section className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Target Page Context</h2>
+                <p className="text-sm text-gray-500 mb-4">Select an App Screen to visualize and target specific elements.</p>
+                <div className="w-full max-w-md">
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    value={selectedPageId || ''}
+                    onChange={(e) => setSelectedPageId(e.target.value)}
+                  >
+                    <option value="">-- Select an App Screen --</option>
+                    {pages.map((page) => (
+                      <option key={page._id} value={page._id}>
+                        {page.name} ({page.pageTag})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </section>
+            )}
 
-                {/* Experience Selection */}
-                {/* Experience Selection - Only show if not pre-selected via URL */}
-                {!searchParams.get('experience') && (
-                  <section>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Experience</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {experienceTypes.map((type) => (
-                        <div
-                          key={type.id}
-                          onClick={() => handleExperienceSelect(type.id)}
-                          className={`
+            {/* Experience Selection */}
+            {/* Experience Selection - Only show if not pre-selected via URL */}
+            {!searchParams.get('experience') && (
+              <section>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Experience</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {experienceTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      onClick={() => handleExperienceSelect(type.id)}
+                      className={`
                       relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 group
                       ${selectedExperience === type.id
-                              ? 'border-indigo-600 bg-indigo-50 shadow-md'
-                              : 'border-white bg-white hover:border-indigo-200 hover:shadow-lg'}
+                          ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                          : 'border-white bg-white hover:border-indigo-200 hover:shadow-lg'}
                     `}
+                    >
+                      <div
+                        className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white shadow-sm"
+                        style={{ background: type.gradient }}
+                      >
+                        <type.Icon size={24} />
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
+                      <p className="text-sm text-gray-500">Create engaging {type.label.toLowerCase()} for your users</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Nudge Type Selection (Only if Nudges is selected) */}
+            {/* Nudge Type Selection - Show for ANY experience that has mapped types */}
+            {(selectedExperience && EXPERIENCE_MAPPING[selectedExperience]) && (
+              <section>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Nudge Type</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {nudgeTypes
+                    .filter(type => {
+                      // FIX: Filter based on selected experience mapping
+                      if (!selectedExperience) return false;
+                      const allowedTypes = EXPERIENCE_MAPPING[selectedExperience];
+                      // If no explicit mapping, show none or all? User requested strict mapping.
+                      // If allowedTypes is undefined (e.g. unknown experience), show nothing.
+                      return allowedTypes?.includes(type.id);
+                    })
+                    .map((type) => (
+                      <div
+                        key={type.id}
+                        onClick={() => handleNudgeTypeSelect(type.id)}
+                        className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
+                      >
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
+                          style={{ backgroundColor: type.bg, color: type.iconColor }}
                         >
-                          <div
-                            className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white shadow-sm"
-                            style={{ background: type.gradient }}
-                          >
-                            <type.Icon size={24} />
-                          </div>
-                          <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                          <p className="text-sm text-gray-500">Create engaging {type.label.toLowerCase()} for your users</p>
+                          <type.Icon size={24} />
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Nudge Type Selection (Only if Nudges is selected) */}
-                {/* Nudge Type Selection - Show for ANY experience that has mapped types */}
-                {(selectedExperience && EXPERIENCE_MAPPING[selectedExperience]) && (
-                  <section>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Nudge Type</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {nudgeTypes
-                        .filter(type => {
-                          // FIX: Filter based on selected experience mapping
-                          if (!selectedExperience) return false;
-                          const allowedTypes = EXPERIENCE_MAPPING[selectedExperience];
-                          // If no explicit mapping, show none or all? User requested strict mapping.
-                          // If allowedTypes is undefined (e.g. unknown experience), show nothing.
-                          return allowedTypes?.includes(type.id);
-                        })
-                        .map((type) => (
-                          <div
-                            key={type.id}
-                            onClick={() => handleNudgeTypeSelect(type.id)}
-                            className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
-                          >
-                            <div
-                              className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                              style={{ backgroundColor: type.bg, color: type.iconColor }}
-                            >
-                              <type.Icon size={24} />
-                            </div>
-                            <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                            <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </section>
-                )}
-              </div>
-            </main>
-
-            {/* Template Gallery Modal */}
-            <TemplateGallery
-              isOpen={isTemplateModalOpen}
-              onClose={() => setTemplateModalOpen(false)}
-              onSelectTemplate={(template) => {
-                // Create campaign with template
-                // FIX: Use template type instead of hardcoded 'bottomsheet'
-                const type = template.type || template.config?.nudgeType || template.config?.type || 'bottomsheet';
-                createCampaign(
-                  (selectedExperience || selectedExperienceType) as any || 'nudges',
-                  type as any
-                );
-
-                // Load template
-                loadTemplate(template);
-
-                // Navigate to editor
-                const { currentCampaign } = useEditorStore.getState();
-                if (currentCampaign?.id) {
-                  navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
-                }
-
-                setShowEditor(true);
-                toast.success('Template loaded successfully');
-              }}
-              onStartBlank={() => {
-                // Create campaign without template
-                // FIX: Use selectedNudgeType or default to modal (safer default for blank)
-                const typeToUse = selectedNudgeType || currentCampaign?.nudgeType || 'modal';
-                createCampaign(
-                  (selectedExperience || selectedExperienceType) as any || 'nudges',
-                  typeToUse as any
-                );
-
-                // Navigate to editor
-                const { currentCampaign: updatedCampaign } = useEditorStore.getState();
-                if (updatedCampaign?.id) {
-                  navigate(`/campaign-builder?id=${updatedCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
-                }
-
-                setShowEditor(true);
-                toast.success('Started with blank canvas');
-              }}
-            />
+                        <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
+                        <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
+                      </div>
+                    ))}
+                </div>
+              </section>
+            )}
           </div>
-          );
+        </main>
+
+        {/* Template Gallery Modal */}
+        <TemplateGallery
+          isOpen={isTemplateModalOpen}
+          onClose={() => setTemplateModalOpen(false)}
+          onSelectTemplate={(template) => {
+            // Create campaign with template
+            // FIX: Use template type instead of hardcoded 'bottomsheet'
+            const type = template.type || template.config?.nudgeType || template.config?.type || 'bottomsheet';
+            createCampaign(
+              (selectedExperience || selectedExperienceType) as any || 'nudges',
+              type as any
+            );
+
+            // Load template
+            loadTemplate(template);
+
+            // Navigate to editor
+            const { currentCampaign } = useEditorStore.getState();
+            if (currentCampaign?.id) {
+              navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
+            }
+
+            setShowEditor(true);
+            toast.success('Template loaded successfully');
+          }}
+          onStartBlank={() => {
+            // Create campaign without template
+            // FIX: Use selectedNudgeType or default to modal (safer default for blank)
+            const typeToUse = selectedNudgeType || currentCampaign?.nudgeType || 'modal';
+            createCampaign(
+              (selectedExperience || selectedExperienceType) as any || 'nudges',
+              typeToUse as any
+            );
+
+            // Navigate to editor
+            const { currentCampaign: updatedCampaign } = useEditorStore.getState();
+            if (updatedCampaign?.id) {
+              navigate(`/campaign-builder?id=${updatedCampaign.id}&experience=${selectedExperience || selectedExperienceType || 'nudges'}`, { replace: true });
+            }
+
+            setShowEditor(true);
+            toast.success('Started with blank canvas');
+          }}
+        />
+      </div>
+    );
   }
 
-          return (
-          <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+  return (
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
 
 
 
-            {/* Template Gallery */}
-            <TemplateGallery
-              isOpen={isTemplateModalOpen}
-              nudgeType={selectedNudgeType} // Filter templates by current type
-              onClose={() => setTemplateModalOpen(false)}
-              onSelectTemplate={(template) => {
-                // If creating new, don't confirm
-                if (isCreating) {
-                  loadTemplate(template);
-                  setIsCreating(false);
-                  // Also set the nudge type based on the template
-                  // Fix: Safely access nudgeType, fallback to template.type (which matches backend schema)
-                  const type = template.config?.nudgeType || template.type;
-                  if (type) {
-                    setSelectedNudgeType(type);
-                  }
-                  toast.success('Template loaded successfully');
-                } else {
-                  // Existing flow
-                  if (window.confirm('Loading a template will overwrite your current design. Continue?')) {
-                    loadTemplate(template);
-                    toast.success('Template loaded successfully');
-                  }
-                }
-              }}
-              onStartBlank={() => {
-                setTemplateModalOpen(false);
-                if (isCreating) {
-                  setIsCreating(false);
-                  // FIX: Robustly determine nudge type
-                  if (!selectedNudgeType) {
-                    if (currentCampaign?.nudgeType) {
-                      setSelectedNudgeType(currentCampaign.nudgeType);
-                    } else {
-                      setSelectedNudgeType('modal');
-                    }
-                  }
-                  toast.success('Started with blank canvas');
-                }
-              }}
-            />
+      {/* Template Gallery */}
+      <TemplateGallery
+        isOpen={isTemplateModalOpen}
+        nudgeType={selectedNudgeType} // Filter templates by current type
+        onClose={() => setTemplateModalOpen(false)}
+        onSelectTemplate={(template) => {
+          // If creating new, don't confirm
+          if (isCreating) {
+            loadTemplate(template);
+            setIsCreating(false);
+            // Also set the nudge type based on the template
+            // Fix: Safely access nudgeType, fallback to template.type (which matches backend schema)
+            const type = template.config?.nudgeType || template.type;
+            if (type) {
+              setSelectedNudgeType(type);
+            }
+            toast.success('Template loaded successfully');
+          } else {
+            // Existing flow
+            if (window.confirm('Loading a template will overwrite your current design. Continue?')) {
+              loadTemplate(template);
+              toast.success('Template loaded successfully');
+            }
+          }
+        }}
+        onStartBlank={() => {
+          setTemplateModalOpen(false);
+          if (isCreating) {
+            setIsCreating(false);
+            // FIX: Robustly determine nudge type
+            if (!selectedNudgeType) {
+              if (currentCampaign?.nudgeType) {
+                setSelectedNudgeType(currentCampaign.nudgeType);
+              } else {
+                setSelectedNudgeType('modal');
+              }
+            }
+            toast.success('Started with blank canvas');
+          }
+        }}
+      />
 
-            {/* Save Template Modal */}
-            <SaveTemplateModal
-              isOpen={isSaveTemplateModalOpen}
-              onClose={() => setSaveTemplateModalOpen(false)}
-              config={currentCampaign}
-              nudgeType={selectedNudgeType || 'unknown'}
-            />
-
-
+      {/* Save Template Modal */}
+      <SaveTemplateModal
+        isOpen={isSaveTemplateModalOpen}
+        onClose={() => setSaveTemplateModalOpen(false)}
+        config={currentCampaign}
+        nudgeType={selectedNudgeType || 'unknown'}
+      />
 
 
 
-            <ErrorBoundary>
-              {/* Main Content */}
-              <div className="flex-1 flex overflow-hidden">
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                  {/* Design Tab - Nudge Selection Flow */}
-                  {(() => {
-                    console.log('DesignStep Render: selectedNudgeType=', selectedNudgeType, 'isCreating=', isCreating);
-                    return null; // Just for logging
-                  })()}
-                  {!selectedNudgeType && (
-                    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray[50] }}>
 
-                      {/* 1. Empty State (Image 3) */}
-                      {!isCreating && (
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{
-                            width: '64px',
-                            height: '64px',
-                            margin: '0 auto 24px',
-                            backgroundColor: 'white',
-                            borderRadius: '16px',
+
+      <ErrorBoundary>
+        {/* Main Content */}
+        <div className="flex-1 flex overflow-hidden">
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {/* Design Tab - Nudge Selection Flow */}
+            {(() => {
+              console.log('DesignStep Render: selectedNudgeType=', selectedNudgeType, 'isCreating=', isCreating);
+              return null; // Just for logging
+            })()}
+            {!selectedNudgeType && (
+              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray[50] }}>
+
+                {/* 1. Empty State (Image 3) */}
+                {!isCreating && (
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      margin: '0 auto 24px',
+                      backgroundColor: 'white',
+                      borderRadius: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    }}>
+                      <Layout size={32} color={colors.gray[400]} />
+                    </div>
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: colors.text.primary }}>
+                      No interfaces found
+                    </h3>
+                    <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: colors.text.secondary }}>
+                      Begin by adding an interface.
+                    </p>
+                    <button
+                      onClick={() => setIsCreating(true)}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: colors.gray[100],
+                        color: colors.text.primary,
+                        border: `1px solid ${colors.gray[200]}`,
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.gray[200]; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.gray[100]; }}
+                    >
+                      <Plus size={16} />
+                      Create Interface
+                    </button>
+                  </div>
+                )}
+
+                {/* 2. Selection State (Image 4) */}
+                {isCreating && (
+                  <div style={{ width: '100%', height: '100%', padding: '40px', overflowY: 'auto', backgroundColor: 'white' }}>
+                    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                      <div style={{ marginBottom: '32px' }}>
+                        <button
+                          onClick={() => setIsCreating(false)}
+                          style={{
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                          }}>
-                            <Layout size={32} color={colors.gray[400]} />
-                          </div>
-                          <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: colors.text.primary }}>
-                            No interfaces found
-                          </h3>
-                          <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: colors.text.secondary }}>
-                            Begin by adding an interface.
-                          </p>
+                            gap: '4px',
+                            background: 'none',
+                            border: 'none',
+                            color: colors.text.secondary,
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            marginBottom: '16px'
+                          }}
+                        >
+                          <ArrowLeft size={16} /> Back
+                        </button>
+                        <h2 style={{ fontSize: '24px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>
+                          Create a Design
+                        </h2>
+                      </div>
+
+                      {/* Dynamic Filter Bar */}
+                      <div style={{ display: 'flex', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
+                        {DESIGN_CATEGORIES.map((category) => (
                           <button
-                            onClick={() => setIsCreating(true)}
+                            key={category.id}
+                            onClick={() => setFilterCategory(category.id)}
                             style={{
-                              padding: '10px 20px',
-                              backgroundColor: colors.gray[100],
-                              color: colors.text.primary,
-                              border: `1px solid ${colors.gray[200]}`,
+                              padding: '8px 16px',
                               borderRadius: '8px',
+                              backgroundColor: filterCategory === category.id ? colors.gray[900] : colors.gray[100],
+                              color: filterCategory === category.id ? 'white' : colors.text.secondary,
+                              border: 'none',
                               fontSize: '14px',
                               fontWeight: 500,
                               cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '8px',
                               transition: 'all 0.2s'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.gray[200]; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.gray[100]; }}
                           >
-                            <Plus size={16} />
-                            Create Interface
+                            {category.label}
                           </button>
-                        </div>
-                      )}
+                        ))}
+                      </div>
 
-                      {/* 2. Selection State (Image 4) */}
-                      {isCreating && (
-                        <div style={{ width: '100%', height: '100%', padding: '40px', overflowY: 'auto', backgroundColor: 'white' }}>
-                          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                            <div style={{ marginBottom: '32px' }}>
-                              <button
-                                onClick={() => setIsCreating(false)}
-                                style={{
+                      {/* Dynamic Type Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+                        {DESIGN_TYPES
+                          .filter(type => filterCategory === 'all' || type.category === filterCategory)
+                          .map((type) => {
+                            const Icon = type.icon;
+                            return (
+                              <div
+                                key={type.id}
+                                onClick={() => handleNudgeTypeSelect(type.id)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <div style={{
+                                  aspectRatio: '9/16',
+                                  backgroundColor: type.bg || colors.primary[50],
+                                  borderRadius: '12px',
+                                  border: `1px solid ${type.iconBg || colors.primary[100]}`,
+                                  marginBottom: '12px',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '4px',
-                                  background: 'none',
-                                  border: 'none',
-                                  color: colors.text.secondary,
-                                  fontSize: '14px',
-                                  cursor: 'pointer',
-                                  marginBottom: '16px'
+                                  justifyContent: 'center',
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                  transition: 'all 0.2s'
                                 }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = type.color; e.currentTarget.style.boxShadow = `0 4px 12px ${type.color}20`; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = type.iconBg || colors.primary[100]; e.currentTarget.style.boxShadow = 'none'; }}
+                                >
+                                  {/* Visual representation based on type */}
+                                  {type.id === 'fullpage' && <div style={{ width: '100%', height: '100%', backgroundColor: type.iconBg }} />}
+                                  {type.id === 'bottomsheet' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.color, borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }} />}
+                                  {type.id === 'modal' && <div style={{ width: '70%', height: '30%', backgroundColor: type.color, borderRadius: '8px' }} />}
+                                  {type.id === 'banner' && <div style={{ position: 'absolute', top: '20px', left: '10px', right: '10px', height: '60px', backgroundColor: type.color, borderRadius: '8px' }} />}
+                                  {type.id === 'floater' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '48px', height: '48px', backgroundColor: type.color, borderRadius: '50%' }} />}
+                                  {type.id === 'pip' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '80px', height: '45px', backgroundColor: type.color, borderRadius: '8px' }} />}
+
+                                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} className="group-hover:opacity-100">
+                                    <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 600, color: type.color }}>
+                                      Select
+                                    </div>
+                                  </div>
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{type.label}</h4>
+                              </div>
+                            );
+                          })}
+                      </div>
+
+                      {/* Dynamic Template Grid */}
+                      <div style={{ marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.text.primary, marginBottom: '24px' }}>
+                          Start with a template
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
+                          {TEMPLATES
+                            .filter(template => {
+                              if (filterCategory === 'all') return true;
+                              const type = DESIGN_TYPES.find(t => t.id === template.typeId);
+                              return type?.category === filterCategory;
+                            })
+                            .map((template) => (
+                              <div
+                                key={template.id}
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleNudgeTypeSelect(template.typeId)} // For now, just selects the type
                               >
-                                <ArrowLeft size={16} /> Back
-                              </button>
-                              <h2 style={{ fontSize: '24px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>
-                                Create a Design
-                              </h2>
-                            </div>
-
-                            {/* Dynamic Filter Bar */}
-                            <div style={{ display: 'flex', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
-                              {DESIGN_CATEGORIES.map((category) => (
-                                <button
-                                  key={category.id}
-                                  onClick={() => setFilterCategory(category.id)}
-                                  style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    backgroundColor: filterCategory === category.id ? colors.gray[900] : colors.gray[100],
-                                    color: filterCategory === category.id ? 'white' : colors.text.secondary,
-                                    border: 'none',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                  }}
+                                <div style={{
+                                  aspectRatio: '3/4',
+                                  backgroundColor: colors.gray[100],
+                                  borderRadius: '12px',
+                                  marginBottom: '12px',
+                                  overflow: 'hidden',
+                                  position: 'relative',
+                                  border: `1px solid ${colors.gray[200]}`,
+                                  transition: 'all 0.2s'
+                                }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.gray[200]; e.currentTarget.style.transform = 'none'; }}
                                 >
-                                  {category.label}
-                                </button>
-                              ))}
-                            </div>
-
-                            {/* Dynamic Type Grid */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px', marginBottom: '48px' }}>
-                              {DESIGN_TYPES
-                                .filter(type => filterCategory === 'all' || type.category === filterCategory)
-                                .map((type) => {
-                                  const Icon = type.icon;
-                                  return (
-                                    <div
-                                      key={type.id}
-                                      onClick={() => handleNudgeTypeSelect(type.id)}
-                                      style={{ cursor: 'pointer' }}
-                                    >
-                                      <div style={{
-                                        aspectRatio: '9/16',
-                                        backgroundColor: type.bg || colors.primary[50],
-                                        borderRadius: '12px',
-                                        border: `1px solid ${type.iconBg || colors.primary[100]}`,
-                                        marginBottom: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        transition: 'all 0.2s'
-                                      }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = type.color; e.currentTarget.style.boxShadow = `0 4px 12px ${type.color}20`; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = type.iconBg || colors.primary[100]; e.currentTarget.style.boxShadow = 'none'; }}
-                                      >
-                                        {/* Visual representation based on type */}
-                                        {type.id === 'fullpage' && <div style={{ width: '100%', height: '100%', backgroundColor: type.iconBg }} />}
-                                        {type.id === 'bottomsheet' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.color, borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }} />}
-                                        {type.id === 'modal' && <div style={{ width: '70%', height: '30%', backgroundColor: type.color, borderRadius: '8px' }} />}
-                                        {type.id === 'banner' && <div style={{ position: 'absolute', top: '20px', left: '10px', right: '10px', height: '60px', backgroundColor: type.color, borderRadius: '8px' }} />}
-                                        {type.id === 'floater' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '48px', height: '48px', backgroundColor: type.color, borderRadius: '50%' }} />}
-                                        {type.id === 'pip' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '80px', height: '45px', backgroundColor: type.color, borderRadius: '8px' }} />}
-
-                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} className="group-hover:opacity-100">
-                                          <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 600, color: type.color }}>
-                                            Select
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{type.label}</h4>
-                                    </div>
-                                  );
-                                })}
-                            </div>
-
-                            {/* Dynamic Template Grid */}
-                            <div style={{ marginBottom: '24px' }}>
-                              <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.text.primary, marginBottom: '24px' }}>
-                                Start with a template
-                              </h3>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
-                                {TEMPLATES
-                                  .filter(template => {
-                                    if (filterCategory === 'all') return true;
-                                    const type = DESIGN_TYPES.find(t => t.id === template.typeId);
-                                    return type?.category === filterCategory;
-                                  })
-                                  .map((template) => (
-                                    <div
-                                      key={template.id}
-                                      style={{ cursor: 'pointer' }}
-                                      onClick={() => handleNudgeTypeSelect(template.typeId)} // For now, just selects the type
-                                    >
-                                      <div style={{
-                                        aspectRatio: '3/4',
-                                        backgroundColor: colors.gray[100],
-                                        borderRadius: '12px',
-                                        marginBottom: '12px',
-                                        overflow: 'hidden',
-                                        position: 'relative',
-                                        border: `1px solid ${colors.gray[200]}`,
-                                        transition: 'all 0.2s'
-                                      }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.gray[200]; e.currentTarget.style.transform = 'none'; }}
-                                      >
-                                        {/* Placeholder content */}
-                                        <div style={{ position: 'absolute', inset: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                          <div style={{ height: '60%', backgroundColor: colors.gray[200], borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }} />
-                                          <div style={{ padding: '12px' }}>
-                                            <div style={{ height: '8px', width: '80%', backgroundColor: colors.gray[200], borderRadius: '4px', marginBottom: '8px' }} />
-                                            <div style={{ height: '8px', width: '50%', backgroundColor: colors.gray[200], borderRadius: '4px' }} />
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{template.label}</h4>
-                                      <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary }}>{template.description}</p>
-                                    </div>
-                                  ))}
-
-                                {/* Browse More Templates Card */}
-                                <div
-                                  onClick={() => setTemplateModalOpen(true)}
-                                  style={{ cursor: 'pointer' }}
-                                >
-                                  <div style={{
-                                    aspectRatio: '3/4',
-                                    backgroundColor: 'white',
-                                    borderRadius: '12px',
-                                    marginBottom: '12px',
-                                    overflow: 'hidden',
-                                    position: 'relative',
-                                    border: `2px dashed ${colors.primary[200]}`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexDirection: 'column',
-                                    gap: '12px',
-                                    transition: 'all 0.2s'
-                                  }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.backgroundColor = colors.primary[50]; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.primary[200]; e.currentTarget.style.backgroundColor = 'white'; }}
-                                  >
-                                    <div style={{
-                                      width: '48px',
-                                      height: '48px',
-                                      borderRadius: '50%',
-                                      backgroundColor: colors.primary[100],
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center'
-                                    }}>
-                                      <LayoutGrid size={24} color={colors.primary[600]} />
-                                    </div>
-                                    <div style={{ textAlign: 'center', padding: '0 16px' }}>
-                                      <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: colors.primary[700] }}>Browse All</h4>
-                                      <p style={{ margin: 0, fontSize: '12px', color: colors.primary[600] }}>View System & My Templates</p>
+                                  {/* Placeholder content */}
+                                  <div style={{ position: 'absolute', inset: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ height: '60%', backgroundColor: colors.gray[200], borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }} />
+                                    <div style={{ padding: '12px' }}>
+                                      <div style={{ height: '8px', width: '80%', backgroundColor: colors.gray[200], borderRadius: '4px', marginBottom: '8px' }} />
+                                      <div style={{ height: '8px', width: '50%', backgroundColor: colors.gray[200], borderRadius: '4px' }} />
                                     </div>
                                   </div>
                                 </div>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 500, color: colors.text.primary }}>{template.label}</h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: colors.text.secondary }}>{template.description}</p>
                               </div>
-                            </div>
+                            ))}
 
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Design Tab - Editor (Screenshot 9) */}
-                  {/* Design Tab - Editor (Screenshot 9) */}
-                  {selectedNudgeType && (
-                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: colors.background.page }}>
-                      <style>
-                        {`
-                    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap');
-                  `}
-                      </style>
-                      {/* Editor Header */}
-
-
-                      {/* Main Editor Area */}
-                      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                        {/* Left Panel - Layers */}
-                        <div style={{ width: '280px', borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
-                          {/* Determine root container ID based on nudge type */}
-                          {(() => {
-                            // Find the root container layer based on nudge type
-                            const getRootContainerId = () => {
-                              const containerNames: Record<string, string> = {
-                                'bottomsheet': 'Bottom Sheet',
-                                'modal': 'Modal Container',
-                                'banner': 'Banner Container',
-                                'tooltip': 'Tooltip Container',
-                                'pip': 'PIP Container'
-                              };
-
-                              // Robustly determine type
-                              const type = selectedNudgeType || currentCampaign?.nudgeType || '';
-                              const containerName = containerNames[type];
-
-                              if (!containerName) return null;
-
-                              const rootContainer = currentCampaign?.layers?.find(
-                                (l: any) => l.type === 'container' && l.name === containerName
-                              );
-
-                              return rootContainer?.id || null;
-                            };
-
-                            const rootContainerId = getRootContainerId();
-
-                            return (
-                              <>
-                                <div style={{ padding: '16px', borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-                                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
-                                    Layers ({campaignLayers.length})
-                                    <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
-                                      Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
-                                    </span>
-                                  </h4>
-                                  <div style={{ position: 'relative' }}>
-                                    <button
-                                      onClick={() => setShowLayerMenu(!showLayerMenu)}
-                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
-                                      title="Add new layer"
-                                    >
-                                      <Plus size={18} />
-                                    </button>
-
-                                    {/* Layer Type Dropdown Menu - Phase 2 */}
-                                    {showLayerMenu && (
-                                      <div style={{
-                                        position: 'absolute',
-                                        top: '100%',
-                                        right: 0,
-                                        marginTop: '4px',
-                                        backgroundColor: 'white',
-                                        border: `1px solid ${colors.gray[200]}`,
-                                        borderRadius: '8px',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                        zIndex: 50,
-                                        minWidth: '200px',
-                                        overflow: 'hidden'
-                                      }}>
-                                        <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.gray[200]}`, backgroundColor: colors.gray[50] }}>
-                                          <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
-                                        </div>
-
-                                        {/* Basic Layers */}
-                                        <div style={{ padding: '4px' }}>
-                                          <button type="button" onClick={() => { addLayer('handle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <Menu size={16} color={colors.gray[600]} />
-                                            Drag Handle
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <Layout size={16} color={colors.gray[600]} />
-                                            Container
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <ImageIcon size={16} color={colors.gray[600]} />
-                                            Image
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <Type size={16} color={colors.gray[600]} />
-                                            Text
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <Square size={16} color={colors.gray[600]} />
-                                            Button
-                                          </button>
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div style={{ height: '1px', backgroundColor: colors.gray[200], margin: '4px 0' }} />
-
-                                        {/* Advanced Layers - Phase 2 */}
-                                        <div style={{ padding: '4px' }}>
-                                          <div style={{ padding: '4px 12px', marginBottom: '4px' }}>
-                                            <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Advanced</p>
-                                          </div>
-                                          <button type="button" onClick={() => { addLayer('progress-bar', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                                            Progress Bar
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('progress-circle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎯</span>
-                                            Progress Circle
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('countdown', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱️</span>
-                                            Countdown Timer
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('list', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</span>
-                                            List
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('input', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</span>
-                                            Input Field
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('statistic', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💯</span>
-                                            Statistic
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('rating', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⭐</span>
-                                            Rating Stars
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('badge', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏷️</span>
-                                            Badge
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('gradient-overlay', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌈</span>
-                                            Gradient Overlay
-                                          </button>
-                                          <button type="button" onClick={() => { addLayer('checkbox', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                            <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☑️</span>
-                                            Checkbox
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-                                  {campaignLayers
-                                    .filter(layer => !layer.parent || layer.parent === 'null') // Robust check for root layers
-                                    .map(layer => renderLayerTreeItem(layer, 0))}
-                                </div>
-                              </>
-                            )
-                          })()}
-                        </div>
-
-                        {/* Center Panel - Canvas (Enhanced with Device Selection) */}
-                        <div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                          {/* Preview Toolbar */}
-                          <PreviewToolbar
-                            selectedDevice={selectedDevice}
-                            onDeviceChange={setSelectedDevice}
-                            zoom={previewZoom}
-                            onZoomChange={setPreviewZoom}
-                            showGrid={showGrid}
-                            onGridToggle={() => setShowGrid(!showGrid)}
-                            onScreenshot={() => {
-                              // TODO: Implement screenshot functionality
-                              toast.info('Screenshot feature coming soon!');
+                          {/* Browse More Templates Card */}
+                          <div
+                            onClick={() => setTemplateModalOpen(true)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <div style={{
+                              aspectRatio: '3/4',
+                              backgroundColor: 'white',
+                              borderRadius: '12px',
+                              marginBottom: '12px',
+                              overflow: 'hidden',
+                              position: 'relative',
+                              border: `2px dashed ${colors.primary[200]}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexDirection: 'column',
+                              gap: '12px',
+                              transition: 'all 0.2s'
                             }}
-                          />
-
-                          {/* Phone Preview */}
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
-                            <PhonePreview
-                              device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
-                              zoom={previewZoom}
-                              showGrid={showGrid}
-                              backgroundUrl={selectedPage?.imageUrl}
-                              pageContext={selectedPage}
+                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.primary[500]; e.currentTarget.style.backgroundColor = colors.primary[50]; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.primary[200]; e.currentTarget.style.backgroundColor = 'white'; }}
                             >
-                              {renderCanvasPreview()}
-                            </PhonePreview>
-                          </div>
-
-                          {selectedLayerObj && (
-                            <div style={{ position: 'absolute', bottom: '60px', right: '60px', padding: '6px 12px', backgroundColor: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 500, color: colors.text.secondary, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                              {selectedLayerObj.name}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Right Panel - Properties */}
-                        <div style={{ width: '320px', borderLeft: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex' }}>
-                            <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
-                              Style
-                            </button>
-                            <button onClick={() => setPropertyTab('actions')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'actions' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'actions' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
-                              Actions
-                            </button>
-                          </div>
-                          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                            {propertyTab === 'style' && renderLayerProperties()}
-                            {propertyTab === 'actions' && (
-                              <div style={{ padding: '0 4px' }}>
-                                {renderLayerActions()}
+                              <div style={{
+                                width: '48px',
+                                height: '48px',
+                                borderRadius: '50%',
+                                backgroundColor: colors.primary[100],
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <LayoutGrid size={24} color={colors.primary[600]} />
                               </div>
-                            )}
+                              <div style={{ textAlign: 'center', padding: '0 16px' }}>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: colors.primary[700] }}>Browse All</h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: colors.primary[600] }}>View System & My Templates</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
+
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Design Tab - Editor (Screenshot 9) */}
+            {/* Design Tab - Editor (Screenshot 9) */}
+            {selectedNudgeType && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: colors.background.page }}>
+                <style>
+                  {`
+                    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap');
+                  `}
+                </style>
+                {/* Editor Header */}
 
 
+                {/* Main Editor Area */}
+                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                  {/* Left Panel - Layers */}
+                  <div style={{ width: '280px', borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                    {/* Determine root container ID based on nudge type */}
+                    {(() => {
+                      // Find the root container layer based on nudge type
+                      const getRootContainerId = () => {
+                        const containerNames: Record<string, string> = {
+                          'bottomsheet': 'Bottom Sheet',
+                          'modal': 'Modal Container',
+                          'banner': 'Banner Container',
+                          'tooltip': 'Tooltip Container',
+                          'pip': 'PIP Container'
+                        };
+
+                        // Robustly determine type
+                        const type = selectedNudgeType || currentCampaign?.nudgeType || '';
+                        const containerName = containerNames[type];
+
+                        if (!containerName) return null;
+
+                        const rootContainer = currentCampaign?.layers?.find(
+                          (l: any) => l.type === 'container' && l.name === containerName
+                        );
+
+                        return rootContainer?.id || null;
+                      };
+
+                      const rootContainerId = getRootContainerId();
+
+                      return (
+                        <>
+                          <div style={{ padding: '16px', borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
+                              Layers ({campaignLayers.length})
+                              <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
+                                Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
+                              </span>
+                            </h4>
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                onClick={() => setShowLayerMenu(!showLayerMenu)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="Add new layer"
+                              >
+                                <Plus size={18} />
+                              </button>
+
+                              {/* Layer Type Dropdown Menu - Phase 2 */}
+                              {showLayerMenu && (
+                                <div style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  right: 0,
+                                  marginTop: '4px',
+                                  backgroundColor: 'white',
+                                  border: `1px solid ${colors.gray[200]}`,
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  zIndex: 50,
+                                  minWidth: '200px',
+                                  overflow: 'hidden'
+                                }}>
+                                  <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.gray[200]}`, backgroundColor: colors.gray[50] }}>
+                                    <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
+                                  </div>
+
+                                  {/* Basic Layers */}
+                                  <div style={{ padding: '4px' }}>
+                                    <button type="button" onClick={() => { addLayer('handle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <Menu size={16} color={colors.gray[600]} />
+                                      Drag Handle
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <Layout size={16} color={colors.gray[600]} />
+                                      Container
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <ImageIcon size={16} color={colors.gray[600]} />
+                                      Image
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <Type size={16} color={colors.gray[600]} />
+                                      Text
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <Square size={16} color={colors.gray[600]} />
+                                      Button
+                                    </button>
+                                  </div>
+
+                                  {/* Divider */}
+                                  <div style={{ height: '1px', backgroundColor: colors.gray[200], margin: '4px 0' }} />
+
+                                  {/* Advanced Layers - Phase 2 */}
+                                  <div style={{ padding: '4px' }}>
+                                    <div style={{ padding: '4px 12px', marginBottom: '4px' }}>
+                                      <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Advanced</p>
+                                    </div>
+                                    <button type="button" onClick={() => { addLayer('progress-bar', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                                      Progress Bar
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('progress-circle', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎯</span>
+                                      Progress Circle
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('countdown', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⏱️</span>
+                                      Countdown Timer
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('list', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</span>
+                                      List
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('input', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</span>
+                                      Input Field
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('statistic', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💯</span>
+                                      Statistic
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('rating', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⭐</span>
+                                      Rating Stars
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('badge', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏷️</span>
+                                      Badge
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('gradient-overlay', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌈</span>
+                                      Gradient Overlay
+                                    </button>
+                                    <button type="button" onClick={() => { addLayer('checkbox', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <span style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☑️</span>
+                                      Checkbox
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                            {campaignLayers
+                              .filter(layer => !layer.parent || layer.parent === 'null') // Robust check for root layers
+                              .map(layer => renderLayerTreeItem(layer, 0))}
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Center Panel - Canvas (Enhanced with Device Selection) */}
+                  <div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    {/* Preview Toolbar */}
+                    <PreviewToolbar
+                      selectedDevice={selectedDevice}
+                      onDeviceChange={setSelectedDevice}
+                      zoom={previewZoom}
+                      onZoomChange={setPreviewZoom}
+                      showGrid={showGrid}
+                      onGridToggle={() => setShowGrid(!showGrid)}
+                      onScreenshot={() => {
+                        // TODO: Implement screenshot functionality
+                        toast.info('Screenshot feature coming soon!');
+                      }}
+                    />
+
+                    {/* Phone Preview */}
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
+                      <PhonePreview
+                        device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
+                        zoom={previewZoom}
+                        showGrid={showGrid}
+                        backgroundUrl={selectedPage?.imageUrl}
+                        pageContext={selectedPage}
+                      >
+                        {renderCanvasPreview()}
+                      </PhonePreview>
+                    </div>
+
+                    {selectedLayerObj && (
+                      <div style={{ position: 'absolute', bottom: '60px', right: '60px', padding: '6px 12px', backgroundColor: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: 500, color: colors.text.secondary, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                        {selectedLayerObj.name}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Panel - Properties */}
+                  <div style={{ width: '320px', borderLeft: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex' }}>
+                      <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
+                        Style
+                      </button>
+                      <button onClick={() => setPropertyTab('actions')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'actions' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'actions' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
+                        Actions
+                      </button>
+                    </div>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                      {propertyTab === 'style' && renderLayerProperties()}
+                      {propertyTab === 'actions' && (
+                        <div style={{ padding: '0 4px' }}>
+                          {renderLayerActions()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </ErrorBoundary>
+            )}
+
+
           </div>
-          );
+        </div>
+      </ErrorBoundary>
+    </div>
+  );
 };
 
 

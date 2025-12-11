@@ -2922,90 +2922,73 @@ export const DesignStep: React.FC = () => {
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
               📏 Size
             </h5>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {['width', 'height'].map((field) => {
+                const label = field.charAt(0).toUpperCase() + field.slice(1);
+                // Safely access config value
+                const val = (config as any)[field] || (field === 'width' ? 'max-content' : 'auto');
 
-            {(() => {
-              const renderSizeInput = (label: string, field: 'width' | 'height', placeholder: string) => {
-                const rawValue = config[field] || '';
-                const isAuto = rawValue === 'auto' || rawValue === 'max-content';
-                const isPercent = typeof rawValue === 'string' && rawValue.endsWith('%');
-                const isPx = !isAuto && !isPercent; // Default or explicit 'px'
+                // Determine current unit and numeric value
+                const strVal = String(val);
+                const isPercent = strVal.endsWith('%');
+                const isPx = !isPercent; // Default to px for anything else (numbers, "px", "auto", etc.)
 
-                const numValue = isAuto ? '' : parseInt(rawValue) || '';
+                // Extract number: "50%" -> 50, "100px" -> 100, 100 -> 100, "auto" -> ""
+                const numVal = parseInt(strVal) || '';
 
                 return (
-                  <div style={{ marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <label style={{ fontSize: '11px', color: colors.text.secondary }}>{label}</label>
-                    </div>
-                    <div style={{ display: 'flex', gap: '4px' }}>
+                  <div key={field}>
+                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '2px' }}>{label}</label>
+                    <div style={{ display: 'flex', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', overflow: 'hidden' }}>
                       <input
                         type="number"
-                        value={numValue}
+                        value={numVal}
+                        placeholder={field === 'width' ? 'Auto' : 'Auto'}
                         onChange={(e) => {
-                          const val = e.target.value;
+                          const newVal = e.target.value;
                           const unit = isPercent ? '%' : 'px';
-                          handleTooltipUpdate(field, val ? `${val}${unit}` : (label === 'Width' ? 'max-content' : 'auto'));
+                          // If empty, set to undefined/auto/max-content? Let's use empty string or null to fallback to default in renderer
+                          // But renderer uses config.width || 'max-content'. So if I set '', it goes to default.
+                          handleTooltipUpdate(field, newVal ? `${newVal}${unit}` : '');
                         }}
-                        placeholder={isAuto ? 'Auto' : placeholder}
-                        style={{
-                          flex: 1,
-                          padding: '6px',
-                          border: `1px solid ${colors.gray[200]}`,
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          outline: 'none',
-                          backgroundColor: isAuto ? colors.gray[50] : 'white'
-                        }}
+                        style={{ flex: 1, border: 'none', padding: '6px', fontSize: '12px', outline: 'none' }}
                       />
-                      <div style={{ display: 'flex', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', borderLeft: `1px solid ${colors.gray[200]}` }}>
                         <button
-                          onClick={() => handleTooltipUpdate(field, numValue ? `${numValue}px` : '200px')}
+                          onClick={() => handleTooltipUpdate(field, numVal ? `${numVal}px` : '300px')}
                           style={{
-                            padding: '4px 8px',
+                            padding: '0 6px',
                             background: isPx ? colors.primary[50] : 'white',
                             color: isPx ? colors.primary[600] : colors.text.secondary,
                             border: 'none',
                             fontSize: '10px',
                             cursor: 'pointer',
-                            borderRight: `1px solid ${colors.gray[200]}`
+                            fontWeight: 500
                           }}
-                        >PX</button>
+                        >
+                          PX
+                        </button>
                         <button
-                          onClick={() => handleTooltipUpdate(field, numValue ? `${numValue}%` : '50%')}
+                          onClick={() => handleTooltipUpdate(field, numVal ? `${numVal}%` : '50%')}
                           style={{
-                            padding: '4px 8px',
+                            padding: '0 6px',
                             background: isPercent ? colors.primary[50] : 'white',
                             color: isPercent ? colors.primary[600] : colors.text.secondary,
                             border: 'none',
                             fontSize: '10px',
                             cursor: 'pointer',
-                            borderRight: `1px solid ${colors.gray[200]}`
+                            fontWeight: 500,
+                            borderLeft: `1px solid ${colors.gray[200]}`
                           }}
-                        >%</button>
-                        <button
-                          onClick={() => handleTooltipUpdate(field, label === 'Width' ? 'max-content' : 'auto')}
-                          style={{
-                            padding: '4px 8px',
-                            background: isAuto ? colors.primary[50] : 'white',
-                            color: isAuto ? colors.primary[600] : colors.text.secondary,
-                            border: 'none',
-                            fontSize: '10px',
-                            cursor: 'pointer'
-                          }}
-                        >Auto</button>
+                        >
+                          %
+                        </button>
                       </div>
                     </div>
                   </div>
                 );
-              };
-
-              return (
-                <div>
-                  {renderSizeInput('Width', 'width', '300')}
-                  {renderSizeInput('Height', 'height', '150')}
-                </div>
-              );
-            })()}
+              })}
+            </div>
           </div>
 
 

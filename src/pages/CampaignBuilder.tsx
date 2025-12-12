@@ -364,31 +364,10 @@ const CampaignBuilder: React.FC = () => {
       <CampaignTemplateGallery
         isOpen={isTemplateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
-        onSelectTemplate={async (template) => {
-          try {
-            // FIX: Create NEW campaign instead of overwriting current one
-            // Use template type if available, fallback to bottomsheet (legacy)
-            // Default experience to 'nudges' 
-            createCampaign('nudges', (template.type || 'bottomsheet') as any);
-
-            // Apply template data (layers, config)
-            applyTemplate(template);
-
-            // Save to backend immediately
-            await saveCampaign();
-
-            // Navigate to new ID
-            const { currentCampaign } = useEditorStore.getState();
-            if (currentCampaign?.id) {
-              navigate(`/campaign-builder?id=${currentCampaign.id}`, { replace: true });
-              toast.success(`Created campaign from template: ${template.name}`);
-            }
-
-            setTemplateModalOpen(false);
-          } catch (error) {
-            console.error('Template selection error:', error);
-            toast.error('Failed to create campaign from template');
-          }
+        onSelectTemplate={(template) => {
+          applyTemplate(template);
+          setTemplateModalOpen(false);
+          toast.success(`Applied template: ${template.name}`);
         }}
         onStartBlank={() => {
           setTemplateModalOpen(false);

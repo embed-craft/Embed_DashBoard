@@ -401,6 +401,31 @@ export interface BottomSheetTemplate {
   featured?: boolean;
 }
 
+export interface TooltipConfig {
+  mode: 'image' | 'container';
+  imageUrl?: string;
+  imageSize?: { width: number | string; height: number | string };
+  width?: number | string;
+  height?: number | string;
+
+  // Appearance
+  roundness?: number;
+  padding?: number;
+  backgroundColor?: string;
+  backgroundOpacity?: number; // 0-1
+  arrowPosition?: 'left' | 'right' | 'center' | 'auto';
+  orientation?: 'vertical' | 'horizontal';
+  shadow?: string;
+
+  // Behaviors
+  closeOnOutsideClick?: boolean;
+  keepTargetClickable?: boolean;
+  closeOnTargetClick?: boolean;
+
+  // Legacy/Existing
+  position?: 'top' | 'bottom' | 'left' | 'right';
+}
+
 export interface CampaignEditor {
   id: string;
   _id?: string; // Support for backend ID
@@ -424,7 +449,7 @@ export interface CampaignEditor {
   bottomSheetConfig?: BottomSheetConfig;
   modalConfig?: ModalConfig;
   bannerConfig?: any;
-  tooltipConfig?: any;
+  tooltipConfig?: TooltipConfig;
   pipConfig?: any;
   floaterConfig?: any;
 

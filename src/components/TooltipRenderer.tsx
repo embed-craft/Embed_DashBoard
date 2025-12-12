@@ -240,9 +240,10 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         }
     };
 
-    // Arrow Style Calculation (Arrow hidden in image mode for now)
+    // Arrow Style Calculation 
     const getArrowStyle = () => {
-        if (mode === 'image') return { display: 'none' };
+        // if (mode === 'image') return { display: 'none' }; // Allow arrow if user sets non-transparent background
+
 
         const base = {
             position: 'absolute' as const,
@@ -502,20 +503,44 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
         return (
             <>
+                {/* Overlay (New) */}
+                {(config.overlayOpacity !== undefined && config.overlayOpacity > 0) && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        backgroundColor: config.overlayColor || '#000000',
+                        opacity: config.overlayOpacity,
+                        zIndex: 40, // Below tooltip (50), same/above highlight?
+                        pointerEvents: 'auto', // Blocks clicks if configured
+                    }} 
+                    onClick={(e) => {
+                         // We don't have a close handler prop here, but we can stop propagation
+                         // The parent usually handles "outside click" via a global listener.
+                         // But if we want to catch it here:
+                         // config.closeOnOutsideClick
+                    }}
+                    />
+                )}
+
                 {/* Target Highlight */}
-                {/* Target Highlight */}
-                <div style={{
-                    position: 'absolute',
-                    left: `${scaledX}px`,
-                    top: `${scaledY}px`,
-                    width: `${scaledWidth}px`,
-                    height: `${scaledHeight}px`,
-                    border: `2px solid ${colors.primary[500]}`, // Restored to solid blue as requested
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)', // Slight blue tint
-                    pointerEvents: 'none',
-                    zIndex: 40,
-                    borderRadius: '4px' // Added for better aesthetics
-                }} />
+                {(mode === 'image' || config.targetHighlightColor) && (
+                    <div style={{
+                        position: 'absolute',
+                        left: `${scaledX - (config.targetHighlightPadding || 4)}px`,
+                        top: `${scaledY - (config.targetHighlightPadding || 4)}px`,
+                        width: `${scaledWidth + (config.targetHighlightPadding || 4) * 2}px`,
+                        height: `${scaledHeight + (config.targetHighlightPadding || 4) * 2}px`,
+                        border: `2px solid ${config.targetHighlightColor || colors.primary[500]}`,
+                        backgroundColor: 'transparent',
+                        pointerEvents: 'none',
+                        zIndex: 45, // Above overlay, below tooltip
+                        borderRadius: `${config.targetRoundness || 4}px`,
+                        boxShadow: '0 0 0 9999px rgba(0,0,0,0)' // Hack to focus? No.
+                    }} />
+                )}
 
                 {/* Tooltip Wrapper */}
                 <div style={wrapperStyle}>

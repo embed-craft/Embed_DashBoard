@@ -66,7 +66,21 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
       timezone: campaign.schedule.timeZone
     } : undefined, // ✅ FIX: Map to snake_case for backend
     config,
-    layers: campaign.layers,
+    layers: campaign.layers.map(layer => {
+      // ✅ FIX: Sync background image from BottomSheetConfig to Container Layer
+      if (layer.type === 'container' && campaign.bottomSheetConfig?.backgroundImageUrl) {
+        return {
+          ...layer,
+          style: {
+            ...layer.style,
+            backgroundImage: campaign.bottomSheetConfig.backgroundImageUrl,
+            backgroundSize: campaign.bottomSheetConfig.backgroundSize || 'cover',
+            backgroundPosition: campaign.bottomSheetConfig.backgroundPosition || 'center'
+          }
+        };
+      }
+      return layer;
+    }),
     createdAt: campaign.createdAt,
     updatedAt: campaign.updatedAt,
   };
@@ -1043,11 +1057,11 @@ function reconstructLayersFromConfig(config: Record<string, any>, type: string):
     style: {
       backgroundColor: config.backgroundColor || '#FFFFFF',
       ...(config.backgroundGradient && { gradient: config.backgroundGradient }),
-      ...(config.backgroundImage && {
-        backgroundImage: config.backgroundImage,
-        backgroundSize: config.backgroundSize,
+      ...((config.backgroundImage || config.backgroundImageUrl) && {
+        backgroundImage: config.backgroundImage || config.backgroundImageUrl,
+        backgroundSize: config.backgroundSize || 'cover',
         backgroundPosition: `${config.backgroundPositionX || 'center'} ${config.backgroundPositionY || 'center'}`,
-        backgroundRepeat: config.backgroundRepeat,
+        backgroundRepeat: config.backgroundRepeat || 'no-repeat',
       }),
       borderRadius: (config.borderRadiusTopLeft !== undefined || config.borderRadiusTopRight !== undefined ||
         config.borderRadiusBottomLeft !== undefined || config.borderRadiusBottomRight !== undefined)

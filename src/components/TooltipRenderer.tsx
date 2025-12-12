@@ -33,24 +33,28 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // If Image Mode, we must IGNORE the container layer styles (which often contain a default bg)
     // unless strictly needed. Ideally, we just rely on config.
     const mode = config.mode || 'standard';
+    // If Image Mode, we allow layer styles to override config (assuming DesignStep cleared defaults on mode switch).
     const rawContainerStyle = tooltipContainerLayer?.style || {};
-    const containerStyle = mode === 'image' ? { ...rawContainerStyle, backgroundColor: undefined, boxShadow: undefined, border: undefined } : rawContainerStyle;
+    const containerStyle = rawContainerStyle; // Don't strip properties, trust the layer state.
 
     // --- Configuration & Defaults ---
-    // mode is already defined above
-
     // Standard Defaults
     const STD_BG = '#1F2937';
     const STD_SHADOW = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
 
     // 1. Determine Background Color
-    // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
-    // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
-    // If in Image Mode, default to transparent UNLESS user explicitly changed it to something else
+    // Priority: Layer Style > Config > Default (if standard)
+    // If Image Mode + No specific background set, we want transparent.
+    // But if user sets a background (via generic panel), we respect it.
     let backgroundColor = tooltipContainerLayer?.style?.backgroundColor || config.backgroundColor;
+    
     if (mode === 'image') {
-        // STRICTER CHECK: If explicitly transparent OR undefined OR standard default, force transparent
-        if (!backgroundColor || backgroundColor === STD_BG || backgroundColor === 'transparent') {
+        // Only default to transparent if NOTHING is set. 
+        // If it equals STD_BG, it might be a left-over default, so we might want to clear it?
+        // But DesignStep should have cleared it. 
+        // Let's trust that if it is set, the user wants it.
+        // Fallback to transparent if undefined.
+        if (!backgroundColor) {
             backgroundColor = 'transparent';
         }
     } else {
@@ -59,13 +63,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     }
 
     // 2. Determine Box Shadow
-    // 2. Determine Box Shadow
     let boxShadow = tooltipContainerLayer?.style?.boxShadow || config.boxShadow;
     if (mode === 'image') {
-        // STRICTER CHECK: If undefined or standard default or 'none', force none
-        if (boxShadow === undefined || boxShadow === STD_SHADOW || boxShadow === 'none') {
-            boxShadow = 'none';
-        }
+       if (!boxShadow) {
+           boxShadow = 'none';
+       }
     } else {
         boxShadow = boxShadow !== undefined ? boxShadow : STD_SHADOW;
     }

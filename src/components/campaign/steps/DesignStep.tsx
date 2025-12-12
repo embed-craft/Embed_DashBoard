@@ -447,8 +447,16 @@ export const DesignStep: React.FC = () => {
 
       let template = templateObj;
       if (!template) {
-        // If no template object provided, try fetching by ID
-        const fetchTemplateId = searchParams.get('templateId'); // REMOVED: || searchParams.get('id') to avoid conflict with campaign IDs
+        // Fix: Determine which ID to use based on editor mode
+        // If mode is 'template', the 'id' param IS the template ID we want to edit.
+        // If mode is 'campaign' (default), we only look for 'templateId' param (e.g. applying template).
+        // We must NOT use 'id' in campaign mode as that refers to the campaign itself.
+        const mode = searchParams.get('mode');
+        const urlId = searchParams.get('id');
+        const urlTemplateId = searchParams.get('templateId');
+
+        const fetchTemplateId = (mode === 'template' ? urlId : null) || urlTemplateId;
+        
         if (!fetchTemplateId) return; // Nothing to load
 
         template = await api.apiClient.getTemplate(fetchTemplateId);

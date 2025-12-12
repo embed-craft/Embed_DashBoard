@@ -6330,7 +6330,7 @@ export const DesignStep: React.FC = () => {
 
 
   // Handler for template selection
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = async (templateId: string) => {
     const template = BOTTOM_SHEET_TEMPLATES.find(t => t.id === templateId);
 
     if (!template) {
@@ -6338,25 +6338,35 @@ export const DesignStep: React.FC = () => {
       return;
     }
 
-    // Create campaign first
-    createCampaign(
-      selectedExperience as any || 'nudges',
-      'bottomsheet' as any
-    );
+    try {
+      // Create campaign first
+      createCampaign(
+        selectedExperience as any || 'nudges',
+        'bottomsheet' as any
+      );
 
-    // FIX: Navigate to the new campaign ID immediately
-    const { currentCampaign } = useEditorStore.getState();
-    if (currentCampaign?.id) {
-      navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
-    }
+      // FIX: Apply template CORRECTLY (passing full object, not just layers)
+      // And await it to ensure store is updated
+      await loadTemplate(template);
 
-    // Load template layers after campaign is created
-    setTimeout(() => {
-      loadTemplate(template.layers);
+      // FIX: Save campaign to backend BEFORE navigating
+      // This ensures loadCampaign(id) succeeds on the new route
+      await saveCampaign();
+
+      // Navigate to the new campaign ID
+      const { currentCampaign } = useEditorStore.getState();
+      if (currentCampaign?.id) {
+        navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
+        toast.success(`Template "${template.name}" loaded successfully!`);
+      }
+      
       setTemplateModalOpen(false);
       setShowEditor(true);
-      toast.success(`Template "${template.name}" loaded successfully!`);
-    }, 100);
+
+    } catch (error) {
+      console.error('Template selection error:', error);
+      toast.error('Failed to apply template');
+    }
   };
 
   // Handler for starting from scratch

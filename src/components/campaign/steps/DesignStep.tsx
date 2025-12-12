@@ -448,7 +448,7 @@ export const DesignStep: React.FC = () => {
       let template = templateObj;
       if (!template) {
         // If no template object provided, try fetching by ID
-        const fetchTemplateId = searchParams.get('templateId') || searchParams.get('id'); // Use 'id' as fallback
+        const fetchTemplateId = searchParams.get('templateId'); // REMOVED: || searchParams.get('id') to avoid conflict with campaign IDs
         if (!fetchTemplateId) return; // Nothing to load
 
         template = await api.apiClient.getTemplate(fetchTemplateId);
@@ -461,39 +461,25 @@ export const DesignStep: React.FC = () => {
       }
 
       console.log('DesignStep: Loaded template:', template);
-      console.log('DesignStep: template.type:', template.type);
-      console.log('DesignStep: template.config:', template.config);
-      console.log('DesignStep: Resolved nudgeType:', template.type || template.config?.type);
 
+      // FIX: Use transformer to ensure consistent CampaignEditor format
+      const transformers = await import('@/lib/campaignTransformers');
+      const campaignData = transformers.backendToEditor(template);
 
-      // Verify validation schema - skipping for now to avoid unused var error
-      /*
-      const { campaignSchema } = await import('@/lib/validation');
-      try {
-         // Basic schema validation if needed
-      } catch (e) {
-         console.warn('Template validation warning:', e);
+      // Explicitly set source if available and not present (transformers usually don't map sourceTemplateId from raw)
+      if (template._id && !campaignData.sourceTemplateId) {
+        campaignData.sourceTemplateId = template._id;
       }
-      */
 
-      // Transform template to campaign format
-      const campaignData = {
-        ...template,
-        layers: template.layers || [],
-        type: template.type || template.config?.type || 'bottomsheet', // Nudge Type
-        nudgeType: template.type || template.config?.type || 'bottomsheet', // Ensure consistency
-        // Map other config fields
-        modalConfig: template.config?.modalConfig || template.modalConfig,
-        bannerConfig: template.config?.bannerConfig || template.bannerConfig,
-        bottomSheetConfig: template.config?.bottomSheetConfig || template.bottomSheetConfig,
-        tooltipConfig: template.config?.tooltipConfig || template.tooltipConfig,
-        history: [template.layers || []],
-        historyIndex: 0,
-        createdAt: template.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isDirty: false,
-        sourceTemplateId: template._id, // ✅ FIX: Only track source for DB templates (skip system templates)
-      };
+      // Ensure nudgeType is set (transformer does this, but being safe)
+      if (!campaignData.nudgeType) {
+        campaignData.nudgeType = template.type || template.config?.type || 'bottomsheet';
+      }
+
+      // Override ID validation issue for templates - templates might use _id as id
+      if (!campaignData.id) {
+        campaignData.id = template._id || template.id || `temp_${Date.now()}`;
+      }
 
       await loadCampaign(campaignData as any);
       setEditorMode('template');
@@ -6359,7 +6345,7 @@ export const DesignStep: React.FC = () => {
         navigate(`/campaign-builder?id=${currentCampaign.id}&experience=${selectedExperience || 'nudges'}`, { replace: true });
         toast.success(`Template "${template.name}" loaded successfully!`);
       }
-      
+
       setTemplateModalOpen(false);
       setShowEditor(true);
 

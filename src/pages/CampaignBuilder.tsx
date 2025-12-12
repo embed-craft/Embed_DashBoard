@@ -364,10 +364,20 @@ const CampaignBuilder: React.FC = () => {
       <CampaignTemplateGallery
         isOpen={isTemplateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
-        onSelectTemplate={(template) => {
-          applyTemplate(template);
-          setTemplateModalOpen(false);
-          toast.success(`Applied template: ${template.name}`);
+        onSelectTemplate={async (template) => {
+          try {
+            // FIX: Fetch full template details (including layers) before applying
+            // listTemplates often returns summary only
+            const api = await import('@/lib/api');
+            const fullTemplate = await api.apiClient.getTemplate(template._id || (template as any).id);
+
+            applyTemplate(fullTemplate);
+            setTemplateModalOpen(false);
+            toast.success(`Applied template: ${template.name}`);
+          } catch (error) {
+            console.error('Failed to apply template:', error);
+            toast.error('Failed to load template details');
+          }
         }}
         onStartBlank={() => {
           setTemplateModalOpen(false);

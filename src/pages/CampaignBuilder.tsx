@@ -82,7 +82,7 @@ const CampaignBuilder: React.FC = () => {
       if (currentCampaign?.id === campaignId) return;
       loadCampaign(campaignId);
     }
-  }, [searchParams, loadCampaign, currentCampaign?.id]);
+  }, [searchParams, loadCampaign]);
 
   // Handle new campaign flow
   useEffect(() => {

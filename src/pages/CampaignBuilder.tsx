@@ -366,10 +366,12 @@ const CampaignBuilder: React.FC = () => {
         onClose={() => setTemplateModalOpen(false)}
         onSelectTemplate={async (template) => {
           try {
-            // FIX: Fetch full template details (including layers) before applying
-            // listTemplates often returns summary only
+            // FIX: Fetch full template details AND transform to editor format
             const api = await import('@/lib/api');
-            const fullTemplate = await api.apiClient.getTemplate(template._id || (template as any).id);
+            const transformers = await import('@/lib/campaignTransformers');
+
+            const rawTemplate = await api.apiClient.getTemplate(template._id || (template as any).id);
+            const fullTemplate = transformers.backendToEditor(rawTemplate);
 
             applyTemplate(fullTemplate);
             setTemplateModalOpen(false);

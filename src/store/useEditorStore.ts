@@ -871,7 +871,7 @@ export const useEditorStore = create<EditorStore>()(
         const newCampaign = {
           ...currentCampaign,
           ...mappedData,
-          id: currentCampaign.id,
+          id: currentCampaign.id || `campaign_${Date.now()}`,
           _id: currentCampaign._id,
           isDirty: true,
         };

@@ -27,7 +27,14 @@ export interface BackendCampaign {
     timezone?: string;
   };
   targeting?: any[]; // ✅ FIX: Add targeting
+  display_rules?: {  // ✅ FIX: Add Top-Level display_rules
+    frequency_cap: number | null;
+    session_cap: number | null;
+    cooldown: number;
+    ignore_global_rules: boolean;
+  };
 }
+
 
 export interface BackendRule {
   id: number;
@@ -65,50 +72,58 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
       end_date: campaign.schedule.endDate,
       timezone: campaign.schedule.timeZone
     } : undefined, // ✅ FIX: Map to snake_case for backend
+    // ✅ FIX: Map Display Rules to Backend Schema
+    display_rules: {
+      frequency_cap: campaign.displayRules.interactionLimit.type === 'limited' ? (campaign.displayRules.interactionLimit.value || 1) : null,
+      session_cap: campaign.displayRules.sessionLimit.enabled ? (campaign.displayRules.sessionLimit.value || 1) : null,
+      cooldown: campaign.displayRules.frequency.type === 'custom' ? (campaign.displayRules.frequency.value || 0) : 0, // Fallback logic
+      ignore_global_rules: campaign.displayRules.overrideGlobal
+    },
     config,
     layers: campaign.layers.map(layer => {
+
       // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to Container Layer
       if (layer.type === 'container' && campaign.bottomSheetConfig) {
-         const bsConfig = campaign.bottomSheetConfig;
-         
-         return {
-           ...layer,
-           size: {
-             ...layer.size,
-              // Sync height/width from config if set
-              ...(bsConfig.height && { height: bsConfig.height }),
-           },
-           style: {
-             ...layer.style,
-             // 1. Background (Image & Color)
-             ...(bsConfig.backgroundImageUrl && { 
-                backgroundImage: bsConfig.backgroundImageUrl,
-                backgroundSize: bsConfig.backgroundSize || 'cover',
-                backgroundPosition: bsConfig.backgroundPosition || 'center',
-                backgroundRepeat: 'no-repeat'
-             }),
-             ...(bsConfig.backgroundColor && { backgroundColor: bsConfig.backgroundColor }),
+        const bsConfig = campaign.bottomSheetConfig;
 
-             // 2. Borders
-             ...(bsConfig.borderRadius && { 
-                borderRadius: typeof bsConfig.borderRadius === 'object' 
-                  ? bsConfig.borderRadius 
-                  : { 
-                    topLeft: bsConfig.borderRadius, 
-                    topRight: bsConfig.borderRadius, 
-                    bottomLeft: 0, 
-                    bottomRight: 0 
-                  }
-             }),
+        return {
+          ...layer,
+          size: {
+            ...layer.size,
+            // Sync height/width from config if set
+            ...(bsConfig.height && { height: bsConfig.height }),
+          },
+          style: {
+            ...layer.style,
+            // 1. Background (Image & Color)
+            ...(bsConfig.backgroundImageUrl && {
+              backgroundImage: bsConfig.backgroundImageUrl,
+              backgroundSize: bsConfig.backgroundSize || 'cover',
+              backgroundPosition: bsConfig.backgroundPosition || 'center',
+              backgroundRepeat: 'no-repeat'
+            }),
+            ...(bsConfig.backgroundColor && { backgroundColor: bsConfig.backgroundColor }),
 
-             // 3. Shadows (Elevation)
-             ...(bsConfig.elevation !== undefined && { 
-                boxShadow: bsConfig.customShadow || (bsConfig.elevation > 0 
-                  ? `0px ${bsConfig.elevation * 4}px ${bsConfig.elevation * 8}px rgba(0,0,0,${0.1 + (bsConfig.elevation * 0.05)})` 
-                  : undefined)
-             }),
-           }
-         } as Layer;
+            // 2. Borders
+            ...(bsConfig.borderRadius && {
+              borderRadius: typeof bsConfig.borderRadius === 'object'
+                ? bsConfig.borderRadius
+                : {
+                  topLeft: bsConfig.borderRadius,
+                  topRight: bsConfig.borderRadius,
+                  bottomLeft: 0,
+                  bottomRight: 0
+                }
+            }),
+
+            // 3. Shadows (Elevation)
+            ...(bsConfig.elevation !== undefined && {
+              boxShadow: bsConfig.customShadow || (bsConfig.elevation > 0
+                ? `0px ${bsConfig.elevation * 4}px ${bsConfig.elevation * 8}px rgba(0,0,0,${0.1 + (bsConfig.elevation * 0.05)})`
+                : undefined)
+            }),
+          }
+        } as Layer;
       }
       return layer;
     }),

@@ -44,8 +44,17 @@ export interface PropertyDefinition {
     tags?: string[];
     organization_id: string;
     createdAt: string;
+    createdAt: string;
     updatedAt: string;
 }
+
+export interface PageDefinition {
+    _id: string;
+    name: string;
+    pageTag: string;
+    imageUrl?: string;
+}
+
 
 export const metadataService = {
     // Events
@@ -106,5 +115,17 @@ export const metadataService = {
         await axios.delete(`${API_URL}/properties/${id}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-    }
-};
+        deleteProperty: async (id: string): Promise<void> => {
+            await axios.delete(`${API_URL}/properties/${id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+        },
+
+            // Pages
+            getPages: async (): Promise<PageDefinition[]> => {
+                const response = await axios.get(`${API_URL}/pages`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                return response.data;
+            }
+    };

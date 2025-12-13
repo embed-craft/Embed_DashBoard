@@ -6,9 +6,12 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { MultiSelect } from '@/components/ui/multi-select';
+
 
 export const DisplayRules: React.FC = () => {
-    const { currentCampaign, updateDisplayRules } = useEditorStore();
+    const { currentCampaign, updateDisplayRules, availablePages } = useEditorStore();
+
 
     if (!currentCampaign || !currentCampaign.displayRules) return null;
 
@@ -122,11 +125,14 @@ export const DisplayRules: React.FC = () => {
 
                 <div className="space-y-2">
                     <Label>Pages</Label>
-                    <Input
-                        placeholder="e.g. /home, /cart (comma separated)"
-                        value={displayRules.pages?.join(', ') || ''}
-                        onChange={(e) => updateDisplayRules({ pages: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                    <MultiSelect
+                        options={availablePages.map(p => ({ label: p.name, value: p.pageTag }))}
+                        selected={displayRules.pages || []}
+                        onChange={(val) => updateDisplayRules({ pages: val })}
+                        placeholder="Select pages..."
+                        className="w-full"
                     />
+                    <p className="text-[10px] text-muted-foreground">Select pages where this campaign should appear.</p>
                 </div>
             </div>
 

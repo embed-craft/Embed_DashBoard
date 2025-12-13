@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { validateCampaignConfig, validateLayer } from '@/lib/configValidator';
-import { metadataService, EventDefinition, PropertyDefinition } from '@/services/metadataService';
+import { metadataService, EventDefinition, PropertyDefinition, PageDefinition } from '@/services/metadataService';
+
 
 // Layer Types - Extended for Phase 2 & 3.5
 export type LayerType =
@@ -108,11 +109,15 @@ export interface LayerContent {
 
   // Custom HTML (Phase 2)
   html?: string;
+
+  // Heirarchy
+  children?: Layer[];
 }
 
 export interface LayerStyle {
   backgroundColor?: string;
   borderRadius?: number | string | { topLeft: number | string; topRight: number | string; bottomRight: number | string; bottomLeft: number | string };
+  border?: string; // Added to support shorthand
   borderColor?: string;
   borderWidth?: number | { top: number; right: number; bottom: number; left: number };
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
@@ -360,10 +365,11 @@ export interface BottomSheetConfig {
 }
 
 export interface ModalConfig {
-  mode?: 'container' | 'image-only';
+  mode?: 'container' | 'image-only' | 'default';
   width?: number | string;
   height?: 'auto' | number | string;
   showCloseButton?: boolean;
+  opacity?: number;
   backgroundColor: string;
   backgroundImageUrl?: string;
   backgroundSize?: 'cover' | 'contain' | 'fill';
@@ -405,11 +411,16 @@ export interface BottomSheetTemplate {
 }
 
 export interface TooltipConfig {
-  mode: 'image' | 'container';
+  mode: 'standard' | 'image' | 'container' | 'advanced' | 'html';
   imageUrl?: string;
   imageSize?: { width: number | string; height: number | string };
   width?: number | string;
+  width?: number | string;
   height?: number | string;
+
+  // Targeting
+  targetPageId?: string;
+  targetElementId?: string;
 
   // Appearance
   roundness?: number;
@@ -417,8 +428,27 @@ export interface TooltipConfig {
   backgroundColor?: string;
   backgroundOpacity?: number; // 0-1
   arrowPosition?: 'left' | 'right' | 'center' | 'auto';
+  arrowStyle?: 'sharp' | 'bubble'; // Added
   orientation?: 'vertical' | 'horizontal';
   shadow?: string;
+  overlayOpacity?: number; // Added
+  gradient?: string; // Added generic gradient support if needed
+  gradientTo?: string; // Added based on grep hint
+  gradientFrom?: string; // Added just in case
+  gradientWith?: string; // Added based on error message (even if typo, we support it to fix build)
+
+  // Content
+  htmlContent?: string; // Added
+
+  // Target Highlight
+  targetRoundness?: number; // Added
+  targetHighlightPadding?: number; // Added
+  targetHighlightColor?: string; // Added
+
+  // Appearance - new additions
+  overlayColor?: string; // Added/Alias for backgroundColor?
+  borderRadius?: number; // Added (redundant with roundness but requested)
+  gradientAngle?: number; // Added
 
   // Behaviors
   closeOnOutsideClick?: boolean;
@@ -427,6 +457,8 @@ export interface TooltipConfig {
 
   // Legacy/Existing
   position?: 'top' | 'bottom' | 'left' | 'right';
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export interface CampaignEditor {
@@ -507,6 +539,7 @@ interface EditorStore {
   updateGoal: (goal: Partial<CampaignGoal>) => void;
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
   createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => void;
+  updateCampaign: (updates: Partial<CampaignEditor>) => void; // ✅ FIX: Add generic updateCampaign
   resetCurrentCampaign: () => void;
 
   // Actions - Bottom Sheet Config (Phase 3)
@@ -530,8 +563,13 @@ interface EditorStore {
 
   // Metadata (Events & Properties)
   availableEvents: EventDefinition[];
+  // Metadata (Events & Properties)
+  availableEvents: EventDefinition[];
   availableProperties: PropertyDefinition[];
+  availablePages: PageDefinition[]; // Add availablePages
   isLoadingMetadata: boolean;
+  fetchMetadata: () => Promise<void>;
+
   fetchMetadata: () => Promise<void>;
   createEvent: (event: Partial<EventDefinition>) => Promise<EventDefinition>;
   createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
@@ -604,24 +642,28 @@ export const useEditorStore = create<EditorStore>()(
 
 
       // Metadata Initial State
+      // Metadata Initial State
       availableEvents: [],
       availableProperties: [],
+      availablePages: [], // Initialize availablePages
       isLoadingMetadata: false,
 
       // Metadata Actions
       fetchMetadata: async () => {
         set({ isLoadingMetadata: true });
         try {
-          const [events, properties] = await Promise.all([
+          const [events, properties, pages] = await Promise.all([
             metadataService.getEvents(),
-            metadataService.getProperties()
+            metadataService.getProperties(),
+            metadataService.getPages() // Fetch pages
           ]);
-          set({ availableEvents: events, availableProperties: properties, isLoadingMetadata: false });
+          set({ availableEvents: events, availableProperties: properties, availablePages: pages, isLoadingMetadata: false });
         } catch (error) {
           console.error('Failed to fetch metadata:', error);
           set({ isLoadingMetadata: false });
         }
       },
+
 
       createEvent: async (event) => {
         try {
@@ -1196,6 +1238,11 @@ export const useEditorStore = create<EditorStore>()(
         } finally {
           saveMutex = false;
         }
+      },
+
+      // Update Campaign (Generic)
+      updateCampaign: (updates) => {
+        updateCampaignAction(updates, set, get);
       },
 
       // Add layer

@@ -42,6 +42,15 @@ export const EffectsPanel: React.FC<EffectsPanelProps> = ({ state }) => {
 
   // ========== Shadow Panel ==========
   const ShadowPanel = () => {
+    // ENFORCE: Hide Shadows for Container
+    if (selectedComponent.type === 'container') {
+      return (
+        <div className="p-4 text-center text-gray-500 text-xs border-2 border-dashed border-gray-200 rounded-lg">
+          Shadow effects are disabled for the main container
+        </div>
+      );
+    }
+
     const shadows = effects.shadows || [];
 
     const handleAddShadow = () => {

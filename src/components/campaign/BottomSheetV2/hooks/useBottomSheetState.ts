@@ -64,8 +64,8 @@ export function useBottomSheetState(initialConfig?: any) {
 
   const [containerConfig, setContainerConfig] = useState(initialConfig?.container || {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    showHandle: true,
+    borderRadius: 0,
+    showHandle: false,
     overlay: {
       enabled: true,
       opacity: 0.5,

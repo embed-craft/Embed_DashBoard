@@ -203,8 +203,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     } : undefined, // ✅ FIX: Map from snake_case to camelCase
     bottomSheetConfig,
     modalConfig,
-    bottomSheetConfig,
-    modalConfig,
+
     tooltipConfig: campaignType === 'tooltip' ? (backendCampaign.config?.tooltipConfig || {
       // Fallback/Legacy migration: check if properties exist on root config
       targetPageId: backendCampaign.config?.targetPageId,

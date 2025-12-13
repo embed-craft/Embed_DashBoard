@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import { useEditorStore, getDefaultLayersForNudgeType } from '@/store/useEditorStore';
-import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
+
 import { BOTTOM_SHEET_TEMPLATES, getFeaturedTemplates } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 import { BannerRenderer } from '@/components/BannerRenderer';
@@ -23,6 +23,9 @@ import { DEVICE_PRESETS, DEFAULT_DEVICE_ID } from '@/lib/devicePresets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
+import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
+import { CustomHtmlEditor } from '@/components/campaign/editors/LayerProperties/CustomHtmlEditor';
+import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 
 
 
@@ -756,21 +759,7 @@ export const DesignStep: React.FC = () => {
     }
 
     switch (nudgeTypeToRender) {
-      case 'bottomsheet':
-        // Extract maxHeight from bottom sheet container to pass to renderer
-        const bottomSheetContainerLayer = campaignLayers.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
 
-        return (
-          <BottomSheetRenderer
-            layers={campaignLayers}
-            selectedLayerId={selectedLayerId}
-            onLayerSelect={selectLayer}
-            colors={colors}
-            config={currentCampaign?.bottomSheetConfig}
-            onHeightChange={(height) => updateBottomSheetConfig({ height })}
-            onLayerUpdate={updateLayer}
-          />
-        );
 
       case 'modal':
         const defaultModalConfig = {
@@ -981,6 +970,19 @@ export const DesignStep: React.FC = () => {
           </div>
         );
 
+      case 'bottomsheet':
+        return (
+          <BottomSheetRenderer
+              layers={campaignLayers}
+              selectedLayerId={selectedLayerId}
+              onLayerSelect={selectLayer}
+              onLayerUpdate={updateLayer}
+              colors={colors}
+              config={currentCampaign?.bottomSheetConfig}
+              onDismiss={() => {}} 
+          />
+        );
+
       default:
         return (
           <div style={{ padding: '60px 20px 20px', textAlign: 'center', color: colors.text.secondary, fontSize: '13px' }}>
@@ -1146,8 +1148,12 @@ export const DesignStep: React.FC = () => {
       // Show global config for specific nudge types when no layer is selected
       if (selectedNudgeType === 'tooltip') return renderTooltipConfig();
       if (selectedNudgeType === 'pip') return renderPipConfig();
-      if (selectedNudgeType === 'bottomsheet') return renderBottomSheetConfig();
+      if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       return null;
+    }
+
+    if (selectedLayerObj.type === 'custom_html') {
+      return <CustomHtmlEditor />;
     }
 
     // Check if layer is locked (Phase A - Fix 1)
@@ -1170,336 +1176,6 @@ export const DesignStep: React.FC = () => {
         </div>
       );
     }
-
-    // Bottom Sheet Configuration (Phase 3) - Show for bottomsheet nudge type
-    function renderBottomSheetConfig() {
-      if (selectedNudgeType !== 'bottomsheet') return null;
-
-      const config = currentCampaign?.bottomSheetConfig || {
-        mode: 'container',
-        height: 'auto',
-        dragHandle: true,
-        swipeToDismiss: true,
-        backgroundColor: '#FFFFFF',
-        borderRadius: { topLeft: 16, topRight: 16 },
-        elevation: 2,
-        overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
-        animation: { type: 'slide', duration: 300, easing: 'ease-out' }
-      };
-
-      const handleConfigUpdate = (field: string, value: any) => {
-        updateBottomSheetConfig({ [field]: value });
-      };
-
-      const handleNestedConfigUpdate = (parent: 'overlay' | 'animation' | 'borderRadius', field: string, value: any) => {
-        const parentObj = config[parent] as any;
-        updateBottomSheetConfig({ [parent]: { ...parentObj, [field]: value } });
-      };
-
-      // Show bottom sheet config when:
-      // 1. Bottom Sheet container is selected
-      // 2. No layer is selected
-      const isBottomSheetSelected = selectedLayerObj?.type === 'container' && selectedLayerObj?.name === 'Bottom Sheet';
-      const shouldShowFullConfig = !selectedLayerObj || isBottomSheetSelected;
-
-      // ALWAYS show the mode toggle, even when child layers are selected
-      const modeToggleSection = (
-        <div style={{ marginBottom: '20px' }}>
-          {!shouldShowFullConfig && (
-            <button
-              onClick={() => selectLayer(bottomSheetId)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                marginTop: '8px',
-                background: 'transparent',
-                border: `1px solid ${colors.gray[200]}`,
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 500,
-                color: colors.text.secondary,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
-            >
-              <Settings2 size={14} />
-              More Bottom Sheet Settings
-            </button>
-          )}
-        </div>
-      );
-
-      if (!shouldShowFullConfig && selectedLayerObj) {
-        // If a child layer is selected, show just the mode toggle + link to full settings
-        return modeToggleSection;
-      }
-
-      return (
-        <>
-          {/* Mode Toggle Section (always visible) */}
-          {modeToggleSection}
-
-
-
-
-
-          {/* Height Presets */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              📏 Bottom Sheet Height
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              {['auto', 'half', 'full'].map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => handleConfigUpdate('height', preset)}
-                  style={{
-                    padding: '8px 12px',
-                    border: `1px solid ${config.height === preset ? colors.primary[500] : colors.gray[200]}`,
-                    borderRadius: '6px',
-                    background: config.height === preset ? colors.primary[50] : 'white',
-                    color: config.height === preset ? colors.primary[600] : colors.text.secondary,
-                    fontSize: '12px',
-                    fontWeight: config.height === preset ? 600 : 500,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
-
-            {/* Manual Height Control (Fix 3 + Fix 8: Responsive Units) */}
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '12px', color: colors.text.secondary }}>
-                  Custom Height: {typeof config.height === 'number' ? config.height : typeof config.height === 'string' && config.height.includes('%') ? config.height : typeof config.height === 'string' && config.height.includes('vh') ? config.height : 'Auto'}
-                </label>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {['px', 'vh', '%'].map(unit => (
-                    <button
-                      key={unit}
-                      onClick={() => {
-                        if (unit === 'px') handleConfigUpdate('height', 400);
-                        else if (unit === 'vh') handleConfigUpdate('height', '50vh');
-                        else handleConfigUpdate('height', '50%');
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        border: `1px solid ${(unit === 'px' && typeof config.height === 'number') ||
-                          (unit === 'vh' && typeof config.height === 'string' && config.height.includes('vh')) ||
-                          (unit === '%' && typeof config.height === 'string' && config.height.includes('%') && !config.height.includes('vh'))
-                          ? colors.primary[500]
-                          : colors.gray[200]
-                          }`,
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        cursor: 'pointer',
-                        background: (unit === 'px' && typeof config.height === 'number') ||
-                          (unit === 'vh' && typeof config.height === 'string' && config.height.includes('vh')) ||
-                          (unit === '%' && typeof config.height === 'string' && config.height.includes('%') && !config.height.includes('vh'))
-                          ? colors.primary[50]
-                          : 'white',
-                        color: (unit === 'px' && typeof config.height === 'number') ||
-                          (unit === 'vh' && typeof config.height === 'string' && config.height.includes('vh')) ||
-                          (unit === '%' && typeof config.height === 'string' && config.height.includes('%') && !config.height.includes('vh'))
-                          ? colors.primary[700]
-                          : colors.text.secondary
-                      }}
-                    >
-                      {unit}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {typeof config.height === 'number' && (
-                <>
-                  <input
-                    type="range"
-                    min="100"
-                    max="640"
-                    step="10"
-                    value={config.height}
-                    onChange={(e) => handleConfigUpdate('height', validateDimension(Number(e.target.value), { min: 100, max: 640 }))}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </>
-              )}
-              {typeof config.height === 'string' && config.height.includes('vh') && (
-                <>
-                  <input
-                    type="range"
-                    min="10"
-                    max="100"
-                    step="5"
-                    value={parseInt(config.height)}
-                    onChange={(e) => handleConfigUpdate('height', `${validatePercentage(Number(e.target.value))}vh`)}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </>
-              )}
-              {typeof config.height === 'string' && config.height.includes('%') && !config.height.includes('vh') && (
-                <>
-                  <input
-                    type="range"
-                    min="10"
-                    max="100"
-                    step="5"
-                    value={parseInt(config.height)}
-                    onChange={(e) => handleConfigUpdate('height', `${e.target.value}%`)}
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  />
-                </>
-              )}
-              <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-                {[200, 300, 400, 500].map(height => (
-                  <button
-                    key={height}
-                    onClick={() => handleConfigUpdate('height', height)}
-                    style={{
-                      flex: 1,
-                      padding: '4px 6px',
-                      border: `1px solid ${colors.gray[200]}`,
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      cursor: 'pointer',
-                      backgroundColor: config.height === height ? colors.gray[100] : 'transparent'
-                    }}
-                  >
-                    {height}px
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Background Color Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              🎨 Background Color
-            </h5>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={config.backgroundColor || '#FFFFFF'}
-                  onChange={(e) => handleConfigUpdate('backgroundColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', padding: '0', border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }}
-                />
-                <input
-                  type="text"
-                  value={config.backgroundColor || '#FFFFFF'}
-                  onChange={(e) => handleConfigUpdate('backgroundColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <button
-                onClick={() => handleConfigUpdate('backgroundColor', 'transparent')}
-                style={{
-                  marginTop: '8px',
-                  width: '100%',
-                  padding: '6px',
-                  border: `1px solid ${colors.gray[200]}`,
-                  borderRadius: '6px',
-                  background: 'white',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  color: colors.text.secondary
-                }}
-              >
-                Set Transparent
-              </button>
-            </div>
-          </div>
-          {/* Overlay Settings */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🎭 Overlay
-            </h5>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Overlay</span>
-              <div
-                onClick={() => handleNestedConfigUpdate('overlay', 'enabled', !config.overlay.enabled)}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: config.overlay.enabled ? colors.primary[500] : colors.gray[300],
-                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-              >
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.overlay.enabled ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
-              </div>
-            </div>
-            {
-              config.overlay.enabled && (
-                <>
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Opacity</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={config.overlay.opacity}
-                      onChange={(e) => handleNestedConfigUpdate('overlay', 'opacity', validateOpacity(parseFloat(e.target.value)))}
-                      style={{ width: '100%', marginBottom: '4px' }}
-                    />
-                    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round(config.overlay.opacity * 100)}%</div>
-                  </div>
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Blur (px)</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      step="2"
-                      value={config.overlay.blur}
-                      onChange={(e) => handleNestedConfigUpdate('overlay', 'blur', parseInt(e.target.value))}
-                      style={{ width: '100%', marginBottom: '4px' }}
-                    />
-                    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.overlay.blur}px</div>
-                  </div>
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Color</label>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input
-                        type="color"
-                        value={config.overlay.color}
-                        onChange={(e) => handleNestedConfigUpdate('overlay', 'color', e.target.value)}
-                        style={{ width: '40px', height: '40px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', cursor: 'pointer' }}
-                      />
-                      <input
-                        type="text"
-                        value={config.overlay.color}
-                        onChange={(e) => handleNestedConfigUpdate('overlay', 'color', e.target.value)}
-                        style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '12px', color: colors.text.secondary }}>Dismiss on Click</span>
-                    <div
-                      onClick={() => handleNestedConfigUpdate('overlay', 'dismissOnClick', !config.overlay.dismissOnClick)}
-                      style={{
-                        width: '44px', height: '24px', borderRadius: '12px',
-                        background: config.overlay.dismissOnClick ? colors.primary[500] : colors.gray[300],
-                        position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                      }}
-                    >
-                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.overlay.dismissOnClick ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
-                    </div>
-                  </div>
-                </>
-              )
-            }
-          </div>
-        </>
-      );
-    };
 
     // Modal Configuration
     const renderModalConfig = () => {
@@ -3681,12 +3357,11 @@ export const DesignStep: React.FC = () => {
       const parentLayer = campaignLayers.find(l => l.id === selectedLayerObj.parent);
       const isPipLayer = parentLayer?.name === 'PIP Container';
       const isTooltipContainer = selectedLayerObj?.name === 'Tooltip Container' && selectedNudgeType === 'tooltip';
-      const isBottomSheetContainer = selectedNudgeType === 'bottomsheet' && selectedLayerObj?.type === 'container';
 
       return (
         <>
           {/* Position Controls (Fix 6) */}
-          {!isTooltipContainer && !isBottomSheetContainer && (
+          {!isTooltipContainer && (
             <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
               <PositionEditor
                 style={selectedLayerObj.style || {}}
@@ -3718,7 +3393,6 @@ export const DesignStep: React.FC = () => {
           </div>
 
           {/* Shape Editor (Added to Common Styles) */}
-          {!isBottomSheetContainer && (
           <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Shapes & Borders</h5>
             <ShapeEditor
@@ -4192,7 +3866,7 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
           </div>
-          )}
+
         </>
       );
     };
@@ -5864,153 +5538,153 @@ export const DesignStep: React.FC = () => {
               </select>
             </div>
 
+            {/* Background Image Controls */}
             {/* Background Image Controls - HIDDEN for Bottom Sheet Container */}
-            {!(selectedNudgeType === 'bottomsheet' && selectedLayerObj.type === 'container') && (
-              <div style={{ marginBottom: '16px', padding: '12px', background: colors.gray[50], borderRadius: '6px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>Background Image</label>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <div style={{ marginBottom: '16px', padding: '12px', background: colors.gray[50], borderRadius: '6px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>Background Image</label>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <input
+                  type="text"
+                  value={selectedLayerObj.style?.backgroundImage?.replace(/^url\(['"]?|['"]?\)$/g, '') || ''}
+                  onChange={(e) => handleStyleUpdate('backgroundImage', e.target.value ? `url('${e.target.value}')` : undefined)}
+                  placeholder="Enter image URL"
+                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+                />
+                <label style={{
+                  padding: '8px 16px',
+                  background: colors.primary[500],
+                  color: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Upload
                   <input
-                    type="text"
-                    value={selectedLayerObj.style?.backgroundImage?.replace(/^url\(['"]?|['"]?\)$/g, '') || ''}
-                    onChange={(e) => handleStyleUpdate('backgroundImage', e.target.value ? `url('${e.target.value}')` : undefined)}
-                    placeholder="Enter image URL"
-                    style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'background')}
+                    style={{ display: 'none' }}
                   />
-                  <label style={{
-                    padding: '8px 16px',
-                    background: colors.primary[500],
-                    color: 'white',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    display: 'flex',
-                    alignItems: 'center',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    Upload
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, 'background')}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
-                    <select
-                      value={(() => {
-                        const size = selectedLayerObj.style?.backgroundSize;
-                        if (!size || size === 'cover' || size === 'contain' || size === 'auto' || size === '100% 100%') return size || 'cover';
-                        return 'custom';
-                      })()}
-                      onChange={(e) => {
-                        if (e.target.value === 'custom') {
-                          handleStyleUpdate('backgroundSize', '100% auto');
-                        } else {
-                          handleStyleUpdate('backgroundSize', e.target.value);
-                        }
-                      }}
-                      style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                    >
-                      <option value="cover">Cover</option>
-                      <option value="contain">Contain</option>
-                      <option value="auto">Auto</option>
-                      <option value="100% 100%">Stretch</option>
-                      <option value="custom">Custom</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Repeat</label>
-                    <select
-                      value={selectedLayerObj.style?.backgroundRepeat || 'no-repeat'}
-                      onChange={(e) => handleStyleUpdate('backgroundRepeat', e.target.value)}
-                      style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                    >
-                      <option value="no-repeat">No Repeat</option>
-                      <option value="repeat">Repeat</option>
-                      <option value="repeat-x">Repeat X</option>
-                      <option value="repeat-y">Repeat Y</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Custom Size Controls */}
-                {(() => {
-                  const size = selectedLayerObj.style?.backgroundSize;
-                  const isCustom = size && typeof size === 'string' && !['cover', 'contain', 'auto', '100% 100%'].includes(size);
-                  return isCustom ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px or %)</label>
-                        <input
-                          type="text"
-                          value={(() => {
-                            if (typeof size === 'string') {
-                              const parts = size.split(' ');
-                              return parts[0] || '100%';
-                            }
-                            return '100%';
-                          })()}
-                          onChange={(e) => {
-                            const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
-                            const newValue = e.target.value.trim() || '100%';
-                            handleStyleUpdate('backgroundSize', `${newValue} ${parts[1] || 'auto'}`);
-                          }}
-                          placeholder="100% or 200px"
-                          style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px or %)</label>
-                        <input
-                          type="text"
-                          value={(() => {
-                            if (typeof size === 'string') {
-                              const parts = size.split(' ');
-                              return parts[1] || 'auto';
-                            }
-                            return 'auto';
-                          })()}
-                          onChange={(e) => {
-                            const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
-                            const newValue = e.target.value.trim() || 'auto';
-                            handleStyleUpdate('backgroundSize', `${parts[0] || '100%'} ${newValue}`);
-                          }}
-                          placeholder="auto or 200px"
-                          style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
-                        />
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-
+                </label>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Position Presets</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '8px' }}>
-                    {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((pos) => (
-                      <button
-                        key={pos}
-                        onClick={() => handleStyleUpdate('backgroundPosition', pos)}
-                        style={{
-                          padding: '6px',
-                          border: `1px solid ${selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[500] : colors.gray[200]}`,
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          cursor: 'pointer',
-                          background: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[50] : 'white',
-                          color: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[700] : colors.text.secondary
-                        }}
-                      >
-                        {pos.split(' ').map(w => w[0].toUpperCase()).join('')}
-                      </button>
-                    ))}
-                  </div>
+                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
+                  <select
+                    value={(() => {
+                      const size = selectedLayerObj.style?.backgroundSize;
+                      if (!size || size === 'cover' || size === 'contain' || size === 'auto' || size === '100% 100%') return size || 'cover';
+                      return 'custom';
+                    })()}
+                    onChange={(e) => {
+                      if (e.target.value === 'custom') {
+                        handleStyleUpdate('backgroundSize', '100% auto');
+                      } else {
+                        handleStyleUpdate('backgroundSize', e.target.value);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
+                  >
+                    <option value="cover">Cover</option>
+                    <option value="contain">Contain</option>
+                    <option value="auto">Auto</option>
+                    <option value="100% 100%">Stretch</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Repeat</label>
+                  <select
+                    value={selectedLayerObj.style?.backgroundRepeat || 'no-repeat'}
+                    onChange={(e) => handleStyleUpdate('backgroundRepeat', e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
+                  >
+                    <option value="no-repeat">No Repeat</option>
+                    <option value="repeat">Repeat</option>
+                    <option value="repeat-x">Repeat X</option>
+                    <option value="repeat-y">Repeat Y</option>
+                  </select>
                 </div>
               </div>
-            )}
+
+              {/* Custom Size Controls */}
+              {(() => {
+                const size = selectedLayerObj.style?.backgroundSize;
+                const isCustom = size && typeof size === 'string' && !['cover', 'contain', 'auto', '100% 100%'].includes(size);
+                return isCustom ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px or %)</label>
+                      <input
+                        type="text"
+                        value={(() => {
+                          if (typeof size === 'string') {
+                            const parts = size.split(' ');
+                            return parts[0] || '100%';
+                          }
+                          return '100%';
+                        })()}
+                        onChange={(e) => {
+                          const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
+                          const newValue = e.target.value.trim() || '100%';
+                          handleStyleUpdate('backgroundSize', `${newValue} ${parts[1] || 'auto'}`);
+                        }}
+                        placeholder="100% or 200px"
+                        style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px or %)</label>
+                      <input
+                        type="text"
+                        value={(() => {
+                          if (typeof size === 'string') {
+                            const parts = size.split(' ');
+                            return parts[1] || 'auto';
+                          }
+                          return 'auto';
+                        })()}
+                        onChange={(e) => {
+                          const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
+                          const newValue = e.target.value.trim() || 'auto';
+                          handleStyleUpdate('backgroundSize', `${parts[0] || '100%'} ${newValue}`);
+                        }}
+                        placeholder="auto or 200px"
+                        style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Position Presets</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '8px' }}>
+                  {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((pos) => (
+                    <button
+                      key={pos}
+                      onClick={() => handleStyleUpdate('backgroundPosition', pos)}
+                      style={{
+                        padding: '6px',
+                        border: `1px solid ${selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[500] : colors.gray[200]}`,
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        cursor: 'pointer',
+                        background: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[50] : 'white',
+                        color: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[700] : colors.text.secondary
+                      }}
+                    >
+                      {pos.split(' ').map(w => w[0].toUpperCase()).join('')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
 
             {/* Padding Controls */}
             {!(selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip') && (
@@ -6108,7 +5782,7 @@ export const DesignStep: React.FC = () => {
     // Default properties
     return (
       <>
-        {renderBottomSheetConfig()}
+
         {renderModalConfig()}
         {renderPipConfig()}
         {renderTooltipConfig()}

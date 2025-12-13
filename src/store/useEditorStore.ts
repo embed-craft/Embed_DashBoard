@@ -7,7 +7,7 @@ import { metadataService, EventDefinition, PropertyDefinition } from '@/services
 export type LayerType =
   | 'media' | 'text' | 'button' | 'container' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'countdown' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html';
 
 export interface LayerContent {
   // Media content
@@ -105,6 +105,9 @@ export interface LayerContent {
 
   // PIP Specific
   pipConfig?: any; // Using any for now to avoid complex type definition, can refine later
+
+  // Custom HTML (Phase 2)
+  html?: string;
 }
 
 export interface LayerStyle {

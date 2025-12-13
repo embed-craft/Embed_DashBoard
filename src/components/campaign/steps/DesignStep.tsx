@@ -3681,11 +3681,12 @@ export const DesignStep: React.FC = () => {
       const parentLayer = campaignLayers.find(l => l.id === selectedLayerObj.parent);
       const isPipLayer = parentLayer?.name === 'PIP Container';
       const isTooltipContainer = selectedLayerObj?.name === 'Tooltip Container' && selectedNudgeType === 'tooltip';
+      const isBottomSheetContainer = selectedNudgeType === 'bottomsheet' && selectedLayerObj?.type === 'container';
 
       return (
         <>
           {/* Position Controls (Fix 6) */}
-          {!isTooltipContainer && (
+          {!isTooltipContainer && !isBottomSheetContainer && (
             <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
               <PositionEditor
                 style={selectedLayerObj.style || {}}
@@ -3717,6 +3718,7 @@ export const DesignStep: React.FC = () => {
           </div>
 
           {/* Shape Editor (Added to Common Styles) */}
+          {!isBottomSheetContainer && (
           <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: '16px', marginBottom: '20px' }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Shapes & Borders</h5>
             <ShapeEditor
@@ -4190,6 +4192,7 @@ export const DesignStep: React.FC = () => {
               </div>
             </div>
           </div>
+          )}
         </>
       );
     };
@@ -5861,151 +5864,153 @@ export const DesignStep: React.FC = () => {
               </select>
             </div>
 
-            {/* Background Image Controls */}
-            <div style={{ marginBottom: '16px', padding: '12px', background: colors.gray[50], borderRadius: '6px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>Background Image</label>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                <input
-                  type="text"
-                  value={selectedLayerObj.style?.backgroundImage?.replace(/^url\(['"]?|['"]?\)$/g, '') || ''}
-                  onChange={(e) => handleStyleUpdate('backgroundImage', e.target.value ? `url('${e.target.value}')` : undefined)}
-                  placeholder="Enter image URL"
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                />
-                <label style={{
-                  padding: '8px 16px',
-                  background: colors.primary[500],
-                  color: 'white',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  whiteSpace: 'nowrap'
-                }}>
-                  Upload
+            {/* Background Image Controls - HIDDEN for Bottom Sheet Container */}
+            {!(selectedNudgeType === 'bottomsheet' && selectedLayerObj.type === 'container') && (
+              <div style={{ marginBottom: '16px', padding: '12px', background: colors.gray[50], borderRadius: '6px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: colors.text.primary, marginBottom: '8px' }}>Background Image</label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, 'background')}
-                    style={{ display: 'none' }}
+                    type="text"
+                    value={selectedLayerObj.style?.backgroundImage?.replace(/^url\(['"]?|['"]?\)$/g, '') || ''}
+                    onChange={(e) => handleStyleUpdate('backgroundImage', e.target.value ? `url('${e.target.value}')` : undefined)}
+                    placeholder="Enter image URL"
+                    style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px', outline: 'none' }}
                   />
-                </label>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
-                  <select
-                    value={(() => {
-                      const size = selectedLayerObj.style?.backgroundSize;
-                      if (!size || size === 'cover' || size === 'contain' || size === 'auto' || size === '100% 100%') return size || 'cover';
-                      return 'custom';
-                    })()}
-                    onChange={(e) => {
-                      if (e.target.value === 'custom') {
-                        handleStyleUpdate('backgroundSize', '100% auto');
-                      } else {
-                        handleStyleUpdate('backgroundSize', e.target.value);
-                      }
-                    }}
-                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                  >
-                    <option value="cover">Cover</option>
-                    <option value="contain">Contain</option>
-                    <option value="auto">Auto</option>
-                    <option value="100% 100%">Stretch</option>
-                    <option value="custom">Custom</option>
-                  </select>
+                  <label style={{
+                    padding: '8px 16px',
+                    background: colors.primary[500],
+                    color: 'white',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'background')}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Repeat</label>
-                  <select
-                    value={selectedLayerObj.style?.backgroundRepeat || 'no-repeat'}
-                    onChange={(e) => handleStyleUpdate('backgroundRepeat', e.target.value)}
-                    style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                  >
-                    <option value="no-repeat">No Repeat</option>
-                    <option value="repeat">Repeat</option>
-                    <option value="repeat-x">Repeat X</option>
-                    <option value="repeat-y">Repeat Y</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Custom Size Controls */}
-              {(() => {
-                const size = selectedLayerObj.style?.backgroundSize;
-                const isCustom = size && typeof size === 'string' && !['cover', 'contain', 'auto', '100% 100%'].includes(size);
-                return isCustom ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px or %)</label>
-                      <input
-                        type="text"
-                        value={(() => {
-                          if (typeof size === 'string') {
-                            const parts = size.split(' ');
-                            return parts[0] || '100%';
-                          }
-                          return '100%';
-                        })()}
-                        onChange={(e) => {
-                          const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
-                          const newValue = e.target.value.trim() || '100%';
-                          handleStyleUpdate('backgroundSize', `${newValue} ${parts[1] || 'auto'}`);
-                        }}
-                        placeholder="100% or 200px"
-                        style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px or %)</label>
-                      <input
-                        type="text"
-                        value={(() => {
-                          if (typeof size === 'string') {
-                            const parts = size.split(' ');
-                            return parts[1] || 'auto';
-                          }
-                          return 'auto';
-                        })()}
-                        onChange={(e) => {
-                          const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
-                          const newValue = e.target.value.trim() || 'auto';
-                          handleStyleUpdate('backgroundSize', `${parts[0] || '100%'} ${newValue}`);
-                        }}
-                        placeholder="auto or 200px"
-                        style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Position Presets</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '8px' }}>
-                  {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((pos) => (
-                    <button
-                      key={pos}
-                      onClick={() => handleStyleUpdate('backgroundPosition', pos)}
-                      style={{
-                        padding: '6px',
-                        border: `1px solid ${selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[500] : colors.gray[200]}`,
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        cursor: 'pointer',
-                        background: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[50] : 'white',
-                        color: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[700] : colors.text.secondary
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Size</label>
+                    <select
+                      value={(() => {
+                        const size = selectedLayerObj.style?.backgroundSize;
+                        if (!size || size === 'cover' || size === 'contain' || size === 'auto' || size === '100% 100%') return size || 'cover';
+                        return 'custom';
+                      })()}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom') {
+                          handleStyleUpdate('backgroundSize', '100% auto');
+                        } else {
+                          handleStyleUpdate('backgroundSize', e.target.value);
+                        }
                       }}
+                      style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
                     >
-                      {pos.split(' ').map(w => w[0].toUpperCase()).join('')}
-                    </button>
-                  ))}
+                      <option value="cover">Cover</option>
+                      <option value="contain">Contain</option>
+                      <option value="auto">Auto</option>
+                      <option value="100% 100%">Stretch</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Repeat</label>
+                    <select
+                      value={selectedLayerObj.style?.backgroundRepeat || 'no-repeat'}
+                      onChange={(e) => handleStyleUpdate('backgroundRepeat', e.target.value)}
+                      style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
+                    >
+                      <option value="no-repeat">No Repeat</option>
+                      <option value="repeat">Repeat</option>
+                      <option value="repeat-x">Repeat X</option>
+                      <option value="repeat-y">Repeat Y</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Custom Size Controls */}
+                {(() => {
+                  const size = selectedLayerObj.style?.backgroundSize;
+                  const isCustom = size && typeof size === 'string' && !['cover', 'contain', 'auto', '100% 100%'].includes(size);
+                  return isCustom ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px or %)</label>
+                        <input
+                          type="text"
+                          value={(() => {
+                            if (typeof size === 'string') {
+                              const parts = size.split(' ');
+                              return parts[0] || '100%';
+                            }
+                            return '100%';
+                          })()}
+                          onChange={(e) => {
+                            const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
+                            const newValue = e.target.value.trim() || '100%';
+                            handleStyleUpdate('backgroundSize', `${newValue} ${parts[1] || 'auto'}`);
+                          }}
+                          placeholder="100% or 200px"
+                          style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px or %)</label>
+                        <input
+                          type="text"
+                          value={(() => {
+                            if (typeof size === 'string') {
+                              const parts = size.split(' ');
+                              return parts[1] || 'auto';
+                            }
+                            return 'auto';
+                          })()}
+                          onChange={(e) => {
+                            const parts = typeof size === 'string' ? size.split(' ') : ['100%', 'auto'];
+                            const newValue = e.target.value.trim() || 'auto';
+                            handleStyleUpdate('backgroundSize', `${parts[0] || '100%'} ${newValue}`);
+                          }}
+                          placeholder="auto or 200px"
+                          style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                        />
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Position Presets</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '8px' }}>
+                    {['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map((pos) => (
+                      <button
+                        key={pos}
+                        onClick={() => handleStyleUpdate('backgroundPosition', pos)}
+                        style={{
+                          padding: '6px',
+                          border: `1px solid ${selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[500] : colors.gray[200]}`,
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          cursor: 'pointer',
+                          background: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[50] : 'white',
+                          color: selectedLayerObj.style?.backgroundPosition === pos ? colors.primary[700] : colors.text.secondary
+                        }}
+                      >
+                        {pos.split(' ').map(w => w[0].toUpperCase()).join('')}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Padding Controls */}
             {!(selectedLayerObj.name === 'Tooltip Container' && selectedNudgeType === 'tooltip') && (

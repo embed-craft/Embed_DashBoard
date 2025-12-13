@@ -398,7 +398,7 @@ export const ElementStylePanel: React.FC<ElementStylePanelProps> = ({ state }) =
                 )}
 
                 {/* Image Controls */}
-                {style.backgroundImage && (
+                {selectedComponent.type !== 'container' && style.backgroundImage && (
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <Label className="text-[10px]">Size</Label>

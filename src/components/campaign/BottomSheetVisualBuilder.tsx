@@ -953,18 +953,15 @@ export const BottomSheetVisualBuilder = ({ config, onChange }: VisualBuilderProp
                           >
                             <div
                               ref={canvasRef}
-                              className={`w-full bg-white shadow-2xl relative ${snapshot.isDraggingOver ? 'ring-4 ring-blue-400 ring-offset-4' : ''
+                              className={`w-full relative ${snapshot.isDraggingOver ? 'ring-4 ring-blue-400 ring-offset-4' : ''
                                 }`}
                               style={{
                                 height: canvasHeight,
                                 minHeight: canvasHeight,
                                 maxHeight: canvasHeight,
-                                overflowY: heightAdjustMode === 'scroll' ? 'auto' : 'visible',
-                                overflowX: 'visible',
-                                borderTopLeftRadius: 24,
-                                borderTopRightRadius: 24,
-                                borderBottomLeftRadius: 0,
-                                borderBottomRightRadius: 0,
+                                overflowY: 'hidden',
+                                overflowX: 'hidden',
+                                backgroundColor: config.backgroundColor || '#FFFFFF',
                                 backgroundImage: showGrid ?
                                   'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)' :
                                   'none',
@@ -976,10 +973,6 @@ export const BottomSheetVisualBuilder = ({ config, onChange }: VisualBuilderProp
                                 }
                               }}
                             >
-                              {/* Bottom Sheet Handle Bar */}
-                              <div className="h-8 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
-                                <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-                              </div>
 
                               {/* Content Area */}
                               <div

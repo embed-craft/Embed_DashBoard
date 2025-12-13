@@ -1642,176 +1642,46 @@ export const DesignStep: React.FC = () => {
                 ))}
               </div>
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Drag Handle</span>
-              <div
-                onClick={() => handleConfigUpdate('dragHandle', !config.dragHandle)}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: config.dragHandle ? colors.primary[500] : colors.gray[300],
-                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-              >
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.dragHandle ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Swipe to Dismiss</span>
-              <div
-                onClick={() => handleConfigUpdate('swipeToDismiss', !config.swipeToDismiss)}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: config.swipeToDismiss ? colors.primary[500] : colors.gray[300],
-                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-              >
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.swipeToDismiss ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
-              </div>
-            </div>
           </div>
 
-          {/* Border Radius Controls for Bottom Sheet */}
+          {/* Background Color Control */}
           <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🔲 Border Radius
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Top Left</label>
-                <input
-                  type="number"
-                  value={config.borderRadius?.topLeft || 16}
-                  onChange={(e) => handleNestedConfigUpdate('borderRadius', 'topLeft', validateDimension(Number(e.target.value), { min: 0, max: 50 }))}
-                  style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Top Right</label>
-                <input
-                  type="number"
-                  value={config.borderRadius?.topRight || 16}
-                  onChange={(e) => handleNestedConfigUpdate('borderRadius', 'topRight', validateDimension(Number(e.target.value), { min: 0, max: 50 }))}
-                  style={{ width: '100%', padding: '6px 8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {[
-                { label: 'Square', value: 0 },
-                { label: 'Small', value: 8 },
-                { label: 'Medium', value: 16 },
-                { label: 'Large', value: 24 }
-              ].map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => {
-                    handleNestedConfigUpdate('borderRadius', 'topLeft', preset.value);
-                    handleNestedConfigUpdate('borderRadius', 'topRight', preset.value);
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '4px 8px',
-                    border: `1px solid ${colors.gray[200]}`,
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    cursor: 'pointer',
-                    backgroundColor: 'white'
-                  }}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Elevation/Shadow Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ⬆️ Elevation
-            </h5>
-            <div style={{ marginBottom: '8px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>
-                Shadow Depth: Level {config.elevation !== undefined ? config.elevation : 2}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="5"
-                step="1"
-                value={config.elevation !== undefined ? config.elevation : 2}
-                onChange={(e) => handleConfigUpdate('elevation', validateNumericInput(parseInt(e.target.value), { min: 0, max: 5, defaultValue: 0 }))}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
-              {[0, 1, 2, 3, 4, 5].map((level) => (
-                <button
-                  key={level}
-                  onClick={() => handleConfigUpdate('elevation', level)}
-                  style={{
-                    padding: '8px 4px',
-                    border: `1px solid ${(config.elevation !== undefined ? config.elevation : 2) === level ? colors.primary[500] : colors.gray[200]}`,
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    backgroundColor: (config.elevation !== undefined ? config.elevation : 2) === level ? colors.primary[50] : 'white',
-                    color: (config.elevation !== undefined ? config.elevation : 2) === level ? colors.primary[600] : colors.text.secondary,
-                    fontWeight: 500
-                  }}
-                >
-                  {level}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Animation Controls */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ✨ Animation
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
+              🎨 Background Color
             </h5>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Animation Type</label>
-              <select
-                value={config.animation.type}
-                onChange={(e) => handleNestedConfigUpdate('animation', 'type', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={config.backgroundColor || '#FFFFFF'}
+                  onChange={(e) => handleConfigUpdate('backgroundColor', e.target.value)}
+                  style={{ width: '40px', height: '40px', padding: '0', border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }}
+                />
+                <input
+                  type="text"
+                  value={config.backgroundColor || '#FFFFFF'}
+                  onChange={(e) => handleConfigUpdate('backgroundColor', e.target.value)}
+                  style={{ flex: 1, padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+              <button
+                onClick={() => handleConfigUpdate('backgroundColor', 'transparent')}
+                style={{
+                  marginTop: '8px',
+                  width: '100%',
+                  padding: '6px',
+                  border: `1px solid ${colors.gray[200]}`,
+                  borderRadius: '6px',
+                  background: 'white',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  color: colors.text.secondary
+                }}
               >
-                <option value="slide">Slide Up</option>
-                <option value="fade">Fade In</option>
-                <option value="bounce">Bounce</option>
-              </select>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Duration (ms)</label>
-              <input
-                type="range"
-                min="100"
-                max="1000"
-                step="50"
-                value={config.animation.duration}
-                onChange={(e) => handleNestedConfigUpdate('animation', 'duration', validateDimension(parseInt(e.target.value), { min: 100, max: 2000 }))}
-                style={{ width: '100%', marginBottom: '4px' }}
-              />
-              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.animation.duration}ms</div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Easing</label>
-              <select
-                value={config.animation.easing}
-                onChange={(e) => handleNestedConfigUpdate('animation', 'easing', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="ease-out">Ease Out</option>
-                <option value="ease-in">Ease In</option>
-                <option value="ease-in-out">Ease In Out</option>
-                <option value="linear">Linear</option>
-                <option value="cubic-bezier(0.68, -0.55, 0.265, 1.55)">Bounce</option>
-              </select>
+                Set Transparent
+              </button>
             </div>
           </div>
-
           {/* Overlay Settings */}
           <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
             <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1830,66 +1700,68 @@ export const DesignStep: React.FC = () => {
                 <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.overlay.enabled ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
               </div>
             </div>
-            {config.overlay.enabled && (
-              <>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Opacity</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={config.overlay.opacity}
-                    onChange={(e) => handleNestedConfigUpdate('overlay', 'opacity', validateOpacity(parseFloat(e.target.value)))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round(config.overlay.opacity * 100)}%</div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Blur (px)</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="2"
-                    value={config.overlay.blur}
-                    onChange={(e) => handleNestedConfigUpdate('overlay', 'blur', parseInt(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.overlay.blur}px</div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Color</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {
+              config.overlay.enabled && (
+                <>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Opacity</label>
                     <input
-                      type="color"
-                      value={config.overlay.color}
-                      onChange={(e) => handleNestedConfigUpdate('overlay', 'color', e.target.value)}
-                      style={{ width: '40px', height: '40px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', cursor: 'pointer' }}
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={config.overlay.opacity}
+                      onChange={(e) => handleNestedConfigUpdate('overlay', 'opacity', validateOpacity(parseFloat(e.target.value)))}
+                      style={{ width: '100%', marginBottom: '4px' }}
                     />
+                    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round(config.overlay.opacity * 100)}%</div>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Blur (px)</label>
                     <input
-                      type="text"
-                      value={config.overlay.color}
-                      onChange={(e) => handleNestedConfigUpdate('overlay', 'color', e.target.value)}
-                      style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="2"
+                      value={config.overlay.blur}
+                      onChange={(e) => handleNestedConfigUpdate('overlay', 'blur', parseInt(e.target.value))}
+                      style={{ width: '100%', marginBottom: '4px' }}
                     />
+                    <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.overlay.blur}px</div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: colors.text.secondary }}>Dismiss on Click</span>
-                  <div
-                    onClick={() => handleNestedConfigUpdate('overlay', 'dismissOnClick', !config.overlay.dismissOnClick)}
-                    style={{
-                      width: '44px', height: '24px', borderRadius: '12px',
-                      background: config.overlay.dismissOnClick ? colors.primary[500] : colors.gray[300],
-                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                    }}
-                  >
-                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.overlay.dismissOnClick ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Color</label>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="color"
+                        value={config.overlay.color}
+                        onChange={(e) => handleNestedConfigUpdate('overlay', 'color', e.target.value)}
+                        style={{ width: '40px', height: '40px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', cursor: 'pointer' }}
+                      />
+                      <input
+                        type="text"
+                        value={config.overlay.color}
+                        onChange={(e) => handleNestedConfigUpdate('overlay', 'color', e.target.value)}
+                        style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                      />
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: colors.text.secondary }}>Dismiss on Click</span>
+                    <div
+                      onClick={() => handleNestedConfigUpdate('overlay', 'dismissOnClick', !config.overlay.dismissOnClick)}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: config.overlay.dismissOnClick ? colors.primary[500] : colors.gray[300],
+                        position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.overlay.dismissOnClick ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                    </div>
+                  </div>
+                </>
+              )
+            }
           </div>
         </>
       );

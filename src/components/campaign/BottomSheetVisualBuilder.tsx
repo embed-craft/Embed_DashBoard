@@ -978,8 +978,8 @@ export const BottomSheetVisualBuilder = ({ config, onChange }: VisualBuilderProp
                               <div
                                 className="relative"
                                 style={{
-                                  height: heightAdjustMode === 'scroll' ? calculatedTemplateHeight || canvasHeight - 40 : canvasHeight - 40,
-                                  minHeight: heightAdjustMode === 'scroll' ? calculatedTemplateHeight || canvasHeight - 40 : canvasHeight - 40,
+                                  height: heightAdjustMode === 'scroll' ? calculatedTemplateHeight || canvasHeight : canvasHeight,
+                                  minHeight: heightAdjustMode === 'scroll' ? calculatedTemplateHeight || canvasHeight : canvasHeight,
                                   padding: 0
                                 }}
                               >

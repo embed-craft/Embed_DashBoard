@@ -1487,14 +1487,10 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: config?.mode === 'image-only' ? 'transparent' : (bottomSheetLayer.style?.backgroundColor || '#FFFFFF'),
-          backgroundImage: bottomSheetLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
-          backgroundSize: bottomSheetLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
-          backgroundPosition: bottomSheetLayer.style?.backgroundPosition || 'center',
-          backgroundRepeat: bottomSheetLayer.style?.backgroundRepeat || 'no-repeat',
-          borderRadius: config?.mode === 'image-only' ? '0' : '24px 24px 0 0',
-          padding: config?.mode === 'image-only' ? '0' : '0',
-          boxShadow: config?.mode === 'image-only' ? 'none' : '0 -4px 20px rgba(0,0,0,0.15)',
+          backgroundColor: config?.backgroundColor || (bottomSheetLayer.style?.backgroundColor || '#FFFFFF'),
+          borderRadius: 0,
+          padding: 0,
+          boxShadow: 'none',
           minHeight: bottomSheetLayer.style?.minHeight || config?.minHeight || '200px',
           height: (() => {
             // Priority: Resize Handle > Config Height > Layer Style > Default
@@ -1503,15 +1499,15 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
             const h = config?.height || bottomSheetLayer.style?.height || 'auto';
 
             if (h === 'half') return '50vh';
-            if (h === 'full') return '95vh'; // Leave room for handle
+            if (h === 'full') return '95vh';
             if (h === 'auto') return 'auto';
 
             // Handle numeric values (assume px)
             if (typeof h === 'number') return `${h}px`;
 
+            // Handle string values (%, vh, px)
             return h;
           })(),
-          maxHeight: config?.height === 'full' ? '100vh' : (bottomSheetLayer.style?.maxHeight || config?.maxHeight || '90vh'),
           overflow: 'hidden',
           transition: isResizing ? 'none' : 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
@@ -1519,25 +1515,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
           zIndex: 1
         }}
       >
-        {/* Resize Handle */}
-        <div
-          onMouseDown={(e) => {
-            setIsResizing(true);
-            setResizeStartY(e.clientY);
-            setResizeStartHeight(containerRef.current?.offsetHeight || 0);
-          }}
-          style={{
-            width: '100%',
-            height: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'ns-resize',
-            flexShrink: 0
-          }}
-        >
-          <div style={{ width: '40px', height: '4px', backgroundColor: '#E5E7EB', borderRadius: '2px' }} />
-        </div>
+
 
         {/* Content Area */}
         <div style={{ flex: 1, position: 'relative', overflowY: bottomSheetLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto', padding: '0 20px 20px 20px' }}>

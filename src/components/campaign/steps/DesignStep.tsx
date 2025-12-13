@@ -973,13 +973,13 @@ export const DesignStep: React.FC = () => {
       case 'bottomsheet':
         return (
           <BottomSheetRenderer
-              layers={campaignLayers}
-              selectedLayerId={selectedLayerId}
-              onLayerSelect={selectLayer}
-              onLayerUpdate={updateLayer}
-              colors={colors}
-              config={currentCampaign?.bottomSheetConfig}
-              onDismiss={() => {}} 
+            layers={campaignLayers}
+            selectedLayerId={selectedLayerId}
+            onLayerSelect={selectLayer}
+            onLayerUpdate={updateLayer}
+            colors={colors}
+            config={currentCampaign?.bottomSheetConfig}
+            onDismiss={() => { }}
           />
         );
 
@@ -5357,6 +5357,8 @@ export const DesignStep: React.FC = () => {
 
     // Container properties
     if (selectedLayerObj.type === 'container') {
+      if (selectedLayerObj.name === 'Bottom Sheet') return <BottomSheetMinimalEditor />;
+
       const containerPosition = (selectedLayerObj.content as any)?.containerPosition || 'bottom-center';
 
       // Size properties from layer.size
@@ -5375,7 +5377,6 @@ export const DesignStep: React.FC = () => {
           {selectedLayerObj.name === 'Modal Container' && renderModalConfig()}
           {selectedLayerObj.name === 'Banner Container' && renderBannerConfig()}
           {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
-          {selectedLayerObj.name === 'Bottom Sheet' && renderBottomSheetConfig()}
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
           {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
           <div style={{ marginBottom: '20px' }}>

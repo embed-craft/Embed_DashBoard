@@ -44,7 +44,21 @@ export const BottomSheetMinimalEditor = () => {
 
     // Helper to update config
     const updateConfig = (key: string, value: any) => {
+        const newConfig = { ...config, [key]: value };
         updateBottomSheetConfig({ [key]: value });
+
+        // FIX: If updating background color, ALSO update the root container layer style
+        // This ensures the App (which might render the container directly) matches the config
+        if (key === 'backgroundColor') {
+            const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
+            if (rootLayer) {
+                // If value is transparent hex, use that. If 'transparent' string (legacy), use hex.
+                const styleValue = (value === 'transparent' || value === '#00000000') ? '#00000000' : value;
+                const { updateLayerStyle } = useEditorStore.getState();
+                updateLayerStyle(rootLayer.id, { backgroundColor: styleValue });
+                console.log('Synced background color to root layer:', rootLayer.id, styleValue);
+            }
+        }
     };
 
     const updateNestedConfig = (parent: string, key: string, value: any) => {
@@ -52,6 +66,49 @@ export const BottomSheetMinimalEditor = () => {
             [parent]: { ...((config as any)[parent] || {}), [key]: value }
         });
     };
+
+    // Auto-migrate legacy values
+    React.useEffect(() => {
+        if (!config) return;
+
+        let hasUpdates = false;
+        const updates: any = {};
+
+        // Fix Transparency: 'transparent' -> '#00000000'
+        if (config.backgroundColor === 'transparent') {
+            updates.backgroundColor = '#00000000';
+            hasUpdates = true;
+        }
+
+        // Fix Close Button: undefined -> false
+        if (config.showCloseButton === undefined) {
+            updates.showCloseButton = false;
+            hasUpdates = true;
+        }
+
+        // Fix Drag Handle: undefined -> false (per user request) or true (default) -> false
+        // We force it to false if it's the old default (true) or undefined
+        if (config.dragHandle === undefined || config.dragHandle === true) {
+            updates.dragHandle = false;
+            hasUpdates = true;
+        }
+
+        if (hasUpdates) {
+            console.log('Auto-migrating Bottom Sheet Config:', updates);
+            updateBottomSheetConfig(updates);
+
+            // Also sync layer style if background changed
+            if (updates.backgroundColor) {
+                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
+                if (rootLayer) {
+                    const { updateLayerStyle } = useEditorStore.getState();
+                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
+                    console.log('Auto-migrated root layer background to:', updates.backgroundColor);
+                }
+            }
+        }
+    }, [config?.backgroundColor, config?.showCloseButton, config?.dragHandle]);
+
 
     // Check if a layer is selected (if so, we might not want to show this, or show it minimized?)
     // The architecture report says "Dedicated, isolated editor... renders ONLY when nudgeType === 'bottomsheet'".

@@ -71,11 +71,24 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 );
                 break;
             case 'image':
+            case 'media': // Handle 'media' as alias for 'image'
                 content = (
                     <img
-                        src={layer.content.imageUrl}
-                        style={{ width: '100%', height: 'auto', borderRadius: layer.style?.borderRadius || 0 }}
+                        src={layer.content.imageUrl || layer.content.url || 'https://via.placeholder.com/150'} // Fallback
+                        alt={layer.name}
+                        style={{ width: '100%', height: 'auto', borderRadius: layer.style?.borderRadius || 0, objectFit: 'cover' }}
                     />
+                );
+                break;
+            case 'handle':
+                content = (
+                    <div style={{
+                        width: layer.size?.width || 40,
+                        height: layer.size?.height || 4,
+                        backgroundColor: layer.style?.backgroundColor || '#e5e7eb',
+                        borderRadius: layer.style?.borderRadius || 2,
+                        margin: '0 auto'
+                    }} />
                 );
                 break;
             case 'button':

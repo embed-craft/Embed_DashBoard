@@ -6156,7 +6156,7 @@ export const DesignStep: React.FC<any> = () => {
 
 
 
-      return (
+
       <ErrorBoundary>
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">

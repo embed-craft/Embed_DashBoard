@@ -1187,6 +1187,13 @@ export const DesignStep: React.FC<any> = () => {
 
   // Render properties based on layer type
   const renderLayerProperties = () => {
+    console.log('renderLayerProperties ENTRY', { 
+      selectedLayerObj, 
+      selectedNudgeType,
+      layerType: selectedLayerObj?.type,
+      layerName: selectedLayerObj?.name
+    });
+
     if (!selectedLayerObj) {
       // Show global config for specific nudge types when no layer is selected
       if (selectedNudgeType === 'tooltip') return renderTooltipConfig();

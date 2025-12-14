@@ -3871,8 +3871,74 @@ export const DesignStep: React.FC<any> = () => {
         );
       };
 
+      // Handle Properties (Drag Handle)
+      if (selectedLayerObj.type === 'handle') {
+        const handleWidth = selectedLayerObj.size?.width ?? 40;
+        const handleHeight = selectedLayerObj.size?.height ?? 4;
+        const handleRadius = selectedLayerObj.style?.borderRadius ?? 2;
+        const handleColor = selectedLayerObj.style?.backgroundColor ?? '#e5e7eb';
+
+        return (
+          <>
+            <div style={{ marginBottom: '20px' }}>
+              <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Handle Properties</h5>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Width</label>
+                  <input
+                    type="number"
+                    value={handleWidth}
+                    onChange={(e) => handleContentUpdate('size', { ...selectedLayerObj.size, width: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Height</label>
+                  <input
+                    type="number"
+                    value={handleHeight}
+                    onChange={(e) => handleContentUpdate('size', { ...selectedLayerObj.size, height: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Color</label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={handleColor as string}
+                    onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+                    style={{ width: '40px', height: '40px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', cursor: 'pointer' }}
+                  />
+                  <input
+                    type="text"
+                    value={handleColor as string}
+                    onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
+                    style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Corner Radius</label>
+                <input
+                  type="number"
+                  value={handleRadius as number}
+                  onChange={(e) => handleStyleUpdate('borderRadius', Number(e.target.value))}
+                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+            </div>
+            {renderCommonStyles()}
+          </>
+        );
+      }
+
       // Media/Image properties
-      if (selectedLayerObj.type === 'media' || selectedLayerObj.type === 'video' || selectedLayerObj.type === 'icon' || selectedLayerObj.type === 'overlay') {
+      if (selectedLayerObj.type === 'media' || selectedLayerObj.type === 'image' || selectedLayerObj.type === 'video' || selectedLayerObj.type === 'icon' || selectedLayerObj.type === 'overlay') {
         const imageUrl = selectedLayerObj?.content?.imageUrl || selectedLayerObj?.content?.videoUrl || '';
         const width = selectedLayerObj?.size?.width || 720;
         const height = selectedLayerObj?.size?.height || 640;

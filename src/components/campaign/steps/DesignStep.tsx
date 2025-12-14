@@ -1187,8 +1187,8 @@ export const DesignStep: React.FC<any> = () => {
 
   // Render properties based on layer type
   const renderLayerProperties = () => {
-    console.log('renderLayerProperties ENTRY', { 
-      selectedLayerObj, 
+    console.log('renderLayerProperties ENTRY', {
+      selectedLayerObj,
       selectedNudgeType,
       layerType: selectedLayerObj?.type,
       layerName: selectedLayerObj?.name
@@ -1225,6 +1225,12 @@ export const DesignStep: React.FC<any> = () => {
           </div>
         </div>
       );
+    }
+
+    // Special handler for Bottom Sheet Container
+    if (selectedLayerObj.type === 'container' && selectedLayerObj.name === 'Bottom Sheet') {
+      console.log('Returning BottomSheetMinimalEditor from active check');
+      return <BottomSheetMinimalEditor />;
     }
 
     // Modal Configuration

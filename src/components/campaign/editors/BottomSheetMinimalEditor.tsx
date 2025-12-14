@@ -131,9 +131,9 @@ export const BottomSheetMinimalEditor = () => {
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <input
                             type="color"
-                            value={config.backgroundColor === 'transparent' ? '#ffffff' : config.backgroundColor}
+                            value={config.backgroundColor === '#00000000' || config.backgroundColor === 'transparent' ? '#ffffff' : config.backgroundColor}
                             onChange={(e) => updateConfig('backgroundColor', e.target.value)}
-                            disabled={config.backgroundColor === 'transparent'}
+                            disabled={config.backgroundColor === '#00000000' || config.backgroundColor === 'transparent'}
                             style={{ width: '32px', height: '32px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'cursor' }}
                         />
                         <input
@@ -146,11 +146,34 @@ export const BottomSheetMinimalEditor = () => {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', cursor: 'pointer' }}>
                         <input
                             type="checkbox"
-                            checked={config.backgroundColor === 'transparent'}
-                            onChange={(e) => updateConfig('backgroundColor', e.target.checked ? 'transparent' : '#FFFFFF')}
+                            checked={config.backgroundColor === '#00000000' || config.backgroundColor === 'transparent'}
+                            onChange={(e) => updateConfig('backgroundColor', e.target.checked ? '#00000000' : '#FFFFFF')}
                         />
                         <span style={{ fontSize: '12px', color: colors.text.secondary }}>Transparent Background</span>
                     </label>
+                </div>
+
+                {/* Appearance Controls - Drag / Close */}
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.gray[200]}` }}>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={config.dragHandle ?? false}
+                                onChange={(e) => updateConfig('dragHandle', e.target.checked)}
+                            />
+                            <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Drag Handle</span>
+                        </label>
+
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={config.showCloseButton ?? false}
+                                onChange={(e) => updateConfig('showCloseButton', e.target.checked)}
+                            />
+                            <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Close Button</span>
+                        </label>
+                    </div>
                 </div>
 
                 {/* Image */}

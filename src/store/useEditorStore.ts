@@ -330,6 +330,7 @@ export interface BottomSheetConfig {
   maxHeight?: number;
   minHeight?: number;
   dragHandle: boolean;
+  showCloseButton?: boolean; // ✅ NEW: Toggle close button
   swipeToDismiss: boolean;
   swipeThreshold?: number;
   dismissVelocity?: number;
@@ -563,14 +564,13 @@ interface EditorStore {
 
   // Metadata (Events & Properties)
   availableEvents: EventDefinition[];
-  // Metadata (Events & Properties)
-  availableEvents: EventDefinition[];
+
+
   availableProperties: PropertyDefinition[];
   availablePages: PageDefinition[]; // Add availablePages
   isLoadingMetadata: boolean;
   fetchMetadata: () => Promise<void>;
 
-  fetchMetadata: () => Promise<void>;
   createEvent: (event: Partial<EventDefinition>) => Promise<EventDefinition>;
   createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
   saveCampaign: () => Promise<void>;
@@ -1242,7 +1242,17 @@ export const useEditorStore = create<EditorStore>()(
 
       // Update Campaign (Generic)
       updateCampaign: (updates) => {
-        updateCampaignAction(updates, set, get);
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            ...updates,
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
       },
 
       // Add layer
@@ -1620,7 +1630,8 @@ export const useEditorStore = create<EditorStore>()(
 
         const currentConfig = currentCampaign.bottomSheetConfig || {
           height: 'auto',
-          dragHandle: true,
+          dragHandle: false, // Default HIDDEN per user request
+          showCloseButton: false, // Default HIDDEN per user request
           swipeToDismiss: true,
           backgroundColor: '#FFFFFF',
           borderRadius: { topLeft: 16, topRight: 16 },

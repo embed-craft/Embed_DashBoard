@@ -178,14 +178,44 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                     flexDirection: 'column'
                 }}
             >
-                {/* Handle bar (cosmetic) */}
-                <div style={{
-                    width: '40px',
-                    height: '4px',
-                    backgroundColor: '#e5e7eb',
-                    borderRadius: '2px',
-                    margin: '0 auto 16px auto'
-                }} />
+                {/* Handle bar (cosmetic) - Controlled by config */}
+                {config?.dragHandle && (
+                    <div style={{
+                        width: '40px',
+                        height: '4px',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '2px',
+                        margin: '0 auto 16px auto',
+                        flexShrink: 0
+                    }} />
+                )}
+
+                {/* Close Button - Controlled by config */}
+                {config?.showCloseButton && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onDismiss) onDismiss();
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: '16px',
+                            right: '16px',
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 10
+                        }}
+                    >
+                        <X size={16} color={colors.text.secondary} />
+                    </button>
+                )}
 
                 {/* Content */}
                 <div style={{ flex: 1, overflowY: 'auto' }}>

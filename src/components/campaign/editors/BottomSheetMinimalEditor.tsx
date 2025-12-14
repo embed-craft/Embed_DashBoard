@@ -12,7 +12,34 @@ export const BottomSheetMinimalEditor = () => {
     const { currentCampaign, updateBottomSheetConfig, addLayer, selectedLayerId } = useEditorStore();
     const config = currentCampaign?.bottomSheetConfig;
 
-    if (!config) return null;
+    if (!config) {
+        return (
+            <div style={{ padding: '20px', textAlign: 'center', color: colors.text.secondary }}>
+                <p style={{ fontSize: '13px', marginBottom: '12px' }}>Configuration missing</p>
+                <button
+                    onClick={() => updateBottomSheetConfig({
+                        height: 'auto',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: { topLeft: 16, topRight: 16 },
+                        elevation: 2,
+                        overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
+                        animation: { type: 'slide', duration: 300, easing: 'ease-out' }
+                    } as any)}
+                    style={{
+                        padding: '8px 16px',
+                        background: colors.primary[500],
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Initialize Settings
+                </button>
+            </div>
+        );
+    }
 
     // Helper to update config
     const updateConfig = (key: string, value: any) => {

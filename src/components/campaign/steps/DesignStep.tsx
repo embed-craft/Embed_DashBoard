@@ -5796,7 +5796,6 @@ export const DesignStep: React.FC<any> = () => {
       );
 
     };
-  };
 
 
     // Handler for template selection

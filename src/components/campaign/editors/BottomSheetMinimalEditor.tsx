@@ -11,6 +11,7 @@ const colors = {
 export const BottomSheetMinimalEditor = () => {
     const { currentCampaign, updateBottomSheetConfig, addLayer } = useEditorStore();
     const config = currentCampaign?.bottomSheetConfig;
+    console.log('BottomSheetMinimalEditor rendered', { configPresent: !!config, config });
 
     if (!config) {
         return (

@@ -9,7 +9,7 @@ const colors = {
 };
 
 export const BottomSheetMinimalEditor = () => {
-    const { currentCampaign, updateBottomSheetConfig, addLayer, selectedLayerId } = useEditorStore();
+    const { currentCampaign, updateBottomSheetConfig, addLayer } = useEditorStore();
     const config = currentCampaign?.bottomSheetConfig;
 
     if (!config) {

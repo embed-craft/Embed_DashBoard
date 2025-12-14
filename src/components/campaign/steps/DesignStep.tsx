@@ -3889,7 +3889,7 @@ export const DesignStep: React.FC<any> = () => {
                   <input
                     type="number"
                     value={handleWidth}
-                    onChange={(e) => handleContentUpdate('size', { ...selectedLayerObj.size, width: Number(e.target.value) })}
+                    onChange={(e) => updateLayer(selectedLayerId!, { size: { ...selectedLayerObj.size, width: Number(e.target.value) || 0, height: handleHeight } })}
                     style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
@@ -3898,7 +3898,7 @@ export const DesignStep: React.FC<any> = () => {
                   <input
                     type="number"
                     value={handleHeight}
-                    onChange={(e) => handleContentUpdate('size', { ...selectedLayerObj.size, height: Number(e.target.value) })}
+                    onChange={(e) => updateLayer(selectedLayerId!, { size: { ...selectedLayerObj.size, width: handleWidth, height: Number(e.target.value) || 0 } })}
                     style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
@@ -3940,8 +3940,9 @@ export const DesignStep: React.FC<any> = () => {
       // Media/Image properties
       if (selectedLayerObj.type === 'media' || selectedLayerObj.type === 'image' || selectedLayerObj.type === 'video' || selectedLayerObj.type === 'icon' || selectedLayerObj.type === 'overlay') {
         const imageUrl = selectedLayerObj?.content?.imageUrl || selectedLayerObj?.content?.videoUrl || '';
-        const width = selectedLayerObj?.size?.width || 720;
-        const height = selectedLayerObj?.size?.height || 640;
+        // Use layer.size, defaulting to undefined so it can be handled by renderer or placeholder
+        const width = selectedLayerObj?.size?.width;
+        const height = selectedLayerObj?.size?.height;
         const hasUrl = !!imageUrl;
 
         return (
@@ -4015,24 +4016,27 @@ export const DesignStep: React.FC<any> = () => {
                   />
                 </label>
               </div>
-              {renderSizeControls()}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+
+              {/* Size Controls for Media - Using layer.size directly */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Width</label>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Width (px)</label>
                   <input
                     type="number"
-                    value={width}
-                    onChange={(e) => handleContentUpdate('imageSize', { width: Number(e.target.value), height })}
+                    value={width || ''}
+                    placeholder="Auto (100%)"
+                    onChange={(e) => updateLayer(selectedLayerId!, { size: { ...selectedLayerObj.size, width: Number(e.target.value) || undefined, height: height || undefined } })}
                     style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
-                <Lock size={16} color={colors.gray[400]} style={{ marginTop: '20px' }} />
+                <div style={{ marginTop: '20px', color: colors.gray[400] }}>×</div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Height</label>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Height (px)</label>
                   <input
                     type="number"
-                    value={height}
-                    onChange={(e) => handleContentUpdate('imageSize', { width, height: Number(e.target.value) })}
+                    value={height || ''}
+                    placeholder="Auto"
+                    onChange={(e) => updateLayer(selectedLayerId!, { size: { ...selectedLayerObj.size, width: width || undefined, height: Number(e.target.value) || undefined } })}
                     style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
                   />
                 </div>

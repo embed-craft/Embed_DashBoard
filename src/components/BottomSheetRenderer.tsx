@@ -76,7 +76,12 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                     <img
                         src={layer.content.imageUrl || layer.content.url || 'https://via.placeholder.com/150'} // Fallback
                         alt={layer.name}
-                        style={{ width: '100%', height: 'auto', borderRadius: layer.style?.borderRadius || 0, objectFit: 'cover' }}
+                        style={{
+                            width: layer.size?.width ? `${layer.size.width}px` : '100%',
+                            height: layer.size?.height ? `${layer.size.height}px` : 'auto',
+                            borderRadius: layer.style?.borderRadius || 0,
+                            objectFit: 'cover'
+                        }}
                     />
                 );
                 break;

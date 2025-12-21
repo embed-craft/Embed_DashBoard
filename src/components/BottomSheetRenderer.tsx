@@ -48,10 +48,13 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     const renderLayer = (layer: Layer) => {
         if (!layer.visible) return null;
         const isSelected = selectedLayerId === layer.id;
+        const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
 
         const baseStyle: React.CSSProperties = {
             position: 'relative',
-            marginBottom: '10px',
+            // SDK Logic Match: Absolute layers should not have margin-bottom.
+            // Relative layers default to 10px spacing.
+            marginBottom: isAbsolute ? 0 : '10px',
             ...layer.style as any
         };
 
@@ -100,11 +103,17 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 content = (
                     <button style={{
                         padding: '10px 20px',
-                        backgroundColor: layer.content.themeColor || '#6366f1',
+                        backgroundColor: 'transparent', // Wrapper handles background
                         color: layer.content.textColor || 'white',
-                        borderRadius: layer.style?.borderRadius || 8,
+                        // borderRadius handled by wrapper (layer.style)
                         border: 'none',
-                        width: '100%'
+                        width: '100%',
+                        height: '100%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: layer.content.fontSize // ensure font size is passed if needed
                     }}>
                         {layer.content.label || 'Button'}
                     </button>
@@ -128,7 +137,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 style={{
                     ...baseStyle,
                     outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    // Apply button background to wrapper to match SDK "Container" behavior
+                    ...(layer.type === 'button' ? {
+                        backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
+                    } : {})
                 }}
             >
                 {content}
@@ -171,7 +184,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                     backgroundPosition: 'center',
                     borderTopLeftRadius: config?.borderRadius?.topLeft || 16,
                     borderTopRightRadius: config?.borderRadius?.topRight || 16,
-                    padding: '20px',
+                    padding: config?.padding ? `${config.padding.top || 0}px ${config.padding.right || 0}px ${config.padding.bottom || 0}px ${config.padding.left || 0}px` : '0px',
                     zIndex: 100,
                     boxShadow: '0 -4px 12px rgba(0,0,0,0.15)',
                     display: 'flex',

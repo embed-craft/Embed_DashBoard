@@ -1511,6 +1511,24 @@ export const useEditorStore = create<EditorStore>()(
         const [removed] = updatedLayers.splice(oldIndex, 1);
         updatedLayers.splice(newIndex, 0, removed);
 
+        // FIX: Sync parent's children array to match the new order
+        // The SDK relies on the 'children' array, while Dashboard relies on flat list.
+        // We must ensure they stay in sync.
+        if (removed.parent) {
+          const parentIndex = updatedLayers.findIndex(l => l.id === removed.parent);
+          if (parentIndex !== -1) {
+            // Get all children of this parent in the Correct Order (from updatedLayers flat list)
+            const siblingIds = updatedLayers
+              .filter(l => l.parent === removed.parent)
+              .map(l => l.id);
+
+            updatedLayers[parentIndex] = {
+              ...updatedLayers[parentIndex],
+              children: siblingIds
+            };
+          }
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,

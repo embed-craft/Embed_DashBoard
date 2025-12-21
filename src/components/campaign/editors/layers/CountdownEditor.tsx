@@ -21,9 +21,9 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
         primary: { 500: '#6366f1' }
     }
 }) => {
+    // Defaults matching simplified design
     const endTime = layer.content?.endTime || new Date(Date.now() + 86400000).toISOString();
     const format = layer.content?.format || 'HH:MM:SS';
-    const urgencyThreshold = layer.content?.urgencyThreshold || 3600;
     const fontSize = layer.content?.fontSize || 24;
     const fontWeight = layer.content?.fontWeight || 'bold';
     const textColor = layer.content?.textColor || '#111827';
@@ -32,6 +32,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
         <>
             <div className="mb-5">
                 <h5 className="text-[13px] font-semibold text-gray-900 mb-3">⏳ Countdown Properties</h5>
+
                 <SizeControls
                     layer={layer}
                     selectedLayerId={selectedLayerId}
@@ -39,6 +40,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                     onStyleUpdate={onStyleUpdate}
                     colors={colors}
                 />
+
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">End Time</label>
                     <input
@@ -48,23 +50,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                         className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
                     />
                 </div>
-                <div className="mb-3">
-                    <label className="block text-xs text-gray-500 mb-1">Style Variant</label>
-                    <select
-                        value={layer.content?.timerVariant || 'text'}
-                        onChange={(e) => handleContentUpdate('timerVariant', e.target.value)}
-                        className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none bg-white"
-                    >
-                        <option value="text">Simple Text</option>
-                        <option value="card">Card (Boxed)</option>
-                        <option value="circular">Circular Progress</option>
-                        <option value="flip">Flip Clock</option>
-                        <option value="digital">Digital (LED)</option>
-                        <option value="bubble">Bubble (Round)</option>
-                        <option value="minimal">Minimal (Clean)</option>
-                        <option value="neon">Neon Glow</option>
-                    </select>
-                </div>
+
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Format</label>
                     <select
@@ -76,15 +62,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                         <option value="MM:SS">MM:SS</option>
                     </select>
                 </div>
-                <div className="mb-3">
-                    <label className="block text-xs text-gray-500 mb-1">Urgency Threshold (seconds)</label>
-                    <input
-                        type="number"
-                        value={urgencyThreshold}
-                        onChange={(e) => handleContentUpdate('urgencyThreshold', Number(e.target.value))}
-                        className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
-                    />
-                </div>
+
                 <div className="grid grid-cols-2 gap-2 mb-3">
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">Font Size</label>
@@ -108,6 +86,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                         </select>
                     </div>
                 </div>
+
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Text Color</label>
                     <input
@@ -118,6 +97,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                     />
                 </div>
             </div>
+
             <CommonStyleControls
                 layer={layer}
                 selectedLayerId={selectedLayerId}
@@ -125,6 +105,7 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                 onStyleUpdate={onStyleUpdate}
                 handleTooltipUpdate={handleTooltipUpdate}
                 colors={colors}
+                showPosition={true} // Critical for Overlay Mode
             />
         </>
     );

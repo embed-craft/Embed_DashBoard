@@ -11,110 +11,84 @@ export const SizeControls: React.FC<SizeControlsProps> = ({
 }) => {
     if (!layer || !layer.style) return null;
 
-    const parseValue = (val: any) => {
-        if (val === 'auto' || val === undefined) return { num: '', unit: 'auto' };
-        if (val === '100%') return { num: '100', unit: '%' };
-        const str = String(val);
-        if (str.endsWith('%')) return { num: parseFloat(str), unit: '%' };
-        return { num: parseFloat(str), unit: 'px' };
+    // Helper to parse existing value into { mode, value, unit }
+    const parseDimension = (val: any) => {
+        if (val === 'auto' || val === undefined || val === null) {
+            return { mode: 'auto', value: '', unit: 'px' };
+        }
+        const strVal = String(val);
+        const isPercent = strVal.endsWith('%');
+        const num = parseFloat(strVal);
+
+        return {
+            mode: 'custom',
+            value: isNaN(num) ? '' : num,
+            unit: isPercent ? '%' : 'px'
+        };
+    };
+
+    const handleUpdate = (dimension: 'width' | 'height', newMode: string, newValue: any, newUnit: string) => {
+        if (newMode === 'auto') {
+            onStyleUpdate(dimension, 'auto');
+        } else {
+            // Custom mode
+            const num = parseFloat(String(newValue));
+            if (isNaN(num)) return; // Don't update if invalid
+            onStyleUpdate(dimension, `${num}${newUnit}`);
+        }
     };
 
     return (
-        <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Size</label>
-            <div className="grid grid-cols-2 gap-2">
-                {/* Width */}
-                <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Width</label>
-                    <div className="flex gap-1">
-                        <select
-                            value={layer.style?.width === 'auto' || layer.style?.width === undefined ? 'auto' : 'custom'}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === 'auto') onStyleUpdate('width', 'auto');
-                                else {
-                                    const current = parseValue(layer.style?.width);
-                                    onStyleUpdate('width', current.num ? `${current.num}${current.unit === 'auto' ? 'px' : current.unit}` : 200);
-                                }
-                            }}
-                            className="flex-1 p-1.5 border border-gray-200 rounded-md text-xs outline-none"
-                        >
-                            <option value="auto">Auto</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                        {layer.style?.width !== 'auto' && layer.style?.width !== undefined && (
-                            <>
-                                <input
-                                    type="number"
-                                    value={parseValue(layer.style?.width).num}
-                                    onChange={(e) => {
-                                        const unit = parseValue(layer.style?.width).unit;
-                                        onStyleUpdate('width', `${e.target.value}${unit === 'auto' ? 'px' : unit}`);
-                                    }}
-                                    className="w-[50px] p-1.5 border border-gray-200 rounded-md text-xs outline-none"
-                                />
-                                <select
-                                    value={parseValue(layer.style?.width).unit}
-                                    onChange={(e) => {
-                                        const num = parseValue(layer.style?.width).num || 0;
-                                        onStyleUpdate('width', `${num}${e.target.value}`);
-                                    }}
-                                    className="w-[45px] p-1.5 border border-gray-200 rounded-md text-xs outline-none"
-                                >
-                                    <option value="px">px</option>
-                                    <option value="%">%</option>
-                                </select>
-                            </>
-                        )}
-                    </div>
-                </div>
+        <div className="mb-4 space-y-3">
+            <label className="block text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1 mb-2">
+                Size
+            </label>
 
-                {/* Height */}
-                <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Height</label>
-                    <div className="flex gap-1">
+            {/* Helper Component for a single Dimension Row */}
+            {['width', 'height'].map((dim) => {
+                const label = dim === 'width' ? 'Width' : 'Height';
+                const { mode, value, unit } = parseDimension(layer.style![dim as 'width' | 'height']);
+
+                return (
+                    <div key={dim} className="flex items-center justify-between gap-2">
+                        <label className="text-[11px] text-gray-500 w-12 capitalize">{label}</label>
+
+                        {/* Mode Select (Auto vs Custom) */}
                         <select
-                            value={layer.style?.height === 'auto' || layer.style?.height === undefined ? 'auto' : 'custom'}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === 'auto') onStyleUpdate('height', 'auto');
-                                else {
-                                    const current = parseValue(layer.style?.height);
-                                    onStyleUpdate('height', current.num ? `${current.num}${current.unit === 'auto' ? 'px' : current.unit}` : 48);
-                                }
-                            }}
-                            className="flex-1 p-1.5 border border-gray-200 rounded-md text-xs outline-none"
+                            value={mode}
+                            onChange={(e) => handleUpdate(dim as 'width' | 'height', e.target.value, value || 100, unit)}
+                            className="p-1.5 border border-gray-200 rounded text-xs outline-none bg-white cursor-pointer hover:border-gray-300 transition-colors w-20"
                         >
                             <option value="auto">Auto</option>
                             <option value="custom">Custom</option>
                         </select>
-                        {layer.style?.height !== 'auto' && layer.style?.height !== undefined && (
-                            <>
+
+                        {/* Value Input (Only if Custom) */}
+                        {mode === 'custom' && (
+                            <div className="flex flex-1 gap-1">
                                 <input
                                     type="number"
-                                    value={parseValue(layer.style?.height).num}
-                                    onChange={(e) => {
-                                        const unit = parseValue(layer.style?.height).unit;
-                                        onStyleUpdate('height', `${e.target.value}${unit === 'auto' ? 'px' : unit}`);
-                                    }}
-                                    className="w-[50px] p-1.5 border border-gray-200 rounded-md text-xs outline-none"
+                                    value={value}
+                                    placeholder="0"
+                                    onChange={(e) => handleUpdate(dim as 'width' | 'height', 'custom', e.target.value, unit)}
+                                    className="flex-1 w-0 p-1.5 border border-gray-200 rounded text-xs outline-none focus:border-indigo-500"
                                 />
                                 <select
-                                    value={parseValue(layer.style?.height).unit}
-                                    onChange={(e) => {
-                                        const num = parseValue(layer.style?.height).num || 0;
-                                        onStyleUpdate('height', `${num}${e.target.value}`);
-                                    }}
-                                    className="w-[45px] p-1.5 border border-gray-200 rounded-md text-xs outline-none"
+                                    value={unit}
+                                    onChange={(e) => handleUpdate(dim as 'width' | 'height', 'custom', value, e.target.value)}
+                                    className="w-12 p-1.5 border border-gray-200 rounded text-xs outline-none bg-gray-50 cursor-pointer"
                                 >
                                     <option value="px">px</option>
                                     <option value="%">%</option>
                                 </select>
-                            </>
+                            </div>
                         )}
+
+                        {/* Spacer if Auto to keep alignment if needed, or just let flexible */}
+                        {mode === 'auto' && <div className="flex-1" />}
                     </div>
-                </div>
-            </div>
+                );
+            })}
         </div>
     );
 };

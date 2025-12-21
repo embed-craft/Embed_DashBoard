@@ -29,6 +29,14 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
             <div className="mb-5">
                 <h5 className="text-[13px] font-semibold text-gray-900 mb-3">Container Properties</h5>
 
+                <SizeControls
+                    layer={layer}
+                    selectedLayerId={selectedLayerId}
+                    updateLayer={updateLayer}
+                    onStyleUpdate={onStyleUpdate}
+                    colors={colors}
+                />
+
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Background Color</label>
                     <div className="flex gap-2 items-center">
@@ -68,14 +76,6 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                     </div>
                 </div>
 
-                <SizeControls
-                    layer={layer}
-                    selectedLayerId={selectedLayerId}
-                    updateLayer={updateLayer}
-                    onStyleUpdate={onStyleUpdate}
-                    colors={colors}
-                />
-
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Border Color</label>
                     <div className="flex gap-2 items-center">
@@ -101,6 +101,7 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                 onStyleUpdate={onStyleUpdate}
                 handleTooltipUpdate={handleTooltipUpdate}
                 colors={colors}
+                showPosition={true} // Critical for Overlay Mode
             />
         </>
     );

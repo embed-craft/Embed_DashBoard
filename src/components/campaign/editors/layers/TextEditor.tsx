@@ -34,12 +34,21 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Content</label>
                     <textarea
-                        placeholder="Enter text content..."
+                        placeholder="Enter text..."
                         value={textContent}
                         onChange={(e) => handleContentUpdate('text', e.target.value)}
                         className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none min-h-[80px] resize-y"
                     />
                 </div>
+
+                <SizeControls
+                    layer={layer}
+                    selectedLayerId={selectedLayerId}
+                    updateLayer={updateLayer}
+                    onStyleUpdate={onStyleUpdate}
+                    colors={colors}
+                />
+
                 <div className="grid grid-cols-2 gap-2 mb-3">
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">Font Size</label>
@@ -55,7 +64,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         <select
                             value={fontWeight}
                             onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
-                            className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
+                            className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none bg-white"
                         >
                             <option value="normal">Normal</option>
                             <option value="medium">Medium</option>
@@ -64,6 +73,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         </select>
                     </div>
                 </div>
+
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Text Color</label>
                     <div className="flex gap-2 items-center">
@@ -81,27 +91,21 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         />
                     </div>
                 </div>
+
                 <div className="mb-3">
                     <label className="block text-xs text-gray-500 mb-1">Text Align</label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {['left', 'center', 'right'].map(align => (
+                    <div className="flex bg-gray-50 p-1 rounded-md border border-gray-200">
+                        {['left', 'center', 'right'].map((align) => (
                             <button
                                 key={align}
-                                onClick={() => onStyleUpdate('textAlign', align)}
-                                className={`p-2 border rounded-md text-xs capitalize transition-colors ${align === textAlign ? 'border-primary-500 bg-primary-50 text-indigo-600' : 'border-gray-200 bg-transparent text-gray-500'}`}
+                                onClick={() => handleContentUpdate('textAlign', align)}
+                                className={`flex-1 py-1 text-xs capitalize rounded ${textAlign === align ? 'bg-white shadow-sm text-indigo-600 font-medium' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 {align}
                             </button>
                         ))}
                     </div>
                 </div>
-                <SizeControls
-                    layer={layer}
-                    selectedLayerId={selectedLayerId}
-                    updateLayer={updateLayer}
-                    onStyleUpdate={onStyleUpdate}
-                    colors={colors}
-                />
             </div>
             <CommonStyleControls
                 layer={layer}
@@ -110,6 +114,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                 onStyleUpdate={onStyleUpdate}
                 handleTooltipUpdate={handleTooltipUpdate}
                 colors={colors}
+                showPosition={true} // Critical for Overlay Mode
             />
         </>
     );

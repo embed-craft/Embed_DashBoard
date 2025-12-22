@@ -477,6 +477,9 @@ interface BannerRendererProps {
     config?: BannerConfig;
     onHeightChange?: (height: number | string) => void;
     onLayerUpdate?: (id: string, updates: Partial<Layer>) => void;
+    isInteractive?: boolean;
+    onDismiss?: () => void;
+    onNavigate?: (screenName: string) => void;
 }
 
 /**
@@ -490,8 +493,38 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
     colors,
     config,
     onHeightChange,
-    onLayerUpdate
+    onLayerUpdate,
+    isInteractive = false,
+    onDismiss,
+    onNavigate
 }) => {
+    const handleAction = (action: any) => {
+        if (!isInteractive || !action) return;
+
+        console.log('Action triggered:', action);
+
+        switch (action.type) {
+            case 'close':
+            case 'dismiss': // Handle both temporarily
+                if (onDismiss) onDismiss();
+                break;
+            case 'deeplink':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
+            case 'navigate':
+                if (action.screenName && onNavigate) {
+                    onNavigate(action.screenName);
+                } else {
+                    console.log('Navigation action triggered:', action.screenName);
+                }
+                break;
+            case 'custom':
+                console.log('Custom action triggered:', action);
+                break;
+        }
+    };
     // Debug logging
     console.log('BottomSheetRenderer: Rendering with', layers.length, 'layers');
 
@@ -502,32 +535,12 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Find banner container
-    const bannerLayer = layers.find(
-        l => (l.type === 'container' && !l.parent) ||
-            (l.type === 'container' && l.name.toLowerCase().includes('banner'))
-    );
+    // Banner Container logic removed - now using config directly
+    // Removed container concept
 
-    if (!bannerLayer) {
-        return (
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: 'white',
-                padding: '20px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100px',
-                zIndex: 1000
-            }}>
-                <p style={{ color: '#9CA3AF', fontSize: '14px' }}>
-                    No banner container found. Add layers to see preview.
-                </p>
-            </div>
-        );
+    // Placeholder logic removed or simplified if needed
+    if (layers.length === 0 && !config) {
+        return <div>Empty Banner</div>;
     }
 
     // Get all child layers sorted by zIndex
@@ -1058,7 +1071,9 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
-                            }}>
+                            }}
+                                onClick={isInteractive ? () => handleAction(layer.content?.action) : undefined}
+                            >
                                 {icon}
                             </span>
                         )}
@@ -1339,19 +1354,7 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                     return <StatisticLayer layer={layer} />;
                 case 'gradient-overlay':
                     return renderGradientOverlay(layer);
-                case 'container':
-                    return (
-                        <>
-                            {childLayers
-                                .filter(child => child.parent === layer.id)
-                                .sort((a, b) => a.zIndex - b.zIndex)
-                                .map(child => (
-                                    <div key={child.id} onClick={(e) => { e.stopPropagation(); onLayerSelect(child.id); }}>
-                                        {renderLayer(child)}
-                                    </div>
-                                ))}
-                        </>
-                    );
+
                 default:
                     return null;
             }
@@ -1365,6 +1368,8 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                 onLayerUpdate={onLayerUpdate}
                 baseStyle={baseStyle}
                 colors={colors}
+                isInteractive={isInteractive}
+                onAction={handleAction}
             >
                 {renderContent()}
             </DraggableResizableLayerWrapper>
@@ -1509,7 +1514,7 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                 <div style={{
                     flex: 1,
                     position: 'relative',
-                    overflowY: bannerLayer.style?.overflow === 'hidden' ? 'hidden' : 'auto',
+                    overflowY: config.overflow === 'hidden' ? 'hidden' : 'auto',
                     padding: isImageOnly ? '0' : '20px',
                     order: isTop ? 0 : 1 // Content order depends on handle position
                 }}>
@@ -1519,28 +1524,30 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                         </div>
                     ))}
                 </div>
-            </div>
+            </div >
 
             {/* Close Button (Optional, if configured) */}
-            {config?.showCloseButton !== false && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        cursor: 'pointer',
-                        zIndex: 50,
-                        padding: '4px',
-                        borderRadius: '50%',
-                        backgroundColor: isImageOnly ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <X size={20} color={isImageOnly ? '#FFFFFF' : "#6B7280"} />
-                </div>
-            )}
+            {
+                config?.showCloseButton !== false && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '12px',
+                            right: '12px',
+                            cursor: 'pointer',
+                            zIndex: 50,
+                            padding: '4px',
+                            borderRadius: '50%',
+                            backgroundColor: isImageOnly ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <X size={20} color={isImageOnly ? '#FFFFFF' : "#6B7280"} />
+                    </div>
+                )
+            }
         </>
     );
 };

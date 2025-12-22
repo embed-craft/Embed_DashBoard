@@ -6,7 +6,7 @@ import { metadataService, EventDefinition, PropertyDefinition, PageDefinition } 
 
 // Layer Types - Extended for Phase 2 & 3.5
 export type LayerType =
-  | 'media' | 'text' | 'button' | 'container' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
+  | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'countdown' | 'list' | 'input' | 'statistic'
   | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html';
 
@@ -23,6 +23,12 @@ export interface LayerContent {
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
   textColor?: string;
   textAlign?: 'left' | 'center' | 'right';
+  fontFamily?: string;
+  fontUrl?: string;
+  textShadowX?: number;
+  textShadowY?: number;
+  textShadowBlur?: number;
+  textShadowColor?: string;
 
   // Button content
   label?: string;
@@ -109,6 +115,7 @@ export interface LayerContent {
 
   // Custom HTML (Phase 2)
   html?: string;
+  fullPageMode?: boolean; // Explicit flag for "Full Page" exclusive mode
 
   // Heirarchy
   children?: Layer[];
@@ -116,62 +123,75 @@ export interface LayerContent {
 
 export interface LayerStyle {
   backgroundColor?: string;
-  borderRadius?: number | string | { topLeft: number | string; topRight: number | string; bottomRight: number | string; bottomLeft: number | string };
   border?: string; // Added to support shorthand
   borderColor?: string;
   borderWidth?: number | { top: number; right: number; bottom: number; left: number };
+  arrowSize?: number;
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
   padding?: { top: number | string; right: number | string; bottom: number | string; left: number | string } | number | string;
   margin?: { top: number | string; right: number | string; bottom: number | string; left: number | string } | number | string;
-  opacity?: number;
-  boxShadow?: string; // Support for multiple shadows comma-separated
 
-  // Layout & Display
-  display?: 'flex' | 'block' | 'inline-block' | 'grid' | 'none';
-  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
-  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline';
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
-  gap?: number;
-  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
-  flexGrow?: number;
-  flexShrink?: number;
-  flexBasis?: string | number;
-  alignSelf?: 'auto' | 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch';
-  cursor?: 'default' | 'pointer' | 'not-allowed' | 'grab' | 'text' | 'move' | 'help' | 'wait';
-
-  // Positioning (Phase 1)
-  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
-  top?: number | string;
-  right?: number | string;
-  bottom?: number | string;
-  left?: number | string;
-  zIndex?: number;
-  transformOrigin?: string;
-
-  // Dimensions
+  // Common style properties
   width?: number | string;
   height?: number | string;
+
+  opacity?: number;
+  borderRadius?: number | string | { topLeft: number | string; topRight: number | string; bottomRight: number | string; bottomLeft: number | string };
+  boxShadow?: string;
+  zIndex?: number;
+
+  display?: 'flex' | 'block' | 'inline-block' | 'none' | 'grid';
+  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  justifyContent?: 'flex-start' | 'flex-end' | 'center' | 'space-between' | 'space-around' | 'space-evenly';
+  alignItems?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline';
+  gap?: number;
+  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
+  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+  top?: number | string;
+  left?: number | string;
+  right?: number | string;
+  bottom?: number | string;
+
+  cursor?: 'default' | 'pointer' | 'not-allowed' | 'grab' | 'text' | 'move' | 'help' | 'wait';
+  pointerEvents?: 'auto' | 'none';
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  textColor?: string; // Renamed from 'color' to avoid conflict with CSS 'color'
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: number;
+
+  lineHeight?: number;
+  letterSpacing?: number;
+  wordSpacing?: number;
+  whiteSpace?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
+
+  // New properties for Phase 3.5 & Custom shapes
+  // Expanded Spacing (SDK Parity)
+  marginTop?: number | string;
+  marginBottom?: number | string;
+  marginLeft?: number | string;
+  marginRight?: number | string;
+  paddingTop?: number | string;
+  paddingBottom?: number | string;
+  paddingLeft?: number | string;
+  paddingRight?: number | string;
+
+  // Dimensions
   minWidth?: number | string;
   minHeight?: number | string;
   maxWidth?: number | string;
   maxHeight?: number | string;
 
-  // Typography Enhancements
-  fontFamily?: string;
-  fontSize?: number | string;
-  fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | number | string;
-  fontStyle?: 'normal' | 'italic' | 'oblique';
-  lineHeight?: number | string;
-  letterSpacing?: number | string;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  // Typography
+  fontUrl?: string; // For custom fonts
+  textDecoration?: 'none' | 'underline' | 'line-through';
   textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  textDecoration?: 'none' | 'underline' | 'line-through' | 'overline';
-  textDecorationColor?: string;
-  textDecorationStyle?: 'solid' | 'double' | 'dotted' | 'dashed' | 'wavy';
-  textShadow?: string;
-  wordBreak?: 'normal' | 'break-all' | 'keep-all' | 'break-word';
-  whiteSpace?: 'normal' | 'nowrap' | 'pre' | 'pre-line' | 'pre-wrap';
-  color?: string; // Text color
+
+  // Text Shadow
+  textShadowX?: number;
+  textShadowY?: number;
+  textShadowBlur?: number;
+  textShadowColor?: string;
 
   // Advanced Background (Phase 2)
   backgroundImage?: string;
@@ -415,7 +435,6 @@ export interface TooltipConfig {
   mode: 'standard' | 'image' | 'container' | 'advanced' | 'html';
   imageUrl?: string;
   imageSize?: { width: number | string; height: number | string };
-  width?: number | string;
   width?: number | string;
   height?: number | string;
 
@@ -715,7 +734,7 @@ export const useEditorStore = create<EditorStore>()(
           goal: { event: '', rolloutPercentage: 100 },
           // Initialize bottom sheet config for bottom sheet nudge type (Phase 3)
           bottomSheetConfig: nudgeType === 'bottomsheet' ? {
-            mode: 'container', // Default to container mode
+            mode: 'image-only', // Default to image-only now that container is gone
             height: 'auto',
             dragHandle: true,
             swipeToDismiss: true,
@@ -1712,7 +1731,7 @@ export const useEditorStore = create<EditorStore>()(
         if (!currentCampaign) return;
 
         const defaults = {
-          mode: 'container',
+          type: 'text',
           width: '90%',
           height: 'auto',
           backgroundColor: '#FFFFFF',
@@ -1986,7 +2005,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'container',
+          type: 'text',
           name: 'Bottom Sheet',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`, `layer_${baseId + 4}`],
@@ -2096,7 +2115,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'container',
+          type: 'text',
           name: 'Modal Container',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`],
@@ -2198,7 +2217,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'container',
+          type: 'text',
           name: 'Banner Container',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`],
@@ -2294,7 +2313,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'container',
+          type: 'text',
           name: 'PIP Container',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`],
@@ -2368,7 +2387,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'container',
+          type: 'text',
           name: 'Tooltip Container',
           parent: null,
           children: [`layer_${baseId + 1}`],
@@ -2417,7 +2436,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'container',
+          type: 'text',
           name: 'Floater Container',
           parent: null,
           children: [`layer_${baseId + 1}`],

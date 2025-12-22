@@ -80,53 +80,103 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
       ignore_global_rules: campaign.displayRules.overrideGlobal
     },
     config,
-    layers: campaign.layers.map(layer => {
+    // ✅ FIX: For bottom sheets, exclude the root container layer 
+    // The container is represented by bottomSheetConfig, not as a layer
+    layers: campaign.nudgeType === 'bottomsheet'
+      ? campaign.layers
+        .filter(l => !(l.type === 'container' && l.name === 'Bottom Sheet'))
+        .map(layer => {
+          // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to Container Layer
+          if (layer.type === 'container' && campaign.bottomSheetConfig) {
+            const bsConfig = campaign.bottomSheetConfig;
 
-      // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to Container Layer
-      if (layer.type === 'container' && campaign.bottomSheetConfig) {
-        const bsConfig = campaign.bottomSheetConfig;
+            return {
+              ...layer,
+              size: {
+                ...layer.size,
+                // Sync height/width from config if set
+                ...(bsConfig.height && { height: bsConfig.height }),
+              },
+              style: {
+                ...layer.style,
+                // 1. Background (Image & Color)
+                ...(bsConfig.backgroundImageUrl && {
+                  backgroundImage: bsConfig.backgroundImageUrl,
+                  backgroundSize: bsConfig.backgroundSize || 'cover',
+                  backgroundPosition: bsConfig.backgroundPosition || 'center',
+                  backgroundRepeat: 'no-repeat'
+                }),
+                ...(bsConfig.backgroundColor && { backgroundColor: bsConfig.backgroundColor }),
 
-        return {
-          ...layer,
-          size: {
-            ...layer.size,
-            // Sync height/width from config if set
-            ...(bsConfig.height && { height: bsConfig.height }),
-          },
-          style: {
-            ...layer.style,
-            // 1. Background (Image & Color)
-            ...(bsConfig.backgroundImageUrl && {
-              backgroundImage: bsConfig.backgroundImageUrl,
-              backgroundSize: bsConfig.backgroundSize || 'cover',
-              backgroundPosition: bsConfig.backgroundPosition || 'center',
-              backgroundRepeat: 'no-repeat'
-            }),
-            ...(bsConfig.backgroundColor && { backgroundColor: bsConfig.backgroundColor }),
+                // 2. Borders
+                ...(bsConfig.borderRadius && {
+                  borderRadius: typeof bsConfig.borderRadius === 'object'
+                    ? bsConfig.borderRadius
+                    : {
+                      topLeft: bsConfig.borderRadius,
+                      topRight: bsConfig.borderRadius,
+                      bottomLeft: 0,
+                      bottomRight: 0
+                    }
+                }),
 
-            // 2. Borders
-            ...(bsConfig.borderRadius && {
-              borderRadius: typeof bsConfig.borderRadius === 'object'
-                ? bsConfig.borderRadius
-                : {
-                  topLeft: bsConfig.borderRadius,
-                  topRight: bsConfig.borderRadius,
-                  bottomLeft: 0,
-                  bottomRight: 0
-                }
-            }),
-
-            // 3. Shadows (Elevation)
-            ...(bsConfig.elevation !== undefined && {
-              boxShadow: bsConfig.customShadow || (bsConfig.elevation > 0
-                ? `0px ${bsConfig.elevation * 4}px ${bsConfig.elevation * 8}px rgba(0,0,0,${0.1 + (bsConfig.elevation * 0.05)})`
-                : undefined)
-            }),
+                // 3. Shadows (Elevation)
+                ...(bsConfig.elevation !== undefined && {
+                  boxShadow: bsConfig.customShadow || (bsConfig.elevation > 0
+                    ? `0px ${bsConfig.elevation * 4}px ${bsConfig.elevation * 8}px rgba(0,0,0,${0.1 + (bsConfig.elevation * 0.05)})`
+                    : undefined)
+                }),
+              }
+            } as Layer;
           }
-        } as Layer;
-      }
-      return layer;
-    }),
+          return layer;
+        })
+      : campaign.layers.map(layer => {
+        // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to Container Layer
+        if (layer.type === 'container' && campaign.bottomSheetConfig) {
+          const bsConfig = campaign.bottomSheetConfig;
+
+          return {
+            ...layer,
+            size: {
+              ...layer.size,
+              // Sync height/width from config if set
+              ...(bsConfig.height && { height: bsConfig.height }),
+            },
+            style: {
+              ...layer.style,
+              // 1. Background (Image & Color)
+              ...(bsConfig.backgroundImageUrl && {
+                backgroundImage: bsConfig.backgroundImageUrl,
+                backgroundSize: bsConfig.backgroundSize || 'cover',
+                backgroundPosition: bsConfig.backgroundPosition || 'center',
+                backgroundRepeat: 'no-repeat'
+              }),
+              ...(bsConfig.backgroundColor && { backgroundColor: bsConfig.backgroundColor }),
+
+              // 2. Borders
+              ...(bsConfig.borderRadius && {
+                borderRadius: typeof bsConfig.borderRadius === 'object'
+                  ? bsConfig.borderRadius
+                  : {
+                    topLeft: bsConfig.borderRadius,
+                    topRight: bsConfig.borderRadius,
+                    bottomLeft: 0,
+                    bottomRight: 0
+                  }
+              }),
+
+              // 3. Shadows (Elevation)
+              ...(bsConfig.elevation !== undefined && {
+                boxShadow: bsConfig.customShadow || (bsConfig.elevation > 0
+                  ? `0px ${bsConfig.elevation * 4}px ${bsConfig.elevation * 8}px rgba(0,0,0,${0.1 + (bsConfig.elevation * 0.05)})`
+                  : undefined)
+              }),
+            }
+          } as Layer;
+        }
+        return layer;
+      }),
     createdAt: campaign.createdAt,
     updatedAt: campaign.updatedAt,
   };

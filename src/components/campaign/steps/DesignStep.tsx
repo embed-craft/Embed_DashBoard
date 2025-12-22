@@ -24,7 +24,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
-import { CustomHtmlEditor } from '@/components/campaign/editors/LayerProperties/CustomHtmlEditor';
+import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 import { TextEditor } from '@/components/campaign/editors/layers/TextEditor';
@@ -147,6 +147,21 @@ export const DesignStep: React.FC<any> = () => {
   const [selectedDevice, setSelectedDevice] = useState<string>(DEFAULT_DEVICE_ID); // Device selection for preview
   const [previewZoom, setPreviewZoom] = useState<number>(0.7); // Preview zoom level
   const [showGrid, setShowGrid] = useState<boolean>(false); // Grid overlay toggle
+
+
+  const lastAddRef = useRef(0);
+
+  const handleAddLayer = (type: string, parentId: string | null) => {
+    const now = Date.now();
+    if (now - lastAddRef.current < 500) return; // 500ms debounce to prevent duplicates
+    lastAddRef.current = now;
+
+    addLayer(type as any, parentId);
+    setShowLayerMenu(false);
+    toast.success(`Added ${type} layer`);
+  };
+
+  const [isInteractive, setIsInteractive] = useState(false); // Global interact mode for preview Toggle
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
@@ -164,7 +179,7 @@ export const DesignStep: React.FC<any> = () => {
   const debounceTimerRef = useRef<NodeJS.Timeout>();
 
   // Page Feature State
-  const [pages, setPages] = useState<any[]>([]);
+  const [pages, setPages] = useState<{ _id: string; name: string; pageTag: string; }[]>([]);
 
   // Fetch pages on mount
   useEffect(() => {
@@ -183,9 +198,11 @@ export const DesignStep: React.FC<any> = () => {
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   // Derive selected page object
-  const activePageId = selectedNudgeType === 'tooltip' && currentCampaign?.tooltipConfig?.targetPageId
-    ? currentCampaign.tooltipConfig.targetPageId
-    : selectedPageId;
+  const activePageId = selectedPageId
+    ? selectedPageId
+    : selectedNudgeType === 'tooltip' && currentCampaign?.tooltipConfig?.targetPageId
+      ? currentCampaign.tooltipConfig.targetPageId
+      : null;
 
   const selectedPage = pages.find(p => p._id === activePageId);
 
@@ -254,6 +271,16 @@ export const DesignStep: React.FC<any> = () => {
 
   const handleTooltipUpdate = (field: string, value: any) => {
     updateTooltipConfig({ [field]: value });
+  };
+
+  const handleNavigate = (pageTag: string) => {
+    const targetPage = pages.find(p => p.pageTag === pageTag);
+    if (targetPage) {
+      setSelectedPageId(targetPage._id);
+      toast.success(`Navigating to ${targetPage.name} (Preview)`);
+    } else {
+      toast.error(`Page with tag "${pageTag}" not found`);
+    }
   };
 
   // Image upload handler (Fix 1)
@@ -688,8 +715,8 @@ export const DesignStep: React.FC<any> = () => {
             {layer.locked ? <Lock size={14} color={colors.gray[400]} /> : <Unlock size={14} color={colors.gray[400]} />}
           </button>
 
-          {/* Delete button - Skip for Bottom Sheet root layer */}
-          {layer.type !== 'container' && layer.name !== 'Bottom Sheet' && (
+          {/* Delete button - Allow deleting nested containers, but protect root 'Bottom Sheet' */}
+          {((layer.type !== 'container' || (layer.parent && layer.parent !== 'null')) && layer.name !== 'Bottom Sheet') && (
             <button
               type="button"
               onClick={(e) => {
@@ -778,6 +805,28 @@ export const DesignStep: React.FC<any> = () => {
     switch (nudgeTypeToRender) {
 
 
+
+      case 'bottomsheet':
+        const currentDeviceConfig = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        const deviceWidth = currentDeviceConfig?.width || 375;
+        // CRITICAL FIX: Multiply by previewZoom because PhonePreview resizes the CONTAINER pixels directly.
+        // Fixed pixels (safeScale) must shrink to match the shrunk container.
+        const scaleFactor = (deviceWidth / 375) * previewZoom;
+
+        return (
+          <BottomSheetRenderer
+            layers={campaignLayers}
+            selectedLayerId={selectedLayerId}
+            onLayerSelect={selectLayer}
+            onLayerUpdate={updateLayer}
+            colors={colors}
+            config={currentCampaign?.bottomSheetConfig}
+            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            isInteractive={isInteractive}
+            onNavigate={handleNavigate}
+            scale={scaleFactor}
+          />
+        );
       case 'modal':
         const defaultModalConfig = {
           mode: 'container' as const,
@@ -802,6 +851,8 @@ export const DesignStep: React.FC<any> = () => {
               onConfigChange={(config) => updateModalConfig(config)}
               onLayerUpdate={updateLayer}
               onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+              isInteractive={isInteractive}
+              onNavigate={handleNavigate}
             />
           </ErrorBoundary>
         );
@@ -816,6 +867,9 @@ export const DesignStep: React.FC<any> = () => {
             config={currentCampaign?.bannerConfig}
             onHeightChange={(height) => updateBannerConfig({ height })}
             onLayerUpdate={updateLayer}
+            isInteractive={isInteractive}
+            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onNavigate={handleNavigate}
           />
         );
 
@@ -843,6 +897,9 @@ export const DesignStep: React.FC<any> = () => {
             targetElement={selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)}
             scaleX={scaleX}
             scaleY={scaleY}
+            isInteractive={isInteractive}
+            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onNavigate={handleNavigate}
           />
         );
 
@@ -855,6 +912,9 @@ export const DesignStep: React.FC<any> = () => {
             colors={colors}
             config={currentCampaign?.pipConfig}
             onConfigChange={(config) => updatePipConfig(config)}
+            isInteractive={isInteractive}
+            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onNavigate={handleNavigate}
           />
         );
       case 'floater':
@@ -866,6 +926,9 @@ export const DesignStep: React.FC<any> = () => {
             onLayerUpdate={updateLayer}
             scale={previewZoom}
             config={currentCampaign.floaterConfig}
+            isInteractive={isInteractive}
+            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onNavigate={handleNavigate}
           />
         );
       case 'scratchcard':
@@ -987,33 +1050,7 @@ export const DesignStep: React.FC<any> = () => {
           </div>
         );
 
-      case 'bottomsheet':
-        // RESPONSIVE SCALING (MATCH SDK LOGIC)
-        // SDK scales everything based on deviceWidth / 375.
-        // To show "What You See Is What You Get", we must simulate this scaling in the Dashboard.
-        const bsDevice = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
-        const bsScale = bsDevice.width / 375;
 
-        return (
-          <div style={{
-            width: '375px', // Fixed Design Width
-            height: `${bsDevice.height / bsScale}px`, // Inverse scale height to fill container
-            transform: `scale(${bsScale * previewZoom})`, // Apply Zoom + Device Scale
-            transformOrigin: 'top left',
-            overflow: 'hidden', // Clip overflow
-            position: 'relative' // Context
-          }}>
-            <BottomSheetRenderer
-              layers={campaignLayers}
-              selectedLayerId={selectedLayerId}
-              onLayerSelect={selectLayer}
-              onLayerUpdate={updateLayer}
-              colors={colors}
-              config={currentCampaign?.bottomSheetConfig}
-              onDismiss={() => { }}
-            />
-          </div>
-        );
 
       default:
         return (
@@ -1114,30 +1151,44 @@ export const DesignStep: React.FC<any> = () => {
         )}
 
         {selectedLayerObj.content?.action?.type === 'navigate' && (
-          <div style={{ marginBottom: '12px', animation: 'fadeIn 0.2s ease-in-out' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Screen Name</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 500, color: colors.text.secondary }}>
+              Target Page
+            </label>
             <div style={{ position: 'relative' }}>
-              <Compass size={14} color={colors.text.secondary} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
+              <select
                 value={selectedLayerObj.content?.action?.screenName || ''}
-                onChange={(e) => handleContentUpdate('action', { ...selectedLayerObj.content?.action, screenName: e.target.value })}
-                placeholder="e.g. HomeScreen, ProfileScreen"
+                onChange={(e) => updateLayer(selectedLayerObj.id, {
+                  content: {
+                    ...selectedLayerObj.content,
+                    action: { ...selectedLayerObj.content.action, screenName: e.target.value }
+                  }
+                })}
                 style={{
                   width: '100%',
-                  padding: '8px 12px 8px 32px',
-                  border: `1px solid ${colors.gray[200]}`,
-                  borderRadius: '6px',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${colors.gray[300]}`,
                   fontSize: '13px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
+                  color: colors.text.primary,
+                  appearance: 'none',
+                  backgroundColor: 'white',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  cursor: 'pointer'
                 }}
-                onFocus={(e) => e.target.style.borderColor = colors.primary[500]}
-                onBlur={(e) => e.target.style.borderColor = colors.gray[200]}
-              />
+              >
+                <option value="" disabled>Select a page to navigate to...</option>
+                {pages.map((page) => (
+                  <option key={page._id} value={page.pageTag}>
+                    {page.name} ({page.pageTag})
+                  </option>
+                ))}
+              </select>
             </div>
-            <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
-              Enter the exact screen name to navigate to.
+            <div style={{ fontSize: '11px', color: colors.text.tertiary, marginTop: '4px' }}>
+              Select the destination page from your captured screens.
             </div>
           </div>
         )}
@@ -1215,6 +1266,199 @@ export const DesignStep: React.FC<any> = () => {
       </>
     );
   };
+  // Tooltip Configuration
+  // Tooltip Configuration (Image-First Mode)
+  const renderTooltipConfig = () => {
+    console.log('DEBUG: renderTooltipConfig EXECUTING via const');
+    if (selectedNudgeType !== 'tooltip') return null;
+
+    const config = currentCampaign?.tooltipConfig || { mode: 'image' };
+
+    const handleTooltipUpdate = (field: string, value: any) => {
+      const updates: any = { [field]: value };
+      if (!config.mode) {
+        updates.mode = 'image';
+      }
+      useEditorStore.getState().updateTooltipConfig(updates);
+    };
+
+    // Define tooltipContainerLayer
+    const tooltipContainerLayer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Tooltip Container');
+
+    // Helper to get selected page for elements
+    const selectedPage = pages.find(p => p._id === config.targetPageId);
+
+    // Wrapper for image upload to handle event type
+    const onImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleImageUpload(e, 'tooltip_image_only');
+    };
+
+    return (
+      <>
+        {/* 1. Targeting (Preserved) */}
+        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🎯 Target
+          </h5>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Page</label>
+            <select
+              value={config.targetPageId || ''}
+              onChange={(e) => handleTooltipUpdate('targetPageId', e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="">Select a page...</option>
+              {pages.map(page => (
+                <option key={page._id} value={page._id}>{page.name}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Element</label>
+            <div style={{ position: 'relative' }}>
+              {selectedPage && selectedPage.elements && selectedPage.elements.length > 0 ? (
+                <select
+                  value={config.targetElementId || ''}
+                  onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                >
+                  <option value="">Select an element...</option>
+                  {selectedPage.elements.map((el: any) => (
+                    <option key={el.id} value={el.id}>
+                      {el.id} {el.tagName ? `(${el.tagName})` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ padding: '8px 12px', border: `1px dashed ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', color: colors.text.secondary, background: colors.gray[50] }}>
+                  {selectedPage ? 'No elements found on this page' : 'Select a page first'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. General (Name) */}
+        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>General</h5>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Name</label>
+            <input
+              type="text"
+              value={currentCampaign?.name || ''}
+              onChange={(e) => updateCampaign({ name: e.target.value })}
+              placeholder="Tooltip Campaign Name"
+              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+        </div>
+
+        {/* 3. Image Content */}
+        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Image Content</h5>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Image Source</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                value={config.imageUrl || ''}
+                onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
+                placeholder="https://example.com/tooltip.png"
+                style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+              />
+              <label style={{ padding: '8px 12px', background: colors.primary[500], color: 'white', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                Upload
+                <input type="file" accept="image/*" onChange={onImageUpload} style={{ display: 'none' }} />
+              </label>
+            </div>
+          </div>
+          {config.imageUrl && (
+            <div style={{ marginBottom: '12px', padding: '10px', background: colors.gray[50], borderRadius: '6px', border: `1px solid ${colors.gray[200]}` }}>
+              <div style={{ height: '80px', backgroundImage: `url(${config.imageUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
+            </div>
+          )}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', color: colors.text.secondary }}>Width</label>
+              <span style={{ fontSize: '12px', color: colors.text.primary, fontWeight: 600 }}>{config.width || 150}px</span>
+            </div>
+            <input type="range" min="50" max="600" value={Number(config.width) || 150} onChange={(e) => handleTooltipUpdate('width', Number(e.target.value))} style={{ width: '100%', cursor: 'pointer', accentColor: colors.primary[500] }} />
+          </div>
+        </div>
+
+        {/* 4. Positioning */}
+        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Positioning</h5>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Placement</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {['top', 'bottom', 'left', 'right'].map((pos) => (
+                <button key={pos} onClick={() => handleTooltipUpdate('position', pos)} style={{ padding: '8px', border: `1px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`, borderRadius: '6px', background: config.position === pos ? colors.primary[50] : 'white', color: config.position === pos ? colors.primary[600] : colors.text.secondary, fontSize: '12px', fontWeight: 500, cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Arrow</label>
+              <select value={config.arrowPosition || 'auto'} onChange={(e) => handleTooltipUpdate('arrowPosition', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
+                <option value="auto">Auto</option><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Orientation</label>
+              <select value={config.orientation || 'vertical'} onChange={(e) => handleTooltipUpdate('orientation', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
+                <option value="vertical">Vertical</option><option value="horizontal">Horizontal</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset X</label><input type="number" value={config.offsetX || 0} onChange={(e) => handleTooltipUpdate('offsetX', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
+            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset Y</label><input type="number" value={config.offsetY || 0} onChange={(e) => handleTooltipUpdate('offsetY', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
+          </div>
+        </div>
+
+        {/* 5. Appearance */}
+        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Appearance</h5>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Roundness</label><input type="number" min="0" value={config.roundness ?? 8} onChange={(e) => handleTooltipUpdate('roundness', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
+            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Padding</label><input type="number" min="0" value={config.padding ?? 10} onChange={(e) => handleTooltipUpdate('padding', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Background</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input type="color" value={config.backgroundColor || '#ffffff'} onChange={(e) => handleTooltipUpdate('backgroundColor', e.target.value)} style={{ width: '40px', height: '40px', border: '1px solid #e5e7eb', cursor: 'pointer', borderRadius: '4px', padding: 0 }} />
+              <div style={{ flex: 1 }}>
+                <input type="range" min="0" max="1" step="0.1" value={config.backgroundOpacity ?? 1} onChange={(e) => handleTooltipUpdate('backgroundOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
+                <div style={{ fontSize: '10px', color: colors.text.secondary, textAlign: 'right' }}>Opacity: {Math.round((config.backgroundOpacity ?? 1) * 100)}%</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Shadow</label>
+            <select value={config.shadow || 'none'} onChange={(e) => handleTooltipUpdate('shadow', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
+              <option value="none">None</option><option value="sm">Small</option><option value="md">Medium</option><option value="lg">Large</option><option value="xl">Extra Large</option>
+            </select>
+          </div>
+        </div>
+
+        {/* 6. Behavior */}
+        <div style={{ marginBottom: '20px' }}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Behavior</h5>
+          {[
+            { key: 'closeOnOutsideClick', label: 'Close on Outside Click' },
+            { key: 'keepTargetClickable', label: 'Keep Target Clickable' },
+            { key: 'closeOnTargetClick', label: 'Close on Target Click' }
+          ].map(item => (
+            <label key={item.key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', cursor: 'pointer', padding: '4px 0' }}>
+              <span style={{ fontSize: '12px', color: colors.text.secondary }}>{item.label}</span>
+              <input type="checkbox" checked={!!config[item.key as keyof typeof config]} onChange={(e) => handleTooltipUpdate(item.key, e.target.checked)} style={{ accentColor: colors.primary[500] }} />
+            </label>
+          ))}
+        </div>
+      </>
+    );
+  }
 
   // Render properties based on layer type
   const renderLayerProperties = () => {
@@ -1258,18 +1502,12 @@ export const DesignStep: React.FC<any> = () => {
       );
     }
 
-    // Special handler for Bottom Sheet Container
-    if (selectedLayerObj.type === 'container' && selectedLayerObj.name === 'Bottom Sheet') {
-      console.log('Returning BottomSheetMinimalEditor from active check');
-      return <BottomSheetMinimalEditor />;
-    }
-
     // Modal Configuration
     const renderModalConfig = () => {
       if (selectedNudgeType !== 'modal') return null;
 
       const config = currentCampaign?.modalConfig || {
-        mode: 'container',
+        mode: 'image-only',
         width: '90%',
         height: 'auto',
         backgroundColor: '#FFFFFF',
@@ -1288,11 +1526,7 @@ export const DesignStep: React.FC<any> = () => {
         updateModalConfig({ [parent]: { ...parentObj, [field]: value } });
       };
 
-      // Show modal config when:
-      // 1. Modal container is selected
-      // 2. No layer is selected
-      const isModalSelected = selectedLayerObj?.type === 'container' && selectedLayerObj?.name === 'Modal Container';
-      const shouldShowFullConfig = !selectedLayerObj || isModalSelected;
+      const shouldShowFullConfig = !selectedLayerObj;
 
       // ALWAYS show the mode toggle, even when child layers are selected
       const modeToggleSection = (
@@ -1300,91 +1534,37 @@ export const DesignStep: React.FC<any> = () => {
           <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
             🎨 Modal Mode
           </h5>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button
-              onClick={() => {
-                handleConfigUpdate('mode', 'container');
-                // Restore default container styles
-                handleConfigUpdate('width', '90%');
-
-                // Find Modal Container layer explicitly
-                const modalContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Modal Container');
-                if (modalContainer) {
-                  updateLayerStyle(modalContainer.id, {
-                    width: '90%',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                    padding: 20
-                  });
-                }
-              }}
-              style={{
-                padding: '12px',
-                border: `2px solid ${(config.mode || 'container') === 'container' ? colors.primary[500] : colors.gray[200]}`,
-                borderRadius: '8px',
-                background: (config.mode || 'container') === 'container' ? colors.primary[50] : 'white',
-                color: (config.mode || 'container') === 'container' ? colors.primary[600] : colors.text.secondary,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-                alignItems: 'center'
-              }}
-            >
-              <LayoutGrid size={18} />
-              <div>Container Card</div>
-              <div style={{ fontSize: '10px', fontWeight: 400, opacity: 0.7 }}>
-                White box + layers
-              </div>
-            </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+            {/* Removed Container Mode Button */}
             <button
               onClick={() => {
                 handleConfigUpdate('mode', 'image-only');
-                // Reset styles for image-only mode
-                handleConfigUpdate('width', undefined); // Let it be auto
-
-                // Find Modal Container layer explicitly
-                const modalContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Modal Container');
-                if (modalContainer) {
-                  updateLayerStyle(modalContainer.id, {
-                    width: undefined, // Let it be auto
-                    backgroundColor: 'transparent',
-                    borderRadius: 0,
-                    boxShadow: 'none',
-                    padding: 0
-                  });
-                }
+                handleConfigUpdate('width', 'auto');
+                handleConfigUpdate('backgroundColor', 'transparent');
+                handleConfigUpdate('borderRadius', 0);
+                handleConfigUpdate('elevation', 0);
               }}
               style={{
-                padding: '12px',
-                border: `2px solid ${config.mode === 'image-only' ? colors.primary[500] : colors.gray[200]}`,
-                borderRadius: '8px',
-                background: config.mode === 'image-only' ? colors.primary[50] : 'white',
-                color: config.mode === 'image-only' ? colors.primary[600] : colors.text.secondary,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-                alignItems: 'center'
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                padding: '12px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: config.mode === 'image-only' ? colors.primary[50] : 'white',
+                border: `1px solid ${config.mode === 'image-only' ? colors.primary[500] : colors.gray[200]}`,
+                color: config.mode === 'image-only' ? colors.primary[600] : colors.text.secondary
               }}
             >
-              <ImageIcon size={18} />
-              <div>Image Only</div>
-              <div style={{ fontSize: '10px', fontWeight: 400, opacity: 0.7 }}>
-                Full-image background
+              <div style={{ padding: '6px', borderRadius: '6px', backgroundColor: config.mode === 'image-only' ? colors.primary[100] : colors.gray[100] }}>
+                <ImageIcon size={16} />
               </div>
+              <span style={{ fontSize: '12px', fontWeight: 500 }}>Image Only</span>
             </button>
           </div>
-          {!shouldShowFullConfig && (
+        </div>
+      );
+
+      if (!shouldShowFullConfig && selectedLayerObj) {
+        return (
+          <>
+            {modeToggleSection}
             <button
               onClick={() => {
                 // Find modal container ID
@@ -1411,16 +1591,18 @@ export const DesignStep: React.FC<any> = () => {
               <Settings2 size={14} />
               More Modal Settings
             </button>
-          )}
-        </div>
-      );
-
-      if (!shouldShowFullConfig && selectedLayerObj) {
-        return modeToggleSection;
+          </>
+        );
       }
 
       return (
-        <>
+        <div style={{ marginBottom: '20px' }}>
+          <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>Modal Settings</h4>
+          {config.mode === 'container' && (
+            <div style={{ padding: '12px', backgroundColor: colors.red[50], color: colors.red[600], borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+              Container mode is deprecated. Please switch to Image Only.
+            </div>
+          )}
           {modeToggleSection}
 
           {/* Background Image Upload (Image-Only Mode) */}
@@ -1703,7 +1885,7 @@ export const DesignStep: React.FC<any> = () => {
               />
             </div>
           </div>
-        </>
+        </div>
       );
     };
     console.log('DEBUG: Passed renderModalConfig definition');
@@ -2160,203 +2342,6 @@ export const DesignStep: React.FC<any> = () => {
     };
     console.log('DEBUG: Reached post-renderBannerConfig (2130)');
 
-    // Tooltip Configuration
-    // Tooltip Configuration (Image-First Mode)
-    const renderTooltipConfig = () => {
-      console.log('DEBUG: renderTooltipConfig EXECUTING via const');
-      if (selectedNudgeType !== 'tooltip') return null;
-
-      const config = currentCampaign?.tooltipConfig || { mode: 'image' };
-
-      const handleTooltipUpdate = (field: string, value: any) => {
-        // Ensure we explicitly set mode to image if not present
-        if (!config.mode) {
-          useEditorStore.getState().updateTooltipConfig({ mode: 'image', [field]: value });
-          if (!config.mode) {
-            useEditorStore.getState().updateTooltipConfig({ mode: 'image', [field]: value });
-          } else {
-            useEditorStore.getState().updateTooltipConfig({ [field]: value });
-          }
-        };
-
-        // Define tooltipContainerLayer
-        const tooltipContainerLayer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Tooltip Container');
-
-        // Helper to get selected page for elements
-        const selectedPage = pages.find(p => p._id === config.targetPageId);
-
-        // Wrapper for image upload to handle event type
-        const onImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-          handleImageUpload(e, 'tooltip_image_only');
-        };
-      }; // Close handleTooltipUpdate
-
-      return (
-        <>
-          {/* 1. Targeting (Preserved) */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🎯 Target
-            </h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Page</label>
-              <select
-                value={config.targetPageId || ''}
-                onChange={(e) => handleTooltipUpdate('targetPageId', e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              >
-                <option value="">Select a page...</option>
-                {pages.map(page => (
-                  <option key={page._id} value={page._id}>{page.name}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Element</label>
-              <div style={{ position: 'relative' }}>
-                {selectedPage && selectedPage.elements && selectedPage.elements.length > 0 ? (
-                  <select
-                    value={config.targetElementId || ''}
-                    onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                  >
-                    <option value="">Select an element...</option>
-                    {selectedPage.elements.map((el: any) => (
-                      <option key={el.id} value={el.id}>
-                        {el.id} {el.tagName ? `(${el.tagName})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div style={{ padding: '8px 12px', border: `1px dashed ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', color: colors.text.secondary, background: colors.gray[50] }}>
-                    {selectedPage ? 'No elements found on this page' : 'Select a page first'}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 2. General (Name) */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>General</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Name</label>
-              <input
-                type="text"
-                value={currentCampaign?.name || ''}
-                onChange={(e) => updateCampaign({ name: e.target.value })}
-                placeholder="Tooltip Campaign Name"
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-          </div>
-
-          {/* 3. Image Content */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Image Content</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Image Source</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  value={config.imageUrl || ''}
-                  onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
-                  placeholder="https://example.com/tooltip.png"
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-                <label style={{ padding: '8px 12px', background: colors.primary[500], color: 'white', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
-                  Upload
-                  <input type="file" accept="image/*" onChange={onImageUpload} style={{ display: 'none' }} />
-                </label>
-              </div>
-            </div>
-            {config.imageUrl && (
-              <div style={{ marginBottom: '12px', padding: '10px', background: colors.gray[50], borderRadius: '6px', border: `1px solid ${colors.gray[200]}` }}>
-                <div style={{ height: '80px', backgroundImage: `url(${config.imageUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
-              </div>
-            )}
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <label style={{ fontSize: '12px', color: colors.text.secondary }}>Width</label>
-                <span style={{ fontSize: '12px', color: colors.text.primary, fontWeight: 600 }}>{config.width || 150}px</span>
-              </div>
-              <input type="range" min="50" max="600" value={Number(config.width) || 150} onChange={(e) => handleTooltipUpdate('width', Number(e.target.value))} style={{ width: '100%', cursor: 'pointer', accentColor: colors.primary[500] }} />
-            </div>
-          </div>
-
-          {/* 4. Positioning */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Positioning</h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Placement</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {['top', 'bottom', 'left', 'right'].map((pos) => (
-                  <button key={pos} onClick={() => handleTooltipUpdate('position', pos)} style={{ padding: '8px', border: `1px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`, borderRadius: '6px', background: config.position === pos ? colors.primary[50] : 'white', color: config.position === pos ? colors.primary[600] : colors.text.secondary, fontSize: '12px', fontWeight: 500, cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</button>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Arrow</label>
-                <select value={config.arrowPosition || 'auto'} onChange={(e) => handleTooltipUpdate('arrowPosition', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
-                  <option value="auto">Auto</option><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Orientation</label>
-                <select value={config.orientation || 'vertical'} onChange={(e) => handleTooltipUpdate('orientation', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
-                  <option value="vertical">Vertical</option><option value="horizontal">Horizontal</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset X</label><input type="number" value={config.offsetX || 0} onChange={(e) => handleTooltipUpdate('offsetX', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-              <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset Y</label><input type="number" value={config.offsetY || 0} onChange={(e) => handleTooltipUpdate('offsetY', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-            </div>
-          </div>
-
-          {/* 5. Appearance */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Appearance</h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Roundness</label><input type="number" min="0" value={config.roundness ?? 8} onChange={(e) => handleTooltipUpdate('roundness', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-              <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Padding</label><input type="number" min="0" value={config.padding ?? 10} onChange={(e) => handleTooltipUpdate('padding', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Background</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" value={config.backgroundColor || '#ffffff'} onChange={(e) => handleTooltipUpdate('backgroundColor', e.target.value)} style={{ width: '40px', height: '40px', border: '1px solid #e5e7eb', cursor: 'pointer', borderRadius: '4px', padding: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <input type="range" min="0" max="1" step="0.1" value={config.backgroundOpacity ?? 1} onChange={(e) => handleTooltipUpdate('backgroundOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
-                  <div style={{ fontSize: '10px', color: colors.text.secondary, textAlign: 'right' }}>Opacity: {Math.round((config.backgroundOpacity ?? 1) * 100)}%</div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Shadow</label>
-              <select value={config.shadow || 'none'} onChange={(e) => handleTooltipUpdate('shadow', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
-                <option value="none">None</option><option value="sm">Small</option><option value="md">Medium</option><option value="lg">Large</option><option value="xl">Extra Large</option>
-              </select>
-            </div>
-          </div>
-
-          {/* 6. Behavior */}
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Behavior</h5>
-            {[
-              { key: 'closeOnOutsideClick', label: 'Close on Outside Click' },
-              { key: 'keepTargetClickable', label: 'Keep Target Clickable' },
-              { key: 'closeOnTargetClick', label: 'Close on Target Click' }
-            ].map(item => (
-              <label key={item.key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', cursor: 'pointer', padding: '4px 0' }}>
-                <span style={{ fontSize: '12px', color: colors.text.secondary }}>{item.label}</span>
-                <input type="checkbox" checked={!!config[item.key as keyof typeof config]} onChange={(e) => handleTooltipUpdate(item.key, e.target.checked)} style={{ accentColor: colors.primary[500] }} />
-              </label>
-            ))}
-          </div>
-        </>
-      );
-    }
 
     function renderTooltipConfig_LEGACY() {
       if (selectedNudgeType !== 'tooltip') return null;
@@ -4288,24 +4273,30 @@ export const DesignStep: React.FC<any> = () => {
                                     <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
                                   </div>
 
+
+
                                   {/* Basic Layers */}
                                   <div style={{ padding: '4px' }}>
 
-                                    <button type="button" onClick={() => { addLayer('container', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <button type="button" onClick={() => handleAddLayer('container', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                                       <Layout size={16} color={colors.gray[600]} />
                                       Container
                                     </button>
-                                    <button type="button" onClick={() => { addLayer('media', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <button type="button" onClick={() => handleAddLayer('media', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                                       <ImageIcon size={16} color={colors.gray[600]} />
                                       Image
                                     </button>
-                                    <button type="button" onClick={() => { addLayer('text', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <button type="button" onClick={() => handleAddLayer('text', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                                       <Type size={16} color={colors.gray[600]} />
                                       Text
                                     </button>
-                                    <button type="button" onClick={() => { addLayer('button', rootContainerId); setShowLayerMenu(false); }} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <button type="button" onClick={() => handleAddLayer('button', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                                       <Square size={16} color={colors.gray[600]} />
                                       Button
+                                    </button>
+                                    <button type="button" onClick={() => handleAddLayer('custom_html', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                      <Code size={16} color={colors.gray[600]} />
+                                      Custom HTML
                                     </button>
                                   </div>
                                 </div>
@@ -4336,6 +4327,8 @@ export const DesignStep: React.FC<any> = () => {
                         // TODO: Implement screenshot functionality
                         toast.info('Screenshot feature coming soon!');
                       }}
+                      isInteractive={isInteractive}
+                      onInteractToggle={() => setIsInteractive(!isInteractive)}
                     />
 
                     {/* Phone Preview */}

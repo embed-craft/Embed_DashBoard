@@ -63,14 +63,44 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         <label className="block text-xs text-gray-500 mb-1">Font Weight</label>
                         <select
                             value={fontWeight}
-                            onChange={(e) => handleContentUpdate('fontWeight', e.target.value)}
+                            onChange={(e) => handleContentUpdate('fontWeight', Number(e.target.value))}
                             className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none bg-white"
                         >
-                            <option value="normal">Normal</option>
-                            <option value="medium">Medium</option>
-                            <option value="semibold">Semibold</option>
-                            <option value="bold">Bold</option>
+                            <option value="400">Normal (400)</option>
+                            <option value="500">Medium (500)</option>
+                            <option value="600">Semibold (600)</option>
+                            <option value="700">Bold (700)</option>
+                            <option value="800">Extra Bold (800)</option>
+                            <option value="900">Black (900)</option>
                         </select>
+                    </div>
+                </div>
+
+                {/* Custom Font Section */}
+                <div className="mb-4 pt-3 border-t border-gray-100">
+                    <h6 className="text-xs font-semibold text-gray-900 mb-2">Typography & Font</h6>
+                    <div className="space-y-2">
+                        <div>
+                            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Font Family Name</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Roboto, Open Sans"
+                                value={layer.content?.fontFamily || ''}
+                                onChange={(e) => handleContentUpdate('fontFamily', e.target.value)}
+                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Font URL (Google Fonts/CDN)</label>
+                            <input
+                                type="text"
+                                placeholder="https://fonts.googleapis.com/css2?..."
+                                value={layer.content?.fontUrl || ''}
+                                onChange={(e) => handleContentUpdate('fontUrl', e.target.value)}
+                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Paste the full CSS URL to load the font.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -92,10 +122,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                     </div>
                 </div>
 
-                <div className="mb-3">
+                <div className="mb-4">
                     <label className="block text-xs text-gray-500 mb-1">Text Align</label>
                     <div className="flex bg-gray-50 p-1 rounded-md border border-gray-200">
-                        {['left', 'center', 'right'].map((align) => (
+                        {['left', 'center', 'right', 'justify'].map((align) => (
                             <button
                                 key={align}
                                 onClick={() => handleContentUpdate('textAlign', align)}
@@ -104,6 +134,57 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                                 {align}
                             </button>
                         ))}
+                    </div>
+                </div>
+
+                {/* Text Shadow Section */}
+                <div className="mb-3 pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h6 className="text-xs font-semibold text-gray-900">Text Shadow</h6>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div>
+                            <label className="block text-[10px] text-gray-500 mb-1">Offset X</label>
+                            <input
+                                type="number"
+                                value={layer.content?.textShadowX || 0}
+                                onChange={(e) => handleContentUpdate('textShadowX', Number(e.target.value))}
+                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 mb-1">Offset Y</label>
+                            <input
+                                type="number"
+                                value={layer.content?.textShadowY || 0}
+                                onChange={(e) => handleContentUpdate('textShadowY', Number(e.target.value))}
+                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="block text-[10px] text-gray-500 mb-1">Blur Radius</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={layer.content?.textShadowBlur || 0}
+                                onChange={(e) => handleContentUpdate('textShadowBlur', Number(e.target.value))}
+                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 mb-1">Shadow Color</label>
+                            <div className="flex gap-1">
+                                <input
+                                    type="color"
+                                    value={layer.content?.textShadowColor || '#000000'}
+                                    onChange={(e) => handleContentUpdate('textShadowColor', e.target.value)}
+                                    className="w-full h-[34px] border border-gray-200 rounded-md cursor-pointer"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

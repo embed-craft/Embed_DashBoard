@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera } from 'lucide-react';
+import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand } from 'lucide-react';
 import { DEVICE_PRESETS, DevicePreset } from '@/lib/devicePresets';
 
 interface PreviewToolbarProps {
@@ -10,6 +10,8 @@ interface PreviewToolbarProps {
     showGrid: boolean;
     onGridToggle: () => void;
     onScreenshot?: () => void;
+    isInteractive: boolean;
+    onInteractToggle: () => void;
 }
 
 export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
@@ -20,8 +22,11 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
     showGrid,
     onGridToggle,
     onScreenshot,
+    isInteractive,
+    onInteractToggle
 }) => {
     const currentDevice = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+    console.log('[PreviewToolbar] Rendering. isInteractive:', isInteractive);
 
     return (
         <div style={{
@@ -126,6 +131,22 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
 
             {/* Right: Action Buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                    onClick={onInteractToggle}
+                    style={{
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: `1px solid ${isInteractive ? '#6366F1' : '#E5E7EB'}`,
+                        backgroundColor: isInteractive ? '#EEF2FF' : '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        transition: 'all 0.2s'
+                    }}
+                    title={isInteractive ? "Exite Interact Mode" : "Enter Interact Mode"}
+                >
+                    {isInteractive ? <Hand size={14} color={isInteractive ? '#6366F1' : '#6B7280'} /> : <MousePointer2 size={14} color={isInteractive ? '#6366F1' : '#6B7280'} />}
+                </button>
                 <button
                     onClick={onGridToggle}
                     style={{

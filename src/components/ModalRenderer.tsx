@@ -460,7 +460,9 @@ const ResizableLayerWrapper: React.FC<{
     baseStyle: React.CSSProperties;
     colors: any;
     children: React.ReactNode;
-}> = ({ layer, isSelected, onLayerSelect, onLayerUpdate, baseStyle, colors, children }) => {
+    isInteractive?: boolean;
+    onAction?: (layer: Layer) => void;
+}> = ({ layer, isSelected, onLayerSelect, onLayerUpdate, baseStyle, colors, children, isInteractive, onAction }) => {
     const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
     const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -523,7 +525,11 @@ const ResizableLayerWrapper: React.FC<{
                     }}
                     onClick={(e) => {
                         e.stopPropagation();
-                        onLayerSelect(layer.id);
+                        if (isInteractive && onAction) {
+                            onAction(layer);
+                        } else {
+                            onLayerSelect(layer.id);
+                        }
                     }}
                 >
                     {children}
@@ -542,7 +548,11 @@ const ResizableLayerWrapper: React.FC<{
             }}
             onClick={(e) => {
                 e.stopPropagation();
-                onLayerSelect(layer.id);
+                if (isInteractive && onAction) {
+                    onAction(layer);
+                } else {
+                    onLayerSelect(layer.id);
+                }
             }}
         >
             {children}
@@ -551,55 +561,61 @@ const ResizableLayerWrapper: React.FC<{
 };
 
 interface ModalRendererProps {
-    layers: Layer[];
+    layers: any[];
     selectedLayerId: string | null;
-    onLayerSelect: (id: string) => void;
-    onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
-    colors: ColorTheme;
+    onLayerSelect: (id: string | null) => void;
+    colors: any;
     config?: ModalConfig;
     onConfigChange?: (config: ModalConfig) => void;
-    device?: 'mobile' | 'desktop';
+    onLayerUpdate?: (id: string, updates: any) => void;
+    // Interactive Props
+    isInteractive?: boolean;
     onDismiss?: () => void;
+    onNavigate?: (screenName: string) => void;
 }
 
 export const ModalRenderer: React.FC<ModalRendererProps> = ({
     layers,
     selectedLayerId,
     onLayerSelect,
-    onLayerUpdate,
     colors,
     config,
     onConfigChange,
-    device = 'mobile',
-    onDismiss
+    onLayerUpdate,
+    // Interactive Mode
+    isInteractive = false,
+    onDismiss,
+    onNavigate
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const modalLayer = layers.find(l => l.type === 'modal') || layers[0] || { id: 'fallback', type: 'modal', content: {}, style: {} } as any;
     const childLayers = layers.filter(l => l.parent === modalLayer.id);
 
-    const handleAction = (layer: Layer) => {
-        const actionType = layer.content?.action?.type || 'close';
+    // Action Handler
+    const handleAction = (action: any) => {
+        if (!isInteractive || !action) return;
 
-        switch (actionType) {
+        console.log('Action triggered:', action);
+
+        switch (action.type) {
             case 'close':
+            case 'dismiss': // Handle both temporarily
                 if (onDismiss) onDismiss();
                 break;
             case 'deeplink':
-                if (layer.content?.action?.url) {
-                    window.open(layer.content.action.url, '_blank');
+                if (action.url) {
+                    window.open(action.url, '_blank');
                 }
                 break;
             case 'navigate':
-                // const screenName = layer.content?.screenName || 'Unknown Screen';
-                toast.success(`Navigating to screen`);
-                if (onDismiss) onDismiss();
+                if (action.screenName && onNavigate) {
+                    onNavigate(action.screenName);
+                } else {
+                    console.log('Navigation action triggered:', action.screenName);
+                }
                 break;
             case 'custom':
-                console.log('Custom action triggered');
-                toast.info(`Custom event triggered`);
-                break;
-            default:
-                // No action
+                console.log('Custom action triggered:', action);
                 break;
         }
     };
@@ -1142,6 +1158,8 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                 onLayerUpdate={onLayerUpdate}
                 baseStyle={baseStyle}
                 colors={colors}
+                isInteractive={isInteractive}
+                onAction={(layer) => handleAction(layer.content?.action)}
             >
                 {content}
             </ResizableLayerWrapper>

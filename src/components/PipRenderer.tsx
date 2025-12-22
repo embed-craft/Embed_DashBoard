@@ -4,10 +4,14 @@ import { X, Maximize2, Minimize2, Volume2, VolumeX, ExternalLink } from 'lucide-
 interface PipRendererProps {
     layers: any[];
     selectedLayerId: string | null;
-    onLayerSelect: (id: string) => void;
+    onLayerSelect: (id: string | null) => void;
     colors: any;
     config?: any;
     onConfigChange?: (config: any) => void;
+    onLayerUpdate?: (id: string, updates: any) => void;
+    isInteractive?: boolean;
+    onDismiss?: () => void;
+    onNavigate?: (screenName: string) => void;
 }
 
 export const PipRenderer: React.FC<PipRendererProps> = ({
@@ -16,8 +20,40 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
     onLayerSelect,
     colors,
     config = {},
-    onConfigChange
+    onConfigChange,
+    onLayerUpdate,
+    isInteractive = false,
+    onDismiss,
+    onNavigate
 }) => {
+    // Action Handler
+    const handleAction = (action: any) => {
+        if (!isInteractive || !action) return;
+
+        console.log('Action triggered:', action);
+
+        switch (action.type) {
+            case 'close':
+            case 'dismiss':
+                if (onDismiss) onDismiss();
+                break;
+            case 'deeplink':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
+            case 'navigate':
+                if (action.screenName && onNavigate) {
+                    onNavigate(action.screenName);
+                } else {
+                    console.log('Navigation action triggered:', action.screenName);
+                }
+                break;
+            case 'custom':
+                console.log('Custom action triggered:', action);
+                break;
+        }
+    };
     // State
     const [isMaximized, setIsMaximized] = useState(false);
     const [isMuted, setIsMuted] = useState(true);
@@ -145,9 +181,6 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                     </div>
                 );
 
-            // ... other cases (text, button, image, container) can remain or be simplified
-            // For now, we focus on video as the main component of PIP
-
             case 'button':
                 const label = layer.content?.label || layer.content?.text || 'Button';
                 const variant = layer.content?.buttonVariant || 'primary';
@@ -247,9 +280,13 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         key={layer.id}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onLayerSelect(layer.id);
-                            if (isMaximized && layer.content?.action?.url) {
-                                window.open(layer.content.action.url, '_blank');
+                            if (isInteractive) {
+                                handleAction(layer.content?.action);
+                            } else {
+                                onLayerSelect(layer.id);
+                                if (isMaximized && layer.content?.action?.url) {
+                                    window.open(layer.content.action.url, '_blank');
+                                }
                             }
                         }}
                         style={variantStyle}
@@ -356,7 +393,8 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
             onClick={(e) => {
                 if (pipContainerLayer) {
                     e.stopPropagation();
-                    onLayerSelect(pipContainerLayer.id);
+                    if (isInteractive) handleAction(pipContainerLayer);
+                    else onLayerSelect(pipContainerLayer.id);
                 }
             }}
         >
@@ -431,7 +469,10 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                // Handle close logic (e.g., hide component)
+                                // Handle close logic
+                                if (isInteractive && onDismiss) {
+                                    onDismiss();
+                                }
                                 console.log('Close PIP');
                             }}
                             style={{

@@ -1,19 +1,19 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface TooltipRendererProps {
     layers: any[];
     selectedLayerId: string | null;
-    onLayerSelect: (id: string) => void;
+    onLayerSelect: (id: string | null) => void;
     colors: any;
-    config?: any;
-    onConfigChange?: (config: any) => void;
-    targetElement?: {
-        id: string;
-        rect: { x: number; y: number; width: number; height: number };
-        tagName: string;
-    };
+    config?: any; // Assuming TooltipConfig is not defined in this snippet, keeping 'any' for now
+    onConfigChange?: (config: any) => void; // Assuming TooltipConfig is not defined in this snippet, keeping 'any' for now
+    targetElement?: any;
     scaleX?: number;
     scaleY?: number;
+    onLayerUpdate?: (id: string, updates: any) => void;
+    isInteractive?: boolean;
+    onDismiss?: () => void;
+    onNavigate?: (screenName: string) => void;
 }
 
 export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
@@ -21,21 +21,23 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     selectedLayerId,
     onLayerSelect,
     colors,
-    config = {},
+    config,
     onConfigChange,
     targetElement,
-    scaleX,
-    scaleY
+    scaleX = 1,
+    scaleY = 1,
+    onLayerUpdate,
+    isInteractive = false,
+    onDismiss,
+    onNavigate
 }) => {
-    // Find the root container layer for the Tooltip
-    const tooltipContainerLayer = layers.find(l => l.type === 'container' && l.name === 'Tooltip Container');
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // If Image Mode, we must IGNORE the container layer styles (which often contain a default bg)
     // unless strictly needed. Ideally, we just rely on config.
-    const mode = config.mode || 'standard';
+    const mode = config?.mode || 'standard';
     // If Image Mode, we allow layer styles to override config (assuming DesignStep cleared defaults on mode switch).
-    const rawContainerStyle = tooltipContainerLayer?.style || {};
-    const containerStyle = rawContainerStyle; // Don't strip properties, trust the layer state.
+    const containerStyle = {}; // No container layer anymore
 
     // --- Configuration & Defaults ---
     // Standard Defaults
@@ -43,17 +45,12 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const STD_SHADOW = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
 
     // 1. Determine Background Color
-    // Priority: Layer Style > Config > Default (if standard)
+    // Priority: Config > Default (if standard)
     // If Image Mode + No specific background set, we want transparent.
-    // But if user sets a background (via generic panel), we respect it.
-    let backgroundColor = tooltipContainerLayer?.style?.backgroundColor || config.backgroundColor;
-    
+    let backgroundColor = config.backgroundColor;
+
     if (mode === 'image') {
-        // Only default to transparent if NOTHING is set. 
-        // If it equals STD_BG, it might be a left-over default, so we might want to clear it?
-        // But DesignStep should have cleared it. 
-        // Let's trust that if it is set, the user wants it.
-        // Fallback to transparent if undefined.
+        // Only default to transparent if NOTHING is set.
         if (!backgroundColor) {
             backgroundColor = 'transparent';
         }
@@ -63,11 +60,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     }
 
     // 2. Determine Box Shadow
-    let boxShadow = tooltipContainerLayer?.style?.boxShadow || config.boxShadow;
+    let boxShadow = config.boxShadow;
     if (mode === 'image') {
-       if (!boxShadow) {
-           boxShadow = 'none';
-       }
+        if (!boxShadow) {
+            boxShadow = 'none';
+        }
     } else {
         boxShadow = boxShadow !== undefined ? boxShadow : STD_SHADOW;
     }
@@ -79,7 +76,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // Fix duplicate declaration issue by using this single source of truth
     // Fix duplicate declaration issue by using this single source of truth
     // Fix duplicate declaration issue by using this single source of truth
-    const rawPadding = tooltipContainerLayer?.style?.padding !== undefined ? tooltipContainerLayer?.style?.padding : config.padding;
+    const rawPadding = config.padding;
     const computedPadding = typeof rawPadding === 'object'
         ? `${rawPadding.top || 0}px ${rawPadding.right || 0}px ${rawPadding.bottom || 0}px ${rawPadding.left || 0}px`
         : `${rawPadding !== undefined ? rawPadding : 12}px`;
@@ -92,8 +89,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         return [
             filterObj.blur ? `blur(${filterObj.blur}px)` : '',
             filterObj.brightness ? `brightness(${filterObj.brightness}%)` : '',
-            filterObj.contrast ? `contrast(${filterObj.contrast}%)` : '',
-            filterObj.grayscale ? `grayscale(${filterObj.grayscale}%)` : ''
+            filterObj.contrast ? `contrast(${filterObj.contrast} %)` : '',
+            filterObj.grayscale ? `grayscale(${filterObj.grayscale} %)` : ''
         ].filter(Boolean).join(' ') || undefined;
     };
 
@@ -108,12 +105,37 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         ].filter(Boolean).join(' ') || undefined;
     };
 
+    const handleAction = (layer: any) => {
+        if (!isInteractive || !layer.content?.action) return;
+
+        const action = layer.content.action;
+        const type = action.type;
+
+        console.log('[Tooltip Action]', type, action);
+
+        switch (type) {
+            case 'close':
+            case 'dismiss':
+                if (onDismiss) onDismiss();
+                break;
+            case 'deeplink':
+                if (action.url) window.open(action.url, '_blank');
+                break;
+            case 'navigate':
+                console.log(`Navigate to ${action.screenName} `);
+                break;
+            case 'custom':
+                console.log(`Custom Event: ${action.eventName} `);
+                break;
+        }
+    };
+
     const renderLayer = (layer: any) => {
         const isSelected = selectedLayerId === layer.id;
         const style = layer.style || {};
 
         const selectionStyle = isSelected ? {
-            outline: `2px solid ${colors.purple[500]}`,
+            outline: `2px solid ${colors.purple[500]} `,
             outlineOffset: '2px',
             zIndex: 10
         } : {};
@@ -149,7 +171,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                             fontWeight: style.fontWeight,
                             textAlign: style.textAlign,
                             lineHeight: style.lineHeight,
-                            letterSpacing: style.letterSpacing ? `${style.letterSpacing}px` : undefined,
+                            letterSpacing: style.letterSpacing ? `${style.letterSpacing} px` : undefined,
 
                             // Size might be in 'size' prop or style
                             width: layer.size?.width || style.width || 'auto',
@@ -157,7 +179,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
                             // Explicitly handle these if they are in the style object but not React CSS props directly
                             border: style.border,
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : style.borderRadius,
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : style.borderRadius,
                             backgroundColor: style.backgroundColor,
                         }}
                     >
@@ -170,11 +192,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 return (
                     <div
                         key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInteractive) handleAction(layer.content?.action);
+                            else onLayerSelect(layer.id);
+                        }}
                         style={{
                             ...commonStyles,
                             overflow: 'hidden',
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : (style.borderRadius || '4px'),
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : (style.borderRadius || '4px'),
                             width: layer.size?.width || style.width || '100%',
                             height: layer.size?.height || style.height || 'auto',
                         }}
@@ -193,14 +219,18 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 return (
                     <button
                         key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInteractive) handleAction(layer.content?.action);
+                            else onLayerSelect(layer.id);
+                        }}
                         style={{
                             ...commonStyles,
                             border: style.border || 'none',
                             outline: 'none',
                             backgroundColor: style.backgroundColor,
                             color: style.color,
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : style.borderRadius,
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : style.borderRadius,
 
                             // Size
                             width: layer.size?.width || style.width || 'auto',
@@ -220,9 +250,9 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                             ...commonStyles,
                             display: style.display || 'flex',
                             flexDirection: style.direction || style.flexDirection || 'column',
-                            gap: style.gap ? `${style.gap}px` : '4px',
+                            gap: style.gap ? `${style.gap} px` : '4px',
                             backgroundColor: style.backgroundColor,
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius}px` : style.borderRadius,
+                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : style.borderRadius,
                             padding: style.padding,
 
                             // Size
@@ -258,34 +288,34 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             case 'top':
                 return {
                     ...base,
-                    bottom: `-${arrowSize}px`,
+                    bottom: `- ${arrowSize} px`,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    borderWidth: `${arrowSize}px ${arrowSize}px 0 ${arrowSize}px`,
+                    borderWidth: `${arrowSize}px ${arrowSize}px 0 ${arrowSize} px`,
                     borderColor: `${backgroundColor} transparent transparent transparent`
                 };
             case 'bottom':
                 return {
                     ...base,
-                    top: `-${arrowSize}px`,
+                    top: `- ${arrowSize} px`,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    borderWidth: `0 ${arrowSize}px ${arrowSize}px ${arrowSize}px`,
+                    borderWidth: `0 ${arrowSize}px ${arrowSize}px ${arrowSize} px`,
                     borderColor: `transparent transparent ${backgroundColor} transparent`
                 };
             case 'left':
                 return {
                     ...base,
-                    right: `-${arrowSize}px`,
+                    right: `- ${arrowSize} px`,
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    borderWidth: `${arrowSize}px 0 ${arrowSize}px ${arrowSize}px`,
-                    borderColor: `transparent transparent transparent ${backgroundColor}`
+                    borderWidth: `${arrowSize}px 0 ${arrowSize}px ${arrowSize} px`,
+                    borderColor: `transparent transparent transparent ${backgroundColor} `
                 };
             case 'right':
                 return {
                     ...base,
-                    left: `-${arrowSize}px`,
+                    left: `- ${arrowSize} px`,
                     top: '50%',
                     transform: 'translateY(-50%)',
                     borderWidth: `${arrowSize}px ${arrowSize}px ${arrowSize}px 0`,
@@ -314,13 +344,12 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     }}
                 />
             ) : (
-                tooltipContainerLayer?.children?.map((childId: string) => {
-                    const child = layers.find(l => l.id === childId);
-                    return child ? renderLayer(child) : null;
+                layers.map((layer) => {
+                    return renderLayer(layer);
                 })
             )}
 
-            {!tooltipContainerLayer && mode !== 'image' && (
+            {mode !== 'image' && (
                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
                     Tooltip Content
                 </div>
@@ -333,11 +362,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             style={{
                 // Advanced Mode: Gradient Override
                 ...(mode === 'advanced' && config.gradientWith && config.gradientTo ? {
-                    background: `linear-gradient(${config.gradientAngle || 45}deg, ${config.gradientWith}, ${config.gradientTo})`,
+                    background: `linear - gradient(${config.gradientAngle || 45}deg, ${config.gradientWith}, ${config.gradientTo})`,
                     backgroundColor: 'transparent' // Clear fallback
                 } : {}),
                 backgroundColor: backgroundColor,
-                borderRadius: `${borderRadius}px`,
+                borderRadius: `${borderRadius} px`,
                 padding: computedPadding,
                 position: 'relative',
                 maxWidth: config.maxWidth || '250px',
@@ -347,20 +376,21 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
                 // --- Full Property Support ---
                 // Filters
+                // Filters
                 filter: [
                     config.blur ? `blur(${config.blur}px)` : '',
                     config.brightness ? `brightness(${config.brightness}%)` : '',
                     config.contrast ? `contrast(${config.contrast}%)` : '',
                     config.grayscale ? `grayscale(${config.grayscale}%)` : ''
-                ].filter(Boolean).join(' ') || (tooltipContainerLayer?.style?.filter ? getFilterString(tooltipContainerLayer.style.filter) : undefined),
+                ].filter(Boolean).join(' ') || undefined,
 
                 // Container Props
-                opacity: tooltipContainerLayer?.style?.opacity !== undefined ? tooltipContainerLayer.style.opacity : (config.opacity !== undefined ? config.opacity / 100 : undefined),
+                opacity: config.opacity !== undefined ? config.opacity / 100 : undefined,
                 zIndex: config.zIndex,
                 cursor: config.cursor,
                 overflow: config.overflow,
-                border: (tooltipContainerLayer?.style?.borderWidth ? `${typeof tooltipContainerLayer.style.borderWidth === 'object' ? 1 : tooltipContainerLayer.style.borderWidth}px solid ${tooltipContainerLayer.style.borderColor || '#000000'}` : undefined) || config.border,
-                clipPath: tooltipContainerLayer?.style?.clipPath || config.clipPath,
+                border: config.border,
+                clipPath: config.clipPath,
 
                 // Background Image
                 backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,
@@ -371,35 +401,30 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 // Layout
                 // Layout
                 // Layout
-                display: tooltipContainerLayer?.style?.display || config.display || 'flex',
-                flexDirection: tooltipContainerLayer?.style?.flexDirection || tooltipContainerLayer?.style?.direction || config.flexDirection || 'column',
-                alignItems: tooltipContainerLayer?.style?.alignItems || config.alignItems,
-                justifyContent: tooltipContainerLayer?.style?.justifyContent || config.justifyContent,
-                gap: (tooltipContainerLayer?.style?.gap ? `${tooltipContainerLayer.style.gap}px` : undefined) || (config.gap !== undefined ? `${config.gap}px` : undefined),
+                display: config?.display || 'flex',
+                flexDirection: config?.flexDirection || 'column',
+                alignItems: config?.alignItems,
+                justifyContent: config?.justifyContent,
+                gap: (config?.gap !== undefined ? `${config.gap}px` : undefined),
 
-                // Typography (Inherited)
-                // Typography (Inherited)
-                fontFamily: tooltipContainerLayer?.style?.fontFamily || config.fontFamily,
-                fontSize: (tooltipContainerLayer?.style?.fontSize) || (config.fontSize ? `${config.fontSize}px` : undefined),
-                color: tooltipContainerLayer?.style?.color || config.textColor,
-                textAlign: tooltipContainerLayer?.style?.textAlign || config.textAlign,
+                // Typography
+                fontFamily: config?.fontFamily,
+                fontSize: (config?.fontSize ? `${config.fontSize}px` : undefined),
+                color: config?.textColor,
+                textAlign: config?.textAlign,
 
                 // Apply container styles first (layer defaults)
                 // Omit 'transform' from spread because it might be an object which is invalid for React style
-                ...(() => {
-                    const { transform, ...rest } = containerStyle;
-                    return rest;
-                })(),
+                // No container style to spread anymore
 
                 // Apply Config Box Shadow LAST to ensure it overrides container defaults
                 boxShadow: boxShadow,
 
                 // transform logic
-                // Prioritize Layer Style Transform (from Advanced Panel) over Config
+                // Prioritize Config
                 ...(() => {
-                    const layerTransform = containerStyle.transform || {};
-                    const rotate = layerTransform.rotate !== undefined ? layerTransform.rotate : (config.rotate || 0);
-                    const scale = layerTransform.scale !== undefined ? layerTransform.scale : (config.scale || 1);
+                    const rotate = config.rotate || 0;
+                    const scale = config.scale || 1;
 
                     const transformString = `rotate(${rotate}deg) scale(${scale})`;
 
@@ -414,17 +439,19 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 })()
             }}
             onClick={(e) => {
-                if (tooltipContainerLayer) {
-                    e.stopPropagation();
-                    onLayerSelect(tooltipContainerLayer.id);
-                }
+                // If interactive, might need handling
             }}
         >
             <div style={getArrowStyle()} />
 
             {/* HTML Mode Content */}
             {mode === 'html' ? (
-                <div dangerouslySetInnerHTML={{ __html: config.htmlContent || '<div>Custom HTML</div>' }} />
+                <div
+                    dangerouslySetInnerHTML={{ __html: config?.htmlContent || '<div>Custom HTML</div>' }}
+                    onClick={(e) => {
+
+                    }}
+                />
             ) : (
                 // Standard/Image/Advanced Content
                 renderTooltipContent()
@@ -496,12 +523,12 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             position: 'absolute',
             zIndex: 50,
             pointerEvents: 'auto',
-            top: `${top}px`,
-            left: `${left}px`,
+            top: `${top} px`,
+            left: `${left} px`,
             transform: finalTransform
         };
 
-        const imageWidth = config.width ? `${config.width}px` : '200px';
+        const imageWidth = config.width ? `${config.width} px` : '200px';
 
         return (
             <>
@@ -517,13 +544,13 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         opacity: config.overlayOpacity,
                         zIndex: 40, // Below tooltip (50), same/above highlight?
                         pointerEvents: 'auto', // Blocks clicks if configured
-                    }} 
-                    onClick={(e) => {
-                         // We don't have a close handler prop here, but we can stop propagation
-                         // The parent usually handles "outside click" via a global listener.
-                         // But if we want to catch it here:
-                         // config.closeOnOutsideClick
                     }}
+                        onClick={(e) => {
+                            // We don't have a close handler prop here, but we can stop propagation
+                            // The parent usually handles "outside click" via a global listener.
+                            // But if we want to catch it here:
+                            // config.closeOnOutsideClick
+                        }}
                     />
                 )}
 
@@ -531,15 +558,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 {(mode === 'image' || config.targetHighlightColor) && (
                     <div style={{
                         position: 'absolute',
-                        left: `${scaledX - (config.targetHighlightPadding || 4)}px`,
-                        top: `${scaledY - (config.targetHighlightPadding || 4)}px`,
-                        width: `${scaledWidth + (config.targetHighlightPadding || 4) * 2}px`,
-                        height: `${scaledHeight + (config.targetHighlightPadding || 4) * 2}px`,
-                        border: `2px solid ${config.targetHighlightColor || colors.primary[500]}`,
+                        left: `${scaledX - (config.targetHighlightPadding || 4)} px`,
+                        top: `${scaledY - (config.targetHighlightPadding || 4)} px`,
+                        width: `${scaledWidth + (config.targetHighlightPadding || 4) * 2} px`,
+                        height: `${scaledHeight + (config.targetHighlightPadding || 4) * 2} px`,
+                        border: `2px solid ${config.targetHighlightColor || colors.primary[500]} `,
                         backgroundColor: 'transparent',
                         pointerEvents: 'none',
                         zIndex: 45, // Above overlay, below tooltip
-                        borderRadius: `${config.targetRoundness || 4}px`,
+                        borderRadius: `${config.targetRoundness || 4} px`,
                         boxShadow: '0 0 0 9999px rgba(0,0,0,0)' // Hack to focus? No.
                     }} />
                 )}

@@ -15,6 +15,8 @@ interface DraggableResizableLayerWrapperProps {
     scale?: number; // Added scale prop for zoom support
     parentId?: string; // Added parentId for context
     showResizeHandles?: boolean; // explicit control
+    isInteractive?: boolean;
+    onAction?: (layer: Layer) => void;
 }
 
 export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWrapperProps> = ({
@@ -27,7 +29,9 @@ export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWra
     children,
     scale = 1,
     parentId,
-    showResizeHandles
+    showResizeHandles,
+    isInteractive = false,
+    onAction
 }) => {
     const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
     const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
@@ -67,9 +71,10 @@ export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWra
 
     // Determine if we should show resizable handles
     // If showResizeHandles is explicitly passed, use it. Otherwise default to isSelected logic.
-    const shouldShowResizable = showResizeHandles !== undefined
+    // DISABLE generic resizing in Interactive Mode
+    const shouldShowResizable = !isInteractive && (showResizeHandles !== undefined
         ? (showResizeHandles && onLayerUpdate && width !== undefined && height !== undefined)
-        : (isSelected && onLayerUpdate && width !== undefined && height !== undefined);
+        : (isSelected && onLayerUpdate && width !== undefined && height !== undefined));
 
     // Remove top/left from baseStyle as Draggable handles it via transform
     const styleWithoutPos = { ...baseStyle, top: undefined, left: undefined, position: baseStyle.position || 'absolute' };
@@ -84,6 +89,7 @@ export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWra
                 bounds="parent"
                 scale={scale}
                 nodeRef={nodeRef}
+                disabled={isInteractive}
             >
                 <div
                     ref={nodeRef}
@@ -94,7 +100,11 @@ export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWra
                     }}
                     onClick={(e) => {
                         e.stopPropagation();
-                        onLayerSelect(layer.id);
+                        if (isInteractive && onAction) {
+                            onAction(layer);
+                        } else {
+                            onLayerSelect(layer.id);
+                        }
                     }}
                 >
                     <ResizableBox
@@ -143,6 +153,7 @@ export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWra
             bounds="parent"
             scale={scale}
             nodeRef={nodeRef}
+            disabled={isInteractive}
         >
             <div
                 ref={nodeRef}
@@ -154,7 +165,11 @@ export const DraggableResizableLayerWrapper: React.FC<DraggableResizableLayerWra
                 }}
                 onClick={(e) => {
                     e.stopPropagation();
-                    onLayerSelect(layer.id);
+                    if (isInteractive && onAction) {
+                        onAction(layer);
+                    } else {
+                        onLayerSelect(layer.id);
+                    }
                 }}
             >
                 {children}

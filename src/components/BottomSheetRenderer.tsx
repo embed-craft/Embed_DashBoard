@@ -14,6 +14,7 @@ interface BottomSheetRendererProps {
     isInteractive?: boolean;
     onNavigate?: (screenName: string) => void;
     scale?: number;
+    scaleY?: number; // Fix 16: Hybrid Scaling
 }
 
 export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
@@ -26,7 +27,8 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     onDismiss,
     isInteractive = false,
     onNavigate,
-    scale = 1 // Default to 1
+    scale = 1, // Default to 1
+    scaleY = 1 // Fix 16: Vertical scale default
 }) => {
     // SDK Parity: Safe Scale Helper
     const safeScale = (val: any, factor: number) => {
@@ -122,15 +124,17 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         // Apply Scaling to Style Properties (SDK Logic)
         const scaledStyle: any = {
             ...layer.style,
-            top: safeScale(layer.style?.top, scale),
-            bottom: safeScale(layer.style?.bottom, scale),
+            top: safeScale(layer.style?.top, scaleY), // Fix 16: Vertical Scale
+            bottom: safeScale(layer.style?.bottom, scaleY), // Fix 16: Vertical Scale
             left: safeScale(layer.style?.left, scale),
             right: safeScale(layer.style?.right, scale),
             // SDK Logic: Wrapper Width = style.width || size.width
             width: safeScale(layer.style?.width || layer.size?.width, scale),
-            height: safeScale(layer.style?.height || layer.size?.height, scale),
-            marginTop: safeScale(layer.style?.marginTop, scale),
-            marginBottom: safeScale(layer.style?.marginBottom, scale),
+            height: safeScale(layer.style?.height || layer.size?.height, scale), // Height follows size (width) scale? Or stretch? Usually size scale to keep aspect.
+            // Wait, if we scale TOP by height, but HEIGHT by width, element moves but keeps aspect. This is desired.
+
+            marginTop: safeScale(layer.style?.marginTop, scaleY), // Fix 16: Vertical Scale
+            marginBottom: safeScale(layer.style?.marginBottom, scaleY), // Fix 16: Vertical Scale
             marginLeft: safeScale(layer.style?.marginLeft, scale),
             marginRight: safeScale(layer.style?.marginRight, scale),
             paddingTop: safeScale(layer.style?.paddingTop, scale),
@@ -147,8 +151,8 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
 
-        let finalMarginTop = safeScale(layer.style?.marginTop, scale);
-        let finalMarginBottom = safeScale(layer.style?.marginBottom, scale);
+        let finalMarginTop = safeScale(layer.style?.marginTop, scaleY);
+        let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
         let finalMarginLeft = safeScale(layer.style?.marginLeft, scale);
         let finalMarginRight = safeScale(layer.style?.marginRight, scale);
         let finalMargin = undefined;
@@ -206,11 +210,12 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
 
                 content = (
                     <div style={{
-                        fontSize: layer.content.fontSize || 16,
+                        fontSize: safeScale(layer.content.fontSize || 16, scale), // Fix 13: Scale Parity
                         color: layer.content.textColor || 'black',
                         fontWeight: layer.content.fontWeight || 400, // Now purely numeric
                         textAlign: layer.content.textAlign || 'left',
                         fontFamily: layer.content.fontFamily ? `'${layer.content.fontFamily}', sans-serif` : 'inherit',
+                        lineHeight: 1.2, // Fix 15: SDK Parity
                         textShadow: textShadow,
                         whiteSpace: 'pre-wrap' // Better multi-line support
                     }}>
@@ -259,7 +264,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 // SDK Match: padding 10px 20px (scaled), inherit border-radius, font-weight 600 default
                 content = (
                     <button style={{
-                        padding: `${safeScale(10, scale)} ${safeScale(20, scale)}`,
+                        padding: `${safeScale(8, scaleY)} ${safeScale(16, scale)}`, // Fix 17: Hybrid Scaling Parity
                         backgroundColor: 'transparent', // Wrapper handles background
                         color: layer.content.textColor || 'white',
                         border: 'none',
@@ -273,7 +278,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                         fontSize: safeScale(layer.content.fontSize || 14, scale),
                         fontWeight: layer.style?.fontWeight || 600,
                         fontFamily: 'inherit',
-                        lineHeight: 'inherit'
+                        lineHeight: 1.0 // Fix 15: SDK Parity (Button is dense)
                     }}>
                         {layer.content.label || 'Button'}
                     </button>
@@ -369,7 +374,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         boxSizing: 'border-box',
         overflow: 'hidden', // SDK Parity: Clipping
         lineHeight: 1.5, // SDK Global Reset
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     } : {
         // STANDARD MODE
         position: 'absolute',
@@ -384,13 +389,13 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
             ? 'transparent'
             : (config?.backgroundColor || 'white'),
         backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-        backgroundSize: config?.backgroundSize || 'contain',  // Use contain to show full image
+        backgroundSize: 'cover', // STRICT PARITY: Force Cover (SDK Default). Ignore config for now.
         backgroundPosition: 'bottom center',
         backgroundRepeat: 'no-repeat',
         borderTopLeftRadius: safeScale(config?.borderRadius?.topLeft || 16, scale),
         borderTopRightRadius: safeScale(config?.borderRadius?.topRight || 16, scale),
         boxShadow: config?.boxShadow || 'none',
-        overflow: 'visible', // Allow background to extend beyond bounds
+        overflow: 'hidden', // SDK Parity: Enforce clipping (matches ClipRRect in SDK)
         // SDK Parity: Use minimal explicit padding if configured, else 0
         paddingTop: safeScale(config?.padding?.top || 0, scale),
         paddingRight: safeScale(config?.padding?.right || 0, scale),
@@ -403,7 +408,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         maxHeight: '90vh',
         boxSizing: 'border-box',
         lineHeight: 1.5, // SDK Global Reset
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         color: '#111827',
         ...config?.style
     };
@@ -489,7 +494,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                             const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
                             return !isAbs;
                         })
-                        .map(layer => renderLayer(layer))}
+                        .map(renderLayer)}
                 </div>
 
                 {/* 2. Absolute Layers -> Direct Overlay (Fixed to Sheet) */}

@@ -8,7 +8,7 @@ import { metadataService, EventDefinition, PropertyDefinition, PageDefinition } 
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'countdown' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html' | 'container';
 
 export interface LayerContent {
   // Media content

@@ -812,6 +812,8 @@ export const DesignStep: React.FC<any> = () => {
         // CRITICAL FIX: Multiply by previewZoom because PhonePreview resizes the CONTAINER pixels directly.
         // Fixed pixels (safeScale) must shrink to match the shrunk container.
         const scaleFactor = (deviceWidth / 375) * previewZoom;
+        const deviceHeight = currentDeviceConfig?.height || 852; // Default to 14 Pro height
+        const scaleYFactor = (deviceHeight / 813) * previewZoom;
 
         return (
           <BottomSheetRenderer
@@ -824,7 +826,9 @@ export const DesignStep: React.FC<any> = () => {
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
             isInteractive={isInteractive}
             onNavigate={handleNavigate}
+            onNavigate={handleNavigate}
             scale={scaleFactor}
+            scaleY={scaleYFactor} // Fix 16: Hybrid Scaling
           />
         );
       case 'modal':

@@ -34,7 +34,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
 
     // Frame Style (Simple CSS Frame mimicking an iPhone)
     const frameBorderWidth = 14 * zoom;
-    const frameRadius = 40 * zoom;
+    const frameRadius = 24 * zoom; // Reduced from 40 to 24 to show more corner content (generic device parity)
 
     return (
         <div style={{

@@ -175,6 +175,77 @@ export const BottomSheetMinimalEditor = () => {
                 </div>
             </div>
 
+            {/* Dismiss Options */}
+            <div style={{ paddingBottom: '20px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <X size={14} />
+                    Dismiss Options
+                </h5>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+                    {/* Tap Scrim Custom Toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: colors.gray[100], borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '4px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Maximize size={14} color={colors.text.secondary} />
+                            </div>
+                            <span style={{ fontSize: '13px', color: colors.text.primary }}>Tap Scrim to Close</span>
+                        </div>
+                        <button
+                            onClick={() => updateNestedConfig('overlay', 'dismissOnClick', !config.overlay?.dismissOnClick)}
+                            style={{
+                                width: '36px', height: '20px',
+                                borderRadius: '12px',
+                                backgroundColor: config.overlay?.dismissOnClick ? colors.primary[500] : colors.gray[300],
+                                position: 'relative',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer', border: 'none'
+                            }}
+                        >
+                            <div style={{
+                                width: '16px', height: '16px',
+                                borderRadius: '50%', backgroundColor: 'white',
+                                position: 'absolute', top: '2px',
+                                left: config.overlay?.dismissOnClick ? '18px' : '2px',
+                                transition: 'left 0.2s',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                            }} />
+                        </button>
+                    </div>
+
+                    {/* Swipe Down Custom Toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: colors.gray[100], borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '4px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Layers size={14} color={colors.text.secondary} style={{ transform: 'rotate(180deg)' }} />
+                            </div>
+                            <span style={{ fontSize: '13px', color: colors.text.primary }}>Swipe Down to Close</span>
+                        </div>
+                        <button
+                            onClick={() => updateConfig('swipeToDismiss', !config.swipeToDismiss)}
+                            style={{
+                                width: '36px', height: '20px',
+                                borderRadius: '12px',
+                                backgroundColor: config.swipeToDismiss ? colors.primary[500] : colors.gray[300],
+                                position: 'relative',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer', border: 'none'
+                            }}
+                        >
+                            <div style={{
+                                width: '16px', height: '16px',
+                                borderRadius: '50%', backgroundColor: 'white',
+                                position: 'absolute', top: '2px',
+                                left: config.swipeToDismiss ? '18px' : '2px',
+                                transition: 'left 0.2s',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                            }} />
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
             {/* Background */}
             <div style={{ paddingBottom: '20px', borderBottom: `1px solid ${colors.gray[200]}` }}>
                 <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>

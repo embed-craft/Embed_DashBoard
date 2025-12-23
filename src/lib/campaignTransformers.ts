@@ -329,7 +329,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
   const textLayer = campaign.layers.find(l => l.type === 'text' && (l.name.toLowerCase().includes('description') || l.name.toLowerCase().includes('body') || l.name === 'Text'));
   const buttonLayer = campaign.layers.find(l => l.type === 'button');
   const imageLayer = campaign.layers.find(l => l.type === 'media');
-  const containerLayer = campaign.layers.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
+  const containerLayer = campaign.layers.find(l => l.type === 'container' && (l.name === 'Bottom Sheet' || l.name === 'Modal Container'));
   const handleLayer = campaign.layers.find(l => l.type === 'handle');
 
   if (textLayer) {

@@ -146,6 +146,7 @@ export interface LayerStyle {
   alignItems?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline';
   gap?: number;
   flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
+  flexGrow?: number;
   position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
   top?: number | string;
   left?: number | string;
@@ -223,7 +224,7 @@ export interface LayerStyle {
   starSpacing?: number;
 
   // Layout Override
-  layout?: 'column' | 'row' | 'freeform';
+  layout?: 'column' | 'row' | 'freeform' | 'stack';
 
   // Image Specific
   objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
@@ -441,6 +442,8 @@ export interface TooltipConfig {
   // Targeting
   targetPageId?: string;
   targetElementId?: string;
+  arrowSize?: number;
+  showArrow?: boolean;
 
   // Appearance
   roundness?: number;
@@ -451,6 +454,8 @@ export interface TooltipConfig {
   arrowStyle?: 'sharp' | 'bubble'; // Added
   orientation?: 'vertical' | 'horizontal';
   shadow?: string;
+  boxShadow?: string; // Added to resolve lint error (alias for shadow)
+  animation?: { type: string; duration: number }; // Added to resolve lint error
   overlayOpacity?: number; // Added
   gradient?: string; // Added generic gradient support if needed
   gradientTo?: string; // Added based on grep hint
@@ -479,6 +484,9 @@ export interface TooltipConfig {
   position?: 'top' | 'bottom' | 'left' | 'right';
   offsetX?: number;
   offsetY?: number;
+
+  // Added for lint fixing
+  textColor?: string;
 }
 
 export interface CampaignEditor {
@@ -898,6 +906,42 @@ export const useEditorStore = create<EditorStore>()(
           // FIX #1: Ensure loaded campaign has valid lastSaved to prevent duplicate creation
           if (!campaignData.lastSaved && campaignData.id) {
             campaignData.lastSaved = campaignData.updatedAt || new Date().toISOString();
+          }
+
+          // FIX: Migration for legacy campaigns - Convert root layer type 'text' -> 'container' AND Fix missing root layers
+          if (campaignData.nudgeType === 'bottomsheet' || campaignData.nudgeType === 'modal') {
+            const rootLayerName = campaignData.nudgeType === 'bottomsheet' ? 'Bottom Sheet' : 'Modal Container';
+            let rootLayer = campaignData.layers.find(l => l.name === rootLayerName);
+
+            // Scenario 1: Root layer exists but is wrong type
+            if (rootLayer && rootLayer.type === 'text') {
+              console.log(`loadCampaign: Migrating legacy ${campaignData.nudgeType} root layer from 'text' to 'container'`);
+              rootLayer.type = 'container';
+            }
+
+            // Scenario 2: Root layer is MISSING (common in old bottomsheet campaigns)
+            if (!rootLayer) {
+              console.log(`loadCampaign: Root layer '${rootLayerName}' is MISSING. Recreating it...`);
+
+              // Find orphaned children to retrieve the original parent ID
+              const potentialChildren = campaignData.layers.filter(l => l.parent && !campaignData.layers.find(p => p.id === l.parent));
+              const originalParentId = potentialChildren.length > 0 ? potentialChildren[0].parent : null;
+
+              if (originalParentId) {
+                console.log(`loadCampaign: Found orphaned children pointing to parent ${originalParentId}. Restoring root.`);
+                const defaultLayers = getDefaultLayersForNudgeType(campaignData.nudgeType);
+                const defaultRoot = defaultLayers[0]; // Assuming 0 is always root
+
+                const restoredRoot = {
+                  ...defaultRoot,
+                  id: originalParentId, // Restore original ID
+                  children: potentialChildren.map(c => c.id), // Link to actual children
+                  type: 'container' // Ensure type is correct
+                };
+
+                campaignData.layers.unshift(restoredRoot); // Add to start
+              }
+            }
           }
 
           // FIX #15: Reset selectedLayerId when loading new campaign
@@ -2005,7 +2049,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'text',
+          type: 'container',
           name: 'Bottom Sheet',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`, `layer_${baseId + 4}`],
@@ -2101,7 +2145,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
           },
           style: {
             backgroundColor: '#6366F1',
-            color: '#FFFFFF',
+            textColor: '#FFFFFF',
             borderRadius: 8,
             fontSize: 16,
             fontWeight: 600,
@@ -2115,7 +2159,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'text',
+          type: 'container',
           name: 'Modal Container',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`],
@@ -2304,7 +2348,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
           },
           style: {
             padding: 0,
-            color: '#9CA3AF',
+            textColor: '#9CA3AF',
           },
         },
       ];

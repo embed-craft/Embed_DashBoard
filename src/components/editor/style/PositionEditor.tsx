@@ -81,7 +81,12 @@ export const PositionEditor: React.FC<PositionEditorProps> = ({
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     const isPercent = String(style.left).includes('%');
-                                    onChange({ left: val === '' ? undefined : (isPercent ? `${val}%` : Number(val)) });
+                                    // Auto-check absolute
+                                    const newPos = (style.position === 'fixed' || style.position === 'absolute') ? style.position : 'absolute';
+                                    onChange({
+                                        left: val === '' ? undefined : (isPercent ? `${val}%` : Number(val)),
+                                        position: newPos
+                                    });
                                 }}
                                 placeholder="0"
                                 style={{
@@ -119,7 +124,12 @@ export const PositionEditor: React.FC<PositionEditorProps> = ({
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     const isPercent = String(style.top).includes('%');
-                                    onChange({ top: val === '' ? undefined : (isPercent ? `${val}%` : Number(val)) });
+                                    // Auto-check absolute
+                                    const newPos = (style.position === 'fixed' || style.position === 'absolute') ? style.position : 'absolute';
+                                    onChange({
+                                        top: val === '' ? undefined : (isPercent ? `${val}%` : Number(val)),
+                                        position: newPos
+                                    });
                                 }}
                                 placeholder="0"
                                 style={{

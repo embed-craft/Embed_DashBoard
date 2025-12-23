@@ -2,6 +2,9 @@ import React, { useRef } from 'react';
 import { Layer, BottomSheetConfig, LayerStyle } from '@/store/useEditorStore';
 import { Settings2, X, Code } from 'lucide-react';
 import { ShadowDomWrapper } from '@/components/ShadowDomWrapper';
+import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
+import { TextRenderer } from './campaign/renderers/TextRenderer';
+import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 
 interface BottomSheetRendererProps {
     layers: any[];
@@ -203,49 +206,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
 
         switch (layer.type) {
             case 'text':
-                // Construct Text Shadow
-                const textShadow = (layer.content?.textShadowX || layer.content?.textShadowY || layer.content?.textShadowBlur)
-                    ? `${safeScale(layer.content.textShadowX || 0, scale)} ${safeScale(layer.content.textShadowY || 0, scale)} ${safeScale(layer.content.textShadowBlur || 0, scale)} ${layer.content.textShadowColor || '#000000'}`
-                    : undefined;
-
-                content = (
-                    <div style={{
-                        fontSize: safeScale(layer.content.fontSize || 16, scale), // Fix 13: Scale Parity
-                        color: layer.content.textColor || 'black',
-                        fontWeight: layer.content.fontWeight || 400, // Now purely numeric
-                        textAlign: layer.content.textAlign || 'left',
-                        fontFamily: layer.content.fontFamily ? `'${layer.content.fontFamily}', sans-serif` : 'inherit',
-                        lineHeight: 1.2, // Fix 15: SDK Parity
-                        textShadow: textShadow,
-                        whiteSpace: 'pre-wrap' // Better multi-line support
-                    }}>
-                        {/* Inject Custom Font CSS if URL provided */}
-                        {layer.content.fontUrl && (
-                            <style>
-                                {`@import url('${layer.content.fontUrl}');`}
-                            </style>
-                        )}
-                        {layer.content.text || 'Text'}
-                    </div>
-                );
+                content = <TextRenderer layer={layer} scale={scale} />;
                 break;
             case 'media': // Handle 'media' as alias for 'image'
-                content = (
-                    <img
-                        src={layer.content.imageUrl || 'https://via.placeholder.com/150'} // Fallback
-                        alt={layer.name}
-                        style={{
-                            // SDK Logic: Inner Image is ALWAYS 100% of Wrapper
-                            width: '100%',
-                            height: '100%',
-                            display: 'block', // Prevent inline whitespace issues
-                            borderRadius: typeof layer.style?.borderRadius === 'object'
-                                ? `${layer.style.borderRadius.topLeft}px ${layer.style.borderRadius.topRight}px ${layer.style.borderRadius.bottomRight}px ${layer.style.borderRadius.bottomLeft}px`
-                                : (layer.style?.borderRadius || 0),
-                            objectFit: (layer.style?.objectFit as any) || 'cover'
-                        }}
-                    />
-                );
+            case 'image':
+                content = <MediaRenderer layer={layer} scale={scale} />;
                 break;
             case 'handle':
                 content = (
@@ -261,28 +226,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 );
                 break;
             case 'button':
-                // SDK Match: padding 10px 20px (scaled), inherit border-radius, font-weight 600 default
-                content = (
-                    <button style={{
-                        padding: `${safeScale(8, scaleY)} ${safeScale(16, scale)}`, // Fix 17: Hybrid Scaling Parity
-                        backgroundColor: 'transparent', // Wrapper handles background
-                        color: layer.content.textColor || 'white',
-                        border: 'none',
-                        borderRadius: 'inherit',
-                        width: '100%',
-                        height: '100%',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: safeScale(layer.content.fontSize || 14, scale),
-                        fontWeight: layer.style?.fontWeight || 600,
-                        fontFamily: 'inherit',
-                        lineHeight: 1.0 // Fix 15: SDK Parity (Button is dense)
-                    }}>
-                        {layer.content.label || 'Button'}
-                    </button>
-                );
+                content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
             case 'custom_html':
                 content = (

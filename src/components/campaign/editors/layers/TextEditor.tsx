@@ -27,6 +27,41 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     const textColor = layer?.content?.textColor || '#111827';
     const textAlign = layer?.content?.textAlign || 'center';
 
+    const handleFontUrlChange = (url: string) => {
+        // 1. Check if it's a Google Fonts 'Share' or 'Specimen' URL (User paste error)
+        // e.g. https://fonts.google.com/share?selection.family=BBH+Bogle
+        // e.g. https://fonts.google.com/specimen/Roboto
+        if (url.includes('fonts.google.com/share') || url.includes('fonts.google.com/specimen')) {
+            try {
+                let family = '';
+                if (url.includes('selection.family=')) {
+                    family = url.split('selection.family=')[1]?.split('&')[0];
+                } else if (url.includes('/specimen/')) {
+                    family = url.split('/specimen/')[1]?.split('?')[0];
+                }
+
+                if (family) {
+                    // Convert to CSS API URL
+                    const cleanFamily = family.replace(/\+/g, ' ');
+                    const cssUrl = `https://fonts.googleapis.com/css2?family=${family}&display=swap`;
+
+                    // Auto-set both URL and Family Name
+                    // We need to call handleContentUpdate for both, but it might batch. 
+                    // ideally updateLayer({ content: { ...layer.content, fontUrl: cssUrl, fontFamily: cleanFamily } })
+                    // But we only have handleContentUpdate (key, value). Let's call twice.
+                    handleContentUpdate('fontUrl', cssUrl);
+                    handleContentUpdate('fontFamily', cleanFamily);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Failed to parse Google Fonts URL', e);
+            }
+        }
+
+        // Default: Just set the URL provided
+        handleContentUpdate('fontUrl', url);
+    };
+
     return (
         <>
             <div className="mb-5">
@@ -96,7 +131,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                                 type="text"
                                 placeholder="https://fonts.googleapis.com/css2?..."
                                 value={layer.content?.fontUrl || ''}
-                                onChange={(e) => handleContentUpdate('fontUrl', e.target.value)}
+                                onChange={(e) => handleFontUrlChange(e.target.value)}
                                 className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
                             />
                             <p className="text-[10px] text-gray-400 mt-1">Paste the full CSS URL to load the font.</p>

@@ -24,6 +24,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
+import { ModalMinimalEditor } from '@/components/campaign/editors/ModalMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
@@ -842,6 +843,14 @@ export const DesignStep: React.FC<any> = () => {
           animation: { type: 'pop' as const, duration: 300, easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' }
         };
 
+
+
+        const currentDeviceConfigModal = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        const deviceWidthModal = currentDeviceConfigModal?.width || 375;
+        const scaleFactorModal = (deviceWidthModal / 375) * previewZoom;
+        const deviceHeightModal = currentDeviceConfigModal?.height || 852;
+        const scaleYFactorModal = (deviceHeightModal / 813) * previewZoom;
+
         console.log('DesignStep modalConfig:', currentCampaign?.modalConfig);
 
         return (
@@ -857,6 +866,8 @@ export const DesignStep: React.FC<any> = () => {
               onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
               isInteractive={isInteractive}
               onNavigate={handleNavigate}
+              scale={scaleFactorModal}
+              scaleY={scaleYFactorModal}
             />
           </ErrorBoundary>
         );
@@ -3365,9 +3376,11 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedLayerObj.name === 'Bottom Sheet') {
         return <BottomSheetMinimalEditor />;
       }
+      if (selectedLayerObj.name === 'Modal Container') {
+        return <ModalMinimalEditor />;
+      }
       return (
         <>
-          {selectedLayerObj.name === 'Modal Container' && renderModalConfig()}
           {selectedLayerObj.name === 'Banner Container' && renderBannerConfig()}
           {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}

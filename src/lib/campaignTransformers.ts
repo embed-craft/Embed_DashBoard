@@ -325,6 +325,49 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     type: campaign.nudgeType,
   };
 
+  // ✅ FIX: Merge Source-of-Truth Configs (Modal/BottomSheet) directly
+  // This ensures settings from the Editor Side Panel are ALWAYS sent, 
+  // regardless of matching layer names or structure.
+  if (campaign.nudgeType === 'modal' && campaign.modalConfig) {
+    const mc = campaign.modalConfig;
+    Object.assign(config, {
+      width: mc.width,
+      height: mc.height,
+      backgroundColor: mc.backgroundColor,
+      backgroundImageUrl: mc.backgroundImageUrl,
+      backgroundSize: mc.backgroundSize,
+      backgroundPosition: mc.backgroundPosition,
+      borderRadius: mc.borderRadius,
+      elevation: mc.elevation,
+      showCloseButton: mc.showCloseButton,
+      overlay: mc.overlay, // Pass full overlay object
+      // Flatten some for legacy SDK support if needed
+      dismissOnClick: mc.overlay?.dismissOnClick,
+      overlayColor: mc.overlay?.color,
+      overlayOpacity: mc.overlay?.opacity
+    });
+  }
+
+  if (campaign.nudgeType === 'bottomsheet' && campaign.bottomSheetConfig) {
+    const bsc = campaign.bottomSheetConfig;
+    Object.assign(config, {
+      height: bsc.height,
+      backgroundColor: bsc.backgroundColor,
+      backgroundImageUrl: bsc.backgroundImageUrl,
+      backgroundSize: bsc.backgroundSize,
+      backgroundPosition: bsc.backgroundPosition,
+      borderRadius: bsc.borderRadius, // Object or number
+      elevation: bsc.elevation,
+      showCloseButton: bsc.showCloseButton,
+      dragHandle: bsc.dragHandle,
+      swipeToDismiss: bsc.swipeToDismiss,
+      overlay: bsc.overlay,
+      dismissOnClick: bsc.overlay?.dismissOnClick,
+      overlayColor: bsc.overlay?.color,
+      overlayOpacity: bsc.overlay?.opacity
+    });
+  }
+
   // ========== TEXT LAYER (Description/Body) ==========
   const textLayer = campaign.layers.find(l => l.type === 'text' && (l.name.toLowerCase().includes('description') || l.name.toLowerCase().includes('body') || l.name === 'Text'));
   const buttonLayer = campaign.layers.find(l => l.type === 'button');

@@ -71,7 +71,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                     <textarea
                         placeholder="Enter text..."
                         value={textContent}
-                        onChange={(e) => handleContentUpdate('text', e.target.value)}
+                        onChange={(e) => {
+                            handleContentUpdate('text', e.target.value);
+                            // We don't usually put text content in style
+                        }}
                         className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none min-h-[80px] resize-y"
                     />
                 </div>
@@ -90,7 +93,11 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         <input
                             type="number"
                             value={fontSize}
-                            onChange={(e) => handleContentUpdate('fontSize', Number(e.target.value))}
+                            onChange={(e) => {
+                                const val = Number(e.target.value);
+                                handleContentUpdate('fontSize', val);
+                                onStyleUpdate('fontSize', val);
+                            }}
                             className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
                         />
                     </div>
@@ -98,7 +105,11 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         <label className="block text-xs text-gray-500 mb-1">Font Weight</label>
                         <select
                             value={fontWeight}
-                            onChange={(e) => handleContentUpdate('fontWeight', Number(e.target.value))}
+                            onChange={(e) => {
+                                const val = Number(e.target.value);
+                                handleContentUpdate('fontWeight', val);
+                                onStyleUpdate('fontWeight', val);
+                            }}
                             className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none bg-white"
                         >
                             <option value="400">Normal (400)</option>
@@ -145,13 +156,19 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         <input
                             type="color"
                             value={textColor}
-                            onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+                            onChange={(e) => {
+                                handleContentUpdate('textColor', e.target.value);
+                                onStyleUpdate('color', e.target.value);
+                            }}
                             className="w-10 h-10 border border-gray-200 rounded-md cursor-pointer"
                         />
                         <input
                             type="text"
                             value={textColor}
-                            onChange={(e) => handleContentUpdate('textColor', e.target.value)}
+                            onChange={(e) => {
+                                handleContentUpdate('textColor', e.target.value);
+                                onStyleUpdate('color', e.target.value);
+                            }}
                             className="flex-1 p-2 border border-gray-200 rounded-md text-[13px] outline-none"
                         />
                     </div>
@@ -163,7 +180,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         {['left', 'center', 'right', 'justify'].map((align) => (
                             <button
                                 key={align}
-                                onClick={() => handleContentUpdate('textAlign', align)}
+                                onClick={() => {
+                                    handleContentUpdate('textAlign', align);
+                                    onStyleUpdate('textAlign', align);
+                                }}
                                 className={`flex-1 py-1 text-xs capitalize rounded ${textAlign === align ? 'bg-white shadow-sm text-indigo-600 font-medium' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 {align}

@@ -48,12 +48,18 @@ export const ModalMinimalEditor = () => {
         updateModalConfig({ [key]: value });
 
         // Sync dimensions and background to root layer
-        if (key === 'width' || key === 'height' || key === 'backgroundColor') {
+        if (['width', 'height', 'backgroundColor', 'backgroundImageUrl', 'backgroundSize', 'backgroundPosition'].includes(key)) {
             const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Modal Container');
             if (rootLayer) {
                 if (key === 'backgroundColor') {
                     const styleValue = (value === 'transparent' || value === '#00000000') ? '#00000000' : value;
                     updateLayerStyle(rootLayer.id, { backgroundColor: styleValue });
+                } else if (key === 'backgroundImageUrl') {
+                    updateLayerStyle(rootLayer.id, { backgroundImage: value }); // Map to standard CSS prop
+                } else if (key === 'backgroundSize') {
+                    updateLayerStyle(rootLayer.id, { backgroundSize: value });
+                } else if (key === 'backgroundPosition') {
+                    updateLayerStyle(rootLayer.id, { backgroundPosition: value });
                 } else {
                     // Sync Dimensions (Width/Height)
                     updateLayer(rootLayer.id, {

@@ -122,30 +122,53 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                     </div>
                 </div>
 
-                {/* Custom Font Section */}
+                {/* Custom Font Section - Using Bundled Fonts for instant SDK loading */}
                 <div className="mb-4 pt-3 border-t border-gray-100">
                     <h6 className="text-xs font-semibold text-gray-900 mb-2">Typography & Font</h6>
                     <div className="space-y-2">
                         <div>
-                            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Font Family Name</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Roboto, Open Sans"
-                                value={layer.content?.fontFamily || ''}
-                                onChange={(e) => handleContentUpdate('fontFamily', e.target.value)}
-                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Font URL (Google Fonts/CDN)</label>
-                            <input
-                                type="text"
-                                placeholder="https://fonts.googleapis.com/css2?..."
-                                value={layer.content?.fontUrl || ''}
-                                onChange={(e) => handleFontUrlChange(e.target.value)}
-                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none"
-                            />
-                            <p className="text-[10px] text-gray-400 mt-1">Paste the full CSS URL to load the font.</p>
+                            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Font Family</label>
+                            <select
+                                value={layer.content?.fontFamily || 'Roboto'}
+                                onChange={(e) => {
+                                    const selectedFont = e.target.value;
+                                    handleContentUpdate('fontFamily', selectedFont);
+                                    // Also set fontUrl for Dashboard preview (Google Fonts CSS URL)
+                                    const fontUrl = `https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}&display=swap`;
+                                    handleContentUpdate('fontUrl', fontUrl);
+                                }}
+                                className="w-full p-2 border border-gray-200 rounded-md text-[13px] outline-none bg-white"
+                            >
+                                <optgroup label="Sans-Serif">
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="Inter">Inter</option>
+                                    <option value="Poppins">Poppins</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                    <option value="Lato">Lato</option>
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Nunito">Nunito</option>
+                                    <option value="Raleway">Raleway</option>
+                                    <option value="Ubuntu">Ubuntu</option>
+                                    <option value="Source Sans Pro">Source Sans Pro</option>
+                                </optgroup>
+                                <optgroup label="Serif">
+                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="Merriweather">Merriweather</option>
+                                    <option value="Lora">Lora</option>
+                                    <option value="PT Serif">PT Serif</option>
+                                </optgroup>
+                                <optgroup label="Monospace">
+                                    <option value="Fira Code">Fira Code</option>
+                                    <option value="Source Code Pro">Source Code Pro</option>
+                                    <option value="JetBrains Mono">JetBrains Mono</option>
+                                </optgroup>
+                                <optgroup label="Decorative">
+                                    <option value="Pacifico">Pacifico</option>
+                                    <option value="Dancing Script">Dancing Script</option>
+                                    <option value="Lobster">Lobster</option>
+                                </optgroup>
+                            </select>
+                            <p className="text-[10px] text-gray-400 mt-1">These fonts load instantly in the SDK.</p>
                         </div>
                     </div>
                 </div>

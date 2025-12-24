@@ -847,9 +847,14 @@ export const DesignStep: React.FC<any> = () => {
 
         const currentDeviceConfigModal = DEVICE_PRESETS.find(d => d.id === selectedDevice);
         const deviceWidthModal = currentDeviceConfigModal?.width || 375;
-        const scaleFactorModal = (deviceWidthModal / 375) * previewZoom;
+        // FIX: Change baseline to 393 (iPhone 14 Pro) so smaller devices (SE) scale DOWN ( < 1 ) instead of clipping fixed content.
+        // FIX2 (ZOOM SEPARATION): Pure device ratio WITHOUT zoom for content scaling. Zoom handled by PhonePreview wrapper.
+        const pureDeviceScaleX = deviceWidthModal / 393;
+        const pureDeviceScaleY = (currentDeviceConfigModal?.height || 852) / 852;
+        // For now, keep using zoom-affected scale for backwards compatibility. TODO: Refactor PhonePreview to handle zoom separately.
+        const scaleFactorModal = pureDeviceScaleX * previewZoom;
         const deviceHeightModal = currentDeviceConfigModal?.height || 852;
-        const scaleYFactorModal = (deviceHeightModal / 813) * previewZoom;
+        const scaleYFactorModal = pureDeviceScaleY * previewZoom;
 
         console.log('DesignStep modalConfig:', currentCampaign?.modalConfig);
 

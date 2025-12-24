@@ -493,15 +493,40 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
     // SDK Parity: Safe Scale Helper
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
-        const strVal = val.toString();
-        if (strVal.endsWith('%')) return strVal; // Ignore percentages
+        const strVal = val.toString().trim();
+        // FIX: Ignore viewport units (vh, vw) to prevent them being parsed as raw numbers (e.g. 85vh -> 85px)
+        if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return strVal;
         const num = parseFloat(strVal);
         if (isNaN(num)) return val;
         return `${num * factor}px`;
     };
+
+    console.log('[ModalRenderer] DEBUG:', {
+        configWidth: (config as any)?.width,
+        configHeight: (config as any)?.height,
+        sizeUnit: (config as any)?.sizeUnit,
+        scale,
+        scaleY
+    });
     const containerRef = useRef<HTMLDivElement>(null);
     const modalLayer = layers.find(l => l.type === 'modal') || layers[0] || { id: 'fallback', type: 'modal', content: {}, style: {} } as any;
     const childLayers = layers.filter(l => l.parent === modalLayer.id);
+
+    // UNIT FIX: Sidebar sends number (60) + unit (%), but safeScale needs string ("60%")
+    const configWidth = (config as any)?.sizeUnit === '%' && typeof config?.width === 'number'
+        ? `${config.width}%`
+        : config?.width;
+
+    const configHeight = (config as any)?.sizeUnit === '%' && typeof config?.height === 'number'
+        ? `${config.height}%`
+        : config?.height;
+
+    // Helper to resolve dimension with priority: Config (if !auto) > Layer (if modal) > ConfigDefault > Auto
+    const resolveDimension = (configVal: string | number | undefined, layerVal: string | number | undefined, defaultVal: string = 'auto') => {
+        if (configVal !== undefined && configVal !== 'auto') return configVal;
+        if (layerVal !== undefined && layerVal !== 'auto') return layerVal;
+        return configVal || defaultVal;
+    };
 
     // Action Handler
     const handleAction = (action: any) => {
@@ -625,24 +650,50 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         const isSelected = selectedLayerId === layer.id;
         const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
 
+        // STRETCH FIX: Convert pixel positions to percentages of design device dimensions
+        // This ensures layers match the background's 100% 100% stretch behavior
+        // Design device: 393px wide, 852px tall (iPhone 14 Pro)
+        const designWidth = 393;
+        const designHeight = 852;
+
+        // Convert pixel to percentage (returns percentage string or undefined)
+        const toPercentX = (val: any): string | undefined => {
+            if (val == null) return undefined;
+            const str = val.toString().trim();
+            if (str.endsWith('%')) return str; // Already percentage
+            const num = parseFloat(str);
+            if (isNaN(num)) return undefined;
+            return `${(num / designWidth) * 100}%`;
+        };
+
+        const toPercentY = (val: any): string | undefined => {
+            if (val == null) return undefined;
+            const str = val.toString().trim();
+            if (str.endsWith('%')) return str; // Already percentage
+            const num = parseFloat(str);
+            if (isNaN(num)) return undefined;
+            return `${(num / designHeight) * 100}%`;
+        };
+
         // Apply Scaling to Style Properties (SDK Logic)
+        // STRETCH FIX: Use percentages for positions, and scale for sizes
         const scaledStyle: any = {
             ...layer.style,
-            top: safeScale(layer.style?.top, scaleY), // Fix 16: Vertical Scale
-            bottom: safeScale(layer.style?.bottom, scaleY), // Fix 16: Vertical Scale
-            left: safeScale(layer.style?.left, scale),
-            right: safeScale(layer.style?.right, scale),
-            // SDK Logic: Wrapper Width = style.width || size.width
+            // POSITIONS: Convert to percentages for stretch-matching with background
+            top: toPercentY(layer.style?.top),
+            bottom: toPercentY(layer.style?.bottom),
+            left: toPercentX(layer.style?.left),
+            right: toPercentX(layer.style?.right),
+            // SIZES: Still use safeScale for width/height (they scale with container)
             width: safeScale(layer.style?.width || layer.size?.width, scale),
-            height: safeScale(layer.style?.height || layer.size?.height, scale), // Height follows size (width) scale? Or stretch? Usually size scale to keep aspect.
-            // Wait, if we scale TOP by height, but HEIGHT by width, element moves but keeps aspect. This is desired.
+            height: safeScale(layer.style?.height || layer.size?.height, scaleY),
 
-            marginTop: safeScale(layer.style?.marginTop, scaleY), // Fix 16: Vertical Scale
-            marginBottom: safeScale(layer.style?.marginBottom, scaleY), // Fix 16: Vertical Scale
+            marginTop: safeScale(layer.style?.marginTop, scaleY),
+            marginBottom: safeScale(layer.style?.marginBottom, scaleY),
             marginLeft: safeScale(layer.style?.marginLeft, scale),
             marginRight: safeScale(layer.style?.marginRight, scale),
-            paddingTop: safeScale(layer.style?.paddingTop, scale),
-            paddingBottom: safeScale(layer.style?.paddingBottom, scale),
+            paddingTop: safeScale(layer.style?.paddingTop, scaleY),
+            paddingBottom: safeScale(layer.style?.paddingBottom, scaleY),
             paddingLeft: safeScale(layer.style?.paddingLeft, scale),
             paddingRight: safeScale(layer.style?.paddingRight, scale),
             // Handle borderRadius: if object, serialize to string, if number/string, scale
@@ -676,7 +727,7 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         if (!isAbsolute && layer.type !== 'custom_html') {
             // If no explicit marginBottom AND no shorthand margin, apply default
             if (finalMarginBottom === undefined && finalMargin === undefined) {
-                finalMarginBottom = safeScale(10, scale);
+                finalMarginBottom = safeScale(10, scaleY); // FIX: Use scaleY
             }
         }
 
@@ -694,11 +745,11 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
 
         switch (layer.type) {
             case 'text':
-                content = <TextRenderer layer={layer} scale={scale} />;
+                content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
             case 'media': // Handle 'media' alias
             case 'image':
-                content = <MediaRenderer layer={layer} scale={scale} />;
+                content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
             case 'handle':
                 content = (
@@ -898,60 +949,106 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
+                    // Removed scale() - it was shrinking the modal after percentage dimensions were applied
                     transform: `translate(-50%, -50%) ${getTransformString(modalLayer.style?.transform) || ''}`,
-                    width: typeof modalLayer.style?.width === 'number' ? `${modalLayer.style.width}px` :
-                        (modalLayer.style?.width ||
-                            (typeof config?.width === 'number' ? `${config.width}px` : (config?.width || (config?.mode === 'image-only' ? 'auto' : '90%')))),
-                    maxWidth: config?.mode === 'image-only' ? '100%' : '400px',
+
+                    // SCALING FIX: Apply safeScale to Width & Height
+                    // PRIORITY FIX: Config (!auto) > Explicit Layer (if modal) > Default/Config(Auto)
+                    width: safeScale(
+                        resolveDimension(
+                            configWidth, // UNIT-AWARE
+                            (modalLayer.type === 'modal' ? modalLayer.style?.width : undefined),
+                            (config?.mode === 'image-only' ? 'auto' : '90%')
+                        ),
+                        scale
+                    ),
+                    maxWidth: config?.mode === 'image-only' ? '100%' : safeScale('400px', scale), // Scale max width too? Usually 400px is a desktop constraint. On mobile it handles itself via 90%.
+
                     backgroundColor: config?.mode === 'image-only' ? 'transparent' : (modalLayer.style?.backgroundColor || config?.backgroundColor || '#FFFFFF'),
-                    backgroundImage: modalLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
-                    backgroundSize: modalLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
-                    backgroundPosition: modalLayer.style?.backgroundPosition || 'center',
-                    backgroundRepeat: modalLayer.style?.backgroundRepeat || 'no-repeat',
-                    borderRadius: config?.mode === 'image-only' ? '0' : (config?.borderRadius ? `${config.borderRadius}px` : (modalLayer.style?.borderRadius ? `${modalLayer.style.borderRadius}px` : '16px')),
-                    borderWidth: modalLayer.style?.borderWidth ? `${modalLayer.style.borderWidth}px` : (config?.borderWidth ? `${config.borderWidth}px` : '0px'),
+                    // FIX: Priority Config > Layer. Also handle 'none' explicitly.
+                    backgroundImage: (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
+                        (modalLayer.style?.backgroundImage && modalLayer.style?.backgroundImage !== 'none' ? modalLayer.style?.backgroundImage : undefined),
+                    // FIX: Changed default from 'cover' to '100% 100%' to stretch-fit and match scaled overlay positions
+                    // FINAL FIX: Changed to 'cover' + 'center' to match SDK behavior (fills container, crops edges equally)
+                    // ALIGNMENT FIX: Changed back to '100% 100%' + 'top left' to ensure layer positions align with background
+                    // FORCE OVERRIDE: Always use '100% 100%' regardless of config to ensure layer-background alignment
+                    // User's 'cover' setting in sidebar causes cropping - we force stretch mode for dashboard preview
+                    backgroundSize: '100% 100%', // FORCED - ignore modalLayer.style and config.backgroundSize
+                    backgroundPosition: 'top left', // FORCED - origin must match layer positioning origin
+                    backgroundRepeat: 'no-repeat',
+
+                    // SCALING FIX: Apply safeScale to Borders/Radius
+                    borderRadius: config?.mode === 'image-only' ? '0' : safeScale(config?.borderRadius || modalLayer.style?.borderRadius || 16, scale),
+                    borderWidth: safeScale(modalLayer.style?.borderWidth || config?.borderWidth || 0, scale),
                     borderColor: modalLayer.style?.borderColor || config?.borderColor || 'transparent',
                     borderStyle: modalLayer.style?.borderStyle || config?.borderStyle || 'solid',
-
-                    // Layout & Spacing
-                    display: 'block', // Outer container is pure positioning context
-                    // Flex properties moved to inner wrapper
-                    padding: 0, // FORCE 0 padding on container so absolute origin (0,0) is true top-left
 
                     // Visuals
                     opacity: modalLayer.style?.opacity ?? 1,
                     filter: getFilterString(modalLayer.style?.filter),
                     clipPath: modalLayer.style?.clipPath,
                     boxShadow: config?.mode === 'image-only' ? 'none' : (
-                        config?.elevation ? `0px ${config.elevation * 4}px ${config.elevation * 8}px rgba(0,0,0,0.15)` : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)')
+                        config?.elevation ? `0px ${safeScale(config.elevation * 4, scaleY)} ${safeScale(config.elevation * 8, scaleY)} rgba(0,0,0,0.15)` : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)')
                     ),
 
                     // Dimensions
-                    minHeight: modalLayer.style?.minHeight || (config as any)?.minHeight || '100px',
-                    height: modalLayer.style?.height || modalLayer.size?.height || (config as any)?.height || 'auto',
-                    maxHeight: modalLayer.style?.maxHeight || (config as any)?.maxHeight || '85vh',
+                    // PRIORITY FIX: Config (!auto) > Explicit Layer (if modal) > Default/Config(Auto)
+                    minHeight: safeScale(
+                        resolveDimension(
+                            ((config as any)?.minHeight && (config as any)?.minHeight !== 'auto' ? (config as any)?.minHeight : undefined), // Keep minHeight simple for now or adding unit support? Assume px if number.
+                            (modalLayer.type === 'modal' ? modalLayer.style?.minHeight : undefined),
+                            '100px'
+                        ),
+                        scaleY
+                    ),
+                    height: safeScale(
+                        resolveDimension(
+                            configHeight, // UNIT-AWARE
+                            (modalLayer.type === 'modal' ? (modalLayer.style?.height || modalLayer.size?.height) : undefined),
+                            'auto'
+                        ),
+                        scaleY
+                    ),
+                    // CROP FIX: Removed default '85vh' - it was clipping content on short devices
+                    // User's explicit height % setting should be the constraint, not an additional maxHeight
+                    maxHeight: safeScale(
+                        (config as any)?.maxHeight ||
+                        (modalLayer.type === 'modal' ? modalLayer.style?.maxHeight : undefined) ||
+                        'none', // Changed from '85vh' to 'none'
+                        scaleY
+                    ),
 
+                    // FIX: Changed back to 'hidden' to clip content that goes outside modal bounds (negative positions)
                     overflow: modalLayer.style?.overflow || 'hidden',
                     zIndex: 1,
+                    display: 'block',
+                    padding: 0,
                     animation: config?.animation ? `${config.animation.type} ${config.animation.duration}ms ${config.animation.easing}` : 'modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}
             >
                 {/* Content Area - Relative/Scrollable Layers */}
-                {/* Content Area - Relative/Scrollable Layers */}
                 <div style={{
                     flex: 1,
                     position: 'relative',
-                    overflow: 'visible',
+                    // FIX: Changed to 'auto' to allow scrolling if content exceeds container height
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
                     width: '100%',
-                    height: '100%', // Ensure it fills the block
+                    height: '100%',
                     display: modalLayer.style?.display || 'flex',
                     flexDirection: modalLayer.style?.flexDirection || 'column',
                     alignItems: modalLayer.style?.alignItems || 'stretch',
                     justifyContent: modalLayer.style?.justifyContent || 'flex-start',
-                    gap: typeof modalLayer.style?.gap === 'number' ? `${modalLayer.style.gap}px` : (modalLayer.style?.gap || '0'),
-                    padding: typeof modalLayer.style?.padding === 'object'
-                        ? `${modalLayer.style.padding.top}px ${modalLayer.style.padding.right}px ${modalLayer.style.padding.bottom}px ${modalLayer.style.padding.left}px`
-                        : (modalLayer.style?.padding ? `${modalLayer.style.padding}px` : '0px')
+                    gap: safeScale(modalLayer.style?.gap || 0, scale),
+
+                    // REMOVED: CSS transform was causing double-scaling with safeScale
+                    // Instead, positions should be calculated as percentages of container
+
+                    // SCALING FIX: Apply safeScale to Padding (Content Wrapper)
+                    paddingTop: safeScale(modalLayer.style?.padding?.top || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scaleY),
+                    paddingBottom: safeScale(modalLayer.style?.padding?.bottom || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scaleY),
+                    paddingLeft: safeScale(modalLayer.style?.padding?.left || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scale),
+                    paddingRight: safeScale(modalLayer.style?.padding?.right || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scale),
                 }}>
                     {childLayers
                         .filter(l => {

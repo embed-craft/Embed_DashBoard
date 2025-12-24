@@ -4,10 +4,21 @@ import { Layer } from '@/store/useEditorStore';
 interface TextRendererProps {
     layer: Layer;
     scale?: number;
+    scaleY?: number;
 }
 
-export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1 }) => {
-    // SDK Parity: Safe Scale Helper
+export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, scaleY = 1 }) => {
+    // Design device dimensions for percentage conversion
+    const designWidth = 393;
+
+    // Convert pixel fontSize to scaled pixels (matches container stretch)
+    // Since container uses 100% 100%, fontSize should scale with the container
+    const baseFontSize = layer.content?.fontSize || 16;
+    const scaledFontSize = typeof baseFontSize === 'number'
+        ? baseFontSize * scale
+        : baseFontSize;
+
+    // SDK Parity: Safe Scale Helper for shadows
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
         const strVal = val.toString();
@@ -23,7 +34,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1 }) 
 
     return (
         <div style={{
-            fontSize: safeScale(layer.content?.fontSize || 16, scale),
+            fontSize: `${scaledFontSize}px`,
             color: layer.content?.textColor || 'black',
             fontWeight: layer.content?.fontWeight || 400,
             textAlign: layer.content?.textAlign || 'left',
@@ -44,3 +55,4 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1 }) 
         </div>
     );
 };
+

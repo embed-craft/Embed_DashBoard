@@ -433,28 +433,43 @@ export interface BottomSheetTemplate {
 }
 
 export interface TooltipConfig {
-  mode: 'standard' | 'image' | 'container' | 'advanced' | 'html';
+  mode?: 'standard' | 'image' | 'container' | 'advanced' | 'html';
   imageUrl?: string;
   imageSize?: { width: number | string; height: number | string };
   width?: number | string;
   height?: number | string;
+  maxWidth?: number | string; // Added to fix lint
 
   // Targeting
   targetPageId?: string;
   targetElementId?: string;
   arrowSize?: number;
   showArrow?: boolean;
+  arrowPositionPercent?: number; // NEW: 0-100, position along edge (0=start, 50=center, 100=end)
+  arrowRoundness?: number; // NEW: 0-100, roundness of arrow tip (0=sharp, 100=rounded)
 
   // Appearance
   roundness?: number;
   padding?: number;
   backgroundColor?: string;
   backgroundOpacity?: number; // 0-1
+  backgroundImageUrl?: string; // NEW: Background image URL
+  backgroundSize?: 'cover' | 'contain' | 'fill'; // NEW: How to fit background image
+
+  // Dimension controls (like Modal)
+  widthMode?: 'auto' | 'custom' | 'fitContent'; // NEW: Width mode
+  heightMode?: 'auto' | 'custom' | 'fitContent'; // NEW: Height mode
+  widthUnit?: 'px' | '%'; // NEW: Width unit
+  heightUnit?: 'px' | '%'; // NEW: Height unit
+
   arrowPosition?: 'left' | 'right' | 'center' | 'auto';
   arrowStyle?: 'sharp' | 'bubble'; // Added
   orientation?: 'vertical' | 'horizontal';
   shadow?: string;
   boxShadow?: string; // Added to resolve lint error (alias for shadow)
+  shadowEnabled?: boolean; // NEW: Toggle shadow on/off
+  shadowBlur?: number; // NEW: Shadow blur radius (0-50)
+  shadowOpacity?: number; // NEW: Shadow opacity (0-1)
   animation?: { type: string; duration: number }; // Added to resolve lint error
   overlayOpacity?: number; // Added
   gradient?: string; // Added generic gradient support if needed
@@ -469,16 +484,26 @@ export interface TooltipConfig {
   targetRoundness?: number; // Added
   targetHighlightPadding?: number; // Added
   targetHighlightColor?: string; // Added
+  targetBorderRadius?: number; // NEW: Border radius for target highlight
+  targetBorderWidth?: number; // NEW: Border width for target highlight
+  targetBorderColor?: string; // NEW: Border color for target highlight
 
   // Appearance - new additions
   overlayColor?: string; // Added/Alias for backgroundColor?
   borderRadius?: number; // Added (redundant with roundness but requested)
   gradientAngle?: number; // Added
 
+  // Overlay/Spotlight
+  overlayEnabled?: boolean; // NEW: Enable/disable overlay
+
+  // Arrow
+  arrowEnabled?: boolean; // NEW: Enable/disable arrow
+
   // Behaviors
   closeOnOutsideClick?: boolean;
   keepTargetClickable?: boolean;
   closeOnTargetClick?: boolean;
+  autoScrollToTarget?: boolean; // NEW: Auto-scroll to target element
 
   // Legacy/Existing
   position?: 'top' | 'bottom' | 'left' | 'right';
@@ -487,6 +512,8 @@ export interface TooltipConfig {
 
   // Added for lint fixing
   textColor?: string;
+  rotate?: number;
+  scale?: number;
 }
 
 export interface CampaignEditor {

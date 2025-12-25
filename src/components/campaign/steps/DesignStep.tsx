@@ -906,20 +906,46 @@ export const DesignStep: React.FC<any> = () => {
         const scaleX = previewWidth / (deviceMeta.width * density);
         const scaleY = previewHeight / (deviceMeta.height * density);
 
+        // FIX: Create default tooltip config
+        const defaultTooltipConfig = {
+          position: 'bottom' as const,
+          backgroundColor: '#1F2937',
+          borderRadius: 12,
+          padding: 16,
+          arrowEnabled: true,
+          arrowSize: 10,
+          overlayEnabled: true,
+          overlayColor: 'rgba(0,0,0,0.5)',
+          overlayOpacity: 0.5,
+        };
+
+        // FIX #3: Mock target element for preview (centered in screen)
+        const mockTargetElement = {
+          rect: { x: deviceMeta.width / 2 - 60, y: deviceMeta.height / 3, width: 120, height: 40 }
+        };
+
+        // Try to find real target element, fallback to mock
+        const targetElementId = currentCampaign?.tooltipConfig?.targetElementId;
+        const realTargetElement = selectedPage?.elements?.find((e: any) => e.id === targetElementId);
+        const targetElement = realTargetElement?.rect
+          ? { rect: realTargetElement.rect }
+          : realTargetElement
+            ? realTargetElement
+            : undefined; // Let renderer show mock target
+
         return (
           <TooltipRenderer
             layers={campaignLayers}
             selectedLayerId={selectedLayerId}
             onLayerSelect={selectLayer}
             colors={colors}
-            config={currentCampaign?.tooltipConfig}
+            config={currentCampaign?.tooltipConfig || defaultTooltipConfig}
             onConfigChange={(config) => updateTooltipConfig(config)}
-            targetElement={selectedPage?.elements?.find((e: any) => e.id === currentCampaign?.tooltipConfig?.targetElementId)}
-            scaleX={scaleX}
+            targetElement={targetElement}
+            scale={scaleX}
             scaleY={scaleY}
             isInteractive={isInteractive}
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
-            onNavigate={handleNavigate}
           />
         );
 
@@ -1287,199 +1313,367 @@ export const DesignStep: React.FC<any> = () => {
       </>
     );
   };
-  // Tooltip Configuration
-  // Tooltip Configuration (Image-First Mode)
+
+  // ========================
+  // NEW TOOLTIP CONFIGURATION
+  // Following Modal Construction Logic
+  // ========================
   const renderTooltipConfig = () => {
-    console.log('DEBUG: renderTooltipConfig EXECUTING via const');
     if (selectedNudgeType !== 'tooltip') return null;
 
-    const config = currentCampaign?.tooltipConfig || { mode: 'image' };
-
-    const handleTooltipUpdate = (field: string, value: any) => {
-      const updates: any = { [field]: value };
-      if (!config.mode) {
-        updates.mode = 'image';
-      }
-      useEditorStore.getState().updateTooltipConfig(updates);
-    };
-
-    // Define tooltipContainerLayer
-    const tooltipContainerLayer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Tooltip Container');
-
-    // Helper to get selected page for elements
+    const config: Partial<TooltipConfig> = currentCampaign?.tooltipConfig || {};
     const selectedPage = pages.find(p => p._id === config.targetPageId);
 
-    // Wrapper for image upload to handle event type
-    const onImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleImageUpload(e, 'tooltip_image_only');
+    const handleTooltipUpdate = (field: string, value: any) => {
+      useEditorStore.getState().updateTooltipConfig({ [field]: value });
+    };
+
+    const sectionStyle: React.CSSProperties = {
+      marginBottom: '20px',
+      paddingBottom: '16px',
+      borderBottom: `1px solid ${colors.gray[200]}`
+    };
+
+    const labelStyle: React.CSSProperties = {
+      display: 'block',
+      fontSize: '12px',
+      color: colors.text.secondary,
+      marginBottom: '6px'
+    };
+
+    const inputStyle: React.CSSProperties = {
+      width: '100%',
+      padding: '8px 12px',
+      border: `1px solid ${colors.gray[200]}`,
+      borderRadius: '6px',
+      fontSize: '13px',
+      outline: 'none'
     };
 
     return (
       <>
-        {/* 1. Targeting (Preserved) */}
-        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            🎯 Target
-          </h5>
+        {/* 1. TARGET SELECTION */}
+        <div style={sectionStyle}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🎯 Target Selection</h5>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Page</label>
-            <select
-              value={config.targetPageId || ''}
-              onChange={(e) => handleTooltipUpdate('targetPageId', e.target.value)}
-              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-            >
+            <label style={labelStyle}>Target Page</label>
+            <select value={config.targetPageId || ''} onChange={(e) => handleTooltipUpdate('targetPageId', e.target.value)} style={inputStyle}>
               <option value="">Select a page...</option>
-              {pages.map(page => (
-                <option key={page._id} value={page._id}>{page.name}</option>
-              ))}
+              {pages.map(page => (<option key={page._id} value={page._id}>{page.name}</option>))}
             </select>
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Target Element</label>
-            <div style={{ position: 'relative' }}>
-              {selectedPage && selectedPage.elements && selectedPage.elements.length > 0 ? (
-                <select
-                  value={config.targetElementId || ''}
-                  onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                >
-                  <option value="">Select an element...</option>
-                  {selectedPage.elements.map((el: any) => (
-                    <option key={el.id} value={el.id}>
-                      {el.id} {el.tagName ? `(${el.tagName})` : ''}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div style={{ padding: '8px 12px', border: `1px dashed ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', color: colors.text.secondary, background: colors.gray[50] }}>
-                  {selectedPage ? 'No elements found on this page' : 'Select a page first'}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 2. General (Name) */}
-        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>General</h5>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Name</label>
-            <input
-              type="text"
-              value={currentCampaign?.name || ''}
-              onChange={(e) => updateCampaign({ name: e.target.value })}
-              placeholder="Tooltip Campaign Name"
-              style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-            />
-          </div>
-        </div>
-
-        {/* 3. Image Content */}
-        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Image Content</h5>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Image Source</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                value={config.imageUrl || ''}
-                onChange={(e) => handleTooltipUpdate('imageUrl', e.target.value)}
-                placeholder="https://example.com/tooltip.png"
-                style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-              <label style={{ padding: '8px 12px', background: colors.primary[500], color: 'white', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
-                Upload
-                <input type="file" accept="image/*" onChange={onImageUpload} style={{ display: 'none' }} />
-              </label>
-            </div>
-          </div>
-          {config.imageUrl && (
-            <div style={{ marginBottom: '12px', padding: '10px', background: colors.gray[50], borderRadius: '6px', border: `1px solid ${colors.gray[200]}` }}>
-              <div style={{ height: '80px', backgroundImage: `url(${config.imageUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
-            </div>
-          )}
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <label style={{ fontSize: '12px', color: colors.text.secondary }}>Width</label>
-              <span style={{ fontSize: '12px', color: colors.text.primary, fontWeight: 600 }}>{config.width || 150}px</span>
-            </div>
-            <input type="range" min="50" max="600" value={Number(config.width) || 150} onChange={(e) => handleTooltipUpdate('width', Number(e.target.value))} style={{ width: '100%', cursor: 'pointer', accentColor: colors.primary[500] }} />
-          </div>
-        </div>
-
-        {/* 4. Positioning */}
-        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Positioning</h5>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Placement</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {['top', 'bottom', 'left', 'right'].map((pos) => (
-                <button key={pos} onClick={() => handleTooltipUpdate('position', pos)} style={{ padding: '8px', border: `1px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`, borderRadius: '6px', background: config.position === pos ? colors.primary[50] : 'white', color: config.position === pos ? colors.primary[600] : colors.text.secondary, fontSize: '12px', fontWeight: 500, cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Arrow</label>
-              <select value={config.arrowPosition || 'auto'} onChange={(e) => handleTooltipUpdate('arrowPosition', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
-                <option value="auto">Auto</option><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option>
+            <label style={labelStyle}>Target Element</label>
+            {selectedPage && selectedPage.elements?.length > 0 ? (
+              <select value={config.targetElementId || ''} onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)} style={inputStyle}>
+                <option value="">Select an element...</option>
+                {selectedPage.elements.map((el: any) => (<option key={el.id} value={el.id}>{el.id} {el.tagName ? `(${el.tagName})` : ''}</option>))}
               </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Orientation</label>
-              <select value={config.orientation || 'vertical'} onChange={(e) => handleTooltipUpdate('orientation', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
-                <option value="vertical">Vertical</option><option value="horizontal">Horizontal</option>
-              </select>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset X</label><input type="number" value={config.offsetX || 0} onChange={(e) => handleTooltipUpdate('offsetX', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset Y</label><input type="number" value={config.offsetY || 0} onChange={(e) => handleTooltipUpdate('offsetY', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-          </div>
-        </div>
-
-        {/* 5. Appearance */}
-        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Appearance</h5>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Roundness</label><input type="number" min="0" value={config.roundness ?? 8} onChange={(e) => handleTooltipUpdate('roundness', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-            <div><label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Padding</label><input type="number" min="0" value={config.padding ?? 10} onChange={(e) => handleTooltipUpdate('padding', Number(e.target.value))} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }} /></div>
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Background</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input type="color" value={config.backgroundColor || '#ffffff'} onChange={(e) => handleTooltipUpdate('backgroundColor', e.target.value)} style={{ width: '40px', height: '40px', border: '1px solid #e5e7eb', cursor: 'pointer', borderRadius: '4px', padding: 0 }} />
-              <div style={{ flex: 1 }}>
-                <input type="range" min="0" max="1" step="0.1" value={config.backgroundOpacity ?? 1} onChange={(e) => handleTooltipUpdate('backgroundOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
-                <div style={{ fontSize: '10px', color: colors.text.secondary, textAlign: 'right' }}>Opacity: {Math.round((config.backgroundOpacity ?? 1) * 100)}%</div>
+            ) : (
+              <div style={{ padding: '12px', border: `1px dashed ${colors.gray[300]}`, borderRadius: '6px', fontSize: '13px', color: colors.text.secondary, background: colors.gray[50], textAlign: 'center' }}>
+                {selectedPage ? 'No elements found' : 'Select a page first'}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* 2. TARGET HIGHLIGHT */}
+        <div style={sectionStyle}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>✨ Target Highlight</h5>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Border Radius</label>
+              <input type="number" min="0" max="50" value={config.targetBorderRadius ?? 8} onChange={(e) => handleTooltipUpdate('targetBorderRadius', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
+            </div>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Border Width</label>
+              <input type="number" min="0" max="10" value={config.targetBorderWidth ?? 2} onChange={(e) => handleTooltipUpdate('targetBorderWidth', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Shadow</label>
-            <select value={config.shadow || 'none'} onChange={(e) => handleTooltipUpdate('shadow', e.target.value)} style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px', outline: 'none' }}>
-              <option value="none">None</option><option value="sm">Small</option><option value="md">Medium</option><option value="lg">Large</option><option value="xl">Extra Large</option>
-            </select>
+            <label style={{ ...labelStyle, fontSize: '11px' }}>Border Color</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="color" value={config.targetBorderColor || '#6366F1'} onChange={(e) => handleTooltipUpdate('targetBorderColor', e.target.value)} style={{ width: '40px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '4px' }} />
+              <input type="text" value={config.targetBorderColor || '#6366F1'} onChange={(e) => handleTooltipUpdate('targetBorderColor', e.target.value)} style={{ ...inputStyle, padding: '6px', flex: 1 }} />
+            </div>
           </div>
         </div>
 
-        {/* 6. Behavior */}
+        {/* 3. POSITION */}
+        <div style={sectionStyle}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>📍 Position</h5>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={labelStyle}>Placement</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              {['top', 'right', 'bottom', 'left'].map((pos) => (
+                <button key={pos} onClick={() => handleTooltipUpdate('position', pos)} style={{ padding: '10px', border: `2px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`, borderRadius: '8px', background: config.position === pos ? colors.primary[50] : 'white', color: config.position === pos ? colors.primary[600] : colors.text.secondary, fontSize: '12px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div><label style={{ ...labelStyle, fontSize: '11px' }}>Offset X</label><input type="number" value={config.offsetX ?? 0} onChange={(e) => handleTooltipUpdate('offsetX', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} /></div>
+            <div><label style={{ ...labelStyle, fontSize: '11px' }}>Offset Y</label><input type="number" value={config.offsetY ?? 0} onChange={(e) => handleTooltipUpdate('offsetY', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} /></div>
+          </div>
+        </div>
+
+        {/* 4. TOOLTIP BODY */}
+        <div style={sectionStyle}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>📦 Tooltip Body</h5>
+
+          {/* Dimensions - Width */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ ...labelStyle, fontSize: '11px' }}>Width</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select
+                value={config.widthMode || 'custom'}
+                onChange={(e) => handleTooltipUpdate('widthMode', e.target.value)}
+                style={{ padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px' }}
+              >
+                <option value="auto">Auto</option>
+                <option value="custom">Custom</option>
+                <option value="fitContent">Fit Content</option>
+              </select>
+              {(config.widthMode === 'custom' || !config.widthMode) && (
+                <>
+                  <input
+                    type="number"
+                    min="50"
+                    value={typeof config.width === 'number' ? config.width : parseInt(String(config.width)) || 280}
+                    onChange={(e) => handleTooltipUpdate('width', Number(e.target.value))}
+                    style={{ ...inputStyle, padding: '6px', flex: 1 }}
+                  />
+                  <span style={{ padding: '6px', fontSize: '12px', color: colors.text.secondary }}>px</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Dimensions - Height */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ ...labelStyle, fontSize: '11px' }}>Height</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select
+                value={config.heightMode || 'auto'}
+                onChange={(e) => handleTooltipUpdate('heightMode', e.target.value)}
+                style={{ padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px' }}
+              >
+                <option value="auto">Auto</option>
+                <option value="custom">Custom</option>
+                <option value="fitContent">Fit Content</option>
+              </select>
+              {config.heightMode === 'custom' && (
+                <>
+                  <input
+                    type="number"
+                    min="50"
+                    value={typeof config.height === 'number' ? config.height : parseInt(String(config.height)) || 150}
+                    onChange={(e) => handleTooltipUpdate('height', Number(e.target.value))}
+                    style={{ ...inputStyle, padding: '6px', flex: 1 }}
+                  />
+                  <span style={{ padding: '6px', fontSize: '12px', color: colors.text.secondary }}>px</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Background Color + Opacity */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Background</label>
+              <input type="color" value={config.backgroundColor || '#1F2937'} onChange={(e) => handleTooltipUpdate('backgroundColor', e.target.value)} style={{ width: '100%', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '4px' }} />
+            </div>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Opacity: {Math.round((config.backgroundOpacity ?? 1) * 100)}%</label>
+              <input type="range" min="0" max="1" step="0.05" value={config.backgroundOpacity ?? 1} onChange={(e) => handleTooltipUpdate('backgroundOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
+            </div>
+          </div>
+
+          {/* Background Image */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ ...labelStyle, fontSize: '11px' }}>Background Image URL</label>
+            <input
+              type="text"
+              value={config.backgroundImageUrl || ''}
+              onChange={(e) => handleTooltipUpdate('backgroundImageUrl', e.target.value)}
+              placeholder="https://example.com/image.png"
+              style={{ ...inputStyle, padding: '8px', marginBottom: '8px' }}
+            />
+            <label
+              htmlFor="bg-image-upload-tooltip"
+              style={{
+                display: 'block', padding: '8px', background: colors.gray[100], color: colors.text.secondary,
+                borderRadius: '6px', fontSize: '11px', fontWeight: 500, textAlign: 'center', cursor: 'pointer'
+              }}
+            >
+              📤 Upload Image
+            </label>
+            <input
+              id="bg-image-upload-tooltip"
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+                const reader = new FileReader();
+                reader.onload = (event) => handleTooltipUpdate('backgroundImageUrl', event.target?.result as string);
+                reader.readAsDataURL(file);
+              }}
+            />
+          </div>
+
+          {/* Background Size (when image is set) */}
+          {config.backgroundImageUrl && (
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Background Size</label>
+              <select
+                value={config.backgroundSize || 'cover'}
+                onChange={(e) => handleTooltipUpdate('backgroundSize', e.target.value)}
+                style={{ ...inputStyle, padding: '8px' }}
+              >
+                <option value="cover">Cover (fill area)</option>
+                <option value="contain">Contain (fit inside)</option>
+                <option value="fill">Fill (stretch)</option>
+              </select>
+            </div>
+          )}
+
+          {/* Border Radius + Padding */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Border Radius</label>
+              <input type="number" min="0" max="50" value={config.borderRadius ?? 12} onChange={(e) => handleTooltipUpdate('borderRadius', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
+            </div>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Padding</label>
+              <input type="number" min="0" max="60" value={config.padding ?? 16} onChange={(e) => handleTooltipUpdate('padding', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
+            </div>
+          </div>
+
+          {/* Shadow Controls */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '8px' }}>
+              <input type="checkbox" checked={config.shadowEnabled !== false} onChange={(e) => handleTooltipUpdate('shadowEnabled', e.target.checked)} style={{ accentColor: colors.primary[500] }} />
+              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Enable Shadow</span>
+            </label>
+            {config.shadowEnabled !== false && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ ...labelStyle, fontSize: '11px' }}>Blur: {config.shadowBlur ?? 25}px</label>
+                  <input type="range" min="0" max="50" value={config.shadowBlur ?? 25} onChange={(e) => handleTooltipUpdate('shadowBlur', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
+                </div>
+                <div>
+                  <label style={{ ...labelStyle, fontSize: '11px' }}>Opacity: {Math.round((config.shadowOpacity ?? 0.2) * 100)}%</label>
+                  <input type="range" min="0" max="1" step="0.05" value={config.shadowOpacity ?? 0.2} onChange={(e) => handleTooltipUpdate('shadowOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 5. ARROW */}
+        <div style={sectionStyle}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>➤ Arrow</h5>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={config.arrowEnabled !== false} onChange={(e) => handleTooltipUpdate('arrowEnabled', e.target.checked)} style={{ accentColor: colors.primary[500] }} />
+              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Arrow</span>
+            </label>
+            <div>
+              <label style={{ ...labelStyle, fontSize: '11px' }}>Size</label>
+              <input type="number" min="6" max="20" value={config.arrowSize ?? 10} onChange={(e) => handleTooltipUpdate('arrowSize', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} disabled={config.arrowEnabled === false} />
+            </div>
+          </div>
+
+          {/* NEW: Arrow Position & Roundness Sliders */}
+          {config.arrowEnabled !== false && (
+            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Arrow Position Slider */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '11px', color: colors.text.secondary }}>Arrow Position</label>
+                  <span style={{ fontSize: '11px', color: colors.text.primary }}>{config.arrowPositionPercent ?? 50}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="5"
+                  max="95"
+                  step="1"
+                  value={config.arrowPositionPercent ?? 50}
+                  onChange={(e) => handleTooltipUpdate('arrowPositionPercent', Number(e.target.value))}
+                  style={{ width: '100%', accentColor: colors.primary[500] }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.text.tertiary, marginTop: '2px' }}>
+                  <span>Start</span>
+                  <span>Center</span>
+                  <span>End</span>
+                </div>
+              </div>
+
+              {/* Arrow Roundness Slider */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '11px', color: colors.text.secondary }}>Arrow Roundness</label>
+                  <span style={{ fontSize: '11px', color: colors.text.primary }}>{config.arrowRoundness ?? 0}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={config.arrowRoundness ?? 0}
+                  onChange={(e) => handleTooltipUpdate('arrowRoundness', Number(e.target.value))}
+                  style={{ width: '100%', accentColor: colors.primary[500] }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.text.tertiary, marginTop: '2px' }}>
+                  <span>Sharp ▲</span>
+                  <span>Rounded ⌒</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 6. OVERLAY */}
+        <div style={sectionStyle}>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🎭 Overlay (Spotlight)</h5>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '12px' }}>
+            <input type="checkbox" checked={config.overlayEnabled !== false} onChange={(e) => handleTooltipUpdate('overlayEnabled', e.target.checked)} style={{ accentColor: colors.primary[500] }} />
+            <span style={{ fontSize: '12px', color: colors.text.secondary }}>Enable Overlay</span>
+          </label>
+          {config.overlayEnabled !== false && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ ...labelStyle, fontSize: '11px' }}>Color</label>
+                <input type="color" value={config.overlayColor || '#000000'} onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)} style={{ width: '100%', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '4px' }} />
+              </div>
+              <div>
+                <label style={{ ...labelStyle, fontSize: '11px' }}>Opacity: {Math.round((config.overlayOpacity ?? 0.5) * 100)}%</label>
+                <input type="range" min="0" max="1" step="0.05" value={config.overlayOpacity ?? 0.5} onChange={(e) => handleTooltipUpdate('overlayOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 7. BEHAVIOR */}
         <div style={{ marginBottom: '20px' }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Behavior</h5>
+          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>⚙️ Behavior</h5>
           {[
             { key: 'closeOnOutsideClick', label: 'Close on Outside Click' },
-            { key: 'keepTargetClickable', label: 'Keep Target Clickable' },
-            { key: 'closeOnTargetClick', label: 'Close on Target Click' }
+            { key: 'closeOnTargetClick', label: 'Close on Target Click' },
+            { key: 'autoScrollToTarget', label: 'Auto-scroll to Target' }
           ].map(item => (
-            <label key={item.key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', cursor: 'pointer', padding: '4px 0' }}>
+            <label key={item.key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', background: colors.gray[50] }}>
               <span style={{ fontSize: '12px', color: colors.text.secondary }}>{item.label}</span>
-              <input type="checkbox" checked={!!config[item.key as keyof typeof config]} onChange={(e) => handleTooltipUpdate(item.key, e.target.checked)} style={{ accentColor: colors.primary[500] }} />
+              <input type="checkbox" checked={!!(config as any)[item.key]} onChange={(e) => handleTooltipUpdate(item.key, e.target.checked)} style={{ accentColor: colors.primary[500] }} />
             </label>
           ))}
         </div>
       </>
     );
-  }
+  };
+
 
   // Render properties based on layer type
   const renderLayerProperties = () => {
@@ -1496,6 +1690,13 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedNudgeType === 'pip') return renderPipConfig();
       if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       return null;
+    }
+
+    // SPECIAL CASE: When Tooltip Container is selected, show tooltip config instead of layer properties
+    if (selectedNudgeType === 'tooltip' &&
+      (selectedLayerObj.type === 'container' ||
+        selectedLayerObj.name?.toLowerCase().includes('tooltip container'))) {
+      return renderTooltipConfig();
     }
 
     if (selectedLayerObj.type === 'custom_html') {

@@ -1,21 +1,55 @@
 import React, { useRef } from 'react';
+import { Layer, LayerStyle, TooltipConfig } from '@/store/useEditorStore';
+import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
+import { TextRenderer } from './campaign/renderers/TextRenderer';
+import { MediaRenderer } from './campaign/renderers/MediaRenderer';
+import { X } from 'lucide-react';
 
+const getTransformString = (transform?: LayerStyle['transform']) => {
+    if (!transform || typeof transform !== 'object') return undefined;
+    const parts = [];
+    if (transform.rotate) parts.push(`rotate(${transform.rotate}deg)`);
+    if (transform.scale) parts.push(`scale(${transform.scale})`);
+    if (transform.translateX !== undefined) {
+        const val = transform.translateX;
+        const valStr = typeof val === 'number' ? `${val}px` : val;
+        parts.push(`translateX(${valStr})`);
+    }
+    if (transform.translateY !== undefined) {
+        const val = transform.translateY;
+        const valStr = typeof val === 'number' ? `${val}px` : val;
+        parts.push(`translateY(${valStr})`);
+    }
+    return parts.join(' ');
+};
+
+const getFilterString = (filter?: LayerStyle['filter']) => {
+    if (!filter || typeof filter !== 'object') return undefined;
+    const parts = [];
+    if (filter.blur) parts.push(`blur(${filter.blur}px)`);
+    if (filter.brightness) parts.push(`brightness(${filter.brightness}%)`);
+    if (filter.contrast) parts.push(`contrast(${filter.contrast}%)`);
+    if (filter.grayscale) parts.push(`grayscale(${filter.grayscale}%)`);
+    return parts.join(' ');
+};
+
+// ============ PROPS ============
 interface TooltipRendererProps {
-    layers: any[];
+    layers: Layer[];
     selectedLayerId: string | null;
     onLayerSelect: (id: string | null) => void;
     colors: any;
-    config?: any; // Assuming TooltipConfig is not defined in this snippet, keeping 'any' for now
-    onConfigChange?: (config: any) => void; // Assuming TooltipConfig is not defined in this snippet, keeping 'any' for now
-    targetElement?: any;
-    scaleX?: number;
-    scaleY?: number;
+    config: TooltipConfig;
+    onConfigChange?: (config: TooltipConfig) => void;
     onLayerUpdate?: (id: string, updates: any) => void;
+    targetElement?: { rect: { x: number; y: number; width: number; height: number } };
+    scale?: number;
+    scaleY?: number;
     isInteractive?: boolean;
     onDismiss?: () => void;
-    onNavigate?: (screenName: string) => void;
 }
 
+// ============ MAIN COMPONENT ============
 export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     layers,
     selectedLayerId,
@@ -23,97 +57,50 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     colors,
     config,
     onConfigChange,
-    targetElement,
-    scaleX = 1,
-    scaleY = 1,
     onLayerUpdate,
+    targetElement,
+    scale = 1,
+    scaleY = 1,
     isInteractive = false,
-    onDismiss,
-    onNavigate
+    onDismiss
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // If Image Mode, we must IGNORE the container layer styles (which often contain a default bg)
-    // unless strictly needed. Ideally, we just rely on config.
-    const mode = config?.mode || 'standard';
-    // If Image Mode, we allow layer styles to override config (assuming DesignStep cleared defaults on mode switch).
-    const containerStyle = {}; // No container layer anymore
-
-    // --- Configuration & Defaults ---
-    // Standard Defaults
-    const STD_BG = '#1F2937';
-    const STD_SHADOW = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-
-    // 1. Determine Background Color
-    // Priority: Config > Default (if standard)
-    // If Image Mode + No specific background set, we want transparent.
-    let backgroundColor = config.backgroundColor;
-
-    if (mode === 'image') {
-        // Only default to transparent if NOTHING is set.
-        if (!backgroundColor) {
-            backgroundColor = 'transparent';
-        }
-    } else {
-        // Standard mode: default to dark grey
-        backgroundColor = backgroundColor || STD_BG;
-    }
-
-    // 2. Determine Box Shadow
-    let boxShadow = config.boxShadow;
-    if (mode === 'image') {
-        if (!boxShadow) {
-            boxShadow = 'none';
-        }
-    } else {
-        boxShadow = boxShadow !== undefined ? boxShadow : STD_SHADOW;
-    }
-
-    // 3. Other Properties
-    const imageUrl = config.imageUrl;
-    const position = config.position || 'bottom';
-    const borderRadius = config.borderRadius || 8;
-    // Fix duplicate declaration issue by using this single source of truth
-    // Fix duplicate declaration issue by using this single source of truth
-    // Fix duplicate declaration issue by using this single source of truth
-    const rawPadding = config.padding;
-    const computedPadding = typeof rawPadding === 'object'
-        ? `${rawPadding.top || 0}px ${rawPadding.right || 0}px ${rawPadding.bottom || 0}px ${rawPadding.left || 0}px`
-        : `${rawPadding !== undefined ? rawPadding : 12}px`;
-    const arrowSize = config.arrowSize || 8;
-
-
-    // Helper: Convert structured filter object to CSS string
-    const getFilterString = (filterObj: any) => {
-        if (!filterObj || typeof filterObj !== 'object') return filterObj;
-        return [
-            filterObj.blur ? `blur(${filterObj.blur}px)` : '',
-            filterObj.brightness ? `brightness(${filterObj.brightness}%)` : '',
-            filterObj.contrast ? `contrast(${filterObj.contrast} %)` : '',
-            filterObj.grayscale ? `grayscale(${filterObj.grayscale} %)` : ''
-        ].filter(Boolean).join(' ') || undefined;
+    // ============ SCALING HELPERS (Same as Modal) ============
+    const safeScale = (val: any, factor: number) => {
+        if (val == null) return undefined;
+        const strVal = val.toString().trim();
+        if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return strVal;
+        const num = parseFloat(strVal);
+        if (isNaN(num)) return val;
+        return `${num * factor}px`;
     };
 
-    // Helper: Convert structured transform object to CSS string
-    const getTransformString = (transformObj: any) => {
-        if (!transformObj || typeof transformObj !== 'object') return transformObj;
-        return [
-            transformObj.rotate ? `rotate(${transformObj.rotate}deg)` : '',
-            transformObj.scale ? `scale(${transformObj.scale})` : '',
-            transformObj.translateX ? `translateX(${transformObj.translateX}px)` : '',
-            transformObj.translateY ? `translateY(${transformObj.translateY}px)` : ''
-        ].filter(Boolean).join(' ') || undefined;
+    const designWidth = 393;
+    const designHeight = 852;
+
+    const toPercentX = (val: any): string | undefined => {
+        if (val == null) return undefined;
+        const str = val.toString().trim();
+        if (str.endsWith('%')) return str;
+        const num = parseFloat(str);
+        if (isNaN(num)) return undefined;
+        return `${(num / designWidth) * 100}%`;
     };
 
-    const handleAction = (layer: any) => {
-        if (!isInteractive || !layer.content?.action) return;
+    const toPercentY = (val: any): string | undefined => {
+        if (val == null) return undefined;
+        const str = val.toString().trim();
+        if (str.endsWith('%')) return str;
+        const num = parseFloat(str);
+        if (isNaN(num)) return undefined;
+        return `${(num / designHeight) * 100}%`;
+    };
 
-        const action = layer.content.action;
-        const type = action.type;
-
-        console.log('[Tooltip Action]', type, action);
-
-        switch (type) {
+    // ============ ACTION HANDLER ============
+    const handleAction = (action: any) => {
+        if (!isInteractive || !action) return;
+        switch (action.type) {
             case 'close':
             case 'dismiss':
                 if (onDismiss) onDismiss();
@@ -121,482 +108,443 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             case 'deeplink':
                 if (action.url) window.open(action.url, '_blank');
                 break;
-            case 'navigate':
-                console.log(`Navigate to ${action.screenName} `);
-                break;
-            case 'custom':
-                console.log(`Custom Event: ${action.eventName} `);
-                break;
+            default:
+                console.log('Action triggered:', action);
         }
     };
 
-    const renderLayer = (layer: any) => {
+    // ============ RENDER LAYER (Same as Modal) ============
+    const renderLayer = (layer: Layer) => {
+        if (!layer.visible) return null;
         const isSelected = selectedLayerId === layer.id;
-        const style = layer.style || {};
+        const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
 
-        const selectionStyle = isSelected ? {
-            outline: `2px solid ${colors.purple[500]} `,
-            outlineOffset: '2px',
-            zIndex: 10
-        } : {};
-
-
-
-        const commonStyles: React.CSSProperties = {
-            ...style, // Spread basic props first
-
-            // Override strictly typed or structured properties
-            filter: getFilterString(style.filter),
-            transform: getTransformString(style.transform),
-            boxShadow: style.boxShadow, // Usually a string already, but ensuring it's picked up
-
-            // Positioning overrides if present in style
-            position: style.position || 'relative',
-            zIndex: style.zIndex,
-
-            ...selectionStyle,
-            cursor: 'pointer',
+        const scaledStyle: any = {
+            ...layer.style,
+            top: toPercentY(layer.style?.top),
+            bottom: toPercentY(layer.style?.bottom),
+            left: toPercentX(layer.style?.left),
+            right: toPercentX(layer.style?.right),
+            width: safeScale(layer.style?.width || layer.size?.width, scale),
+            height: safeScale(layer.style?.height || layer.size?.height, scaleY),
+            marginTop: safeScale(layer.style?.marginTop, scaleY),
+            marginBottom: safeScale(layer.style?.marginBottom, scaleY),
+            marginLeft: safeScale(layer.style?.marginLeft, scale),
+            marginRight: safeScale(layer.style?.marginRight, scale),
+            paddingTop: safeScale(layer.style?.paddingTop, scaleY),
+            paddingBottom: safeScale(layer.style?.paddingBottom, scaleY),
+            paddingLeft: safeScale(layer.style?.paddingLeft, scale),
+            paddingRight: safeScale(layer.style?.paddingRight, scale),
+            borderRadius: safeScale(layer.style?.borderRadius, scale),
+            fontSize: safeScale(layer.style?.fontSize, scale),
         };
 
+        let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
+        if (!isAbsolute && finalMarginBottom === undefined) {
+            finalMarginBottom = safeScale(10, scaleY);
+        }
+
+        const baseStyle: React.CSSProperties = {
+            position: 'relative',
+            marginBottom: finalMarginBottom,
+            ...scaledStyle
+        };
+
+        let content = null;
         switch (layer.type) {
             case 'text':
-                return (
-                    <div
-                        key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
-                        style={{
-                            ...commonStyles,
-                            color: style.color || 'white',
-                            fontSize: style.fontSize || '14px',
-                            fontWeight: style.fontWeight,
-                            textAlign: style.textAlign,
-                            lineHeight: style.lineHeight,
-                            letterSpacing: style.letterSpacing ? `${style.letterSpacing} px` : undefined,
-
-                            // Size might be in 'size' prop or style
-                            width: layer.size?.width || style.width || 'auto',
-                            height: layer.size?.height || style.height || 'auto',
-
-                            // Explicitly handle these if they are in the style object but not React CSS props directly
-                            border: style.border,
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : style.borderRadius,
-                            backgroundColor: style.backgroundColor,
-                        }}
-                    >
-                        {layer.content?.text || 'Tooltip Text'}
-                    </div>
-                );
-
-            case 'image':
+                content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
             case 'media':
-                return (
-                    <div
-                        key={layer.id}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (isInteractive) handleAction(layer.content?.action);
-                            else onLayerSelect(layer.id);
-                        }}
-                        style={{
-                            ...commonStyles,
-                            overflow: 'hidden',
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : (style.borderRadius || '4px'),
-                            width: layer.size?.width || style.width || '100%',
-                            height: layer.size?.height || style.height || 'auto',
-                        }}
-                    >
-                        {layer.content?.imageUrl ? (
-                            <img src={layer.content.imageUrl} style={{ width: '100%', height: '100%', objectFit: style.objectFit || 'cover', objectPosition: style.objectPosition }} alt="Tooltip media" />
-                        ) : (
-                            <div style={{ width: '100%', height: '100%', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <span style={{ fontSize: '10px', color: '#9CA3AF' }}>Image</span>
-                            </div>
-                        )}
-                    </div>
-                );
-
+            case 'image':
+                content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
             case 'button':
-                return (
-                    <button
-                        key={layer.id}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (isInteractive) handleAction(layer.content?.action);
-                            else onLayerSelect(layer.id);
-                        }}
-                        style={{
-                            ...commonStyles,
-                            border: style.border || 'none',
-                            outline: 'none',
-                            backgroundColor: style.backgroundColor,
-                            color: style.color,
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : style.borderRadius,
-
-                            // Size
-                            width: layer.size?.width || style.width || 'auto',
-                            height: layer.size?.height || style.height || 'auto',
-                        }}
-                    >
-                        {layer.content?.label || 'Button'}
-                    </button>
-                );
-
-            case 'container':
-                return (
-                    <div
-                        key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
-                        style={{
-                            ...commonStyles,
-                            display: style.display || 'flex',
-                            flexDirection: style.direction || style.flexDirection || 'column',
-                            gap: style.gap ? `${style.gap} px` : '4px',
-                            backgroundColor: style.backgroundColor,
-                            borderRadius: typeof style.borderRadius === 'number' ? `${style.borderRadius} px` : style.borderRadius,
-                            padding: style.padding,
-
-                            // Size
-                            width: layer.size?.width || style.width || '100%',
-                            height: layer.size?.height || style.height || 'auto',
-                        }}
-                    >
-                        {layer.children?.map((childId: string) => {
-                            const child = layers.find(l => l.id === childId);
-                            return child ? renderLayer(child) : null;
-                        })}
-                    </div>
-                );
-
+                content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
             default:
-                return null;
+                content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown: {layer.type}</div>;
         }
+
+        return (
+            <div
+                key={layer.id}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (isInteractive) handleAction(layer.content?.action);
+                    else onLayerSelect(layer.id);
+                }}
+                style={{
+                    ...baseStyle,
+                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                }}
+            >
+                {content}
+            </div>
+        );
     };
 
-    // Arrow Style Calculation 
-    const getArrowStyle = () => {
-        // if (mode === 'image') return { display: 'none' }; // Allow arrow if user sets non-transparent background
+    // ============ ARROW COMPONENT (SVG-based with position & roundness) ============
+    const renderArrow = () => {
+        if (config.arrowEnabled === false) return null;
 
+        const arrowSize = config.arrowSize || 10;
+        const bgColor = config.backgroundColor || '#1F2937';
+        const position = config.position || 'bottom';
+        const positionPercent = config.arrowPositionPercent ?? 50; // 0-100, default center
+        const roundness = config.arrowRoundness ?? 0; // 0-100, default sharp
 
-        const base = {
-            position: 'absolute' as const,
-            width: 0,
-            height: 0,
-            borderStyle: 'solid',
+        // Calculate curve control point based on roundness (0 = sharp, 100 = very rounded)
+        const curveAmount = (roundness / 100) * (arrowSize * 0.8);
+
+        // Generate SVG path based on direction
+        const getSvgPath = (direction: 'up' | 'down' | 'left' | 'right') => {
+            const w = arrowSize * 2;
+            const h = arrowSize;
+
+            // Roundness offset - applies curve at the TIP, not the base
+            const tipOffset = (roundness / 100) * (h * 0.6);
+
+            switch (direction) {
+                case 'up': // Points upward - curve the TOP tip
+                    return tipOffset > 0
+                        ? `M 0 ${h} L ${w / 2 - tipOffset} ${tipOffset} Q ${w / 2} ${-tipOffset * 0.5} ${w / 2 + tipOffset} ${tipOffset} L ${w} ${h} Z`
+                        : `M 0 ${h} L ${w / 2} 0 L ${w} ${h} Z`;
+                case 'down': // Points downward - curve the BOTTOM tip
+                    return tipOffset > 0
+                        ? `M 0 0 L ${w / 2 - tipOffset} ${h - tipOffset} Q ${w / 2} ${h + tipOffset * 0.5} ${w / 2 + tipOffset} ${h - tipOffset} L ${w} 0 Z`
+                        : `M 0 0 L ${w / 2} ${h} L ${w} 0 Z`;
+                case 'left': // Points left - curve the LEFT tip  
+                    return tipOffset > 0
+                        ? `M ${h} 0 L ${tipOffset} ${w / 2 - tipOffset} Q ${-tipOffset * 0.5} ${w / 2} ${tipOffset} ${w / 2 + tipOffset} L ${h} ${w} Z`
+                        : `M ${h} 0 L 0 ${w / 2} L ${h} ${w} Z`;
+                case 'right': // Points right - curve the RIGHT tip
+                    return tipOffset > 0
+                        ? `M 0 0 L ${h - tipOffset} ${w / 2 - tipOffset} Q ${h + tipOffset * 0.5} ${w / 2} ${h - tipOffset} ${w / 2 + tipOffset} L 0 ${w} Z`
+                        : `M 0 0 L ${h} ${w / 2} L 0 ${w} Z`;
+            }
+        };
+
+        // Common SVG style
+        const svgStyle: React.CSSProperties = {
+            position: 'absolute',
+            overflow: 'visible',
         };
 
         switch (position) {
-            case 'top':
-                return {
-                    ...base,
-                    bottom: `- ${arrowSize} px`,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    borderWidth: `${arrowSize}px ${arrowSize}px 0 ${arrowSize} px`,
-                    borderColor: `${backgroundColor} transparent transparent transparent`
-                };
-            case 'bottom':
-                return {
-                    ...base,
-                    top: `- ${arrowSize} px`,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    borderWidth: `0 ${arrowSize}px ${arrowSize}px ${arrowSize} px`,
-                    borderColor: `transparent transparent ${backgroundColor} transparent`
-                };
-            case 'left':
-                return {
-                    ...base,
-                    right: `- ${arrowSize} px`,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    borderWidth: `${arrowSize}px 0 ${arrowSize}px ${arrowSize} px`,
-                    borderColor: `transparent transparent transparent ${backgroundColor} `
-                };
-            case 'right':
-                return {
-                    ...base,
-                    left: `- ${arrowSize} px`,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    borderWidth: `${arrowSize}px ${arrowSize}px ${arrowSize}px 0`,
-                    borderColor: `transparent ${backgroundColor} transparent transparent`
-                };
-            default:
-                return {};
+            case 'bottom': // Tooltip is below target, arrow points UP
+                return (
+                    <svg
+                        style={{
+                            ...svgStyle,
+                            top: -arrowSize,
+                            left: `${positionPercent}%`,
+                            transform: 'translateX(-50%)',
+                            width: arrowSize * 2,
+                            height: arrowSize,
+                        }}
+                    >
+                        <path d={getSvgPath('up')} fill={bgColor} />
+                    </svg>
+                );
+            case 'top': // Tooltip is above target, arrow points DOWN
+                return (
+                    <svg
+                        style={{
+                            ...svgStyle,
+                            bottom: -arrowSize,
+                            left: `${positionPercent}%`,
+                            transform: 'translateX(-50%)',
+                            width: arrowSize * 2,
+                            height: arrowSize,
+                        }}
+                    >
+                        <path d={getSvgPath('down')} fill={bgColor} />
+                    </svg>
+                );
+            case 'left': // Tooltip is left of target, arrow points RIGHT
+                return (
+                    <svg
+                        style={{
+                            ...svgStyle,
+                            right: -arrowSize,
+                            top: `${positionPercent}%`,
+                            transform: 'translateY(-50%)',
+                            width: arrowSize,
+                            height: arrowSize * 2,
+                        }}
+                    >
+                        <path d={getSvgPath('right')} fill={bgColor} />
+                    </svg>
+                );
+            case 'right': // Tooltip is right of target, arrow points LEFT
+                return (
+                    <svg
+                        style={{
+                            ...svgStyle,
+                            left: -arrowSize,
+                            top: `${positionPercent}%`,
+                            transform: 'translateY(-50%)',
+                            width: arrowSize,
+                            height: arrowSize * 2,
+                        }}
+                    >
+                        <path d={getSvgPath('left')} fill={bgColor} />
+                    </svg>
+                );
         }
     };
 
-    // --- RENDER ---
-
-    // Helper function to render the actual tooltip content based on mode (excluding HTML)
-    const renderTooltipContent = () => (
-        <>
-            {mode === 'image' && imageUrl ? (
-                <img
-                    src={imageUrl}
-                    alt="Tooltip"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
-                        borderRadius: `${borderRadius}px`
-                    }}
-                />
-            ) : (
-                layers.map((layer) => {
-                    return renderLayer(layer);
-                })
-            )}
-
-            {mode !== 'image' && (
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
-                    Tooltip Content
-                </div>
-            )}
-        </>
-    );
-
-    const TooltipContent = (
-        <div
-            style={{
-                // Advanced Mode: Gradient Override
-                ...(mode === 'advanced' && config.gradientWith && config.gradientTo ? {
-                    background: `linear - gradient(${config.gradientAngle || 45}deg, ${config.gradientWith}, ${config.gradientTo})`,
-                    backgroundColor: 'transparent' // Clear fallback
-                } : {}),
-                backgroundColor: backgroundColor,
-                borderRadius: `${borderRadius} px`,
-                padding: computedPadding,
-                position: 'relative',
-                maxWidth: config.maxWidth || '250px',
-                minWidth: config.minWidth || '120px',
-                width: config.width || 'max-content',
-                height: config.height || 'auto',
-
-                // --- Full Property Support ---
-                // Filters
-                // Filters
-                filter: [
-                    config.blur ? `blur(${config.blur}px)` : '',
-                    config.brightness ? `brightness(${config.brightness}%)` : '',
-                    config.contrast ? `contrast(${config.contrast}%)` : '',
-                    config.grayscale ? `grayscale(${config.grayscale}%)` : ''
-                ].filter(Boolean).join(' ') || undefined,
-
-                // Container Props
-                opacity: config.opacity !== undefined ? config.opacity / 100 : undefined,
-                zIndex: config.zIndex,
-                cursor: config.cursor,
-                overflow: config.overflow,
-                border: config.border,
-                clipPath: config.clipPath,
-
-                // Background Image
-                backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,
-                backgroundSize: config.backgroundSize,
-                backgroundRepeat: config.backgroundRepeat,
-                backgroundPosition: config.backgroundPosition,
-
-                // Layout
-                // Layout
-                // Layout
-                display: config?.display || 'flex',
-                flexDirection: config?.flexDirection || 'column',
-                alignItems: config?.alignItems,
-                justifyContent: config?.justifyContent,
-                gap: (config?.gap !== undefined ? `${config.gap}px` : undefined),
-
-                // Typography
-                fontFamily: config?.fontFamily,
-                fontSize: (config?.fontSize ? `${config.fontSize}px` : undefined),
-                color: config?.textColor,
-                textAlign: config?.textAlign,
-
-                // Apply container styles first (layer defaults)
-                // Omit 'transform' from spread because it might be an object which is invalid for React style
-                // No container style to spread anymore
-
-                // Apply Config Box Shadow LAST to ensure it overrides container defaults
-                boxShadow: boxShadow,
-
-                // transform logic
-                // Prioritize Config
-                ...(() => {
-                    const rotate = config.rotate || 0;
-                    const scale = config.scale || 1;
-
-                    const transformString = `rotate(${rotate}deg) scale(${scale})`;
-
-                    return targetElement ? {
-                        position: 'relative',
-                        top: 'auto',
-                        left: 'auto',
-                        transform: transformString
-                    } : {
-                        transform: transformString
-                    };
-                })()
-            }}
-            onClick={(e) => {
-                // If interactive, might need handling
-            }}
-        >
-            <div style={getArrowStyle()} />
-
-            {/* HTML Mode Content */}
-            {mode === 'html' ? (
-                <div
-                    dangerouslySetInnerHTML={{ __html: config?.htmlContent || '<div>Custom HTML</div>' }}
-                    onClick={(e) => {
-
-                    }}
-                />
-            ) : (
-                // Standard/Image/Advanced Content
-                renderTooltipContent()
-            )}
-        </div>
-    );
-
-    // Dynamic Positioning Logic
-    if (targetElement) {
-        const currentScaleX = scaleX || 1;
-        const currentScaleY = scaleY || 1;
-        const { x, y, width, height } = targetElement.rect;
-
-        // Scale the coordinates
-        const scaledX = x * currentScaleX;
-        const scaledY = y * currentScaleY;
-        const scaledWidth = width * currentScaleX;
-        const scaledHeight = height * currentScaleY;
-
-        const gap = (arrowSize || 8) + 4; // Gap for arrow + spacing
-
-        // Calculate wrapper position
-        // Base coordinates centered relative to target side
-        let top = 0;
-        let left = 0;
-        let transformStr = ''; // We build transform string manually to combine with offsets
-
-        switch (position) {
-            case 'top':
-                top = scaledY - gap;
-                left = scaledX + scaledWidth / 2;
-                transformStr = 'translate(-50%, -100%)';
-                break;
-            case 'bottom':
-                top = scaledY + scaledHeight + gap;
-                left = scaledX + scaledWidth / 2;
-                transformStr = 'translate(-50%, 0)';
-                break;
-            case 'left':
-                top = scaledY + scaledHeight / 2;
-                left = scaledX - gap;
-                transformStr = 'translate(-100%, -50%)';
-                break;
-            case 'right':
-                top = scaledY + scaledHeight / 2;
-                left = scaledX + scaledWidth + gap;
-                transformStr = 'translate(0, -50%)';
-                break;
-            default:
-                top = scaledY + scaledHeight + gap;
-                left = scaledX + scaledWidth / 2;
-                transformStr = 'translate(-50%, 0)';
+    // ============ CALCULATE TOOLTIP POSITION ============
+    const getTooltipPosition = () => {
+        if (!targetElement) {
+            // Fallback: center of screen with mock target
+            return {
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)'
+            };
         }
 
-        // Apply visual offsets (in pixels)
-        // We add these to the CSS top/left values or transform
-        // Adding to transform is smoother for "nudge"
+        const { x, y, width, height } = targetElement.rect;
+        const gap = (config.arrowSize || 10) + 4;
         const offsetX = config.offsetX || 0;
         const offsetY = config.offsetY || 0;
 
-        // Append offsets to transform. 
-        // Note: transform order matters, but here we just want to shift the final result.
-        // Existing transforms use % which depends on element size. 
-        // Pixel offsets are absolute.
-        // transform: translate(-50%, -100%) translate(10px, 20px) is valid
-        const finalTransform = `${transformStr} translate(${offsetX}px, ${offsetY}px)`;
+        const scaledX = x * scale;
+        const scaledY = y * scaleY;
+        const scaledWidth = width * scale;
+        const scaledHeight = height * scaleY;
 
-        const wrapperStyle: React.CSSProperties = {
-            position: 'absolute',
-            zIndex: 50,
-            pointerEvents: 'auto',
-            top: `${top} px`,
-            left: `${left} px`,
-            transform: finalTransform
-        };
+        switch (config.position) {
+            case 'top':
+                return {
+                    left: `${scaledX + scaledWidth / 2 + offsetX}px`,
+                    top: `${scaledY - gap + offsetY}px`,
+                    transform: 'translate(-50%, -100%)'
+                };
+            case 'bottom':
+                return {
+                    left: `${scaledX + scaledWidth / 2 + offsetX}px`,
+                    top: `${scaledY + scaledHeight + gap + offsetY}px`,
+                    transform: 'translate(-50%, 0)'
+                };
+            case 'left':
+                return {
+                    left: `${scaledX - gap + offsetX}px`,
+                    top: `${scaledY + scaledHeight / 2 + offsetY}px`,
+                    transform: 'translate(-100%, -50%)'
+                };
+            case 'right':
+                return {
+                    left: `${scaledX + scaledWidth + gap + offsetX}px`,
+                    top: `${scaledY + scaledHeight / 2 + offsetY}px`,
+                    transform: 'translate(0, -50%)'
+                };
+            default:
+                return {
+                    left: `${scaledX + scaledWidth / 2}px`,
+                    top: `${scaledY + scaledHeight + gap}px`,
+                    transform: 'translate(-50%, 0)'
+                };
+        }
+    };
 
-        const imageWidth = config.width ? `${config.width} px` : '200px';
+    // ============ RENDER TARGET HIGHLIGHT ============
+    const renderTargetHighlight = () => {
+        if (!targetElement) return null;
+
+        const { x, y, width, height } = targetElement.rect;
+        const padding = 4;
+        const scaledX = x * scale;
+        const scaledY = y * scaleY;
+        const scaledWidth = width * scale;
+        const scaledHeight = height * scaleY;
+
+        // FIX: Calculate overlay color with proper opacity
+        const opacity = config.overlayOpacity ?? 0.5;
+        const baseColor = config.overlayColor || '#000000';
+        // Convert hex/named color to rgba with opacity
+        const overlayWithOpacity = baseColor.startsWith('rgba')
+            ? baseColor
+            : baseColor.startsWith('#')
+                ? `rgba(${parseInt(baseColor.slice(1, 3), 16)}, ${parseInt(baseColor.slice(3, 5), 16)}, ${parseInt(baseColor.slice(5, 7), 16)}, ${opacity})`
+                : `rgba(0, 0, 0, ${opacity})`;
 
         return (
-            <>
-                {/* Overlay (New) */}
-                {(config.overlayOpacity !== undefined && config.overlayOpacity > 0) && (
-                    <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        backgroundColor: config.overlayColor || '#000000',
-                        opacity: config.overlayOpacity,
-                        zIndex: 40, // Below tooltip (50), same/above highlight?
-                        pointerEvents: 'auto', // Blocks clicks if configured
-                    }}
-                        onClick={(e) => {
-                            // We don't have a close handler prop here, but we can stop propagation
-                            // The parent usually handles "outside click" via a global listener.
-                            // But if we want to catch it here:
-                            // config.closeOnOutsideClick
-                        }}
-                    />
-                )}
-
-                {/* Target Highlight */}
-                {(mode === 'image' || config.targetHighlightColor) && (
-                    <div style={{
-                        position: 'absolute',
-                        left: `${scaledX - (config.targetHighlightPadding || 4)} px`,
-                        top: `${scaledY - (config.targetHighlightPadding || 4)} px`,
-                        width: `${scaledWidth + (config.targetHighlightPadding || 4) * 2} px`,
-                        height: `${scaledHeight + (config.targetHighlightPadding || 4) * 2} px`,
-                        border: `2px solid ${config.targetHighlightColor || colors.primary[500]} `,
-                        backgroundColor: 'transparent',
-                        pointerEvents: 'none',
-                        zIndex: 45, // Above overlay, below tooltip
-                        borderRadius: `${config.targetRoundness || 4} px`,
-                        boxShadow: '0 0 0 9999px rgba(0,0,0,0)' // Hack to focus? No.
-                    }} />
-                )}
-
-                {/* Tooltip Wrapper */}
-                <div style={wrapperStyle}>
-                    {TooltipContent}
-                </div>
-            </>
+            <div style={{
+                position: 'absolute',
+                left: `${scaledX - padding}px`,
+                top: `${scaledY - padding}px`,
+                width: `${scaledWidth + padding * 2}px`,
+                height: `${scaledHeight + padding * 2}px`,
+                border: `${config.targetBorderWidth || 2}px solid ${config.targetBorderColor || colors.primary[500]}`,
+                borderRadius: `${config.targetBorderRadius || 8}px`,
+                backgroundColor: 'transparent',
+                pointerEvents: 'none',
+                zIndex: 45,
+                boxShadow: `0 0 0 9999px ${overlayWithOpacity}`,
+            }} />
         );
+    };
+
+    // ============ MAIN RENDER ============
+    // FIX #1: Improved tooltip layer detection with multiple strategies
+
+    // Strategy 1: Find by type 'tooltip'
+    // Strategy 2: Find by name containing 'tooltip' 
+    // Strategy 3: Find first container
+    // Strategy 4: Use first layer as fallback
+    const tooltipLayer = layers.find(l => l.type === 'tooltip')
+        || layers.find(l => l.name?.toLowerCase().includes('tooltip'))
+        || layers.find(l => l.type === 'container')
+        || layers[0];
+
+    // Try multiple strategies to find child layers
+    let layersToRender: typeof layers = [];
+
+    // Strategy 1: Find by parent ID
+    const childByParent = layers.filter(l => l.parent === tooltipLayer?.id);
+    if (childByParent.length > 0) {
+        layersToRender = childByParent;
+    } else {
+        // Strategy 2: Find by name pattern (e.g., "Tooltip Text" is child of "Tooltip Container")
+        const childByName = layers.filter(l =>
+            l.id !== tooltipLayer?.id &&
+            l.type !== 'container' &&
+            (l.type as string) !== 'tooltip' &&
+            l.visible !== false
+        );
+        layersToRender = childByName;
     }
 
-    // Fallback: Centered with Mock Anchors (for when no target is selected)
-    const Anchor = () => (
-        <div style={{
-            width: '100px', height: '40px', backgroundColor: '#E5E7EB', borderRadius: '4px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#6B7280', fontSize: '12px', border: '2px dashed #9CA3AF'
-        }}>
-            Target Element
-        </div>
-    );
+    // Debug logging
+    console.log('[TooltipRenderer] tooltipLayer:', tooltipLayer?.name, 'children:', layersToRender.length);
+
+    const position = getTooltipPosition();
+
+    const padding = typeof config.padding === 'object'
+        ? `${config.padding.top}px ${config.padding.right}px ${config.padding.bottom}px ${config.padding.left}px`
+        : `${config.padding || 12}px`;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px' }}>
-            {position === 'bottom' && <Anchor />}
-            {position === 'right' && <Anchor />}
-            {TooltipContent}
-            {position === 'top' && <Anchor />}
-            {position === 'left' && <Anchor />}
-        </div>
+        <>
+            {/* Overlay with Spotlight (cutout for target) */}
+            {config.overlayEnabled !== false && targetElement && (
+                renderTargetHighlight()
+            )}
+
+            {/* Overlay without target (full screen) */}
+            {config.overlayEnabled !== false && !targetElement && (() => {
+                const opacity = config.overlayOpacity ?? 0.5;
+                const baseColor = config.overlayColor || '#000000';
+                const overlayWithOpacity = baseColor.startsWith('rgba')
+                    ? baseColor
+                    : baseColor.startsWith('#') && baseColor.length >= 7
+                        ? `rgba(${parseInt(baseColor.slice(1, 3), 16)}, ${parseInt(baseColor.slice(3, 5), 16)}, ${parseInt(baseColor.slice(5, 7), 16)}, ${opacity})`
+                        : `rgba(0, 0, 0, ${opacity})`;
+                return (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: overlayWithOpacity,
+                        zIndex: 40,
+                        pointerEvents: 'auto'
+                    }} onClick={onDismiss} />
+                );
+            })()}
+
+            {/* Tooltip Container */}
+            <div
+                ref={containerRef}
+                style={{
+                    position: 'absolute',
+                    ...position,
+                    zIndex: 50,
+                    pointerEvents: 'auto',
+                }}
+            >
+                {/* Tooltip Body */}
+                <div style={{
+                    position: 'relative',
+                    // Background with opacity
+                    backgroundColor: config.backgroundOpacity !== undefined && config.backgroundOpacity < 1
+                        ? `rgba(${parseInt((config.backgroundColor || '#1F2937').slice(1, 3), 16)}, ${parseInt((config.backgroundColor || '#1F2937').slice(3, 5), 16)}, ${parseInt((config.backgroundColor || '#1F2937').slice(5, 7), 16)}, ${config.backgroundOpacity})`
+                        : config.backgroundColor || '#1F2937',
+                    // Background image
+                    backgroundImage: config.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
+                    backgroundSize: config.backgroundSize || 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    borderRadius: `${config.borderRadius || 12}px`,
+                    padding: padding,
+                    // Width based on mode
+                    width: config.widthMode === 'auto'
+                        ? 'auto'
+                        : config.widthMode === 'fitContent'
+                            ? 'fit-content'
+                            : config.widthUnit === '%'
+                                ? `${config.width || 280}%`
+                                : safeScale(config.width || 280, scale),
+                    // Height based on mode
+                    height: config.heightMode === 'custom' && config.height
+                        ? config.heightUnit === '%'
+                            ? `${config.height}%`
+                            : safeScale(config.height, scaleY)
+                        : config.heightMode === 'fitContent'
+                            ? 'fit-content'
+                            : 'auto',
+                    // Configurable shadow
+                    boxShadow: config.shadowEnabled !== false
+                        ? `0 10px ${config.shadowBlur ?? 25}px rgba(0,0,0,${config.shadowOpacity ?? 0.2})`
+                        : 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: `${8 * scale}px`,
+                    animation: 'tooltip-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}>
+                    {/* Arrow */}
+                    {renderArrow()}
+
+                    {/* Layers */}
+                    {layersToRender.map(renderLayer)}
+                </div>
+            </div>
+
+            {/* Mock Target Element (when no real target) */}
+            {!targetElement && (
+                <div style={{
+                    position: 'absolute',
+                    top: '30%',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '120px',
+                    height: '40px',
+                    backgroundColor: '#E5E7EB',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#6B7280',
+                    fontSize: '12px',
+                    border: `2px solid ${config.targetBorderColor || colors.primary[500]}`,
+                    zIndex: 30
+                }}>
+                    Target Element
+                </div>
+            )}
+
+            <style>{`
+                @keyframes tooltip-pop {
+                    0% { opacity: 0; transform: scale(0.9); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
+        </>
     );
 };

@@ -1094,7 +1094,7 @@ export const DesignStep: React.FC<any> = () => {
           {[
             { value: 'none', label: 'No Action', icon: <CircleOff size={16} /> },
             { value: 'close', label: 'Dismiss', icon: <X size={16} /> },
-            { value: 'deeplink', label: 'Open Link', icon: <Link size={16} /> },
+            { value: 'deeplink', label: 'Deeplink', icon: <Link size={16} /> },
             { value: 'navigate', label: 'Navigate', icon: <Compass size={16} /> },
             { value: 'custom', label: 'Custom', icon: <Code size={16} /> }
           ].map((option) => {
@@ -1143,14 +1143,14 @@ export const DesignStep: React.FC<any> = () => {
 
         {selectedLayerObj.content?.action?.type === 'deeplink' && (
           <div style={{ marginBottom: '12px', animation: 'fadeIn 0.2s ease-in-out' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Destination URL</label>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Deeplink URL</label>
             <div style={{ position: 'relative' }}>
               <Link size={14} color={colors.text.secondary} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 value={selectedLayerObj.content?.action?.url || ''}
                 onChange={(e) => handleContentUpdate('action', { ...selectedLayerObj.content?.action, url: e.target.value })}
-                placeholder="https://example.com/page"
+                placeholder="myapp://screen/page OR https://example.com"
                 style={{
                   width: '100%',
                   padding: '8px 12px 8px 32px',
@@ -1165,7 +1165,8 @@ export const DesignStep: React.FC<any> = () => {
               />
             </div>
             <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
-              Opens in a new tab by default.
+              <strong>App Deeplink:</strong> myapp://screen/123<br />
+              <strong>Web URL:</strong> https://example.com
             </div>
           </div>
         )}

@@ -403,22 +403,14 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         || layers[0];
 
     // Try multiple strategies to find child layers
-    let layersToRender: typeof layers = [];
-
-    // Strategy 1: Find by parent ID
-    const childByParent = layers.filter(l => l.parent === tooltipLayer?.id);
-    if (childByParent.length > 0) {
-        layersToRender = childByParent;
-    } else {
-        // Strategy 2: Find by name pattern (e.g., "Tooltip Text" is child of "Tooltip Container")
-        const childByName = layers.filter(l =>
-            l.id !== tooltipLayer?.id &&
-            l.type !== 'container' &&
-            (l.type as string) !== 'tooltip' &&
-            l.visible !== false
-        );
-        layersToRender = childByName;
-    }
+    // FIX: ALWAYS render ALL non-container, visible layers to match SDK behavior
+    // This ensures newly added layers show up in preview even without parent relationship
+    const layersToRender = layers.filter(l =>
+        l.id !== tooltipLayer?.id &&
+        l.type !== 'container' &&
+        (l.type as string) !== 'tooltip' &&
+        l.visible !== false
+    );
 
     // Debug logging
     console.log('[TooltipRenderer] tooltipLayer:', tooltipLayer?.name, 'children:', layersToRender.length);
@@ -508,11 +500,20 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     gap: `${8 * scale}px`,
                     animation: 'tooltip-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}>
-                    {/* Arrow */}
+                    {/* Arrow - positioned outside overflow container */}
                     {renderArrow()}
 
-                    {/* Layers */}
-                    {layersToRender.map(renderLayer)}
+                    {/* Layers - wrapped in overflow container to clip content */}
+                    <div style={{
+                        overflow: 'hidden',
+                        borderRadius: `${config.borderRadius || 12}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: `${8 * scale}px`,
+                        flex: 1
+                    }}>
+                        {layersToRender.map(renderLayer)}
+                    </div>
                 </div>
             </div>
 

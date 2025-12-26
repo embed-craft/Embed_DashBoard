@@ -359,14 +359,36 @@ export const DesignStep: React.FC<any> = () => {
 
       // Determine if drop should be before, after, or inside (for containers)
       const targetLayer = campaignLayers.find(l => l.id === layerId);
-      const isContainer = targetLayer?.type === 'container';
+      // FIX: Treat 'tooltip' and 'container' types as drop targets for 'inside'
+      // Also check layer NAME for containers - check specifically for 'Container' word (not just 'tooltip')
+      const layerType = targetLayer?.type as string;
+      const layerName = (targetLayer?.name || '');
+      const isContainerByType = layerType === 'container' || layerType === 'tooltip';
+      // Only match names that end with 'Container' or have 'Container' as a word
+      const isContainerByName = layerName.endsWith('Container') || layerName.includes(' Container');
+      const isContainer = isContainerByType || isContainerByName;
 
-      if (relativeY < height * 0.33) {
-        setDropPosition('before');
-      } else if (relativeY > height * 0.67 || !isContainer) {
-        setDropPosition('after');
+      // 🔥 DEBUG: Log drag calculation
+      const relativePercent = Math.round((relativeY / height) * 100);
+      console.log(`[handleDragOver] target: ${targetLayer?.name}, type: ${layerType}, isContainer: ${isContainer}, relativeY: ${relativePercent}%`);
+
+      // For containers: use larger 'inside' zone (10-90%) to make dropping inside easier
+      // For non-containers: only allow before/after
+      if (isContainer) {
+        if (relativeY < height * 0.1) {
+          setDropPosition('before');
+        } else if (relativeY > height * 0.9) {
+          setDropPosition('after');
+        } else {
+          setDropPosition('inside'); // Most of container row = inside
+        }
       } else {
-        setDropPosition('inside'); // Only for containers
+        // Non-container: split at 50%
+        if (relativeY < height * 0.5) {
+          setDropPosition('before');
+        } else {
+          setDropPosition('after');
+        }
       }
     }
   };
@@ -397,7 +419,19 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Handle different drop positions
-    if (dropPosition === 'inside' && targetLayer.type === 'container') {
+    // FIX: Allow dropping inside both 'container' and 'tooltip' type layers
+    // Also check layer NAME for containers - check specifically for 'Container' word
+    const targetType = targetLayer.type as string;
+    const targetLayerName = targetLayer.name || '';
+    const isContainerByType = targetType === 'container' || targetType === 'tooltip';
+    // Only match names that end with 'Container' or have 'Container' as a word
+    const isContainerByName = targetLayerName.endsWith('Container') || targetLayerName.includes(' Container');
+    const isContainer = isContainerByType || isContainerByName;
+
+    // 🔥 DEBUG: Log drop info
+    console.log(`[handleDrop] dropPosition: ${dropPosition}, targetType: ${targetType}, isContainer: ${isContainer}, targetName: ${targetLayer.name}`);
+
+    if (dropPosition === 'inside' && isContainer) {
       // Move layer inside the container (make it a child)
       moveLayerToParent(draggedLayerId, targetLayerId);
       toast.success(`"${draggedLayer.name}" moved inside "${targetLayer.name}"`);
@@ -900,11 +934,10 @@ export const DesignStep: React.FC<any> = () => {
         const previewWidth = device.width * previewZoom;
         const previewHeight = device.height * previewZoom;
 
-        // Coordinates are Physical (from SDK), DeviceMeta is Logical.
-        // We must divide by density to normalize, or divide preview by physical width.
-        const density = deviceMeta.density || 1;
-        const scaleX = previewWidth / (deviceMeta.width * density);
-        const scaleY = previewHeight / (deviceMeta.height * density);
+        // FIX: Use 393x852 design baseline (like Modal) instead of deviceMeta × density
+        // This ensures tooltip preview matches SDK rendering proportionally
+        const scaleX = previewWidth / 393;  // Design width baseline
+        const scaleY = previewHeight / 852;  // Design height baseline
 
         // FIX: Create default tooltip config
         const defaultTooltipConfig = {
@@ -919,19 +952,35 @@ export const DesignStep: React.FC<any> = () => {
           overlayOpacity: 0.5,
         };
 
-        // FIX #3: Mock target element for preview (centered in screen)
+        // FIX #3: Mock target element for preview (in design coordinates 393x852)
         const mockTargetElement = {
-          rect: { x: deviceMeta.width / 2 - 60, y: deviceMeta.height / 3, width: 120, height: 40 }
+          rect: { x: 393 / 2 - 60, y: 852 / 3, width: 120, height: 40 }
         };
 
         // Try to find real target element, fallback to mock
         const targetElementId = currentCampaign?.tooltipConfig?.targetElementId;
         const realTargetElement = selectedPage?.elements?.find((e: any) => e.id === targetElementId);
-        const targetElement = realTargetElement?.rect
-          ? { rect: realTargetElement.rect }
-          : realTargetElement
-            ? realTargetElement
-            : undefined; // Let renderer show mock target
+
+        // FIX: Convert target rect from physical pixels to design coordinates
+        // Physical coords are in deviceMeta dimensions, convert to 393x852 design space
+        const density = deviceMeta.density || 1;
+        const normalizeX = 393 / (deviceMeta.width * density);  // Factor to convert physical X to design X
+        const normalizeY = 852 / (deviceMeta.height * density);  // Factor to convert physical Y to design Y
+
+        let targetElement: { rect: { x: number; y: number; width: number; height: number } } | undefined;
+        if (realTargetElement?.rect) {
+          // Normalize physical coords to design coords
+          targetElement = {
+            rect: {
+              x: realTargetElement.rect.x * normalizeX,
+              y: realTargetElement.rect.y * normalizeY,
+              width: realTargetElement.rect.width * normalizeX,
+              height: realTargetElement.rect.height * normalizeY,
+            }
+          };
+        } else {
+          targetElement = undefined; // Let renderer show mock target
+        }
 
         return (
           <TooltipRenderer

@@ -58,8 +58,8 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
     const icon = iconName ? icons[iconName] : null;
 
     const baseStyle: React.CSSProperties = {
-        // FIX: Read padding from layer.style instead of hardcoded values (SDK parity)
-        padding: `${safeScale(layer.style?.paddingTop ?? 10, scaleY)} ${safeScale(layer.style?.paddingRight ?? 20, scale)} ${safeScale(layer.style?.paddingBottom ?? 10, scaleY)} ${safeScale(layer.style?.paddingLeft ?? 20, scale)}`,
+        // FIX: Default padding to 0, use single scale factor (SDK parity)
+        padding: `${safeScale(layer.style?.paddingTop ?? 0, scale)} ${safeScale(layer.style?.paddingRight ?? 0, scale)} ${safeScale(layer.style?.paddingBottom ?? 0, scale)} ${safeScale(layer.style?.paddingLeft ?? 0, scale)}`,
         borderRadius: 'inherit', // Parent wrapper handles radius
         fontSize: safeScale(fontSize, scale),
         fontWeight,

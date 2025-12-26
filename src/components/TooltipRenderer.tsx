@@ -113,42 +113,25 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         }
     };
 
-    // ============ RENDER LAYER (Same as Modal) ============
+    // ============ RENDER LAYER (Absolute positioning for pixel-perfect placement) ============
     const renderLayer = (layer: Layer) => {
         if (!layer.visible) return null;
         const isSelected = selectedLayerId === layer.id;
-        const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
 
-        const scaledStyle: any = {
-            ...layer.style,
-            top: toPercentY(layer.style?.top),
-            bottom: toPercentY(layer.style?.bottom),
-            left: toPercentX(layer.style?.left),
-            right: toPercentX(layer.style?.right),
+        // FIX: Simplified baseStyle - only absolute positioning properties + essential visual properties
+        const baseStyle: React.CSSProperties = {
+            position: 'absolute',
+            left: toPercentX(layer.style?.left ?? 0),
+            top: toPercentY(layer.style?.top ?? 0),
             width: safeScale(layer.style?.width || layer.size?.width, scale),
             height: safeScale(layer.style?.height || layer.size?.height, scaleY),
-            marginTop: safeScale(layer.style?.marginTop, scaleY),
-            marginBottom: safeScale(layer.style?.marginBottom, scaleY),
-            marginLeft: safeScale(layer.style?.marginLeft, scale),
-            marginRight: safeScale(layer.style?.marginRight, scale),
-            paddingTop: safeScale(layer.style?.paddingTop, scaleY),
-            paddingBottom: safeScale(layer.style?.paddingBottom, scaleY),
-            paddingLeft: safeScale(layer.style?.paddingLeft, scale),
-            paddingRight: safeScale(layer.style?.paddingRight, scale),
+            zIndex: layer.style?.zIndex ?? 0,
             borderRadius: safeScale(layer.style?.borderRadius, scale),
-            // NOTE: fontSize removed - TextRenderer handles scaling internally
-        };
-
-        let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
-        // FIX: Default marginBottom to 0 to match SDK (was hardcoded 10)
-        if (!isAbsolute && finalMarginBottom === undefined) {
-            finalMarginBottom = '0px';
-        }
-
-        const baseStyle: React.CSSProperties = {
-            position: 'relative',
-            marginBottom: finalMarginBottom,
-            ...scaledStyle
+            overflow: 'hidden',
+            // FIX: Include backgroundColor for button layers (wrapper needs it)
+            backgroundColor: layer.type === 'button'
+                ? (layer.style?.backgroundColor || layer.content?.themeColor)
+                : undefined,
         };
 
         let content = null;
@@ -319,8 +302,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         }
 
         const { x, y, width, height } = targetElement.rect;
-        // FIX: Scale gap and offsets for pixel-perfect positioning
-        const rawGap = (config.arrowSize || 10) + 4;
+        // FIX: Removed +4 gap to match SDK - arrow touches target when offsetY=0
+        const rawGap = config.arrowSize || 10;
         const gap = rawGap * scale; // Scale the gap
         const offsetX = (config.offsetX || 0) * scale; // Scale offsetX
         const offsetY = (config.offsetY || 0) * scaleY; // Scale offsetY
@@ -433,10 +416,10 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     const position = getTooltipPosition();
 
-    // FIX: Scale padding for pixel-perfect match with SDK
+    // FIX: Scale padding for pixel-perfect match with SDK (default to 0)
     const padding = typeof config.padding === 'object'
         ? `${config.padding.top * scale}px ${config.padding.right * scale}px ${config.padding.bottom * scale}px ${config.padding.left * scale}px`
-        : `${(config.padding || 12) * scale}px`;
+        : `${(config.padding ?? 0) * scale}px`;
 
     return (
         <>
@@ -528,10 +511,14 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         overflow: 'hidden',
                         // FIX: Scale borderRadius same as outer container
                         borderRadius: `${(config.borderRadius || 12) * scale}px`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        // NOTE: Removed gap - SDK Column has no gap between children
-                        flex: 1
+                        // FIX: Use position:relative to enable absolute positioned children
+                        position: 'relative',
+                        width: '100%',
+                        // FIX: Use tooltip height for absolute positioning, or min-height for auto
+                        height: config.heightMode === 'custom' && config.height
+                            ? safeScale(config.height, scaleY)
+                            : '100px', // Default min-height for auto mode
+                        minHeight: config.heightMode === 'auto' ? '50px' : undefined,
                     }}>
                         {layersToRender.map(renderLayer)}
                     </div>

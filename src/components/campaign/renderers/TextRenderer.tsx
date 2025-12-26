@@ -12,16 +12,13 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
     const designWidth = 393;
 
     // Convert pixel fontSize to scaled pixels (matches container stretch)
-    // Since container uses 100% 100%, fontSize should scale with the container
     // FIX: Default fontSize changed to 14 to match SDK
     const baseFontSize = layer.content?.fontSize || 14;
 
-    // FIX: Text scale correction to compensate for CSS vs Flutter font rendering differences
-    // Browser renders characters slightly wider at small sizes, so we reduce fontSize slightly
-    // to make text wrap at approximately the same position as SDK
-    const textScaleCorrection = 0.92; // Adjust this value if needed (0.88-0.95 range)
+    // FIX: Removed textScaleCorrection for true SDK parity
+    // Both Dashboard and SDK now use fontSize * scale without correction
     const scaledFontSize = typeof baseFontSize === 'number'
-        ? baseFontSize * scale * textScaleCorrection
+        ? baseFontSize * scale
         : baseFontSize;
 
     // SDK Parity: Safe Scale Helper for shadows

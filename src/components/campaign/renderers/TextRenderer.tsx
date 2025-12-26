@@ -13,9 +13,15 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
 
     // Convert pixel fontSize to scaled pixels (matches container stretch)
     // Since container uses 100% 100%, fontSize should scale with the container
-    const baseFontSize = layer.content?.fontSize || 16;
+    // FIX: Default fontSize changed to 14 to match SDK
+    const baseFontSize = layer.content?.fontSize || 14;
+
+    // FIX: Text scale correction to compensate for CSS vs Flutter font rendering differences
+    // Browser renders characters slightly wider at small sizes, so we reduce fontSize slightly
+    // to make text wrap at approximately the same position as SDK
+    const textScaleCorrection = 0.92; // Adjust this value if needed (0.88-0.95 range)
     const scaledFontSize = typeof baseFontSize === 'number'
-        ? baseFontSize * scale
+        ? baseFontSize * scale * textScaleCorrection
         : baseFontSize;
 
     // SDK Parity: Safe Scale Helper for shadows
@@ -39,7 +45,8 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
             fontWeight: layer.content?.fontWeight || 400,
             textAlign: layer.content?.textAlign || 'left',
             fontFamily: layer.content?.fontFamily ? `'${layer.content.fontFamily}', sans-serif` : 'inherit',
-            lineHeight: 1.2, // SDK Parity
+            // FIX: lineHeight changed to 1.4 to match SDK (was 1.2)
+            lineHeight: 1.4,
             textShadow: textShadow,
             whiteSpace: 'pre-wrap', // Better multi-line support
             width: '100%',

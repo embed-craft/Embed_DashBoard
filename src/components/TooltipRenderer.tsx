@@ -136,12 +136,13 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             paddingLeft: safeScale(layer.style?.paddingLeft, scale),
             paddingRight: safeScale(layer.style?.paddingRight, scale),
             borderRadius: safeScale(layer.style?.borderRadius, scale),
-            fontSize: safeScale(layer.style?.fontSize, scale),
+            // NOTE: fontSize removed - TextRenderer handles scaling internally
         };
 
         let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
+        // FIX: Default marginBottom to 0 to match SDK (was hardcoded 10)
         if (!isAbsolute && finalMarginBottom === undefined) {
-            finalMarginBottom = safeScale(10, scaleY);
+            finalMarginBottom = '0px';
         }
 
         const baseStyle: React.CSSProperties = {
@@ -190,11 +191,18 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const renderArrow = () => {
         if (config.arrowEnabled === false) return null;
 
-        const arrowSize = config.arrowSize || 10;
+        // FIX: Scale arrowSize for pixel-perfect match with SDK
+        const arrowSize = (config.arrowSize || 10) * scale;
         const bgColor = config.backgroundColor || '#1F2937';
         const position = config.position || 'bottom';
         const positionPercent = config.arrowPositionPercent ?? 50; // 0-100, default center
         const roundness = config.arrowRoundness ?? 0; // 0-100, default sharp
+
+        // FIX: Convert percentage to pixels, then scale for consistent Dashboard/SDK rendering
+        // This ensures arrow position scales identically to other dimensions
+        const rawTooltipWidth = config.width || 280;
+        const arrowPositionPx = (positionPercent / 100) * rawTooltipWidth;
+        const scaledArrowPosition = arrowPositionPx * scale;
 
         // Calculate curve control point based on roundness (0 = sharp, 100 = very rounded)
         const curveAmount = (roundness / 100) * (arrowSize * 0.8);
@@ -240,7 +248,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         style={{
                             ...svgStyle,
                             top: -arrowSize,
-                            left: `${positionPercent}%`,
+                            // FIX: Use pixel-based position instead of percentage
+                            left: `${scaledArrowPosition}px`,
                             transform: 'translateX(-50%)',
                             width: arrowSize * 2,
                             height: arrowSize,
@@ -255,7 +264,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         style={{
                             ...svgStyle,
                             bottom: -arrowSize,
-                            left: `${positionPercent}%`,
+                            // FIX: Use pixel-based position instead of percentage
+                            left: `${scaledArrowPosition}px`,
                             transform: 'translateX(-50%)',
                             width: arrowSize * 2,
                             height: arrowSize,
@@ -309,9 +319,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         }
 
         const { x, y, width, height } = targetElement.rect;
-        const gap = (config.arrowSize || 10) + 4;
-        const offsetX = config.offsetX || 0;
-        const offsetY = config.offsetY || 0;
+        // FIX: Scale gap and offsets for pixel-perfect positioning
+        const rawGap = (config.arrowSize || 10) + 4;
+        const gap = rawGap * scale; // Scale the gap
+        const offsetX = (config.offsetX || 0) * scale; // Scale offsetX
+        const offsetY = (config.offsetY || 0) * scaleY; // Scale offsetY
 
         const scaledX = x * scale;
         const scaledY = y * scaleY;
@@ -414,12 +426,17 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // Debug logging
     console.log('[TooltipRenderer] tooltipLayer:', tooltipLayer?.name, 'children:', layersToRender.length);
+    // 🔥 DEBUG: Width and scale comparison with SDK
+    const rawWidth = typeof config.width === 'number' ? config.width : 280;
+    const scaledWidth = rawWidth * scale;
+    console.log(`[TooltipRenderer] 📐 widthMode: ${config.widthMode}, rawWidth: ${rawWidth}, scale: ${scale.toFixed(4)}, scaledWidth: ${scaledWidth.toFixed(2)}`);
 
     const position = getTooltipPosition();
 
+    // FIX: Scale padding for pixel-perfect match with SDK
     const padding = typeof config.padding === 'object'
-        ? `${config.padding.top}px ${config.padding.right}px ${config.padding.bottom}px ${config.padding.left}px`
-        : `${config.padding || 12}px`;
+        ? `${config.padding.top * scale}px ${config.padding.right * scale}px ${config.padding.bottom * scale}px ${config.padding.left * scale}px`
+        : `${(config.padding || 12) * scale}px`;
 
     return (
         <>
@@ -473,7 +490,8 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     backgroundSize: config.backgroundSize || 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
-                    borderRadius: `${config.borderRadius || 12}px`,
+                    // FIX: Scale borderRadius for pixel-perfect match with SDK
+                    borderRadius: `${(config.borderRadius || 12) * scale}px`,
                     padding: padding,
                     // Width based on mode
                     width: config.widthMode === 'auto'
@@ -491,13 +509,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         : config.heightMode === 'fitContent'
                             ? 'fit-content'
                             : 'auto',
-                    // Configurable shadow
+                    // FIX: Scale shadowBlur for pixel-perfect match with SDK
                     boxShadow: config.shadowEnabled !== false
-                        ? `0 10px ${config.shadowBlur ?? 25}px rgba(0,0,0,${config.shadowOpacity ?? 0.2})`
+                        ? `0 ${10 * scale}px ${(config.shadowBlur ?? 25) * scale}px rgba(0,0,0,${config.shadowOpacity ?? 0.2})`
                         : 'none',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: `${8 * scale}px`,
+                    // NOTE: Removed gap - SDK Column has no gap between children
+                    // FIX: Match Flutter Container box model where width includes padding
+                    boxSizing: 'border-box',
                     animation: 'tooltip-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}>
                     {/* Arrow - positioned outside overflow container */}
@@ -506,10 +526,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     {/* Layers - wrapped in overflow container to clip content */}
                     <div style={{
                         overflow: 'hidden',
-                        borderRadius: `${config.borderRadius || 12}px`,
+                        // FIX: Scale borderRadius same as outer container
+                        borderRadius: `${(config.borderRadius || 12) * scale}px`,
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: `${8 * scale}px`,
+                        // NOTE: Removed gap - SDK Column has no gap between children
                         flex: 1
                     }}>
                         {layersToRender.map(renderLayer)}

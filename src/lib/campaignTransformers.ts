@@ -1885,7 +1885,7 @@ function extractBottomSheetConfig(config: Record<string, any>): BottomSheetConfi
       opacity: config.overlayOpacity || 0.5,
       blur: config.backdropBlur || 0,
       color: config.backdropColor || '#000000',
-      dismissOnClick: true,
+      dismissOnClick: config.overlay?.dismissOnClick ?? config.dismissOnClick ?? true,
     },
     animation: {
       type: config.animationType || 'slide',

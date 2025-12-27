@@ -33,14 +33,38 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     scale = 1, // Default to 1
     scaleY = 1 // Fix 16: Vertical scale default
 }) => {
-    // SDK Parity: Safe Scale Helper
+    // MODAL PARITY: Design Device Dimensions (iPhone 14 Pro)
+    const designWidth = 393;
+    const designHeight = 852;
+
+    // SDK Parity: Safe Scale Helper (for SIZES only)
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
-        const strVal = val.toString();
-        if (strVal.endsWith('%')) return strVal; // Ignore percentages
+        const strVal = val.toString().trim();
+        if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return strVal;
         const num = parseFloat(strVal);
         if (isNaN(num)) return val;
         return `${num * factor}px`;
+    };
+
+    // MODAL PARITY: Convert X position to percentage of design width
+    const toPercentX = (val: any): string | undefined => {
+        if (val == null) return undefined;
+        const str = val.toString().trim();
+        if (str.endsWith('%')) return str; // Already percentage
+        const num = parseFloat(str);
+        if (isNaN(num)) return undefined;
+        return `${(num / designWidth) * 100}%`;
+    };
+
+    // MODAL PARITY: Convert Y position to percentage of design height
+    const toPercentY = (val: any): string | undefined => {
+        if (val == null) return undefined;
+        const str = val.toString().trim();
+        if (str.endsWith('%')) return str; // Already percentage
+        const num = parseFloat(str);
+        if (isNaN(num)) return undefined;
+        return `${(num / designHeight) * 100}%`;
     };
     const handleAction = (action: any) => {
         if (!isInteractive || !action) return;
@@ -119,32 +143,39 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         children = children.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     }
 
+    // MODAL PARITY: Check for absolute positioned layers to skip padding
+    const hasAbsolutePositionedLayers = children.some(l =>
+        l.style?.position === 'absolute' || l.style?.position === 'fixed'
+    );
+
     const renderLayer = (layer: Layer) => {
         if (!layer.visible) return null;
         const isSelected = selectedLayerId === layer.id;
         const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
 
-        // Apply Scaling to Style Properties (SDK Logic)
+        // MODAL PARITY: Use percentage-based positioning for absolute layers
+        // Positions convert to percentages, sizes still use safeScale
         const scaledStyle: any = {
             ...layer.style,
-            top: safeScale(layer.style?.top, scaleY), // Fix 16: Vertical Scale
-            bottom: safeScale(layer.style?.bottom, scaleY), // Fix 16: Vertical Scale
-            left: safeScale(layer.style?.left, scale),
-            right: safeScale(layer.style?.right, scale),
-            // SDK Logic: Wrapper Width = style.width || size.width
+            // POSITIONS: Convert to percentages (Modal Engine)
+            top: toPercentY(layer.style?.top),
+            bottom: toPercentY(layer.style?.bottom),
+            left: toPercentX(layer.style?.left),
+            right: toPercentX(layer.style?.right),
+            // SIZES: Still use safeScale for width/height
             width: safeScale(layer.style?.width || layer.size?.width, scale),
-            height: safeScale(layer.style?.height || layer.size?.height, scale), // Height follows size (width) scale? Or stretch? Usually size scale to keep aspect.
-            // Wait, if we scale TOP by height, but HEIGHT by width, element moves but keeps aspect. This is desired.
-
-            marginTop: safeScale(layer.style?.marginTop, scaleY), // Fix 16: Vertical Scale
-            marginBottom: safeScale(layer.style?.marginBottom, scaleY), // Fix 16: Vertical Scale
+            height: safeScale(layer.style?.height || layer.size?.height, scaleY),
+            // Margins
+            marginTop: safeScale(layer.style?.marginTop, scaleY),
+            marginBottom: safeScale(layer.style?.marginBottom, scaleY),
             marginLeft: safeScale(layer.style?.marginLeft, scale),
             marginRight: safeScale(layer.style?.marginRight, scale),
-            paddingTop: safeScale(layer.style?.paddingTop, scale),
-            paddingBottom: safeScale(layer.style?.paddingBottom, scale),
+            // Paddings
+            paddingTop: safeScale(layer.style?.paddingTop, scaleY),
+            paddingBottom: safeScale(layer.style?.paddingBottom, scaleY),
             paddingLeft: safeScale(layer.style?.paddingLeft, scale),
             paddingRight: safeScale(layer.style?.paddingRight, scale),
-            // Handle borderRadius: if object, serialize to string, if number/string, scale
+            // Border Radius
             borderRadius: typeof layer.style?.borderRadius === 'object'
                 ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
                 : safeScale(layer.style?.borderRadius, scale),
@@ -172,7 +203,19 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         }
 
         // Apply defaults if NO margin is set
-        if (!isAbsolute && layer.type !== 'custom_html') {
+        // SDK PARITY: Strip margin/padding for absolute elements
+        if (isAbsolute) {
+            finalMarginTop = undefined;
+            finalMarginBottom = undefined;
+            finalMarginLeft = undefined;
+            finalMarginRight = undefined;
+            finalMargin = undefined;
+            // Also strip padding from scaledStyle for absolute elements
+            scaledStyle.paddingTop = undefined;
+            scaledStyle.paddingBottom = undefined;
+            scaledStyle.paddingLeft = undefined;
+            scaledStyle.paddingRight = undefined;
+        } else if (layer.type !== 'custom_html') {
             // If no explicit marginBottom AND no shorthand margin, apply default
             if (finalMarginBottom === undefined && finalMargin === undefined) {
                 finalMarginBottom = safeScale(10, scale);
@@ -206,11 +249,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
 
         switch (layer.type) {
             case 'text':
-                content = <TextRenderer layer={layer} scale={scale} />;
+                content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
             case 'media': // Handle 'media' as alias for 'image'
             case 'image':
-                content = <MediaRenderer layer={layer} scale={scale} />;
+                content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
             case 'handle':
                 content = (
@@ -333,18 +376,19 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
             ? 'transparent'
             : (config?.backgroundColor || 'white'),
         backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-        backgroundSize: 'cover', // STRICT PARITY: Force Cover (SDK Default). Ignore config for now.
-        backgroundPosition: 'bottom center',
+        // MODAL PARITY: Force stretch mode for layer-background alignment
+        backgroundSize: '100% 100%',
+        backgroundPosition: 'top left',
         backgroundRepeat: 'no-repeat',
         borderTopLeftRadius: safeScale(config?.borderRadius?.topLeft || 16, scale),
         borderTopRightRadius: safeScale(config?.borderRadius?.topRight || 16, scale),
         boxShadow: config?.boxShadow || 'none',
         overflow: 'hidden', // SDK Parity: Enforce clipping (matches ClipRRect in SDK)
-        // SDK Parity: Use minimal explicit padding if configured, else 0
-        paddingTop: safeScale(config?.padding?.top || 0, scale),
-        paddingRight: safeScale(config?.padding?.right || 0, scale),
-        paddingBottom: safeScale(config?.padding?.bottom || 0, scale),
-        paddingLeft: safeScale(config?.padding?.left || 0, scale),
+        // MODAL PARITY: Skip padding when absolute layers are present
+        paddingTop: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.top || 0, scale),
+        paddingRight: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.right || 0, scale),
+        paddingBottom: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.bottom || 0, scale),
+        paddingLeft: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.left || 0, scale),
 
         zIndex: 100, // SDK Parity: Sheet (100) > Overlay (99)
         display: 'flex',

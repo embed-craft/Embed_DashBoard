@@ -843,12 +843,14 @@ export const DesignStep: React.FC<any> = () => {
 
       case 'bottomsheet':
         const currentDeviceConfig = DEVICE_PRESETS.find(d => d.id === selectedDevice);
-        const deviceWidth = currentDeviceConfig?.width || 375;
+        const deviceWidth = currentDeviceConfig?.width || 393;
         // CRITICAL FIX: Multiply by previewZoom because PhonePreview resizes the CONTAINER pixels directly.
         // Fixed pixels (safeScale) must shrink to match the shrunk container.
-        const scaleFactor = (deviceWidth / 375) * previewZoom;
+        // UPDATE: Use 393 as design width baseline to match SDK parity
+        const scaleFactor = (deviceWidth / 393) * previewZoom;
         const deviceHeight = currentDeviceConfig?.height || 852; // Default to 14 Pro height
-        const scaleYFactor = (deviceHeight / 813) * previewZoom;
+        // UPDATE: Use 852 as design height baseline to match SDK parity
+        const scaleYFactor = (deviceHeight / 852) * previewZoom;
 
         return (
           <BottomSheetRenderer

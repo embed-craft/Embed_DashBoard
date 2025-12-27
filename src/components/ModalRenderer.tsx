@@ -724,7 +724,19 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         }
 
         // Apply defaults if NO margin is set
-        if (!isAbsolute && layer.type !== 'custom_html') {
+        // SDK PARITY: Strip margin/padding for absolute elements
+        if (isAbsolute) {
+            finalMarginTop = undefined;
+            finalMarginBottom = undefined;
+            finalMarginLeft = undefined;
+            finalMarginRight = undefined;
+            finalMargin = undefined;
+            // Also strip padding from scaledStyle for absolute elements
+            scaledStyle.paddingTop = undefined;
+            scaledStyle.paddingBottom = undefined;
+            scaledStyle.paddingLeft = undefined;
+            scaledStyle.paddingRight = undefined;
+        } else if (layer.type !== 'custom_html') {
             // If no explicit marginBottom AND no shorthand margin, apply default
             if (finalMarginBottom === undefined && finalMargin === undefined) {
                 finalMarginBottom = safeScale(10, scaleY); // FIX: Use scaleY

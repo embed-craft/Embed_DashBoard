@@ -41,6 +41,23 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
     const iconName = layer.content?.buttonIcon;
     const iconPosition = layer.content?.buttonIconPosition || 'right';
 
+    // SDK PARITY: Load Google Font if fontUrl is provided
+    const fontUrl = layer.content?.fontUrl;
+    const fontFamily = layer.content?.fontFamily || layer.style?.fontFamily;
+
+    React.useEffect(() => {
+        if (fontUrl && fontFamily) {
+            // Check if font link already exists
+            const existingLink = document.querySelector(`link[href="${fontUrl}"]`);
+            if (!existingLink) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = fontUrl;
+                document.head.appendChild(link);
+            }
+        }
+    }, [fontUrl, fontFamily]);
+
     // Icon mapping
     const icons: Record<string, React.ReactNode> = {
         ArrowRight: <ArrowRight size={16} />,

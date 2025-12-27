@@ -47,7 +47,11 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
             textShadow: textShadow,
             whiteSpace: 'pre-wrap', // Better multi-line support
             width: '100%',
-            height: '100%'
+            height: '100%',
+            // FIX: Reset browser defaults to match Flutter (no default margin/padding)
+            margin: 0,
+            padding: 0,
+            boxSizing: 'border-box' as const,
         }}>
             {/* Inject Custom Font CSS if URL provided */}
             {layer.content?.fontUrl && (

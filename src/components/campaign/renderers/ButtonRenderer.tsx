@@ -35,7 +35,8 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
     const themeColor = layer.style?.backgroundColor || layer.content?.themeColor || '#6366F1';
     const textColor = layer.content?.textColor || '#FFFFFF';
     const fontSize = layer.content?.fontSize || 14;
-    const fontWeight = layer.style?.fontWeight || '600';
+    // FIX: ButtonEditor saves fontWeight to content.fontWeight, not style
+    const fontWeight = layer.content?.fontWeight || layer.style?.fontWeight || 'medium';
     const borderRadius = layer.style?.borderRadius || 8;
     const iconName = layer.content?.buttonIcon;
     const iconPosition = layer.content?.buttonIconPosition || 'right';
@@ -74,8 +75,12 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
         outline: 'none',
         width: '100%',
         height: '100%',
-        fontFamily: layer.style?.fontFamily || 'inherit',
-        lineHeight: 1.0,
+        fontFamily: layer.content?.fontFamily || layer.style?.fontFamily || 'inherit',
+        lineHeight: 1,
+        // FIX: Ensure proper text centering by resetting text defaults
+        textAlign: 'center' as const,
+        verticalAlign: 'middle',
+        margin: 0,
         backgroundColor: 'transparent', // Wrapper handles background usually, but variant might override
         color: textColor
     };

@@ -413,6 +413,45 @@ export interface ModalConfig {
   };
 }
 
+// Banner Configuration (Copied from Modal, adapted for top/bottom positioning)
+export interface BannerConfig {
+  position?: 'top' | 'bottom';
+  width?: number | string;
+  height?: 'auto' | number | string;
+  showCloseButton?: boolean;
+  backgroundColor?: string;
+  backgroundImageUrl?: string;
+  backgroundSize?: 'cover' | 'contain' | 'fill';
+  backgroundPosition?: string;
+  borderRadius?: number | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
+  elevation?: 0 | 1 | 2 | 3 | 4 | 5;
+  margin?: { top?: number; bottom?: number; left?: number; right?: number };
+  padding?: { top?: number; bottom?: number; left?: number; right?: number };
+  overlay?: {
+    enabled: boolean;
+    opacity?: number;
+    blur?: number;
+    color?: string;
+    dismissOnClick?: boolean;
+    dismissOnSwipe?: boolean;
+  };
+  shadow?: {
+    enabled: boolean;
+    blur: number;
+    opacity: number;
+    color?: string;
+    spread?: number;
+    x?: number;
+    y?: number;
+  };
+  animation?: {
+    enabled?: boolean;
+    type: 'slide' | 'fade';
+    duration: number;
+    easing?: string;
+  };
+}
+
 export interface CampaignSchedule {
   startDate?: string;
   endDate?: string;
@@ -844,6 +883,33 @@ export const useEditorStore = create<EditorStore>()(
               easing: 'ease-out',
             },
           } : undefined,
+          // Initialize banner config for banner nudge type
+          bannerConfig: nudgeType === 'banner' ? {
+            position: 'top',
+            width: '100%',
+            height: 'auto',
+            backgroundColor: '#FFFFFF',
+            backgroundImageUrl: '',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center center',
+            borderRadius: 0,
+            elevation: 1,
+            margin: { top: 0, bottom: 0, left: 0, right: 0 },
+            padding: { top: 16, bottom: 16, left: 16, right: 16 },
+            showCloseButton: false,
+            overlay: {
+              enabled: false, // Banners typically don't have overlay
+              opacity: 0.5,
+              blur: 0,
+              color: '#000000',
+              dismissOnClick: true,
+            },
+            animation: {
+              type: 'slide',
+              duration: 300,
+              easing: 'ease-out',
+            },
+          } : undefined,
           // Initialize floater config for floater nudge type
           floaterConfig: nudgeType === 'floater' ? {
             position: 'bottom-right',
@@ -963,7 +1029,7 @@ export const useEditorStore = create<EditorStore>()(
                   ...defaultRoot,
                   id: originalParentId, // Restore original ID
                   children: potentialChildren.map(c => c.id), // Link to actual children
-                  type: 'container' // Ensure type is correct
+                  type: 'container' as const // Ensure type is correct
                 };
 
                 campaignData.layers.unshift(restoredRoot); // Add to start
@@ -2288,10 +2354,10 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'text',
+          type: 'container',
           name: 'Banner Container',
           parent: null,
-          children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`],
+          children: [], // No default children - user adds layers manually
           visible: true,
           locked: false,
           zIndex: 0,
@@ -2303,79 +2369,12 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
             borderRadius: 0,
             padding: { top: 16, right: 16, bottom: 16, left: 16 },
             margin: { top: 0, right: 0, bottom: 0, left: 0 },
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            justifyContent: 'flex-start',
             gap: 12,
-          },
-        },
-        {
-          id: `layer_${baseId + 1}`,
-          type: 'icon',
-          name: 'Icon',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 1,
-          position: { x: 0, y: 0 },
-          size: { width: 40, height: 40 },
-          content: {
-            iconName: 'Info',
-            fontSize: 24,
-            textColor: '#4F46E5',
-          },
-          style: {
-            backgroundColor: '#EEF2FF',
-            borderRadius: 20,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-        },
-        {
-          id: `layer_${baseId + 2}`,
-          type: 'text',
-          name: 'Message',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 2,
-          position: { x: 0, y: 0 },
-          size: { width: '100%' as any, height: 'auto' },
-          content: {
-            text: 'This is a banner notification.',
-            fontSize: 14,
-            fontWeight: 'medium',
-            textColor: '#1F2937',
-          },
-          style: {
-            flexGrow: 1,
-          },
-        },
-        {
-          id: `layer_${baseId + 3}`,
-          type: 'button',
-          name: 'Close Button',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 3,
-          position: { x: 0, y: 0 },
-          size: { width: 32, height: 32 },
-          content: {
-            label: '',
-            buttonIcon: 'X',
-            buttonVariant: 'ghost',
-            action: { type: 'close' },
-          },
-          style: {
-            padding: 0,
-            textColor: '#9CA3AF',
           },
         },
       ];
@@ -2439,7 +2438,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
           },
           style: {
             backgroundColor: '#6366F1',
-            color: '#FFFFFF',
+            textColor: '#FFFFFF',
             borderRadius: 8,
             fontSize: 16,
             fontWeight: 600,

@@ -8,9 +8,10 @@ import { useEditorStore, getDefaultLayersForNudgeType, TooltipConfig } from '@/s
 
 import { BOTTOM_SHEET_TEMPLATES, getFeaturedTemplates } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
-import { BannerRenderer } from '@/components/BannerRenderer';
+
 import { TooltipRenderer } from '@/components/TooltipRenderer';
 import { ModalRenderer } from '@/components/ModalRenderer';
+import { BannerRenderer } from '@/components/BannerRenderer';
 import { PipRenderer } from '@/components/PipRenderer';
 import { FloaterRenderer } from '@/components/FloaterRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
@@ -25,6 +26,7 @@ import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
 import { ModalMinimalEditor } from '@/components/campaign/editors/ModalMinimalEditor';
+import { BannerMinimalEditor } from '@/components/campaign/editors/BannerMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
@@ -863,7 +865,7 @@ export const DesignStep: React.FC<any> = () => {
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
             isInteractive={isInteractive}
             onNavigate={handleNavigate}
-            onNavigate={handleNavigate}
+
             scale={scaleFactor}
             scaleY={scaleYFactor} // Fix 16: Hybrid Scaling
           />
@@ -914,19 +916,25 @@ export const DesignStep: React.FC<any> = () => {
         );
 
       case 'banner':
+        const currentDeviceConfigBanner = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
+        const pureDeviceScaleXBanner = (currentDeviceConfigBanner?.width || 393) / 393;
+        const pureDeviceScaleYBanner = (currentDeviceConfigBanner?.height || 852) / 852;
+        const scaleFactorBanner = pureDeviceScaleXBanner * previewZoom;
+        const scaleYFactorBanner = pureDeviceScaleYBanner * previewZoom;
         return (
-          <BannerRenderer
-            layers={campaignLayers}
-            selectedLayerId={selectedLayerId}
-            onLayerSelect={selectLayer}
-            colors={colors}
-            config={currentCampaign?.bannerConfig}
-            onHeightChange={(height) => updateBannerConfig({ height })}
-            onLayerUpdate={updateLayer}
-            isInteractive={isInteractive}
-            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
-            onNavigate={handleNavigate}
-          />
+          <ErrorBoundary>
+            <BannerRenderer
+              layers={campaignLayers}
+              selectedLayerId={selectedLayerId}
+              onLayerSelect={selectLayer}
+              colors={colors}
+              config={currentCampaign?.bannerConfig}
+              onConfigChange={(newConfig) => updateBannerConfig(newConfig)}
+              onLayerUpdate={updateLayer}
+              scale={scaleFactorBanner}
+              scaleY={scaleYFactorBanner}
+            />
+          </ErrorBoundary>
         );
 
       case 'tooltip':
@@ -1655,7 +1663,7 @@ export const DesignStep: React.FC<any> = () => {
                   onChange={(e) => handleTooltipUpdate('arrowPositionPercent', Number(e.target.value))}
                   style={{ width: '100%', accentColor: colors.primary[500] }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.text.tertiary, marginTop: '2px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.text.secondary, marginTop: '2px' }}>
                   <span>Start</span>
                   <span>Center</span>
                   <span>End</span>
@@ -2163,457 +2171,9 @@ export const DesignStep: React.FC<any> = () => {
     };
     console.log('DEBUG: Passed renderModalConfig definition');
 
-    // Banner Configuration
-    const renderBannerConfig = () => {
-      if (selectedNudgeType !== 'banner') return null;
 
-      const config = currentCampaign?.bannerConfig || {
-        mode: 'default',
-        position: 'top',
-        height: 'auto',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 0,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        opacity: 1,
-        overlay: { enabled: false, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
-        animation: { type: 'slide', duration: 300, easing: 'ease-out' }
-      };
-
-      const handleConfigUpdate = (field: string, value: any) => {
-        updateBannerConfig({ [field]: value });
-      };
-
-      const handleNestedConfigUpdate = (parent: 'animation' | 'overlay', field: string, value: any) => {
-        const parentObj = config[parent] as any;
-        updateBannerConfig({ [parent]: { ...parentObj, [field]: value } });
-      };
-
-      // Show banner config when:
-      // 1. Banner container is selected
-      // 2. No layer is selected
-      const isBannerSelected = selectedLayerObj?.type === 'container' && selectedLayerObj?.name === 'Banner Container';
-      const shouldShowFullConfig = !selectedLayerObj || isBannerSelected;
-
-      // ALWAYS show the mode toggle
-      const modeToggleSection = (
-        <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            🎨 Banner Mode (UPDATED)
-          </h5>
-          <div style={{ background: 'red', color: 'white', padding: '4px', fontSize: '10px', marginBottom: '10px' }}>DEBUG: V2 LOADED</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button
-              onClick={() => {
-                handleConfigUpdate('mode', 'default');
-                // Restore default container styles
-                const bannerContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Banner Container');
-                if (bannerContainer) {
-                  updateLayerStyle(bannerContainer.id, {
-                    backgroundColor: '#FFFFFF',
-                    padding: 16,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  });
-                }
-              }}
-              style={{
-                padding: '12px',
-                border: `2px solid ${(config.mode || 'default') === 'default' ? colors.primary[500] : colors.gray[200]}`,
-                borderRadius: '8px',
-                background: (config.mode || 'default') === 'default' ? colors.primary[50] : 'white',
-                color: (config.mode || 'default') === 'default' ? colors.primary[600] : colors.text.secondary,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-                alignItems: 'center'
-              }}
-            >
-              <LayoutGrid size={18} />
-              <div>Default</div>
-              <div style={{ fontSize: '10px', fontWeight: 400, opacity: 0.7 }}>
-                Standard layout
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                handleConfigUpdate('mode', 'image-only');
-                // Reset styles for image-only mode
-                const bannerContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Banner Container');
-                if (bannerContainer) {
-                  updateLayerStyle(bannerContainer.id, {
-                    backgroundColor: 'transparent',
-                    padding: 0,
-                    boxShadow: 'none'
-                  });
-                }
-              }}
-              style={{
-                padding: '12px',
-                border: `2px solid ${config.mode === 'image-only' ? colors.primary[500] : colors.gray[200]}`,
-                borderRadius: '8px',
-                background: config.mode === 'image-only' ? colors.primary[50] : 'white',
-                color: config.mode === 'image-only' ? colors.primary[600] : colors.text.secondary,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-                alignItems: 'center'
-              }}
-            >
-              <ImageIcon size={18} />
-              <div>Image Only</div>
-              <div style={{ fontSize: '10px', fontWeight: 400, opacity: 0.7 }}>
-                Full-width image
-              </div>
-            </button>
-          </div>
-          {!shouldShowFullConfig && (
-            <button
-              onClick={() => {
-                const bannerContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Banner Container');
-                if (bannerContainer) selectLayer(bannerContainer.id);
-              }}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                marginTop: '8px',
-                background: 'transparent',
-                border: `1px solid ${colors.gray[200]}`,
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 500,
-                color: colors.text.secondary,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
-            >
-              <Settings2 size={14} />
-              More Banner Settings
-            </button>
-          )}
-        </div>
-      );
-
-      if (!shouldShowFullConfig && selectedLayerObj) {
-        return modeToggleSection;
-      }
-
-      return (
-        <>
-          {modeToggleSection}
-
-          {/* Overlay Settings */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🎭 Overlay (Background App)
-            </h5>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Overlay</span>
-              <div
-                onClick={() => handleNestedConfigUpdate('overlay', 'enabled', !config.overlay?.enabled)}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: config.overlay?.enabled ? colors.primary[500] : colors.gray[300],
-                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-              >
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: config.overlay?.enabled ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
-              </div>
-            </div>
-            {config.overlay?.enabled && (
-              <>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Opacity</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={config.overlay.opacity}
-                    onChange={(e) => handleNestedConfigUpdate('overlay', 'opacity', parseFloat(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.overlay.opacity || 0) * 100)}%</div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Blur</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="1"
-                    value={config.overlay.blur || 0}
-                    onChange={(e) => handleNestedConfigUpdate('overlay', 'blur', parseFloat(e.target.value))}
-                    style={{ width: '100%', marginBottom: '4px' }}
-                  />
-                  <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{config.overlay.blur || 0}px</div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Position Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              📍 Position
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                onClick={() => handleConfigUpdate('position', 'top')}
-                style={{
-                  padding: '8px',
-                  border: `1px solid ${config.position === 'top' ? colors.primary[500] : colors.gray[200]}`,
-                  borderRadius: '6px',
-                  background: config.position === 'top' ? colors.primary[50] : 'white',
-                  color: config.position === 'top' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  cursor: 'pointer'
-                }}
-              >
-                Top
-              </button>
-              <button
-                onClick={() => handleConfigUpdate('position', 'bottom')}
-                style={{
-                  padding: '8px',
-                  border: `1px solid ${config.position === 'bottom' ? colors.primary[500] : colors.gray[200]}`,
-                  borderRadius: '6px',
-                  background: config.position === 'bottom' ? colors.primary[50] : 'white',
-                  color: config.position === 'bottom' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  cursor: 'pointer'
-                }}
-              >
-                Bottom
-              </button>
-            </div>
-          </div>
-
-          {/* Background Image (Image-Only Mode) */}
-          {config.mode === 'image-only' && (
-            <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-              <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                🖼️ Banner Image
-              </h5>
-
-              {/* Image Preview */}
-              {config.backgroundImageUrl && (
-                <div style={{
-                  width: '100%',
-                  height: '100px',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  marginBottom: '12px',
-                  border: `1px solid ${colors.gray[200]}`,
-                  position: 'relative'
-                }}>
-                  <img
-                    src={config.backgroundImageUrl}
-                    alt="Banner preview"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                  <button
-                    onClick={() => handleConfigUpdate('backgroundImageUrl', '')}
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      background: 'rgba(0,0,0,0.6)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      fontSize: '11px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✕ Remove
-                  </button>
-                </div>
-              )}
-
-              {/* URL Input */}
-              <div style={{ marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  value={config.backgroundImageUrl || ''}
-                  onChange={(e) => handleConfigUpdate('backgroundImageUrl', e.target.value)}
-                  placeholder="Image URL..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: `1px solid ${colors.gray[200]}`,
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                />
-              </div>
-
-              {/* Upload Button */}
-              <label
-                style={{
-                  display: 'block',
-                  padding: '10px',
-                  background: colors.primary[500],
-                  color: 'white',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  textAlign: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                📤 Upload Image
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 5 * 1024 * 1024) {
-                      alert('Image must be under 5MB');
-                      return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      handleConfigUpdate('backgroundImageUrl', event.target?.result);
-                    };
-                    reader.readAsDataURL(file);
-                  }}
-                />
-              </label>
-            </div>
-          )}
-
-          {/* Height Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              📏 Height
-            </h5>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-              <button
-                onClick={() => handleConfigUpdate('height', 'auto')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  border: `1px solid ${config.height === 'auto' ? colors.primary[500] : colors.gray[200]}`,
-                  borderRadius: '6px',
-                  background: config.height === 'auto' ? colors.primary[50] : 'white',
-                  color: config.height === 'auto' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  cursor: 'pointer'
-                }}
-              >
-                Auto
-              </button>
-              <button
-                onClick={() => handleConfigUpdate('height', 100)}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  border: `1px solid ${typeof config.height === 'number' ? colors.primary[500] : colors.gray[200]}`,
-                  borderRadius: '6px',
-                  background: typeof config.height === 'number' ? colors.primary[50] : 'white',
-                  color: typeof config.height === 'number' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  cursor: 'pointer'
-                }}
-              >
-                Custom
-              </button>
-            </div>
-            {typeof config.height === 'number' && (
-              <input
-                type="range"
-                min="50"
-                max="300"
-                value={config.height}
-                onChange={(e) => handleConfigUpdate('height', parseInt(e.target.value))}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            )}
-          </div>
-
-          {/* Close Button Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              ❌ Close Button
-            </h5>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={config.showCloseButton !== false}
-                onChange={(e) => handleConfigUpdate('showCloseButton', e.target.checked)}
-              />
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Close Button</span>
-            </label>
-          </div>
-
-
-
-          {/* Container Opacity */}
-          {/* Banner Opacity */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              Banner Opacity
-            </h5>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '6px' }}>Opacity</label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={config.opacity ?? 1}
-                onChange={(e) => handleConfigUpdate('opacity', parseFloat(e.target.value))}
-                style={{ width: '100%', marginBottom: '4px' }}
-              />
-              <div style={{ fontSize: '12px', color: colors.text.primary, textAlign: 'right' }}>{Math.round((config.opacity ?? 1) * 100)}%</div>
-            </div>
-          </div>
-
-          {/* Animation */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              ✨ Animation
-            </h5>
-            <div style={{ marginBottom: '8px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Type</label>
-              <select
-                value={config.animation?.type || 'slide'}
-                onChange={(e) => handleNestedConfigUpdate('animation', 'type', e.target.value)}
-                style={{ width: '100%', padding: '8px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px' }}
-              >
-                <option value="slide">Slide</option>
-                <option value="fade">Fade</option>
-                <option value="bounce">Bounce</option>
-              </select>
-            </div>
-          </div>
-        </>
-      );
-    };
     console.log('DEBUG: Reached post-renderBannerConfig (2130)');
+
 
 
     function renderTooltipConfig_LEGACY() {
@@ -3637,9 +3197,11 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedLayerObj.name === 'Modal Container') {
         return <ModalMinimalEditor />;
       }
+      if (selectedLayerObj.name === 'Banner Container') {
+        return <BannerMinimalEditor />;
+      }
       return (
         <>
-          {selectedLayerObj.name === 'Banner Container' && renderBannerConfig()}
           {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
           {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}

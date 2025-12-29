@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Layer, BottomSheetConfig, LayerStyle } from '@/store/useEditorStore';
+import { Layer, BannerConfig, LayerStyle } from '@/store/useEditorStore';
+import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
+import { TextRenderer } from './campaign/renderers/TextRenderer';
+import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
-import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
 import 'react-resizable/css/styles.css';
 import { ErrorBoundary } from './ErrorBoundary';
-import { DraggableResizableLayerWrapper } from './DraggableResizableLayerWrapper';
+// ShadowDomWrapper removed as per user request
+// ShadowDomWrapper removed as per user request
 
 type ColorTheme = {
     border: {
@@ -78,6 +81,17 @@ const getFilterString = (filter?: LayerStyle['filter']) => {
     if (filter.contrast) parts.push(`contrast(${filter.contrast}%)`);
     if (filter.grayscale) parts.push(`grayscale(${filter.grayscale}%)`);
     return parts.join(' ');
+};
+
+// Helper to adjust color brightness
+const adjustColorBrightness = (color: string, percent: number) => {
+    if (!color) return '#000000';
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const B = ((num >> 8) & 0x00ff) + amt;
+    const G = (num & 0x0000ff) + amt;
+    return '#' + (0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (B < 255 ? (B < 1 ? 0 : B) : 255) * 0x100 + (G < 255 ? (G < 1 ? 0 : G) : 255)).toString(16).slice(1);
 };
 
 // Extracted Component: Countdown Layer
@@ -442,62 +456,118 @@ const StatisticLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
     );
 };
 
-// DraggableResizableLayerWrapper removed (extracted to separate file)
+// --- Swipe Logic Helper ---
+const useSwipe = (onSwipe: () => void, direction: 'up' | 'down', enabled: boolean) => {
+    const touchStart = useRef<number | null>(null);
 
-interface BannerConfig {
-    position: 'top' | 'bottom';
-    mode?: 'default' | 'image-only';
-    height: 'auto' | number | string;
-    backgroundColor: string;
-    backgroundImageUrl?: string;
-    backgroundSize?: 'cover' | 'contain' | 'auto';
-    showCloseButton?: boolean;
-    opacity?: number;
-    borderRadius: number | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
-    elevation: 0 | 1 | 2 | 3 | 4 | 5;
-    animation: {
-        type: 'slide' | 'fade';
-        duration: number;
-        easing: string;
+    const onPointerDown = (e: React.PointerEvent) => {
+        if (!enabled) return;
+        touchStart.current = e.clientY;
     };
-    overlay?: {
-        enabled: boolean;
-        opacity: number;
-        blur: number;
-        color: string;
-        dismissOnClick: boolean;
+
+    const onPointerUp = (e: React.PointerEvent) => {
+        if (!enabled || touchStart.current === null) return;
+        const diff = e.clientY - touchStart.current;
+
+        // Threshold: 50px
+        if (direction === 'up' && diff < -50) {
+            onSwipe();
+        } else if (direction === 'down' && diff > 50) {
+            onSwipe();
+        }
+
+        touchStart.current = null;
     };
-}
+
+    return { onPointerDown, onPointerUp };
+};
+
+
 
 interface BannerRendererProps {
-    layers: Layer[];
+    layers: any[];
     selectedLayerId: string | null;
-    onLayerSelect: (id: string) => void;
-    colors: ColorTheme;
+    onLayerSelect: (id: string | null) => void;
+    colors: any;
     config?: BannerConfig;
-    onHeightChange?: (height: number | string) => void;
-    onLayerUpdate?: (id: string, updates: Partial<Layer>) => void;
+    onConfigChange?: (config: BannerConfig) => void;
+    onLayerUpdate?: (id: string, updates: any) => void;
+    // Interactive Props
     isInteractive?: boolean;
     onDismiss?: () => void;
     onNavigate?: (screenName: string) => void;
+    scale?: number;
+    scaleY?: number;
 }
 
-/**
- * Banner Renderer
- * Renders a banner at the top or bottom of the screen.
- */
 export const BannerRenderer: React.FC<BannerRendererProps> = ({
     layers,
     selectedLayerId,
     onLayerSelect,
     colors,
     config,
-    onHeightChange,
+    onConfigChange,
     onLayerUpdate,
+    // Interactive Mode
     isInteractive = false,
     onDismiss,
-    onNavigate
+    onNavigate,
+    scale = 1,
+    scaleY = 1
 }) => {
+
+    // SDK Parity: Safe Scale Helper
+    const safeScale = (val: any, factor: number) => {
+        if (val == null) return undefined;
+        const strVal = val.toString().trim();
+        // FIX: Ignore viewport units (vh, vw) to prevent them being parsed as raw numbers (e.g. 85vh -> 85px)
+        if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return strVal;
+        const num = parseFloat(strVal);
+        if (isNaN(num)) return val;
+        return `${num * factor}px`;
+    };
+
+    console.log('[BannerRenderer] DEBUG:', {
+        configWidth: (config as any)?.width,
+        configHeight: (config as any)?.height,
+        position: (config as any)?.position || 'top',
+        scale,
+        scaleY
+    });
+
+    // Banner-specific: Position (top/bottom)
+    const bannerPosition = (config as any)?.position || 'top';
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // FIX: Look for container layer with 'Banner' in name, fallback to first container
+    const rootLayer = layers.find(l => l.type === 'container' && l.name?.includes('Banner'))
+        || layers.find(l => l.type === 'container')
+        || null;
+    const bannerLayer = rootLayer || { id: 'fallback', type: 'container', content: {}, style: {} } as any;
+
+    // FIX: Get children properly
+    let childLayers = rootLayer
+        ? layers.filter(l => l.parent === rootLayer.id)
+        : layers.filter(l => l.parent === null || !l.parent);
+    childLayers = childLayers.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+    // UNIT FIX: Sidebar sends number (60) + unit (%), but safeScale needs string ("60%")
+    const configWidth = (config as any)?.sizeUnit === '%' && typeof config?.width === 'number'
+        ? `${config.width}%`
+        : config?.width;
+
+    const configHeight = (config as any)?.sizeUnit === '%' && typeof config?.height === 'number'
+        ? `${config.height}%`
+        : config?.height;
+
+    // Helper to resolve dimension with priority: Config (if !auto) > Layer (if modal) > ConfigDefault > Auto
+    const resolveDimension = (configVal: string | number | undefined, layerVal: string | number | undefined, defaultVal: string = 'auto') => {
+        if (configVal !== undefined && configVal !== 'auto') return configVal;
+        if (layerVal !== undefined && layerVal !== 'auto') return layerVal;
+        return configVal || defaultVal;
+    };
+
+    // Action Handler
     const handleAction = (action: any) => {
         if (!isInteractive || !action) return;
 
@@ -525,641 +595,37 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                 break;
         }
     };
-    // Debug logging
-    console.log('BottomSheetRenderer: Rendering with', layers.length, 'layers');
 
-    // Visual resize handle state
-    const [isResizing, setIsResizing] = useState(false);
-    const [resizeStartY, setResizeStartY] = useState(0);
-    const [resizeStartHeight, setResizeStartHeight] = useState(0);
-    const containerRef = useRef<HTMLDivElement>(null);
+    // Button, Text, Media now use external renderers
+    // Inline functions removed for cleaner architecture
 
-    // Find banner container
-    // Banner Container logic removed - now using config directly
-    // Removed container concept
 
-    // Placeholder logic removed or simplified if needed
-    if (layers.length === 0 && !config) {
-        return <div>Empty Banner</div>;
-    }
-
-    // Get all child layers sorted by zIndex
-    const childLayers = layers
-        .filter(l => l.parent === bannerLayer.id)
-        .sort((a, b) => a.zIndex - b.zIndex);
-
-    // --- Helper Render Functions ---
-
-    const renderProgressCircle = (layer: Layer) => {
-        const value = layer.content?.value || 0;
-        const max = layer.content?.max || 100;
-        const showPercentage = layer.content?.showPercentage !== false;
-        const variant = layer.content?.progressVariant || 'simple';
-
-        // Calculate percentage
-        const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-
-        // SVG parameters
-        const size = 120;
-        const strokeWidth = variant === 'thick' ? 12 : 8;
-        const radius = (size - strokeWidth) / 2;
-        const circumference = 2 * Math.PI * radius;
-
-        // Calculate offset based on variant
-        let offset = circumference - (percentage / 100) * circumference;
-        let rotation = -90;
-        let circleCircumference = circumference;
-
-        if (variant === 'semicircle') {
-            rotation = 135;
-            circleCircumference = circumference * 0.75; // Show 75% of the circle (270 degrees)
-            offset = circleCircumference - (percentage / 100) * circleCircumference;
-        }
-
-        const strokeColor = layer.content?.themeColor || layer.style?.backgroundColor || '#6366F1';
-        const trackColor = '#E5E7EB';
-
-        return (
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '16px'
-            }}>
-                <div style={{ position: 'relative', width: size, height: size }}>
-                    <svg width={size} height={size} style={{ transform: `rotate(${rotation}deg)` }}>
-                        {/* Track Circle */}
-                        <circle
-                            cx={size / 2}
-                            cy={size / 2}
-                            r={radius}
-                            stroke={trackColor}
-                            strokeWidth={strokeWidth}
-                            fill="none"
-                            strokeDasharray={variant === 'semicircle' ? `${circleCircumference} ${circumference}` : variant === 'dashed' ? '4 4' : undefined}
-                            strokeLinecap={variant === 'semicircle' ? 'round' : 'butt'}
-                        />
-                        {/* Progress Circle */}
-                        <circle
-                            cx={size / 2}
-                            cy={size / 2}
-                            r={radius}
-                            stroke={strokeColor}
-                            strokeWidth={strokeWidth}
-                            fill="none"
-                            strokeDasharray={variant === 'semicircle' ? `${circleCircumference} ${circumference}` : circumference}
-                            strokeDashoffset={variant === 'semicircle' ? offset : (variant === 'dashed' ? circumference - (percentage / 100) * circumference : offset)}
-                            strokeLinecap="round"
-                            style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                        />
-                    </svg>
-
-                    {/* Text Overlay */}
-                    <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{
-                            fontSize: '24px',
-                            fontWeight: 'bold',
-                            color: '#111827',
-                            fontFamily: (layer.content as any)?.fontFamily || 'Inter, sans-serif'
-                        }}>
-                            {value}
-                        </div>
-                        {showPercentage && (
-                            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-                                {variant === 'semicircle' ? 'Score' : (layer.content?.max ? `of ${layer.content.max}` : '%')}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {variant === 'semicircle' && (
-                    <div style={{ marginTop: '-20px', fontSize: '14px', fontWeight: 500, color: '#4B5563' }}>
-                        {Math.round(percentage)}%
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    const renderList = (layer: Layer) => {
-        const items = layer.content.items || [];
-        const listStyle = layer.content.listStyle || 'bullet';
-
-        const getListIcon = (index: number) => {
-            switch (listStyle) {
-                case 'numbered':
-                    return `${index + 1}.`;
-                case 'checkmark':
-                    return <Check size={16} color="#22C55E" />;
-                case 'bullet':
-                default:
-                    return <Circle size={8} style={{ fill: 'currentColor' }} />;
-            }
-        };
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {items.map((item, index) => (
-                    <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                        <span style={{ flexShrink: 0, marginTop: '2px', color: layer.content.textColor || '#6B7280' }}>
-                            {getListIcon(index)}
-                        </span>
-                        <span style={{
-                            fontSize: `${layer.content.fontSize || 14}px`,
-                            color: layer.content.textColor || '#111827',
-                            lineHeight: 1.5
-                        }}>
-                            {item}
-                        </span>
-                    </div>
-                ))}
-            </div>
-        );
-    };
-
-    const renderInput = (layer: Layer) => {
-        const inputType = layer.content.inputType || 'text';
-        const placeholder = layer.content.placeholder || 'Enter text...';
-
-        if (inputType === 'textarea') {
-            return (
-                <textarea
-                    placeholder={placeholder}
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: `${layer.style?.borderRadius || 8}px`,
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                        minHeight: '80px',
-                        outline: 'none'
-                    }}
-                />
-            );
-        }
-
-        return (
-            <input
-                type={inputType}
-                placeholder={placeholder}
-                style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: `${layer.style?.borderRadius || 8}px`,
-                    fontSize: '14px',
-                    outline: 'none'
-                }}
-            />
-        );
-    };
-
-    const renderCheckbox = (layer: Layer) => {
-        const label = layer.content?.checkboxLabel || 'Checkbox';
-        const checked = layer.content?.checked || false;
-        const checkboxColor = layer.content?.checkboxColor || '#6366F1';
-        const textColor = layer.content?.textColor || '#374151';
-        const fontSize = layer.content?.fontSize || 14;
-
-        return (
-            <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                cursor: 'pointer',
-                fontSize: `${fontSize}px`,
-                color: textColor,
-                fontFamily: layer.style?.fontFamily || 'inherit'
-            }}>
-                <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '4px',
-                    border: `2px solid ${checked ? checkboxColor : '#D1D5DB'}`,
-                    backgroundColor: checked ? checkboxColor : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s'
-                }}>
-                    {checked && <Check size={14} color="white" strokeWidth={3} />}
-                </div>
-                <span>{label}</span>
-            </label>
-        );
-    };
-
-    const renderRating = (layer: Layer) => {
-        const maxStars = layer.content.maxStars || 5;
-        const rating = layer.content.rating || 0;
-        const reviewCount = layer.content.reviewCount || 0;
-        const starColor = layer.style?.starColor || '#FFB800';
-        const emptyStarColor = layer.style?.emptyStarColor || '#D1D5DB';
-        const starSize = layer.style?.starSize || 20;
-        const starSpacing = layer.style?.starSpacing || 2;
-
-        const renderStar = (index: number) => {
-            const filled = index < Math.floor(rating);
-            const half = index < rating && index >= Math.floor(rating);
-
-            return (
-                <span
-                    key={index}
-                    style={{
-                        fontSize: `${starSize}px`,
-                        color: filled || half ? starColor : emptyStarColor,
-                        marginRight: index < maxStars - 1 ? `${starSpacing}px` : '0',
-                        display: 'inline-block',
-                    }}
-                >
-                    {filled ? '★' : half ? '⯨' : '☆'}
-                </span>
-            );
-        };
-
-        return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    {Array.from({ length: maxStars }, (_, i) => renderStar(i))}
-                </div>
-                {layer.content.showReviewCount && reviewCount > 0 && (
-                    <span style={{ fontSize: '14px', color: '#6B7280' }}>
-                        ({reviewCount.toLocaleString()} reviews)
-                    </span>
-                )}
-            </div>
-        );
-    };
-
-    const renderBadge = (layer: Layer) => {
-        const text = layer.content.badgeText || 'Badge';
-        const variant = layer.content.badgeVariant || 'custom';
-        const icon = layer.content.badgeIcon;
-        const iconPosition = layer.content.badgeIconPosition || 'left';
-
-        // Variant colors
-        const variantColors = {
-            success: { bg: '#10B981', text: '#FFFFFF' },
-            error: { bg: '#EF4444', text: '#FFFFFF' },
-            warning: { bg: '#F59E0B', text: '#FFFFFF' },
-            info: { bg: '#3B82F6', text: '#FFFFFF' },
-            custom: {
-                bg: layer.style?.badgeBackgroundColor || '#6B7280',
-                text: layer.style?.badgeTextColor || '#FFFFFF'
-            }
-        };
-
-        const badgeColors = variantColors[variant];
-        const padding = layer.style?.badgePadding;
-        const paddingStyle = typeof padding === 'number'
-            ? { padding: `${padding}px` }
-            : padding
-                ? { paddingLeft: `${padding.horizontal}px`, paddingRight: `${padding.horizontal}px`, paddingTop: `${padding.vertical}px`, paddingBottom: `${padding.vertical}px` }
-                : { padding: '4px 12px' };
-
-        return (
-            <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                backgroundColor: badgeColors.bg,
-                color: badgeColors.text,
-                borderRadius: `${layer.style?.badgeBorderRadius || 12}px`,
-                ...paddingStyle,
-                fontSize: '12px',
-                fontWeight: '600',
-                animation: layer.content.pulse ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
-            }}>
-                {icon && iconPosition === 'left' && <span>{icon}</span>}
-                <span>{text}</span>
-                {icon && iconPosition === 'right' && <span>{icon}</span>}
-            </div>
-        );
-    };
-
-    const renderGradientOverlay = (layer: Layer) => {
-        const gradientType = layer.content.gradientType || 'linear';
-        const direction = layer.content.gradientDirection || 'to-bottom';
-        const stops = layer.content.gradientStops || [
-            { color: '#00000000', position: 0 },
-            { color: '#00000066', position: 100 }
-        ];
-
-        const gradientString = gradientType === 'linear'
-            ? `linear-gradient(${typeof direction === 'number' ? `${direction}deg` : direction}, ${stops.map(s => `${s.color} ${s.position}%`).join(', ')})`
-            : `radial-gradient(circle, ${stops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
-
-        return (
-            <div style={{
-                width: '100%',
-                height: '100%',
-                background: gradientString,
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                pointerEvents: 'none'
-            }} />
-        );
-    };
-
-    // Helper to adjust color brightness (simple version)
-    const adjustColorBrightness = (hex: string, percent: number) => {
-        const num = parseInt(hex.replace('#', ''), 16);
-        const amt = Math.round(2.55 * percent);
-        const R = (num >> 16) + amt;
-        const G = (num >> 8 & 0x00FF) + amt;
-        const B = (num & 0x0000FF) + amt;
-        return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
-    };
-
-    const renderButton = (layer: Layer) => {
-        const label = layer.content?.label || 'Button';
-        const variant = layer.content?.buttonVariant || 'primary';
-        const themeColor = layer.content?.themeColor || '#6366F1';
-        const textColor = layer.content?.textColor || '#FFFFFF';
-        const fontSize = layer.content?.fontSize || 14;
-        const fontWeight = layer.content?.fontWeight || 'medium';
-        const borderRadius = layer.style?.borderRadius || 8;
-        const iconName = layer.content?.buttonIcon;
-        const iconPosition = layer.content?.buttonIconPosition || 'right';
-
-        // Icon mapping
-        const icons: Record<string, React.ReactNode> = {
-            ArrowRight: <ArrowRight size={16} />,
-            ArrowLeft: <ArrowLeft size={16} />,
-            Play: <Play size={16} fill="currentColor" />,
-            Search: <Search size={16} />,
-            Home: <Home size={16} />,
-            Check: <Check size={16} />,
-            X: <X size={16} />,
-            Download: <Download size={16} />,
-            Upload: <Upload size={16} />,
-            User: <User size={16} />,
-            Settings: <Settings size={16} />,
-        };
-
-        const icon = iconName ? icons[iconName] : null;
-
-        const baseStyle: React.CSSProperties = {
-            padding: '10px 20px',
-            borderRadius: `${borderRadius}px`,
-            fontSize: `${fontSize}px`,
-            fontWeight,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            flexDirection: iconPosition === 'left' ? 'row-reverse' : 'row',
-            border: 'none',
-            outline: 'none',
-            width: '100%',
-            height: '100%',
-            fontFamily: layer.style?.fontFamily || 'inherit',
-        };
-
-        let variantStyle: React.CSSProperties = {};
-        let content = (
-            <>
-                <span>{label}</span>
-                {icon && <span>{icon}</span>}
-            </>
-        );
-
-        switch (variant) {
-            case 'primary':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    boxShadow: `0 4px 6px -1px ${themeColor}40, 0 2px 4px -1px ${themeColor}20`
-                };
-                break;
-            case 'secondary':
-                variantStyle = {
-                    backgroundColor: `${themeColor}20`, // 20% opacity
-                    color: themeColor,
-                };
-                break;
-            case 'outline':
-                variantStyle = {
-                    backgroundColor: 'transparent',
-                    border: `2px solid ${themeColor}`,
-                    color: themeColor,
-                };
-                break;
-            case 'ghost':
-                variantStyle = {
-                    backgroundColor: 'transparent',
-                    color: themeColor,
-                };
-                break;
-            case 'soft':
-                variantStyle = {
-                    backgroundColor: `${themeColor}15`,
-                    color: themeColor,
-                };
-                break;
-            case 'glass':
-                variantStyle = {
-                    backgroundColor: `${themeColor}40`,
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: textColor,
-                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-                };
-                break;
-            case 'gradient':
-                variantStyle = {
-                    background: `linear-gradient(135deg, ${themeColor}, ${adjustColorBrightness(themeColor, -20)})`,
-                    color: textColor,
-                    boxShadow: `0 4px 15px ${themeColor}60`,
-                };
-                break;
-            case 'shine':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    position: 'relative',
-                    overflow: 'hidden',
-                };
-                // Note: Shine animation would need CSS keyframes, simplified here
-                break;
-            case '3d':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    boxShadow: `0 5px 0 ${adjustColorBrightness(themeColor, -30)}`,
-                    transform: 'translateY(-2px)',
-                    marginBottom: '5px' // Compensate for shadow
-                };
-                break;
-            case 'elevated':
-                variantStyle = {
-                    backgroundColor: 'white',
-                    color: themeColor,
-                    boxShadow: '0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.05)',
-                };
-                break;
-            case 'neumorphic':
-                variantStyle = {
-                    backgroundColor: '#EEF2FF', // Assuming light bg
-                    color: themeColor,
-                    boxShadow: '5px 5px 10px #d1d5db, -5px -5px 10px #ffffff',
-                };
-                break;
-            case 'pill':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    borderRadius: '9999px',
-                };
-                break;
-            case 'underline':
-                variantStyle = {
-                    backgroundColor: 'transparent',
-                    color: themeColor,
-                    borderBottom: `2px solid ${themeColor}`,
-                    borderRadius: '0',
-                    padding: '4px 0',
-                };
-                break;
-            case 'glow':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    boxShadow: `0 0 15px ${themeColor}, 0 0 30px ${themeColor}80`,
-                };
-                break;
-            case 'cyberpunk':
-                variantStyle = {
-                    backgroundColor: '#F3E600', // Cyberpunk yellow default or theme
-                    color: '#000000',
-                    clipPath: 'polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%)',
-                    textTransform: 'uppercase',
-                    fontWeight: 'bold',
-                    letterSpacing: '2px',
-                };
-                break;
-            case 'two-tone':
-                variantStyle = {
-                    backgroundColor: 'white',
-                    color: themeColor,
-                    border: `1px solid ${themeColor}20`,
-                    padding: 0,
-                    overflow: 'hidden',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                };
-                content = (
-                    <>
-                        <span style={{ padding: '10px 20px', flex: 1, textAlign: 'center' }}>{label}</span>
-                        {icon && (
-                            <span style={{
-                                backgroundColor: themeColor,
-                                color: 'white',
-                                padding: '10px 16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                                onClick={isInteractive ? () => handleAction(layer.content?.action) : undefined}
-                            >
-                                {icon}
-                            </span>
-                        )}
-                    </>
-                );
-                break;
-            case 'comic':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    border: '3px solid black',
-                    boxShadow: '4px 4px 0px black',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase',
-                };
-                break;
-            case 'skeuomorphic':
-                variantStyle = {
-                    background: `linear-gradient(to bottom, ${adjustColorBrightness(themeColor, 20)}, ${themeColor})`,
-                    color: textColor,
-                    border: `1px solid ${adjustColorBrightness(themeColor, -20)}`,
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.2)',
-                    textShadow: '0 -1px 0 rgba(0,0,0,0.2)',
-                };
-                break;
-            case 'liquid':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%', // Organic shape
-                    boxShadow: `0 10px 20px ${themeColor}60`,
-                };
-                break;
-            case 'block':
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'center',
-                    borderRadius: '4px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    fontWeight: 'bold',
-                };
-                break;
-            default:
-                variantStyle = {
-                    backgroundColor: themeColor,
-                    color: textColor,
-                };
-        }
-
-        return (
-            <button style={{ ...baseStyle, ...variantStyle }}>
-                {content}
-            </button>
-        );
-    };
 
     const renderProgressBar = (layer: Layer) => {
-        const value = layer.content.value || 0;
-        const max = layer.content.max || 100;
+        const value = layer.content?.value || 0;
+        const max = layer.content?.max || 100;
         const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-        const variant = layer.content.progressBarVariant || 'simple';
-        const themeColor = layer.content.themeColor || layer.style?.backgroundColor || '#22C55E';
-        const showPercentage = layer.content.showPercentage;
+        const showPercentage = layer.content?.showPercentage !== false;
+        const themeColor = layer.content?.themeColor || '#6366F1';
+        const variant = layer.content?.progressBarVariant || 'simple';
 
         const containerStyle: React.CSSProperties = {
             width: '100%',
-            height: '100%',
+            height: '10px',
             backgroundColor: '#E5E7EB',
-            borderRadius: typeof layer.style?.borderRadius === 'number' ? layer.style.borderRadius : 8,
+            borderRadius: '4px',
             overflow: 'hidden',
             position: 'relative',
         };
 
-        let barStyle: React.CSSProperties = {
+        const barStyle: React.CSSProperties = {
             width: `${percentage}%`,
             height: '100%',
             backgroundColor: themeColor,
-            transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'width 0.5s ease-in-out',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
-            paddingRight: showPercentage ? '8px' : '0',
+            justifyContent: 'center',
         };
 
         switch (variant) {
@@ -1218,219 +684,300 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
         );
     };
 
-    // --- Main Layer Renderer ---
-
-    const renderLayer = (layer: Layer): React.ReactNode => {
+    const renderLayer = (layer: Layer) => {
         if (!layer.visible) return null;
+        const isSelected = selectedLayerId === layer.id;
+        const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
 
-        const isSelected = layer.id === selectedLayerId;
+        // STRETCH FIX: Convert pixel positions to percentages of design device dimensions
+        // This ensures layers match the background's 100% 100% stretch behavior
+        // Design device: 393px wide, 852px tall (iPhone 14 Pro)
+        const designWidth = 393;
+        const designHeight = 852;
 
-        // Helper to get padding/margin
-        const getSpacing = (spacing: any) => {
-            if (typeof spacing === 'number') return `${spacing}px`;
-            if (spacing) return `${spacing.top || 0}px ${spacing.right || 0}px ${spacing.bottom || 0}px ${spacing.left || 0}px`;
-            return undefined;
+        // Convert pixel to percentage (returns percentage string or undefined)
+        const toPercentX = (val: any): string | undefined => {
+            if (val == null) return undefined;
+            const str = val.toString().trim();
+            if (str.endsWith('%')) return str; // Already percentage
+            const num = parseFloat(str);
+            if (isNaN(num)) return undefined;
+            return `${(num / designWidth) * 100}%`;
         };
 
-        // Helper to get border radius
-        const getBorderRadius = (radius: any) => {
-            if (typeof radius === 'number') return `${radius}px`;
-            if (radius) return `${radius.topLeft || 0}px ${radius.topRight || 0}px ${radius.bottomRight || 0}px ${radius.bottomLeft || 0}px`;
-            return undefined;
+        const toPercentY = (val: any): string | undefined => {
+            if (val == null) return undefined;
+            const str = val.toString().trim();
+            if (str.endsWith('%')) return str; // Already percentage
+            const num = parseFloat(str);
+            if (isNaN(num)) return undefined;
+            return `${(num / designHeight) * 100}%`;
         };
 
-        const style = layer.style || {};
+        // Apply Scaling to Style Properties (SDK Logic)
+        // STRETCH FIX: Use percentages for positions, and scale for sizes
+        const scaledStyle: any = {
+            ...layer.style,
+            // POSITIONS: Convert to percentages for stretch-matching with background
+            top: toPercentY(layer.style?.top),
+            bottom: toPercentY(layer.style?.bottom),
+            left: toPercentX(layer.style?.left),
+            right: toPercentX(layer.style?.right),
+            // SIZES: Still use safeScale for width/height (they scale with container)
+            width: safeScale(layer.style?.width || layer.size?.width, scale),
+            height: safeScale(layer.style?.height || layer.size?.height, scaleY),
+
+            marginTop: safeScale(layer.style?.marginTop, scaleY),
+            marginBottom: safeScale(layer.style?.marginBottom, scaleY),
+            marginLeft: safeScale(layer.style?.marginLeft, scale),
+            marginRight: safeScale(layer.style?.marginRight, scale),
+            paddingTop: safeScale(layer.style?.paddingTop, scaleY),
+            paddingBottom: safeScale(layer.style?.paddingBottom, scaleY),
+            paddingLeft: safeScale(layer.style?.paddingLeft, scale),
+            paddingRight: safeScale(layer.style?.paddingRight, scale),
+            // Handle borderRadius: if object, serialize to string, if number/string, scale
+            borderRadius: typeof layer.style?.borderRadius === 'object'
+                ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
+                : safeScale(layer.style?.borderRadius, scale),
+            fontSize: safeScale(layer.style?.fontSize, scale),
+        };
+
+        // SDK PARITY: Margin Precedence Logic
+        // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
+
+        let finalMarginTop = safeScale(layer.style?.marginTop, scaleY);
+        let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
+        let finalMarginLeft = safeScale(layer.style?.marginLeft, scale);
+        let finalMarginRight = safeScale(layer.style?.marginRight, scale);
+        let finalMargin = undefined;
+
+        // Handle generic margin shorthand
+        if (layer.style?.margin) {
+            if (typeof layer.style.margin === 'string' && layer.style.margin.includes(' ')) {
+                // Complex string (e.g. "10px 20px") - pass through
+                finalMargin = layer.style.margin;
+            } else {
+                // Simple number/string - scale it
+                finalMargin = safeScale(layer.style.margin, scale);
+            }
+        }
+
+        // Apply defaults if NO margin is set
+        // SDK PARITY: Strip margin/padding for absolute elements
+        if (isAbsolute) {
+            finalMarginTop = undefined;
+            finalMarginBottom = undefined;
+            finalMarginLeft = undefined;
+            finalMarginRight = undefined;
+            finalMargin = undefined;
+            // Also strip padding from scaledStyle for absolute elements
+            scaledStyle.paddingTop = undefined;
+            scaledStyle.paddingBottom = undefined;
+            scaledStyle.paddingLeft = undefined;
+            scaledStyle.paddingRight = undefined;
+        } else if (layer.type !== 'custom_html') {
+            // If no explicit marginBottom AND no shorthand margin, apply default
+            if (finalMarginBottom === undefined && finalMargin === undefined) {
+                finalMarginBottom = safeScale(10, scaleY); // FIX: Use scaleY
+            }
+        }
 
         const baseStyle: React.CSSProperties = {
-            // Positioning
-            position: style.position || 'relative',
-            top: style.top,
-            right: style.right,
-            bottom: style.bottom,
-            left: style.left,
-            zIndex: style.zIndex,
-
-            // Dimensions
-            width: layer.style?.width ?? layer.size?.width,
-            height: layer.style?.height ?? layer.size?.height,
-            minWidth: style.minWidth,
-            minHeight: style.minHeight,
-            maxWidth: style.maxWidth,
-            maxHeight: style.maxHeight,
-
-            // Layout (Flexbox)
-            display: style.display,
-            flexDirection: style.flexDirection,
-            alignItems: style.alignItems,
-            justifyContent: style.justifyContent,
-            gap: style.gap ? `${style.gap}px` : undefined,
-            flexWrap: style.flexWrap,
-            flexGrow: style.flexGrow,
-            flexShrink: style.flexShrink,
-            flexBasis: style.flexBasis,
-            alignSelf: style.alignSelf,
-
-            // Spacing
-            padding: getSpacing(style.padding),
-            margin: getSpacing(style.margin),
-
-            // Appearance
-            backgroundColor: style.backgroundColor,
-            backgroundImage: style.backgroundImage,
-            backgroundSize: style.backgroundSize,
-            backgroundPosition: style.backgroundPosition,
-            backgroundRepeat: style.backgroundRepeat,
-            opacity: style.opacity,
-            boxShadow: style.boxShadow,
-            cursor: style.cursor || 'pointer',
-
-            // Border
-            borderWidth: typeof style.borderWidth === 'object'
-                ? `${style.borderWidth.top}px ${style.borderWidth.right}px ${style.borderWidth.bottom}px ${style.borderWidth.left}px`
-                : style.borderWidth,
-            borderStyle: style.borderStyle,
-            borderColor: style.borderColor,
-            borderRadius: getBorderRadius(style.borderRadius),
-
-            // Typography
-            color: style.color || layer.content?.textColor,
-            fontSize: layer.content?.fontSize,
-            fontWeight: layer.content?.fontWeight,
-            textAlign: layer.content?.textAlign,
-            lineHeight: style.lineHeight,
-            letterSpacing: style.letterSpacing,
-            fontFamily: style.fontFamily,
-
-            // Effects
-            transform: getTransformString(style.transform),
-            filter: getFilterString(style.filter),
-            backdropFilter: style.backdropFilter,
-            overflow: style.overflow,
+            position: 'relative',
+            margin: finalMargin, // Shorthand first
+            marginTop: finalMarginTop, // Specific overrides second (wins)
+            marginBottom: finalMarginBottom,
+            marginLeft: finalMarginLeft,
+            marginRight: finalMarginRight,
+            ...scaledStyle
         };
 
-        // Render content based on type
-        const renderContent = () => {
-            switch (layer.type) {
-                case 'text':
-                    return layer.content?.text || '';
-                case 'button':
-                    return renderButton(layer);
-                case 'image':
-                    return (
-                        <img
-                            src={layer.content?.imageUrl || 'https://via.placeholder.com/150'}
-                            alt={layer.name}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: (layer.content?.imageFit as any) || 'cover',
-                                borderRadius: 'inherit'
-                            }}
-                        />
-                    );
-                case 'video':
-                    return (
-                        <div style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                            Video Player Placeholder
-                        </div>
-                    );
-                case 'input':
-                    return renderInput(layer);
-                case 'checkbox':
-                    return renderCheckbox(layer);
-                case 'list':
-                    return renderList(layer);
-                case 'rating':
-                    return renderRating(layer);
-                case 'badge':
-                    return renderBadge(layer);
-                case 'progress-bar':
-                    return renderProgressBar(layer);
-                case 'progress-circle':
-                    return renderProgressCircle(layer);
-                case 'countdown':
-                    return <CountdownLayer layer={layer} />;
-                case 'statistic':
-                    return <StatisticLayer layer={layer} />;
-                case 'gradient-overlay':
-                    return renderGradientOverlay(layer);
+        let content = null;
 
-                default:
-                    return null;
-            }
-        };
+        switch (layer.type) {
+            case 'text':
+                content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
+            case 'media': // Handle 'media' alias
+            case 'image':
+                content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
+            case 'handle':
+                content = (
+                    <div style={{
+                        width: layer.size?.width || 40,
+                        height: layer.size?.height || 4,
+                        backgroundColor: layer.style?.backgroundColor || '#e5e7eb',
+                        borderRadius: typeof layer.style?.borderRadius === 'object'
+                            ? `${layer.style.borderRadius.topLeft}px ${layer.style.borderRadius.topRight}px ${layer.style.borderRadius.bottomRight}px ${layer.style.borderRadius.bottomLeft}px`
+                            : (layer.style?.borderRadius || 2),
+                        margin: '0 auto'
+                    }} />
+                );
+                break;
+            case 'button':
+                content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
+            case 'custom_html':
+                content = (
+                    <div
+                        dangerouslySetInnerHTML={{ __html: layer.content?.html || '<div style="padding:10px; border:1px dashed #ccc; color:#999">Empty HTML Layer</div>' }}
+                        style={{ width: '100%', height: '100%' }}
+                    />
+                );
+                break;
+            case 'input':
+                content = (
+                    <input
+                        type="text"
+                        placeholder={layer.content?.placeholder || 'Enter text...'}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: `${layer.style?.borderRadius || 4}px`,
+                            border: `1px solid ${layer.style?.borderColor || '#E5E7EB'}`,
+                            fontSize: `${layer.content?.fontSize || 14}px`,
+                            color: layer.content?.textColor || '#000000',
+                            backgroundColor: layer.style?.backgroundColor || '#FFFFFF',
+                        }}
+                    />
+                );
+                break;
+            case 'checkbox':
+                content = (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" style={{ width: '16px', height: '16px' }} />
+                        <span style={{
+                            fontSize: `${layer.content?.fontSize || 14}px`,
+                            color: layer.content?.textColor || '#000000',
+                        }}>
+                            {layer.content?.label || 'Checkbox'}
+                        </span>
+                    </div>
+                );
+                break;
+            case 'list':
+                content = (
+                    <ul style={{
+                        listStyleType: 'disc',
+                        paddingLeft: '20px',
+                        color: layer.content?.textColor || '#000000',
+                        fontSize: `${layer.content?.fontSize || 14}px`,
+                    }}>
+                        <li>Item 1</li>
+                        <li>Item 2</li>
+                        <li>Item 3</li>
+                    </ul>
+                );
+                break;
+            case 'rating':
+                content = (
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <span key={star} style={{ color: '#FBBF24', fontSize: '20px' }}>★</span>
+                        ))}
+                    </div>
+                );
+                break;
+            case 'badge':
+                content = (
+                    <div style={{
+                        backgroundColor: layer.content?.badgeBackgroundColor || '#EF4444',
+                        color: layer.content?.badgeTextColor || '#FFFFFF',
+                        padding: typeof layer.content?.badgePadding === 'object'
+                            ? `${layer.content.badgePadding.vertical}px ${layer.content.badgePadding.horizontal}px`
+                            : `${layer.content?.badgePadding || 4}px 8px`,
+                        borderRadius: `${layer.content?.badgeBorderRadius || 4}px`,
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                    }}>
+                        {layer.content?.badgeText || 'Badge'}
+                    </div>
+                );
+                break;
+            case 'progress-bar':
+                content = renderProgressBar(layer);
+                break;
+            case 'progress-circle':
+                content = <div>Progress Circle Placeholder</div>;
+                break;
+            case 'statistic':
+                content = <StatisticLayer layer={layer} />;
+                break;
+            case 'countdown':
+                content = <CountdownLayer layer={layer} />;
+                break;
+            case 'gradient-overlay':
+                content = (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: `linear-gradient(${layer.content?.gradientDirection || 'to bottom'}, ${layer.content?.gradientStops?.[0]?.color || 'transparent'}, ${layer.content?.gradientStops?.[1]?.color || 'rgba(0,0,0,0.5)'})`,
+                        pointerEvents: 'none'
+                    }} />
+                );
+                break;
+            default:
+                content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown Layer: {layer.type}</div>;
+        }
+
+        // Calculate Clip Path
+        let clipPath = layer.style?.clipPath;
+        const shape = layer.style?.clipPathShape;
+
+        if (shape === 'circle') {
+            clipPath = 'circle(50% at 50% 50%)';
+        } else if (shape === 'pill') {
+            const r = layer.style?.borderRadius || 9999;
+            // Enforce pill via border radius
+        }
+
+        if (clipPath) {
+            // @ts-ignore
+            scaledStyle.clipPath = clipPath;
+            // @ts-ignore
+            scaledStyle.WebkitClipPath = clipPath;
+        } else if (shape === 'pill') {
+            // Enforce pill via border radius if not using clip-path
+            scaledStyle.borderRadius = 9999;
+        }
 
         return (
-            <DraggableResizableLayerWrapper
-                layer={layer}
-                isSelected={isSelected}
-                onLayerSelect={onLayerSelect}
-                onLayerUpdate={onLayerUpdate}
-                baseStyle={baseStyle}
-                colors={colors}
-                isInteractive={isInteractive}
-                onAction={handleAction}
+            <div
+                key={layer.id}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (isInteractive) {
+                        handleAction(layer.content?.action);
+                    } else {
+                        onLayerSelect(layer.id);
+                    }
+                }}
+                style={{
+                    ...baseStyle,
+                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box', // SDK Match
+                    // Apply button background to wrapper to match SDK "Container" behavior
+                    ...(layer.type === 'button' ? {
+                        backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
+                    } : {})
+                }}
             >
-                {renderContent()}
-            </DraggableResizableLayerWrapper>
+                {content}
+            </div>
         );
-    };
-
-    // --- Resize Logic ---
-
-    useEffect(() => {
-        if (!isResizing) return;
-
-        const handleMouseMove = (e: MouseEvent) => {
-            const deltaY = resizeStartY - e.clientY;
-            const newHeight = Math.max(100, Math.min(812, resizeStartHeight + deltaY));
-
-            if (onHeightChange) {
-                onHeightChange(newHeight);
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isResizing, resizeStartY, resizeStartHeight, onHeightChange]);
-
-    // --- Main Return ---
-
-    // Banner Configuration
-    const position = config?.position || 'top';
-    const isTop = position === 'top';
-    const height = config?.height || 'auto';
-    const backgroundColor = config?.backgroundColor || '#FFFFFF';
-    const borderRadius = config?.borderRadius || 0;
-    const elevation = config?.elevation || 2;
-
-    const isImageOnly = config?.mode === 'image-only';
-
-    // Calculate shadow
-    const getShadow = (elevation: number) => {
-        if (isImageOnly) return 'none';
-        switch (elevation) {
-            case 1: return '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
-            case 2: return '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
-            case 3: return '0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)';
-            case 4: return '0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22)';
-            case 5: return '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)';
-            default: return 'none';
-        }
     };
 
     return (
         <>
-            {/* Overlay (Optional for Banner) */}
+            {/* Backdrop - OPTIONAL for Banners (default: disabled) */}
             {config?.overlay?.enabled && (
                 <div
                     style={{
@@ -1439,97 +986,154 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: config.overlay.color || 'rgba(0,0,0,0.5)',
-                        opacity: config.overlay.opacity,
-                        backdropFilter: `blur(${config.overlay.blur}px)`,
+                        backgroundColor: `rgba(0,0,0,${config?.overlay?.opacity ?? 0.5})`,
                         zIndex: 0,
-                        pointerEvents: config.overlay.dismissOnClick ? 'auto' : 'none',
-                    }}
-                    onClick={() => {
-                        if (config.overlay?.dismissOnClick) {
-                            // Handle dismiss
-                        }
+                        pointerEvents: 'auto',
+                        backdropFilter: config?.overlay?.blur ? `blur(${config.overlay.blur}px)` : 'none',
+                        transition: 'opacity 0.3s ease'
                     }}
                 />
             )}
 
-            {/* Banner Container */}
+            {/* Banner Container - Positioned at top or bottom */}
             <div
                 ref={containerRef}
                 style={{
                     position: 'absolute',
-                    [isTop ? 'top' : 'bottom']: 0,
-                    left: 0,
-                    right: 0,
-                    height: typeof height === 'number' ? `${height}px` : height,
-                    minHeight: isImageOnly ? (typeof height === 'number' || height !== 'auto' ? '0' : '150px') : '100px',
-                    ...(bannerLayer.style?.background ? { background: bannerLayer.style.background } : {
-                        backgroundColor: isImageOnly ? 'transparent' : backgroundColor,
-                        backgroundImage: bannerLayer.style?.backgroundImage || (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined),
-                    }),
-                    backgroundSize: bannerLayer.style?.backgroundSize || config?.backgroundSize || 'cover',
-                    backgroundPosition: bannerLayer.style?.backgroundPosition || 'center',
-                    backgroundRepeat: bannerLayer.style?.backgroundRepeat || 'no-repeat',
-                    opacity: config?.opacity ?? 1,
-                    borderRadius: isImageOnly ? 0 : (typeof borderRadius === 'object'
-                        ? `${borderRadius.topLeft}px ${borderRadius.topRight}px ${borderRadius.bottomRight}px ${borderRadius.bottomLeft}px`
-                        : `${borderRadius}px`),
-                    boxShadow: getShadow(elevation),
+                    // BANNER POSITIONING: Edge-based (top or bottom)
+                    top: bannerPosition === 'top' ? safeScale((config as any)?.margin?.top || 0, scaleY) : undefined,
+                    bottom: bannerPosition === 'bottom' ? safeScale((config as any)?.margin?.bottom || 0, scaleY) : undefined,
+                    left: safeScale((config as any)?.margin?.left || 0, scale),
+                    right: (config as any)?.margin?.right ? safeScale((config as any)?.margin?.right, scale) : undefined,
+                    transform: getTransformString(bannerLayer.style?.transform) || undefined,
+
+                    // Banner: Full width by default
+                    width: safeScale(
+                        resolveDimension(
+                            configWidth,
+                            bannerLayer.style?.width,
+                            '100%' // Banner default: full width
+                        ),
+                        scale
+                    ),
+                    maxWidth: '100%',
+
+                    backgroundColor: bannerLayer.style?.backgroundColor || config?.backgroundColor || '#FFFFFF',
+                    backgroundImage: (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
+                        (bannerLayer.style?.backgroundImage && bannerLayer.style?.backgroundImage !== 'none' ? bannerLayer.style?.backgroundImage : undefined),
+                    backgroundSize: (config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover')),
+                    backgroundPosition: 'top left',
+                    backgroundRepeat: 'no-repeat',
+
+                    // Borders/Radius - 0 radius for banners by default
+                    borderRadius: safeScale(config?.borderRadius || bannerLayer.style?.borderRadius || 0, scale),
+                    borderWidth: safeScale(bannerLayer.style?.borderWidth || 0, scale),
+                    borderColor: bannerLayer.style?.borderColor || 'transparent',
+                    borderStyle: bannerLayer.style?.borderStyle || 'solid',
+
+                    // Visuals
+                    opacity: bannerLayer.style?.opacity ?? 1,
+                    filter: getFilterString(bannerLayer.style?.filter),
+                    clipPath: bannerLayer.style?.clipPath,
+                    boxShadow: config?.shadow?.enabled
+                        ? `${config.shadow.x || 0}px ${config.shadow.y || 4}px ${config.shadow.blur || 12}px ${config.shadow.spread || 0}px ${config.shadow.color || `rgba(0,0,0,${config.shadow.opacity || 0.15})`}`
+                        : (config?.elevation ? `0px ${safeScale(config.elevation * 4, scaleY)} ${safeScale(config.elevation * 8, scaleY)} rgba(0,0,0,0.15)` : (bannerLayer.style?.boxShadow || '0 4px 12px rgba(0,0,0,0.1)')),
+
+                    // Dimensions - simplified for banner
+                    minHeight: safeScale((config as any)?.minHeight || '50px', scaleY),
+                    height: safeScale(
+                        resolveDimension(
+                            configHeight,
+                            bannerLayer.style?.height,
+                            'auto'
+                        ),
+                        scaleY
+                    ),
+                    maxHeight: safeScale((config as any)?.maxHeight, scaleY),
+
                     overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
                     zIndex: 1,
-                    transition: 'all 0.3s ease-out',
-                    transform: 'translateY(0)', // In a real app, this would be animated
+                    display: 'block',
+                    padding: 0,
+                    // Banner-specific animation: slide from top or bottom
+                    animation: (config?.animation?.enabled !== false)
+                        ? `${config?.animation?.type === 'fade' ? 'banner-fade' : `banner-slide-${bannerPosition}`} ${config?.animation?.duration ? config.animation.duration / 1000 : 0.3}s ${config?.animation?.easing || 'ease-out'}`
+                        : 'none',
+
+                    // Touch Action mainly for preventing scroll if we want strict swipe, but usually auto is fine
+                    touchAction: 'pan-y'
+                }}
+                // Apply Swipe Gestures
+                onPointerDown={(e) => {
+                    // Only apply swipe if dismissal is enabled
+                    if (config?.overlay?.dismissOnSwipe) {
+                        // Capture logic
+                        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                        const startY = e.clientY;
+
+                        const handlePointerUp = (ev: PointerEvent) => {
+                            const diff = ev.clientY - startY;
+                            const threshold = 50;
+
+                            if (bannerPosition === 'top' && diff < -threshold) {
+                                onDismiss?.();
+                            } else if (bannerPosition === 'bottom' && diff > threshold) {
+                                onDismiss?.();
+                            }
+
+                            (e.target as HTMLElement).removeEventListener('pointerup', handlePointerUp);
+                        };
+                        (e.target as HTMLElement).addEventListener('pointerup', handlePointerUp, { once: true });
+                    }
                 }}
             >
-                {/* Resize Handle (Optional) */}
-                {onHeightChange && (
-                    <div
-                        onMouseDown={(e) => {
-                            setIsResizing(true);
-                            setResizeStartY(e.clientY);
-                            setResizeStartHeight(containerRef.current?.offsetHeight || 0);
-                        }}
-                        style={{
-                            width: '100%',
-                            height: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'ns-resize',
-                            flexShrink: 0,
-                            order: isTop ? 1 : 0, // Handle at bottom for top banner, top for bottom banner
-                            opacity: isImageOnly ? 0 : 1, // Hide handle visually in image-only mode but keep it functional
-                            position: isImageOnly ? 'absolute' : 'relative',
-                            [isTop ? 'bottom' : 'top']: 0,
-                            zIndex: 100,
-                        }}
-                    >
-                        {!isImageOnly && <div style={{ width: '40px', height: '4px', backgroundColor: '#E5E7EB', borderRadius: '2px' }} />}
-                    </div>
-                )}
-
-                {/* Content Area */}
+                {/* Content Area - Relative/Scrollable Layers */}
                 <div style={{
                     flex: 1,
                     position: 'relative',
-                    overflowY: config.overflow === 'hidden' ? 'hidden' : 'auto',
-                    padding: isImageOnly ? '0' : '20px',
-                    order: isTop ? 0 : 1 // Content order depends on handle position
-                }}>
-                    {childLayers.map(layer => (
-                        <div key={layer.id} style={{ position: layer.style?.position === 'absolute' ? 'absolute' : 'relative', zIndex: layer.zIndex }}>
-                            {renderLayer(layer)}
-                        </div>
-                    ))}
-                </div>
-            </div >
+                    // FIX: Changed to 'auto' to allow scrolling if content exceeds container height
+                    overflowY: 'hidden',
+                    overflowX: 'hidden',
+                    width: '100%',
+                    height: '100%',
+                    display: bannerLayer.style?.display || 'flex',
+                    flexDirection: bannerLayer.style?.flexDirection || 'column',
+                    alignItems: bannerLayer.style?.alignItems || 'stretch',
+                    justifyContent: bannerLayer.style?.justifyContent || 'flex-start',
+                    gap: safeScale(bannerLayer.style?.gap || 0, scale),
 
-            {/* Close Button (Optional, if configured) */}
-            {
-                config?.showCloseButton !== false && (
+                    // REMOVED: CSS transform was causing double-scaling with safeScale
+                    // Instead, positions should be calculated as percentages of container
+
+                    // SCALING FIX: Apply safeScale to Padding (Content Wrapper)
+                    paddingTop: safeScale(bannerLayer.style?.padding?.top || (typeof bannerLayer.style?.padding === 'number' ? bannerLayer.style.padding : 0), scaleY),
+                    paddingBottom: safeScale(bannerLayer.style?.padding?.bottom || (typeof bannerLayer.style?.padding === 'number' ? bannerLayer.style.padding : 0), scaleY),
+                    paddingLeft: safeScale(bannerLayer.style?.padding?.left || (typeof bannerLayer.style?.padding === 'number' ? bannerLayer.style.padding : 0), scale),
+                    paddingRight: safeScale(bannerLayer.style?.padding?.right || (typeof bannerLayer.style?.padding === 'number' ? bannerLayer.style.padding : 0), scale),
+                }}>
+                    {childLayers
+                        .filter(l => {
+                            const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
+                            return !isAbs;
+                        })
+                        .map(renderLayer)}
+                </div>
+
+                {/* Overlay Area - Absolute Layers (Fixed to Modal) */}
+                {childLayers
+                    .filter(l => {
+                        const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
+                        return isAbs;
+                    })
+                    .map(renderLayer)}
+
+                {/* Close Button (Optional, if configured) */}
+                {config?.showCloseButton === true && (
                     <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onDismiss) onDismiss();
+                        }}
                         style={{
                             position: 'absolute',
                             top: '12px',
@@ -1538,16 +1142,34 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                             zIndex: 50,
                             padding: '4px',
                             borderRadius: '50%',
-                            backgroundColor: isImageOnly ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
+                            backgroundColor: 'rgba(0,0,0,0.05)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            transition: 'background-color 0.2s'
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
                     >
-                        <X size={20} color={isImageOnly ? '#FFFFFF' : "#6B7280"} />
+                        <X size={20} color="#6B7280" />
                     </div>
-                )
+                )}
+            </div >
+
+            <style>{`
+            @keyframes banner-slide-top {
+              0% { opacity: 0; transform: translateY(-100%); }
+              100% { opacity: 1; transform: translateY(0); }
             }
+            @keyframes banner-slide-bottom {
+              0% { opacity: 0; transform: translateY(100%); }
+              100% { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes banner-fade {
+              0% { opacity: 0; }
+              100% { opacity: 1; }
+            }
+          `}</style>
         </>
     );
 };

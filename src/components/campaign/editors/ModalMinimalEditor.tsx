@@ -13,20 +13,85 @@ export const ModalMinimalEditor = () => {
     const config = currentCampaign?.modalConfig;
     console.log('ModalMinimalEditor rendered', { configPresent: !!config, config });
 
+    // Auto-migrate: specific defaults
+    React.useEffect(() => {
+        if (!config) return;
+
+        let hasUpdates = false;
+        const updates: any = {};
+
+        // Fix transparency: 'transparent' -> '#00000000'
+        if (config.backgroundColor === 'transparent') {
+            updates.backgroundColor = '#00000000';
+            hasUpdates = true;
+        }
+
+        // Fix Close Button: undefined -> false (Default to OFF per user request)
+        if (config.showCloseButton === undefined) {
+            updates.showCloseButton = false;
+            hasUpdates = true;
+        }
+
+        if (hasUpdates) {
+            console.log('Auto-migrating Modal Config:', updates);
+            updateModalConfig(updates);
+
+            // Sync background if changed
+            if (updates.backgroundColor) {
+                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Modal Container');
+                if (rootLayer) {
+                    const { updateLayerStyle } = useEditorStore.getState();
+                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
+                }
+            }
+        }
+    }, [config?.backgroundColor, config?.showCloseButton, currentCampaign?.layers, updateModalConfig]);
+
     if (!config) {
         return (
             <div style={{ padding: '20px', textAlign: 'center', color: colors.text.secondary }}>
                 <p style={{ fontSize: '13px', marginBottom: '12px' }}>Configuration missing</p>
                 <button
-                    onClick={() => updateModalConfig({
-                        width: '90%',
-                        height: 'auto',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: 16,
-                        elevation: 2,
-                        overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
-                        animation: { type: 'pop', duration: 300, easing: 'ease-out' }
-                    } as any)}
+                    onClick={() => {
+                        // Hydrate from existing root layer
+                        const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Modal Container');
+
+                        const defaults = {
+                            width: '90%',
+                            height: 'auto',
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: 16,
+                            elevation: 2,
+                            overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
+                            animation: { type: 'pop', duration: 300, easing: 'ease-out' }
+                        };
+
+                        if (rootLayer) {
+                            const style: any = rootLayer.style || {};
+                            const size: any = rootLayer.size || {};
+
+                            if (style.backgroundColor) defaults.backgroundColor = style.backgroundColor;
+                            if (size.width) defaults.width = size.width;
+                            if (size.height) defaults.height = size.height;
+
+                            // Check for background image (could be in backgroundImage or background)
+                            const bgImage = style.backgroundImage || style.background;
+                            if (bgImage && bgImage.startsWith('url(')) {
+                                // Extract url from url("...")
+                                const match = bgImage.match(/url\(['"]?(.*?)['"]?\)/);
+                                if (match && match[1]) {
+                                    (defaults as any).backgroundImageUrl = match[1];
+                                }
+                            }
+
+                            // Check background size
+                            if (style.backgroundSize) (defaults as any).backgroundSize = style.backgroundSize;
+
+                            console.log('Hydrated Modal Config from Root Layer:', defaults);
+                        }
+
+                        updateModalConfig(defaults as any);
+                    }}
                     style={{
                         padding: '8px 16px',
                         background: colors.primary[500],
@@ -78,40 +143,6 @@ export const ModalMinimalEditor = () => {
             [parent]: { ...((config as any)[parent] || {}), [key]: value }
         });
     };
-
-    // Auto-migrate: specific defaults
-    React.useEffect(() => {
-        if (!config) return;
-
-        let hasUpdates = false;
-        const updates: any = {};
-
-        // Fix transparency: 'transparent' -> '#00000000'
-        if (config.backgroundColor === 'transparent') {
-            updates.backgroundColor = '#00000000';
-            hasUpdates = true;
-        }
-
-        // Fix Close Button: undefined -> false (Default to OFF per user request)
-        if (config.showCloseButton === undefined) {
-            updates.showCloseButton = false;
-            hasUpdates = true;
-        }
-
-        if (hasUpdates) {
-            console.log('Auto-migrating Modal Config:', updates);
-            updateModalConfig(updates);
-
-            // Sync background if changed
-            if (updates.backgroundColor) {
-                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Modal Container');
-                if (rootLayer) {
-                    const { updateLayerStyle } = useEditorStore.getState();
-                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
-                }
-            }
-        }
-    }, [config?.backgroundColor, config?.showCloseButton]);
 
     return (
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>

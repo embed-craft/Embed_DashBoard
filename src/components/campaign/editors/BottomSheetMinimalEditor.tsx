@@ -13,6 +13,48 @@ export const BottomSheetMinimalEditor = () => {
     const config = currentCampaign?.bottomSheetConfig;
     console.log('BottomSheetMinimalEditor rendered', { configPresent: !!config, config });
 
+    // Auto-migrate legacy values
+    React.useEffect(() => {
+        if (!config) return;
+
+        let hasUpdates = false;
+        const updates: any = {};
+
+        // Fix Transparency: 'transparent' -> '#00000000'
+        if (config.backgroundColor === 'transparent') {
+            updates.backgroundColor = '#00000000';
+            hasUpdates = true;
+        }
+
+        // Fix Close Button: undefined -> false
+        if (config.showCloseButton === undefined) {
+            updates.showCloseButton = false;
+            hasUpdates = true;
+        }
+
+        // Fix Drag Handle: undefined -> false (per user request) or true (default) -> false
+        // We force it to false if it's the old default (true) or undefined
+        if (config.dragHandle === undefined || config.dragHandle === true) {
+            updates.dragHandle = false;
+            hasUpdates = true;
+        }
+
+        if (hasUpdates) {
+            console.log('Auto-migrating Bottom Sheet Config:', updates);
+            updateBottomSheetConfig(updates);
+
+            // Also sync layer style if background changed
+            if (updates.backgroundColor) {
+                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
+                if (rootLayer) {
+                    const { updateLayerStyle } = useEditorStore.getState();
+                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
+                    console.log('Auto-migrated root layer background to:', updates.backgroundColor);
+                }
+            }
+        }
+    }, [config?.backgroundColor, config?.showCloseButton, config?.dragHandle]);
+
     if (!config) {
         return (
             <div style={{ padding: '20px', textAlign: 'center', color: colors.text.secondary }}>
@@ -67,47 +109,7 @@ export const BottomSheetMinimalEditor = () => {
         });
     };
 
-    // Auto-migrate legacy values
-    React.useEffect(() => {
-        if (!config) return;
 
-        let hasUpdates = false;
-        const updates: any = {};
-
-        // Fix Transparency: 'transparent' -> '#00000000'
-        if (config.backgroundColor === 'transparent') {
-            updates.backgroundColor = '#00000000';
-            hasUpdates = true;
-        }
-
-        // Fix Close Button: undefined -> false
-        if (config.showCloseButton === undefined) {
-            updates.showCloseButton = false;
-            hasUpdates = true;
-        }
-
-        // Fix Drag Handle: undefined -> false (per user request) or true (default) -> false
-        // We force it to false if it's the old default (true) or undefined
-        if (config.dragHandle === undefined || config.dragHandle === true) {
-            updates.dragHandle = false;
-            hasUpdates = true;
-        }
-
-        if (hasUpdates) {
-            console.log('Auto-migrating Bottom Sheet Config:', updates);
-            updateBottomSheetConfig(updates);
-
-            // Also sync layer style if background changed
-            if (updates.backgroundColor) {
-                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
-                if (rootLayer) {
-                    const { updateLayerStyle } = useEditorStore.getState();
-                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
-                    console.log('Auto-migrated root layer background to:', updates.backgroundColor);
-                }
-            }
-        }
-    }, [config?.backgroundColor, config?.showCloseButton, config?.dragHandle]);
 
 
     // Check if a layer is selected (if so, we might not want to show this, or show it minimized?)

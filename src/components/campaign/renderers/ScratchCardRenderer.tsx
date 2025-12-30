@@ -383,7 +383,7 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
             overflow: 'hidden',
             backgroundColor: config?.backgroundColor || 'white',
             backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-            backgroundSize: config?.backgroundSize || 'cover',
+            backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
             backgroundPosition: 'center',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
 

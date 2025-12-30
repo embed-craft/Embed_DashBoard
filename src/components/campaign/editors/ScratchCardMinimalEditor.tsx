@@ -354,6 +354,22 @@ export const ScratchCardMinimalEditor = () => {
                                 style={{ width: '100%', padding: '8px', borderRadius: '6px', border: `1px solid ${colors.gray[300]}`, fontSize: '13px' }}
                             />
                         </div>
+
+                        <div>
+                            <label style={{ display: 'block', fontSize: '12px', color: colors.gray[500], marginBottom: '6px' }}>Image Fit</label>
+                            <select
+                                value={config.backgroundSize || 'cover'}
+                                onChange={(e) => updateConfig('backgroundSize', e.target.value)}
+                                style={{
+                                    width: '100%', padding: '8px', borderRadius: '6px', border: `1px solid ${colors.gray[300]}`, fontSize: '13px',
+                                    backgroundColor: 'white', color: colors.text.primary
+                                }}
+                            >
+                                <option value="cover">Cover (Crop)</option>
+                                <option value="contain">Contain (Fit)</option>
+                                <option value="fill">Fill (Stretch)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             )}

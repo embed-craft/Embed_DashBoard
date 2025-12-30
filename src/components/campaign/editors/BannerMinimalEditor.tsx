@@ -13,6 +13,46 @@ export const BannerMinimalEditor = () => {
     const config = currentCampaign?.bannerConfig;
     console.log('BannerMinimalEditor rendered', { configPresent: !!config, config });
 
+    // Auto-migrate: specific defaults
+    React.useEffect(() => {
+        if (!config) return;
+
+        let hasUpdates = false;
+        const updates: any = {};
+
+        // Fix transparency: 'transparent' -> '#00000000'
+        if (config.backgroundColor === 'transparent') {
+            updates.backgroundColor = '#00000000';
+            hasUpdates = true;
+        }
+
+        // Fix Close Button: undefined -> false (Default to OFF per user request)
+        if (config.showCloseButton === undefined) {
+            updates.showCloseButton = false;
+            hasUpdates = true;
+        }
+
+        // Initialize Position if missing
+        if (!(config as any).position) {
+            updates.position = 'top';
+            hasUpdates = true;
+        }
+
+        if (hasUpdates) {
+            console.log('Auto-migrating Banner Config:', updates);
+            updateBannerConfig(updates);
+
+            // Sync background if changed
+            if (updates.backgroundColor) {
+                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Banner Container');
+                if (rootLayer) {
+                    const { updateLayerStyle } = useEditorStore.getState();
+                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
+                }
+            }
+        }
+    }, [config?.backgroundColor, config?.showCloseButton, (config as any)?.position, currentCampaign?.layers, updateBannerConfig]); // Added missing deps for safety
+
     if (!config) {
         return (
             <div style={{ padding: '20px', textAlign: 'center', color: colors.text.secondary }}>
@@ -79,46 +119,6 @@ export const BannerMinimalEditor = () => {
             [parent]: { ...((config as any)[parent] || {}), [key]: value }
         });
     };
-
-    // Auto-migrate: specific defaults
-    React.useEffect(() => {
-        if (!config) return;
-
-        let hasUpdates = false;
-        const updates: any = {};
-
-        // Fix transparency: 'transparent' -> '#00000000'
-        if (config.backgroundColor === 'transparent') {
-            updates.backgroundColor = '#00000000';
-            hasUpdates = true;
-        }
-
-        // Fix Close Button: undefined -> false (Default to OFF per user request)
-        if (config.showCloseButton === undefined) {
-            updates.showCloseButton = false;
-            hasUpdates = true;
-        }
-
-        // Initialize Position if missing
-        if (!(config as any).position) {
-            updates.position = 'top';
-            hasUpdates = true;
-        }
-
-        if (hasUpdates) {
-            console.log('Auto-migrating Banner Config:', updates);
-            updateBannerConfig(updates);
-
-            // Sync background if changed
-            if (updates.backgroundColor) {
-                const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Banner Container');
-                if (rootLayer) {
-                    const { updateLayerStyle } = useEditorStore.getState();
-                    updateLayerStyle(rootLayer.id, { backgroundColor: updates.backgroundColor });
-                }
-            }
-        }
-    }, [config?.backgroundColor, config?.showCloseButton, (config as any)?.position]);
 
     return (
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>

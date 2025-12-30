@@ -112,21 +112,13 @@ export const ModalMinimalEditor = () => {
     const updateConfig = (key: string, value: any) => {
         updateModalConfig({ [key]: value });
 
-        // Sync dimensions and background to root layer
-        if (['width', 'height', 'backgroundColor', 'backgroundImageUrl', 'backgroundSize', 'backgroundPosition'].includes(key)) {
+        // Only sync backgroundColor and dimensions to root layer (NOT background image - use config directly)
+        if (['width', 'height', 'backgroundColor'].includes(key)) {
             const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Modal Container');
             if (rootLayer) {
                 if (key === 'backgroundColor') {
                     const styleValue = (value === 'transparent' || value === '#00000000') ? '#00000000' : value;
                     updateLayerStyle(rootLayer.id, { backgroundColor: styleValue });
-                } else if (key === 'backgroundImageUrl') {
-                    // Fix: value is just the URL, but CSS needs url(...)
-                    const bgValue = value ? `url('${value}')` : '';
-                    updateLayerStyle(rootLayer.id, { backgroundImage: bgValue });
-                } else if (key === 'backgroundSize') {
-                    updateLayerStyle(rootLayer.id, { backgroundSize: value });
-                } else if (key === 'backgroundPosition') {
-                    updateLayerStyle(rootLayer.id, { backgroundPosition: value });
                 } else {
                     // Sync Dimensions (Width/Height)
                     updateLayer(rootLayer.id, {

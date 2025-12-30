@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -47,6 +47,8 @@ import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownE
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 import { ScratchCardMinimalEditor } from '@/components/campaign/editors/ScratchCardMinimalEditor';
 import { ScratchCardRenderer } from '@/components/campaign/renderers/ScratchCardRenderer';
+import { InterfacesList } from '@/components/campaign/InterfacesList';
+import { InterfaceTypeSelector } from '@/components/campaign/InterfaceTypeSelector';
 
 
 
@@ -139,6 +141,11 @@ export const DesignStep: React.FC<any> = () => {
     isSaveTemplateModalOpen, // ✅ FIX: Add store state
     setSaveTemplateModalOpen, // ✅ FIX: Add store action
     enableAutoSave: startAutoSave, // Alias to avoid potential shadowing issues
+    // Interface Management
+    activeInterfaceId,
+    setActiveInterface,
+    addInterface,
+    deleteInterface,
   } = useEditorStore();
 
   // Local UI state
@@ -152,6 +159,7 @@ export const DesignStep: React.FC<any> = () => {
   const [selectedDevice, setSelectedDevice] = useState<string>(DEFAULT_DEVICE_ID); // Device selection for preview
   const [previewZoom, setPreviewZoom] = useState<number>(0.7); // Preview zoom level
   const [showGrid, setShowGrid] = useState<boolean>(false); // Grid overlay toggle
+  const [showInterfaceSelector, setShowInterfaceSelector] = useState<boolean>(false); // Interface type selector modal
 
 
   const lastAddRef = useRef(0);
@@ -169,6 +177,7 @@ export const DesignStep: React.FC<any> = () => {
   const [isInteractive, setIsInteractive] = useState(false); // Global interact mode for preview Toggle
   const [isPreview, setIsPreview] = useState(false); // New Preview Mode
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0); // Key to force re-mount/reset on preview
+  const [previewInterfaceId, setPreviewInterfaceId] = useState<string | null>(null); // Interface shown in preview
 
   // Toggle Preview Logic
   const togglePreview = () => {
@@ -178,12 +187,50 @@ export const DesignStep: React.FC<any> = () => {
         // Entering preview: Reset key to force fresh state (unscratched)
         setPreviewRefreshKey(k => k + 1);
         setIsInteractive(true); // Force interactive on
+
+        // Auto-open active interface if editing one
+        if (activeInterfaceId) {
+          setPreviewInterfaceId(activeInterfaceId);
+        } else {
+          setPreviewInterfaceId(null); // Reset to main campaign
+        }
+
         toast.info("Preview Mode: Interact with the card!");
       } else {
         setIsInteractive(false); // Reset interactive
+        setPreviewInterfaceId(null); // Reset to main campaign
       }
       return newState;
     });
+  };
+
+  // Handle navigation action in preview mode
+  const handlePreviewNavigate = (screenName: string) => {
+    if (!isInteractive && !isPreview) return;
+    toast.success(`Navigating to: ${screenName}`);
+  };
+
+  // Handle interface action in preview mode
+  const handleInterfaceAction = (interfaceId: string) => {
+    if (!isInteractive && !isPreview) return;
+
+    if (interfaceId === 'root') {
+      setPreviewInterfaceId(null);
+      toast.success('Navigated to Main Campaign');
+      return;
+    }
+
+    const targetInterface = currentCampaign?.interfaces?.find((i: any) => i.id === interfaceId);
+    if (targetInterface) {
+      setPreviewInterfaceId(interfaceId);
+      toast.success(`Showing: ${targetInterface.name}`);
+    }
+  };
+
+  // Close previewed interface (go back to main campaign)
+  const closePreviewInterface = () => {
+    setPreviewInterfaceId(null);
+    toast.info('Back to main campaign');
   };
 
   const [showLayerMenu, setShowLayerMenu] = useState(false);
@@ -192,9 +239,18 @@ export const DesignStep: React.FC<any> = () => {
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null); // Fix 3
   const [collapsedLayers, setCollapsedLayers] = useState<Set<string>>(new Set()); // For layer hierarchy
 
-  // Derived state for selected layer
+  // Context Switching: Determine which layers/config to display based on activeInterfaceId
+  const activeInterface = activeInterfaceId
+    ? currentCampaign?.interfaces?.find((i: any) => i.id === activeInterfaceId)
+    : null;
+
+  // Display layers: from active interface or main campaign
+  const displayLayers = activeInterface?.layers || currentCampaign?.layers || [];
+  const displayNudgeType = activeInterface?.nudgeType || currentCampaign?.nudgeType || 'modal';
+
+  // Derived state for selected layer (searches in active context)
   const selectedLayerId = currentCampaign?.selectedLayerId || null;
-  const selectedLayerObj = currentCampaign?.layers?.find((layer: any) => layer.id === selectedLayerId);
+  const selectedLayerObj = displayLayers?.find((layer: any) => layer.id === selectedLayerId);
 
   // Property panel state
   const [borderRadiusValue, setBorderRadiusValue] = useState(8);
@@ -230,18 +286,7 @@ export const DesignStep: React.FC<any> = () => {
 
   const selectedPage = pages.find(p => p._id === activePageId);
 
-  // Fetch Pages on mount
-  useEffect(() => {
-    const fetchPages = async () => {
-      try {
-        const response = await apiClient.listPages();
-        setPages(response.pages);
-      } catch (error) {
-        console.error('Failed to fetch pages:', error);
-      }
-    };
-    fetchPages();
-  }, []);
+
 
   useEffect(() => {
     // Sync Selected Page to Campaign Config (If needed)
@@ -826,7 +871,7 @@ export const DesignStep: React.FC<any> = () => {
         {hasChildren && !isCollapsed && (
           <div>
             {layer.children.map((childId: string) => {
-              const childLayer = campaignLayers.find((l: any) => l.id === childId);
+              const childLayer = displayLayers.find((l: any) => l.id === childId);
               if (!childLayer) return null;
               return renderLayerTreeItem(childLayer, depth + 1);
             })}
@@ -843,14 +888,165 @@ export const DesignStep: React.FC<any> = () => {
 
 
 
+
   // ... (previous imports)
 
   // Inside CampaignBuilder component...
 
+  // Render interface preview (when a button with interface action is clicked in preview mode)
+  const renderInterfacePreview = (iface: any) => {
+    const interfaceLayers = iface.layers || [];
+    const currentDeviceConfig = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+    const deviceWidth = currentDeviceConfig?.width || 393;
+    const deviceHeight = currentDeviceConfig?.height || 852;
+    const scaleFactor = (deviceWidth / 393) * previewZoom;
+    const scaleYFactor = (deviceHeight / 852) * previewZoom;
+
+    // Wrapper with close button and backdrop
+    // Wrapper with close button and backdrop
+    const interfaceWrapper = (renderer: React.ReactNode) => {
+      // Helper to convert hex/config to rgba
+      const getOverlayStyle = () => {
+        const config = iface.modalConfig?.overlay || iface.bottomSheetConfig?.overlay || iface.scratchCardConfig?.overlay || {};
+        const color = config.color || '#000000';
+        const opacity = config.opacity !== undefined ? config.opacity : 0.4;
+
+        if (color.startsWith('#')) {
+          const hex = color.replace('#', '');
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          return `rgba(${r},${g},${b},${opacity})`;
+        }
+        return color;
+      };
+
+      return (
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            backgroundColor: getOverlayStyle(),
+          }}
+          onClick={(e) => {
+            // Tap background to close
+            if (e.target === e.currentTarget) closePreviewInterface();
+          }}
+        >
+          {renderer}
+        </div>
+      );
+    };
+
+    switch (iface.nudgeType) {
+      case 'modal':
+        return interfaceWrapper(
+          <ModalRenderer
+            layers={interfaceLayers}
+            selectedLayerId={null}
+            onLayerSelect={() => { }}
+            colors={colors}
+            config={iface.modalConfig || {}}
+            onConfigChange={() => { }}
+            onLayerUpdate={() => { }}
+            onDismiss={closePreviewInterface}
+            isInteractive={true}
+            onNavigate={() => { }}
+            onInterfaceAction={handleInterfaceAction}
+            scale={scaleFactor}
+            scaleY={scaleYFactor}
+          />
+        );
+      case 'bottomsheet':
+        return interfaceWrapper(
+          <BottomSheetRenderer
+            layers={interfaceLayers}
+            selectedLayerId={null}
+            onLayerSelect={() => { }}
+            onLayerUpdate={() => { }}
+            colors={colors}
+            config={iface.bottomSheetConfig || {}}
+            onDismiss={closePreviewInterface}
+            isInteractive={true}
+            onNavigate={() => { }}
+            onInterfaceAction={handleInterfaceAction}
+            scale={scaleFactor}
+            scaleY={scaleYFactor}
+          />
+        );
+      case 'tooltip':
+        return interfaceWrapper(
+          <TooltipRenderer
+            layers={interfaceLayers}
+            selectedLayerId={null}
+            onLayerSelect={() => { }}
+            colors={colors}
+            config={iface.tooltipConfig || {}}
+            onConfigChange={() => { }}
+            targetElement={undefined}
+            scale={scaleFactor}
+            scaleY={scaleYFactor}
+            isInteractive={true}
+            onDismiss={closePreviewInterface}
+          />
+        );
+      case 'banner':
+        return interfaceWrapper(
+          <BannerRenderer
+            layers={interfaceLayers}
+            selectedLayerId={null}
+            onLayerSelect={() => { }}
+            colors={colors}
+            config={iface.bannerConfig || {}}
+            onConfigChange={() => { }}
+            onLayerUpdate={() => { }}
+            isInteractive={true}
+            onDismiss={closePreviewInterface}
+            onNavigate={() => { }}
+            scale={scaleFactor}
+            scaleY={scaleYFactor}
+          />
+        );
+      case 'scratchcard':
+        return interfaceWrapper(
+          <ScratchCardRenderer
+            layers={interfaceLayers}
+            selectedLayerId={null}
+            onLayerSelect={() => { }}
+            colors={colors}
+            config={iface.scratchCardConfig || {}}
+            onConfigChange={() => { }}
+            onLayerUpdate={() => { }}
+            isInteractive={true}
+            onDismiss={closePreviewInterface}
+            onNavigate={() => { }}
+            onInterfaceAction={handleInterfaceAction}
+            scale={scaleFactor}
+            scaleY={scaleYFactor}
+          />
+        );
+      default:
+        return (
+          <div style={{ padding: '20px', textAlign: 'center', color: colors.text.secondary }}>
+            Preview not available for {iface.nudgeType}
+            <button onClick={closePreviewInterface} style={{ marginTop: '10px', padding: '8px 16px' }}>
+              Close
+            </button>
+          </div>
+        );
+    }
+  };
+
   // Render canvas preview based on nudge type
   const renderCanvasPreview = () => {
-    // Check if we have a loaded campaign with nudgeType
-    const nudgeTypeToRender = selectedNudgeType || currentCampaign?.nudgeType;
+    // Context switching: Use interface's nudgeType when editing an interface
+    const nudgeTypeToRender = activeInterface
+      ? displayNudgeType
+      : (selectedNudgeType || currentCampaign?.nudgeType);
+
+    // Use displayLayers for context switching (interface or main campaign)
+    const campaignLayers = displayLayers;
 
     if (!nudgeTypeToRender) {
       return (
@@ -858,6 +1054,15 @@ export const DesignStep: React.FC<any> = () => {
           Select an experience type to preview
         </div>
       );
+    }
+
+    // If an interface is being previewed (from button click in interactive mode),
+    // render the interface preview on top
+    if (previewInterfaceId && (isInteractive || isPreview)) {
+      const previewedInterface = currentCampaign?.interfaces?.find((i: any) => i.id === previewInterfaceId);
+      if (previewedInterface) {
+        return renderInterfacePreview(previewedInterface);
+      }
     }
 
     switch (nudgeTypeToRender) {
@@ -883,9 +1088,15 @@ export const DesignStep: React.FC<any> = () => {
             onLayerUpdate={updateLayer}
             colors={colors}
             config={currentCampaign?.bottomSheetConfig}
-            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            config={currentCampaign?.bottomSheetConfig}
+            onDismiss={() => {
+              if (isInteractive) setIsInteractive(false);
+              else toast.success('Dismiss action triggered');
+            }}
             isInteractive={isInteractive}
-            onNavigate={handleNavigate}
+            onNavigate={handlePreviewNavigate}
+            onInterfaceAction={handleInterfaceAction}
+
 
             scale={scaleFactor}
             scaleY={scaleYFactor} // Fix 16: Hybrid Scaling
@@ -927,9 +1138,13 @@ export const DesignStep: React.FC<any> = () => {
               config={currentCampaign?.modalConfig || defaultModalConfig}
               onConfigChange={(config) => updateModalConfig(config)}
               onLayerUpdate={updateLayer}
-              onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+              onDismiss={() => {
+                if (isInteractive) setIsInteractive(false);
+                else toast.success('Dismiss action triggered');
+              }}
               isInteractive={isInteractive}
-              onNavigate={handleNavigate}
+              onNavigate={handlePreviewNavigate}
+              onInterfaceAction={handleInterfaceAction}
               scale={scaleFactorModal}
               scaleY={scaleYFactorModal}
             />
@@ -952,6 +1167,13 @@ export const DesignStep: React.FC<any> = () => {
               config={currentCampaign?.bannerConfig}
               onConfigChange={(newConfig) => updateBannerConfig(newConfig)}
               onLayerUpdate={updateLayer}
+              onDismiss={() => {
+                if (isInteractive) setIsInteractive(false);
+                else toast.success('Dismiss action triggered');
+              }}
+              isInteractive={isInteractive}
+              onNavigate={handlePreviewNavigate}
+              onInterfaceAction={handleInterfaceAction}
               scale={scaleFactorBanner}
               scaleY={scaleYFactorBanner}
             />
@@ -1081,7 +1303,13 @@ export const DesignStep: React.FC<any> = () => {
               scale={scaleFactorScratch}
               scaleY={scaleYFactorScratch}
               onLayerUpdate={updateLayer} // Propagate updateLayer for drag/drop
+              onDismiss={() => {
+                if (isInteractive) setIsInteractive(false);
+                else toast.success('Dismiss action triggered');
+              }}
               isInteractive={isInteractive}
+              onNavigate={handlePreviewNavigate}
+              onInterfaceAction={handleInterfaceAction}
             />
           </ErrorBoundary>
         );
@@ -1197,7 +1425,8 @@ export const DesignStep: React.FC<any> = () => {
             { value: 'close', label: 'Dismiss', icon: <X size={16} /> },
             { value: 'deeplink', label: 'Deeplink', icon: <Link size={16} /> },
             { value: 'navigate', label: 'Navigate', icon: <Compass size={16} /> },
-            { value: 'custom', label: 'Custom', icon: <Code size={16} /> }
+            { value: 'custom', label: 'Custom', icon: <Code size={16} /> },
+            { value: 'interface', label: 'Interface', icon: <Layers size={16} /> }
           ].map((option) => {
             const isSelected = (selectedLayerObj.content?.action?.type || 'none') === option.value;
             return (
@@ -1277,38 +1506,44 @@ export const DesignStep: React.FC<any> = () => {
             <label style={{ fontSize: '13px', fontWeight: 500, color: colors.text.secondary }}>
               Target Page
             </label>
-            <div style={{ position: 'relative' }}>
-              <select
-                value={selectedLayerObj.content?.action?.screenName || ''}
-                onChange={(e) => updateLayer(selectedLayerObj.id, {
-                  content: {
-                    ...selectedLayerObj.content,
-                    action: { ...selectedLayerObj.content.action, screenName: e.target.value }
-                  }
-                })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: `1px solid ${colors.gray[300]}`,
-                  fontSize: '13px',
-                  color: colors.text.primary,
-                  appearance: 'none',
-                  backgroundColor: 'white',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="" disabled>Select a page to navigate to...</option>
-                {pages.map((page) => (
-                  <option key={page._id} value={page.pageTag}>
-                    {page.name} ({page.pageTag})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {(!pages || pages.length === 0) ? (
+              <div style={{ fontSize: '12px', color: colors.text.secondary, fontStyle: 'italic', padding: '8px', background: colors.gray[50], borderRadius: '6px', border: `1px dashed ${colors.gray[200]}` }}>
+                No pages found. Please add screens in App Context.
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={selectedLayerObj.content?.action?.screenName || ''}
+                  onChange={(e) => updateLayer(selectedLayerObj.id, {
+                    content: {
+                      ...selectedLayerObj.content,
+                      action: { ...selectedLayerObj.content.action, screenName: e.target.value }
+                    }
+                  })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.gray[300]}`,
+                    fontSize: '13px',
+                    color: colors.text.primary,
+                    appearance: 'none',
+                    backgroundColor: 'white',
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="" disabled>Select a page to navigate to...</option>
+                  {pages.map((page) => (
+                    <option key={page._id} value={page.pageTag}>
+                      {page.name} ({page.pageTag})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div style={{ fontSize: '11px', color: colors.text.tertiary, marginTop: '4px' }}>
               Select the destination page from your captured screens.
             </div>
@@ -1340,6 +1575,47 @@ export const DesignStep: React.FC<any> = () => {
             </div>
             <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
               The event will start running.
+            </div>
+          </div>
+        )}
+
+        {selectedLayerObj.content?.action?.type === 'interface' && (
+          <div style={{ marginBottom: '12px', animation: 'fadeIn 0.2s ease-in-out' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Target Interface</label>
+            <div style={{ position: 'relative' }}>
+              <Layers size={14} color={colors.text.secondary} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+              <select
+                value={selectedLayerObj.content?.action?.interfaceId || ''}
+                onChange={(e) => handleContentUpdate('action', { ...selectedLayerObj.content?.action, interfaceId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 32px',
+                  border: `1px solid ${colors.gray[200]}`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: 'white'
+                }}
+                onFocus={(e) => e.target.style.borderColor = colors.primary[500]}
+                onBlur={(e) => e.target.style.borderColor = colors.gray[200]}
+              >
+                <option value="" disabled>Select an interface...</option>
+                <option value="root">Main Campaign (Root)</option>
+                {(currentCampaign?.interfaces || []).map((iface) => (
+                  <option key={iface.id} value={iface.id}>
+                    {iface.name} ({iface.nudgeType})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(!currentCampaign?.interfaces || currentCampaign.interfaces.length === 0) && (
+              <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '6px', padding: '8px', backgroundColor: colors.gray[50], borderRadius: '6px' }}>
+                No interfaces created yet. Use the "Add" button in the Interfaces section to create one.
+              </div>
+            )}
+            <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
+              Shows the selected interface when this button is clicked.
             </div>
           </div>
         )}
@@ -4068,6 +4344,9 @@ export const DesignStep: React.FC<any> = () => {
                   <div style={{ width: '280px', borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
                     {/* Determine root container ID based on nudge type */}
                     {(() => {
+                      // Use displayLayers for context switching (interface or main campaign)
+                      const campaignLayers = displayLayers;
+
                       // Find the root container layer based on nudge type
                       const getRootContainerId = () => {
                         const containerNames: Record<string, string> = {
@@ -4079,13 +4358,13 @@ export const DesignStep: React.FC<any> = () => {
                           'scratchcard': 'Scratch Card Container'
                         };
 
-                        // Robustly determine type
-                        const type = selectedNudgeType || currentCampaign?.nudgeType || '';
+                        // Use displayNudgeType for context switching
+                        const type = activeInterface ? displayNudgeType : (selectedNudgeType || currentCampaign?.nudgeType || '');
                         const containerName = containerNames[type];
 
                         if (!containerName) return null;
 
-                        const rootContainer = currentCampaign?.layers?.find(
+                        const rootContainer = displayLayers?.find(
                           (l: any) => l.type === 'container' && l.name === containerName
                         );
 
@@ -4096,6 +4375,24 @@ export const DesignStep: React.FC<any> = () => {
 
                       return (
                         <>
+                          {/* Interfaces List - NEW */}
+                          <div style={{ padding: '12px', borderBottom: `1px solid ${colors.gray[200]}` }}>
+                            <InterfacesList
+                              mainCampaignName={currentCampaign?.name || 'Main Campaign'}
+                              mainCampaignType={currentCampaign?.nudgeType || 'modal'}
+                              interfaces={currentCampaign?.interfaces || []}
+                              activeInterfaceId={activeInterfaceId}
+                              onSelectInterface={(id) => setActiveInterface(id)}
+                              onAddInterface={() => setShowInterfaceSelector(true)}
+                              onDeleteInterface={(id) => {
+                                if (window.confirm('Delete this interface?')) {
+                                  deleteInterface(id);
+                                  toast.success('Interface deleted');
+                                }
+                              }}
+                            />
+                          </div>
+
                           <div style={{ padding: '16px', borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
                             <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
                               Layers ({campaignLayers.length})
@@ -4186,7 +4483,14 @@ export const DesignStep: React.FC<any> = () => {
                         toast.info('Screenshot feature coming soon!');
                       }}
                       isInteractive={isInteractive}
-                      onInteractToggle={() => setIsInteractive(!isInteractive)}
+                      onInteractToggle={() => {
+                        const newState = !isInteractive;
+                        setIsInteractive(newState);
+                        // Auto-open active interface if editing one
+                        if (newState && activeInterfaceId) {
+                          setPreviewInterfaceId(activeInterfaceId);
+                        }
+                      }}
                       isPreview={isPreview}
                       onPreviewToggle={togglePreview}
                     />
@@ -4238,6 +4542,18 @@ export const DesignStep: React.FC<any> = () => {
           </div>
         </div>
       </ErrorBoundary>
+
+      {/* Interface Type Selector Modal */}
+      <InterfaceTypeSelector
+        open={showInterfaceSelector}
+        onOpenChange={setShowInterfaceSelector}
+        onCreateInterface={(nudgeType, name) => {
+          const id = addInterface(nudgeType, name);
+          setActiveInterface(id);
+          toast.success(`Created interface: ${name}`);
+        }}
+        existingInterfaceCount={currentCampaign?.interfaces?.length || 0}
+      />
     </div>
   );
 };

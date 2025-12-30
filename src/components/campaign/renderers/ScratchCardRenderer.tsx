@@ -16,6 +16,7 @@ interface ScratchCardRendererProps {
     isInteractive?: boolean;
     onDismiss?: () => void;
     onNavigate?: (screenName: string) => void;
+    onInterfaceAction?: (interfaceId: string) => void;
     scale?: number;
     scaleY?: number;
 }
@@ -42,6 +43,7 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
     isInteractive = false,
     onDismiss,
     onNavigate,
+    onInterfaceAction,
     scale = 1,
     scaleY = 1
 }) => {
@@ -81,14 +83,8 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
 
         // Calculate Scratch Area Dimensions
         const areaX = (config?.scratchArea?.x || 0) * scale;
-        const areaY = (config?.scratchArea?.y || 0) * scaleY; // Note: scaleY might be separate?
-        // Wait, scale and scaleY are passed props.
-        // Usually scaleX/scaleY are consistent for responsive design?
         // Step 292 passed `scaleFactorScratch` and `scaleYFactorScratch`.
         // So I should use scale for X and scaleY for Y.
-
-        // Actually, let's look at the component signature.
-        // It has `scale` and `scaleY`.
 
         const areaW = (config?.scratchArea?.width ?? w) * scale; // Assuming width is number
         const areaH = (config?.scratchArea?.height ?? h) * scaleY;
@@ -229,6 +225,36 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
     }, [isInteractive, isRevealed, scratchSize, scale, revealThreshold, config]);
 
 
+    // --- Action Handling ---
+    const handleLayerAction = (layer: Layer) => {
+        if (!isInteractive) return;
+
+        const action = layer.content?.action;
+        if (!action) return;
+
+        switch (action.type) {
+            case 'interface':
+                if (action.interfaceId && onInterfaceAction) {
+                    onInterfaceAction(action.interfaceId);
+                }
+                break;
+            case 'close':
+                if (onDismiss) onDismiss();
+                break;
+            case 'navigate':
+                if (action.screenName && onNavigate) {
+                    onNavigate(action.screenName);
+                }
+                break;
+            case 'deeplink':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
+        }
+    };
+
+
     // --- Layer Rendering Logic (Copied from ModalRenderer) ---
     const renderLayer = (layer: Layer) => {
         if (!layer.visible) return null;
@@ -330,7 +356,16 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
         switch (layer.type) {
             case 'text': content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'media': content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
-            case 'button': content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
+            case 'button':
+                content = (
+                    <ButtonRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
+                    // onClick removed to let wrapper handle it
+                    />
+                );
+                break;
             case 'custom_html':
                 content = (
                     <div
@@ -350,8 +385,11 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
                 style={baseStyle}
                 onClick={(e) => {
                     e.stopPropagation();
-                    if (isInteractive) console.log('Layer clicked:', layer.name);
-                    onLayerSelect(layer.id);
+                    if (isInteractive) {
+                        handleLayerAction(layer);
+                    } else {
+                        onLayerSelect(layer.id);
+                    }
                 }}
             >
                 {content}

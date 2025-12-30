@@ -18,6 +18,7 @@ interface BottomSheetRendererProps {
     onNavigate?: (screenName: string) => void;
     scale?: number;
     scaleY?: number; // Fix 16: Hybrid Scaling
+    onInterfaceAction?: (interfaceId: string) => void;
 }
 
 export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
@@ -30,6 +31,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     onDismiss,
     isInteractive = false,
     onNavigate,
+    onInterfaceAction,
     scale = 1, // Default to 1
     scaleY = 1 // Fix 16: Vertical scale default
 }) => {
@@ -92,6 +94,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 break;
             case 'custom':
                 console.log(`Custom Event: ${action.eventName}`);
+                break;
+            case 'interface':
+                if (action.interfaceId && onInterfaceAction) {
+                    onInterfaceAction(action.interfaceId);
+                }
                 break;
         }
     };
@@ -269,7 +276,14 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 );
                 break;
             case 'button':
-                content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                content = (
+                    <ButtonRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
+                    // onClick handled by wrapper
+                    />
+                );
                 break;
             case 'custom_html':
                 content = (

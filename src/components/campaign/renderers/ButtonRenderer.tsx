@@ -6,9 +6,10 @@ interface ButtonRendererProps {
     layer: Layer;
     scale?: number;
     scaleY?: number;
+    onClick?: () => void;
 }
 
-export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1, scaleY = 1 }) => {
+export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1, scaleY = 1, onClick }) => {
     // SDK Parity: Safe Scale Helper
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
@@ -210,7 +211,7 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
     };
 
     return (
-        <button style={finalStyle}>
+        <button style={finalStyle} onClick={onClick}>
             {content}
         </button>
     );

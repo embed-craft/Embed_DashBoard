@@ -40,12 +40,13 @@ export interface LayerContent {
   buttonIcon?: string; // Lucide icon name
   buttonIconPosition?: 'left' | 'right';
   action?: {
-    type: 'close' | 'deeplink' | 'navigate' | 'custom';
+    type: 'close' | 'deeplink' | 'navigate' | 'custom' | 'interface';
     url?: string;
     screenName?: string;
     eventName?: string;
     trackConversion?: boolean;
     autoDismiss?: boolean;
+    interfaceId?: string; // ID of interface to trigger
   };
 
   // Progress content (Phase 2)
@@ -557,6 +558,23 @@ export interface TooltipConfig {
   scale?: number;
 }
 
+// Campaign Interface (Sub-campaign within main campaign)
+export interface CampaignInterface {
+  id: string;
+  name: string;
+  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner';
+  layers: Layer[];
+  // Config based on nudgeType
+  bottomSheetConfig?: BottomSheetConfig;
+  modalConfig?: ModalConfig;
+  tooltipConfig?: TooltipConfig;
+  bannerConfig?: BannerConfig;
+  pipConfig?: any;
+  scratchCardConfig?: ScratchCardConfig;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CampaignEditor {
   id: string;
   _id?: string; // Support for backend ID
@@ -572,6 +590,7 @@ export interface CampaignEditor {
   schedule?: CampaignSchedule; // ✅ FIX: Add schedule property
 
   layers: Layer[];
+  interfaces: CampaignInterface[]; // Sub-campaigns/interfaces
   targeting: TargetingRule[];
   displayRules: DisplayRules;
   goal?: CampaignGoal;
@@ -684,6 +703,16 @@ interface EditorStore {
   editorMode: 'campaign' | 'template';
   setEditorMode: (mode: 'campaign' | 'template') => void;
   saveTemplate: () => Promise<void>;
+
+  // Interface Management
+  activeInterfaceId: string | null;
+  setActiveInterface: (id: string | null) => void;
+  addInterface: (nudgeType: CampaignInterface['nudgeType'], name?: string) => string;
+  updateInterface: (id: string, updates: Partial<CampaignInterface>) => void;
+  deleteInterface: (id: string) => void;
+  updateInterfaceLayer: (interfaceId: string, layerId: string, updates: Partial<Layer>) => void;
+  addInterfaceLayer: (interfaceId: string, type: LayerType) => void;
+  deleteInterfaceLayer: (interfaceId: string, layerId: string) => void;
 }
 
 // Debounced history tracker to prevent race conditions
@@ -733,6 +762,7 @@ export const useEditorStore = create<EditorStore>()(
       editorMode: 'campaign',
       isTemplateModalOpen: false,
       isSaveTemplateModalOpen: false,
+      activeInterfaceId: null,
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
@@ -800,6 +830,7 @@ export const useEditorStore = create<EditorStore>()(
           screen: '', // Will be set by user
           status: 'draft',
           layers: defaultLayers,
+          interfaces: [],
           targeting: [],
           displayRules: {
             frequency: { type: 'every_time' },
@@ -1514,29 +1545,72 @@ export const useEditorStore = create<EditorStore>()(
         return newLayer.id;
       },
 
-      // Update layer
+      // Update layer (Universal - Main Campaign or Interfaces)
       updateLayer: (id, updates) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const updatedLayers = currentCampaign.layers.map(layer =>
-          layer.id === id ? { ...layer, ...updates } : layer
-        );
-
-        // Save to history
-        const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
-        newHistory.push(updatedLayers);
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            history: newHistory,
-            historyIndex: newHistory.length - 1,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
+        // 1. Try finding in Main Campaign
+        let found = false;
+        const updatedMainLayers = currentCampaign.layers.map(layer => {
+          if (layer.id === id) {
+            found = true;
+            return { ...layer, ...updates };
+          }
+          return layer;
         });
+
+        if (found) {
+          // Verify history push (simplified for now, history might need robust handling for deeply nested updates)
+          const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
+          newHistory.push(updatedMainLayers);
+
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedMainLayers,
+              history: newHistory,
+              historyIndex: newHistory.length - 1,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          return;
+        }
+
+        // 2. Try finding in Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+
+            let layerChanged = false;
+            const newInterfaceLayers = iface.layers.map(layer => {
+              if (layer.id === id) {
+                foundInInterface = true;
+                layerChanged = true;
+                return { ...layer, ...updates };
+              }
+              return layer;
+            });
+
+            if (layerChanged) {
+              return { ...iface, layers: newInterfaceLayers };
+            }
+            return iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+          }
+        }
       },
 
       // Delete layer
@@ -1544,46 +1618,90 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const layer = currentCampaign.layers.find(l => l.id === id);
-        if (!layer) return;
+        // 1. Try Main Campaign
+        const layerInMain = currentCampaign.layers.find(l => l.id === id);
+        if (layerInMain) {
+          // Remove from parent's children
+          let updatedLayers = currentCampaign.layers.map(l => {
+            if (l.id === layerInMain.parent) {
+              return {
+                ...l,
+                children: l.children.filter(childId => childId !== id),
+              };
+            }
+            return l;
+          });
 
-        // Remove from parent's children
-        let updatedLayers = currentCampaign.layers.map(l => {
-          if (l.id === layer.parent) {
-            return {
-              ...l,
-              children: l.children.filter(childId => childId !== id),
-            };
+          // Delete recursively
+          const deleteRecursive = (layerId: string) => {
+            const toDelete = updatedLayers.find(l => l.id === layerId);
+            if (toDelete) {
+              toDelete.children.forEach(childId => deleteRecursive(childId));
+              updatedLayers = updatedLayers.filter(l => l.id !== layerId);
+            }
+          };
+
+          deleteRecursive(id);
+
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedLayers,
+              selectedLayerId: currentCampaign.selectedLayerId === id ? null : currentCampaign.selectedLayerId,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          saveToHistoryDebounced(get, set);
+          return;
+        }
+
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            const layerInInterface = iface.layers.find(l => l.id === id);
+
+            if (layerInInterface) {
+              foundInInterface = true;
+              let updatedLayers = iface.layers.map(l => {
+                if (l.id === layerInInterface.parent) {
+                  return {
+                    ...l,
+                    children: l.children.filter(childId => childId !== id),
+                  };
+                }
+                return l;
+              });
+
+              const deleteRecursive = (layerId: string) => {
+                const toDelete = updatedLayers.find(l => l.id === layerId);
+                if (toDelete) {
+                  toDelete.children.forEach(childId => deleteRecursive(childId));
+                  updatedLayers = updatedLayers.filter(l => l.id !== layerId);
+                }
+              };
+              deleteRecursive(id);
+
+              return { ...iface, layers: updatedLayers };
+            }
+            return iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                selectedLayerId: currentCampaign.selectedLayerId === id ? null : currentCampaign.selectedLayerId,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            saveToHistoryDebounced(get, set);
           }
-          return l;
-        });
-
-        // Delete the layer and all its children recursively
-        const deleteRecursive = (layerId: string) => {
-          const toDelete = updatedLayers.find(l => l.id === layerId);
-          if (toDelete) {
-            toDelete.children.forEach(childId => deleteRecursive(childId));
-            updatedLayers = updatedLayers.filter(l => l.id !== layerId);
-          }
-        };
-
-        deleteRecursive(id);
-
-        // Save to history
-        const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
-        newHistory.push(updatedLayers);
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            history: newHistory,
-            historyIndex: newHistory.length - 1,
-            selectedLayerId: currentCampaign.selectedLayerId === id ? null : currentCampaign.selectedLayerId,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+        }
       },
 
       // Duplicate layer
@@ -1591,46 +1709,83 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return '';
 
-        const layer = currentCampaign.layers.find(l => l.id === id);
-        if (!layer) return '';
-
-        const newLayer: Layer = {
-          ...layer,
-          id: `layer_${Date.now()}`,
-          name: `${layer.name} Copy`,
-          children: [], // Don't duplicate children for simplicity
-        };
-
-        const updatedLayers = [...currentCampaign.layers, newLayer];
-
-        // Update parent's children
-        if (layer.parent) {
-          const parentIndex = updatedLayers.findIndex(l => l.id === layer.parent);
-          if (parentIndex !== -1) {
-            updatedLayers[parentIndex] = {
-              ...updatedLayers[parentIndex],
-              children: [...updatedLayers[parentIndex].children, newLayer.id],
-            };
+        // 1. Try Main Campaign
+        const layerInMain = currentCampaign.layers.find(l => l.id === id);
+        if (layerInMain) {
+          const newLayer: Layer = {
+            ...layerInMain,
+            id: `layer_${Date.now()}`,
+            name: `${layerInMain.name} Copy`,
+            children: [],
+          };
+          const updatedLayers = [...currentCampaign.layers, newLayer];
+          if (layerInMain.parent) {
+            const parentIndex = updatedLayers.findIndex(l => l.id === layerInMain.parent);
+            if (parentIndex !== -1) {
+              updatedLayers[parentIndex] = {
+                ...updatedLayers[parentIndex],
+                children: [...updatedLayers[parentIndex].children, newLayer.id],
+              };
+            }
           }
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+              selectedLayerId: newLayer.id
+            },
+          });
+          saveToHistoryDebounced(get, set);
+          return newLayer.id;
         }
 
-        // Save to history
-        const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
-        newHistory.push(updatedLayers);
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let newLayerId = '';
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            const layerInInterface = iface.layers.find(l => l.id === id);
+            if (layerInInterface) {
+              const newLayer: Layer = {
+                ...layerInInterface,
+                id: `layer_${Date.now()}_iface`,
+                name: `${layerInInterface.name} Copy`,
+                children: [],
+              };
+              newLayerId = newLayer.id;
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            history: newHistory,
-            historyIndex: newHistory.length - 1,
-            selectedLayerId: newLayer.id,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+              const updatedLayers = [...iface.layers, newLayer];
+              if (layerInInterface.parent) {
+                const parentIndex = updatedLayers.findIndex(l => l.id === layerInInterface.parent);
+                if (parentIndex !== -1) {
+                  updatedLayers[parentIndex] = {
+                    ...updatedLayers[parentIndex],
+                    children: [...updatedLayers[parentIndex].children, newLayer.id],
+                  };
+                }
+              }
+              return { ...iface, layers: updatedLayers };
+            }
+            return iface;
+          });
 
-        return newLayer.id;
+          if (newLayerId) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+                selectedLayerId: newLayerId
+              },
+            });
+            saveToHistoryDebounced(get, set);
+            return newLayerId;
+          }
+        }
+        return '';
       },
 
       // Select layer
@@ -1651,18 +1806,56 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const updatedLayers = currentCampaign.layers.map(layer =>
-          layer.id === id ? { ...layer, visible: !layer.visible } : layer
-        );
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
+        // 1. Try Main Campaign
+        let found = false;
+        const updatedMainLayers = currentCampaign.layers.map(layer => {
+          if (layer.id === id) {
+            found = true;
+            return { ...layer, visible: !layer.visible };
+          }
+          return layer;
         });
+
+        if (found) {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedMainLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          return;
+        }
+
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            let layerChanged = false;
+            const newLayers = iface.layers.map(layer => {
+              if (layer.id === id) {
+                foundInInterface = true;
+                layerChanged = true;
+                return { ...layer, visible: !layer.visible };
+              }
+              return layer;
+            });
+            return layerChanged ? { ...iface, layers: newLayers } : iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+          }
+        }
       },
 
       // Toggle lock
@@ -1670,18 +1863,56 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const updatedLayers = currentCampaign.layers.map(layer =>
-          layer.id === id ? { ...layer, locked: !layer.locked } : layer
-        );
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
+        // 1. Try Main Campaign
+        let found = false;
+        const updatedMainLayers = currentCampaign.layers.map(layer => {
+          if (layer.id === id) {
+            found = true;
+            return { ...layer, locked: !layer.locked };
+          }
+          return layer;
         });
+
+        if (found) {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedMainLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          return;
+        }
+
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            let layerChanged = false;
+            const newLayers = iface.layers.map(layer => {
+              if (layer.id === id) {
+                foundInInterface = true;
+                layerChanged = true;
+                return { ...layer, locked: !layer.locked };
+              }
+              return layer;
+            });
+            return layerChanged ? { ...iface, layers: newLayers } : iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+          }
+        }
       },
 
       // Reorder layer
@@ -1778,24 +2009,58 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const updatedLayers = currentCampaign.layers.map(layer =>
-          layer.id === id
-            ? { ...layer, content: { ...layer.content, ...content } }
-            : layer
-        );
-
-        // Update immediately, debounce history save
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
+        // 1. Try Main Campaign
+        let found = false;
+        const updatedMainLayers = currentCampaign.layers.map(layer => {
+          if (layer.id === id) {
+            found = true;
+            return { ...layer, content: { ...layer.content, ...content } };
+          }
+          return layer;
         });
 
-        // Debounced history save to prevent race conditions
-        saveToHistoryDebounced(get, set);
+        if (found) {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedMainLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          saveToHistoryDebounced(get, set);
+          return;
+        }
+
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            let layerChanged = false;
+            const newLayers = iface.layers.map(layer => {
+              if (layer.id === id) {
+                foundInInterface = true;
+                layerChanged = true;
+                return { ...layer, content: { ...layer.content, ...content } };
+              }
+              return layer;
+            });
+            return layerChanged ? { ...iface, layers: newLayers } : iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            saveToHistoryDebounced(get, set);
+          }
+        }
       },
 
       // Update layer style
@@ -1803,24 +2068,58 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const updatedLayers = currentCampaign.layers.map(layer =>
-          layer.id === id
-            ? { ...layer, style: { ...layer.style, ...style } }
-            : layer
-        );
-
-        // Update immediately, debounce history save
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
+        // 1. Try Main Campaign
+        let found = false;
+        const updatedMainLayers = currentCampaign.layers.map(layer => {
+          if (layer.id === id) {
+            found = true;
+            return { ...layer, style: { ...layer.style, ...style } };
+          }
+          return layer;
         });
 
-        // Debounced history save to prevent race conditions
-        saveToHistoryDebounced(get, set);
+        if (found) {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedMainLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          saveToHistoryDebounced(get, set);
+          return;
+        }
+
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            let layerChanged = false;
+            const newLayers = iface.layers.map(layer => {
+              if (layer.id === id) {
+                foundInInterface = true;
+                layerChanged = true;
+                return { ...layer, style: { ...layer.style, ...style } };
+              }
+              return layer;
+            });
+            return layerChanged ? { ...iface, layers: newLayers } : iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            saveToHistoryDebounced(get, set);
+          }
+        }
       },
 
 
@@ -2185,6 +2484,158 @@ export const useEditorStore = create<EditorStore>()(
           clearTimeout(autoSaveTimeout);
           autoSaveTimeout = null;
         }
+      },
+
+      // Interface Management Methods
+      setActiveInterface: (id) => set({ activeInterfaceId: id }),
+
+      addInterface: (nudgeType, name) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return '';
+
+        const interfaceId = `interface_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const interfaceName = name || `Interface ${(currentCampaign.interfaces || []).length + 1}`;
+
+        // Get default layers for this nudge type
+        const defaultLayers = getDefaultLayersForNudgeType(nudgeType);
+
+        // Get default config for this nudge type
+        const defaultConfig = getDefaultConfigForNudgeType(nudgeType);
+
+        const newInterface: CampaignInterface = {
+          id: interfaceId,
+          name: interfaceName,
+          nudgeType,
+          layers: defaultLayers,
+          ...defaultConfig,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: [...(currentCampaign.interfaces || []), newInterface],
+            isDirty: true,
+          },
+        });
+
+        return interfaceId;
+      },
+
+      updateInterface: (id, updates) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        const updatedInterfaces = currentCampaign.interfaces.map(iface =>
+          iface.id === id
+            ? { ...iface, ...updates, updatedAt: new Date().toISOString() }
+            : iface
+        );
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: updatedInterfaces,
+            isDirty: true,
+          },
+        });
+      },
+
+      deleteInterface: (id) => {
+        const { currentCampaign, activeInterfaceId } = get();
+        if (!currentCampaign) return;
+
+        const updatedInterfaces = currentCampaign.interfaces.filter(iface => iface.id !== id);
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: updatedInterfaces,
+            isDirty: true,
+          },
+          // If deleted interface was active, switch back to main campaign
+          activeInterfaceId: activeInterfaceId === id ? null : activeInterfaceId,
+        });
+      },
+
+      updateInterfaceLayer: (interfaceId, layerId, updates) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+          if (iface.id !== interfaceId) return iface;
+
+          const updatedLayers = iface.layers.map(layer =>
+            layer.id === layerId ? { ...layer, ...updates } : layer
+          );
+
+          return { ...iface, layers: updatedLayers, updatedAt: new Date().toISOString() };
+        });
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: updatedInterfaces,
+            isDirty: true,
+          },
+        });
+      },
+
+      addInterfaceLayer: (interfaceId, type) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        const newLayerId = `layer_${Date.now()}`;
+        const defaultContent = getDefaultContentForType(type);
+        const defaultStyle = getDefaultStyleForType(type);
+
+        const newLayer: Layer = {
+          id: newLayerId,
+          type,
+          name: type.charAt(0).toUpperCase() + type.slice(1),
+          parent: null,
+          children: [],
+          visible: true,
+          locked: false,
+          zIndex: 0,
+          position: { x: 0, y: 0 },
+          size: { width: 'auto', height: 'auto' },
+          content: defaultContent,
+          style: defaultStyle,
+        };
+
+        const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+          if (iface.id !== interfaceId) return iface;
+          return { ...iface, layers: [...iface.layers, newLayer], updatedAt: new Date().toISOString() };
+        });
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: updatedInterfaces,
+            isDirty: true,
+          },
+        });
+      },
+
+      deleteInterfaceLayer: (interfaceId, layerId) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+          if (iface.id !== interfaceId) return iface;
+          const updatedLayers = iface.layers.filter(layer => layer.id !== layerId);
+          return { ...iface, layers: updatedLayers, updatedAt: new Date().toISOString() };
+        });
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: updatedInterfaces,
+            isDirty: true,
+          },
+        });
       },
     }),
     {
@@ -2804,5 +3255,113 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
       };
     default:
       return baseStyle;
+  }
+}
+
+// Helper to get default config for interface nudge types
+function getDefaultConfigForNudgeType(nudgeType: CampaignInterface['nudgeType']): Partial<CampaignInterface> {
+  switch (nudgeType) {
+    case 'modal':
+      return {
+        modalConfig: {
+          mode: 'container',
+          width: '90%' as any,
+          height: 'auto',
+          backgroundColor: '#FFFFFF',
+          borderRadius: 16,
+          elevation: 2,
+          overlay: {
+            enabled: true,
+            opacity: 0.5,
+            blur: 0,
+            color: '#000000',
+            dismissOnClick: true,
+          },
+          animation: {
+            type: 'pop',
+            duration: 300,
+            easing: 'ease-out',
+          },
+        },
+      };
+    case 'bottomsheet':
+      return {
+        bottomSheetConfig: {
+          mode: 'container',
+          height: 'auto',
+          dragHandle: true,
+          swipeToDismiss: true,
+          backgroundColor: '#FFFFFF',
+          borderRadius: { topLeft: 16, topRight: 16 },
+          elevation: 2,
+          overlay: {
+            enabled: true,
+            opacity: 0.5,
+            blur: 0,
+            color: '#000000',
+            dismissOnClick: true,
+          },
+          animation: {
+            type: 'slide',
+            duration: 300,
+            easing: 'ease-out',
+          },
+        },
+      };
+    case 'tooltip':
+      return {
+        tooltipConfig: {
+          position: 'top',
+          arrowSize: 10,
+          showArrow: true,
+          backgroundColor: '#111827',
+          textColor: '#FFFFFF',
+          borderRadius: 8,
+          padding: 12,
+          maxWidth: 300,
+        },
+      };
+    case 'banner':
+      return {
+        bannerConfig: {
+          position: 'top',
+          width: '100%',
+          height: 'auto',
+          backgroundColor: '#FFFFFF',
+          borderRadius: 0,
+          elevation: 1,
+        },
+      };
+    case 'pip':
+      return {
+        pipConfig: {
+          position: 'bottom-right',
+          width: 320,
+          height: 180,
+          borderRadius: 12,
+        },
+      };
+    case 'scratchcard':
+      return {
+        scratchCardConfig: {
+          width: 320,
+          height: 480,
+          borderRadius: 16,
+          coverType: 'color',
+          coverColor: '#CCCCCC',
+          scratchType: 'brush',
+          scratchSize: 40,
+          revealThreshold: 50,
+          autoReveal: true,
+          overlay: {
+            enabled: true,
+            opacity: 0.5,
+            color: '#000000',
+            dismissOnClick: true,
+          },
+        },
+      };
+    default:
+      return {};
   }
 }

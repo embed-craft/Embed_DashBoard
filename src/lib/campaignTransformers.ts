@@ -33,6 +33,7 @@ export interface BackendCampaign {
     cooldown: number;
     ignore_global_rules: boolean;
   };
+  interfaces?: Record<string, any>[]; // ✅ FIX: Add interfaces
 }
 
 
@@ -56,11 +57,16 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
   if (campaign.modalConfig) config.modalConfig = campaign.modalConfig;
   if (campaign.bottomSheetConfig) config.bottomSheetConfig = campaign.bottomSheetConfig;
   if (campaign.tooltipConfig) config.tooltipConfig = campaign.tooltipConfig;
+  if (campaign.bannerConfig) config.bannerConfig = campaign.bannerConfig;
+  if (campaign.scratchCardConfig) config.scratchCardConfig = campaign.scratchCardConfig;
+
+  if (campaign.scratchCardConfig) config.scratchCardConfig = campaign.scratchCardConfig;
 
   return {
     id: campaign.id,
     name: campaign.name,
     type: campaign.nudgeType,
+    interfaces: campaign.interfaces || [], // ✅ FIX: Persist Interfaces
     experience: campaign.experienceType, // ✅ FIX: Send experience type
     status: campaign.status || 'draft', // ✅ FIX: Pass status directly (active|paused|draft)
     trigger: campaign.trigger || extractTriggerFromTargeting(campaign.targeting), // ✅ FIX: Prefer direct trigger
@@ -296,6 +302,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     }) : undefined,
     // Store other configs dynamically if needed in future
     displayRules: (backendCampaign.config && backendCampaign.config.displayRules) || getDefaultDisplayRules(),
+    interfaces: backendCampaign.interfaces || [], // ✅ FIX: Load Interfaces
     selectedLayerId: layers[0]?.id || null, // Select first layer if exists
     history: [layers],
     historyIndex: 0,
@@ -396,6 +403,44 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
       dismissOnClick: bsc.overlay?.dismissOnClick,
       overlayColor: bsc.overlay?.color,
       overlayOpacity: bsc.overlay?.opacity
+    });
+  }
+
+  // ✅ FIX: Add Banner config flattening  
+  if (campaign.nudgeType === 'banner' && campaign.bannerConfig) {
+    const bc = campaign.bannerConfig;
+    Object.assign(config, {
+      width: bc.width,
+      height: bc.height,
+      backgroundColor: bc.backgroundColor,
+      backgroundImageUrl: bc.backgroundImageUrl,
+      backgroundSize: bc.backgroundSize,
+      backgroundPosition: bc.backgroundPosition,
+      borderRadius: bc.borderRadius,
+      elevation: bc.elevation,
+      position: bc.position,
+    });
+  }
+
+  // ✅ FIX: Add ScratchCard config flattening
+  if (campaign.nudgeType === 'scratchcard' && campaign.scratchCardConfig) {
+    const sc = campaign.scratchCardConfig;
+    Object.assign(config, {
+      width: sc.width,
+      height: sc.height,
+      backgroundColor: sc.backgroundColor,
+      backgroundImageUrl: sc.backgroundImageUrl,
+      backgroundSize: sc.backgroundSize,
+      borderRadius: sc.borderRadius,
+      coverType: sc.coverType,
+      coverColor: sc.coverColor,
+      coverImage: sc.coverImage,
+      scratchSize: sc.scratchSize,
+      revealThreshold: sc.revealThreshold,
+      autoReveal: sc.autoReveal,
+      position: sc.position,
+      completionAnimation: sc.completionAnimation,
+      overlay: sc.overlay,
     });
   }
 

@@ -470,6 +470,7 @@ interface ModalRendererProps {
     isInteractive?: boolean;
     onDismiss?: () => void;
     onNavigate?: (screenName: string) => void;
+    onInterfaceAction?: (interfaceId: string) => void;
     scale?: number;
     scaleY?: number;
 }
@@ -486,10 +487,10 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
     isInteractive = false,
     onDismiss,
     onNavigate,
+    onInterfaceAction,
     scale = 1,
     scaleY = 1
 }) => {
-
     // SDK Parity: Safe Scale Helper
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
@@ -538,6 +539,11 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
             case 'close':
             case 'dismiss': // Handle both temporarily
                 if (onDismiss) onDismiss();
+                break;
+            case 'interface':
+                if (action.interfaceId && onInterfaceAction) {
+                    onInterfaceAction(action.interfaceId);
+                }
                 break;
             case 'deeplink':
                 if (action.url) {
@@ -777,7 +783,14 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                 );
                 break;
             case 'button':
-                content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                content = (
+                    <ButtonRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
+                    // onClick handled by wrapper
+                    />
+                );
                 break;
             case 'custom_html':
                 content = (

@@ -120,7 +120,9 @@ export const ModalMinimalEditor = () => {
                     const styleValue = (value === 'transparent' || value === '#00000000') ? '#00000000' : value;
                     updateLayerStyle(rootLayer.id, { backgroundColor: styleValue });
                 } else if (key === 'backgroundImageUrl') {
-                    updateLayerStyle(rootLayer.id, { backgroundImage: value }); // Map to standard CSS prop
+                    // Fix: value is just the URL, but CSS needs url(...)
+                    const bgValue = value ? `url('${value}')` : '';
+                    updateLayerStyle(rootLayer.id, { backgroundImage: bgValue });
                 } else if (key === 'backgroundSize') {
                     updateLayerStyle(rootLayer.id, { backgroundSize: value });
                 } else if (key === 'backgroundPosition') {

@@ -45,6 +45,8 @@ import { BadgeEditor } from '@/components/campaign/editors/layers/BadgeEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
 import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownEditor';
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
+import { ScratchCardMinimalEditor } from '@/components/campaign/editors/ScratchCardMinimalEditor';
+import { ScratchCardRenderer } from '@/components/campaign/renderers/ScratchCardRenderer';
 
 
 
@@ -165,6 +167,25 @@ export const DesignStep: React.FC<any> = () => {
   };
 
   const [isInteractive, setIsInteractive] = useState(false); // Global interact mode for preview Toggle
+  const [isPreview, setIsPreview] = useState(false); // New Preview Mode
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0); // Key to force re-mount/reset on preview
+
+  // Toggle Preview Logic
+  const togglePreview = () => {
+    setIsPreview(prev => {
+      const newState = !prev;
+      if (newState) {
+        // Entering preview: Reset key to force fresh state (unscratched)
+        setPreviewRefreshKey(k => k + 1);
+        setIsInteractive(true); // Force interactive on
+        toast.info("Preview Mode: Interact with the card!");
+      } else {
+        setIsInteractive(false); // Reset interactive
+      }
+      return newState;
+    });
+  };
+
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
@@ -1037,37 +1058,32 @@ export const DesignStep: React.FC<any> = () => {
           />
         );
       case 'scratchcard':
+        const currentDeviceConfigScratch = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        const deviceWidthScratch = currentDeviceConfigScratch?.width || 375;
+        const pureDeviceScaleXScratch = deviceWidthScratch / 393;
+        const pureDeviceScaleYScratch = (currentDeviceConfigScratch?.height || 852) / 852;
+        const scaleFactorScratch = pureDeviceScaleXScratch * previewZoom;
+        const scaleYFactorScratch = pureDeviceScaleYScratch * previewZoom;
+
         return (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '85%', backgroundColor: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', border: isSelectedLayerType('container') ? `2px solid ${colors.primary[500]}` : 'none' }}>
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '20px', opacity: isSelectedLayerType('title') || isSelectedLayerType('text') ? 1 : 0.9 }}>
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700, color: colors.text.primary }}>
-                Scratch & Win! 🎁
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: colors.text.secondary }}>
-                Scratch to reveal your reward
-              </p>
-            </div>
-
-            {/* Scratch Card Area */}
-            <div style={{ width: '100%', height: '140px', borderRadius: '12px', marginBottom: '20px', position: 'relative', border: isSelectedLayerType('overlay') ? `2px solid ${colors.primary[500]}` : 'none' }}>
-              {/* Scratch Overlay */}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isSelectedLayerType('overlay') ? 1 : 0.9 }}>
-                <p style={{ color: 'white', fontSize: '14px', fontWeight: 600 }}>Scratch Here</p>
-              </div>
-
-              {/* Reward Content (shown partially) */}
-              <div style={{ position: 'absolute', inset: 0, backgroundColor: colors.green[50], borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
-                <p style={{ fontSize: '32px', fontWeight: 700, color: colors.green[500], margin: '0 0 4px 0' }}>50% OFF</p>
-                <p style={{ fontSize: '12px', color: colors.text.secondary, margin: 0 }}>On your next order</p>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <button style={{ width: '100%', padding: '14px', backgroundColor: colors.primary[500], color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', opacity: isSelectedLayerType('button') ? 1 : 0.9 }}>
-              Claim Reward
-            </button>
-          </div>
+          <ErrorBoundary>
+            <ScratchCardRenderer
+              key={previewRefreshKey}
+              layers={campaignLayers}
+              selectedLayerId={selectedLayerId}
+              onLayerSelect={selectLayer}
+              colors={colors}
+              config={{
+                ...currentCampaign?.scratchCardConfig,
+                previewRevealed: isPreview ? false : (currentCampaign?.scratchCardConfig?.previewRevealed || false)
+              }}
+              onConfigChange={(config) => updateScratchCardConfig(config)}
+              scale={scaleFactorScratch}
+              scaleY={scaleYFactorScratch}
+              onLayerUpdate={updateLayer} // Propagate updateLayer for drag/drop
+              isInteractive={isInteractive}
+            />
+          </ErrorBoundary>
         );
 
       case 'carousel':
@@ -1748,6 +1764,7 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedNudgeType === 'tooltip') return renderTooltipConfig();
       if (selectedNudgeType === 'pip') return renderPipConfig();
       if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
+      if (selectedNudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
       return null;
     }
 
@@ -3200,6 +3217,9 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedLayerObj.name === 'Banner Container') {
         return <BannerMinimalEditor />;
       }
+      if (selectedLayerObj.name === 'Scratch Card Container') {
+        return <ScratchCardMinimalEditor />;
+      }
       return (
         <>
           {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
@@ -4055,7 +4075,8 @@ export const DesignStep: React.FC<any> = () => {
                           'modal': 'Modal Container',
                           'banner': 'Banner Container',
                           'tooltip': 'Tooltip Container',
-                          'pip': 'PIP Container'
+                          'pip': 'PIP Container',
+                          'scratchcard': 'Scratch Card Container'
                         };
 
                         // Robustly determine type
@@ -4166,6 +4187,8 @@ export const DesignStep: React.FC<any> = () => {
                       }}
                       isInteractive={isInteractive}
                       onInteractToggle={() => setIsInteractive(!isInteractive)}
+                      isPreview={isPreview}
+                      onPreviewToggle={togglePreview}
                     />
 
                     {/* Phone Preview */}

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { validateCampaignConfig, validateLayer } from '@/lib/configValidator';
 import { metadataService, EventDefinition, PropertyDefinition, PageDefinition } from '@/services/metadataService';
+import { ScratchCardConfig } from '@/lib/designTypes';
+export type { ScratchCardConfig };
 
 
 // Layer Types - Extended for Phase 2 & 3.5
@@ -577,6 +579,7 @@ export interface CampaignEditor {
   // Bottom sheet specific config (Phase 3)
   bottomSheetConfig?: BottomSheetConfig;
   modalConfig?: ModalConfig;
+  scratchCardConfig?: ScratchCardConfig;
   bannerConfig?: any;
   tooltipConfig?: TooltipConfig;
   pipConfig?: any;
@@ -639,6 +642,7 @@ interface EditorStore {
   // Actions - Bottom Sheet Config (Phase 3)
   updateBottomSheetConfig: (config: Partial<BottomSheetConfig>) => void;
   updateModalConfig: (config: Partial<ModalConfig>) => void;
+  updateScratchCardConfig: (config: Partial<ScratchCardConfig>) => void;
   updateBannerConfig: (config: any) => void;
   updateTooltipConfig: (config: any) => void;
   updatePipConfig: (config: any) => void;
@@ -883,6 +887,28 @@ export const useEditorStore = create<EditorStore>()(
               easing: 'ease-out',
             },
           } : undefined,
+          // Initialize scratch card config
+          scratchCardConfig: nudgeType === 'scratchcard' ? {
+            width: 320,
+            height: 480,
+            borderRadius: 16,
+            coverType: 'color',
+            coverColor: '#CCCCCC',
+            scratchType: 'brush',
+            scratchSize: 40,
+            revealThreshold: 50,
+            autoReveal: true,
+            completionAnimation: {
+              enabled: false,
+              type: 'confetti',
+            },
+            overlay: {
+              enabled: true,
+              opacity: 0.5,
+              color: '#000000',
+              dismissOnClick: true
+            }
+          } : undefined,
           // Initialize banner config for banner nudge type
           bannerConfig: nudgeType === 'banner' ? {
             position: 'top',
@@ -1002,11 +1028,14 @@ export const useEditorStore = create<EditorStore>()(
           }
 
           // FIX: Migration for legacy campaigns - Convert root layer type 'text' -> 'container' AND Fix missing root layers
-          if (campaignData.nudgeType === 'bottomsheet' || campaignData.nudgeType === 'modal') {
-            const rootLayerName = campaignData.nudgeType === 'bottomsheet' ? 'Bottom Sheet' : 'Modal Container';
+          if (['bottomsheet', 'modal', 'scratchcard'].includes(campaignData.nudgeType)) {
+            let rootLayerName = 'Modal Container'; // default
+            if (campaignData.nudgeType === 'bottomsheet') rootLayerName = 'Bottom Sheet';
+            if (campaignData.nudgeType === 'scratchcard') rootLayerName = 'Scratch Card Container';
+
             let rootLayer = campaignData.layers.find(l => l.name === rootLayerName);
 
-            // Scenario 1: Root layer exists but is wrong type
+            // Scenario 1: Root layer exists but is wrong type (only relevant for modal/bottomsheet legacy)
             if (rootLayer && rootLayer.type === 'text') {
               console.log(`loadCampaign: Migrating legacy ${campaignData.nudgeType} root layer from 'text' to 'container'`);
               rootLayer.type = 'container';
@@ -1899,6 +1928,47 @@ export const useEditorStore = create<EditorStore>()(
         });
       },
 
+
+      // Update ScratchCard config
+      updateScratchCardConfig: (config: any) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        const defaults = {
+          width: 320,
+          height: 480,
+          borderRadius: 16,
+          coverType: 'color',
+          coverColor: '#CCCCCC',
+          scratchType: 'brush',
+          scratchSize: 40,
+          revealThreshold: 50,
+          autoReveal: true,
+          overlay: { enabled: true, opacity: 0.5, color: '#000000', dismissOnClick: true },
+        };
+
+        const currentConfig = currentCampaign.scratchCardConfig || defaults;
+
+        // Deep merge
+        const updatedConfig = { ...currentConfig };
+        Object.keys(config).forEach(key => {
+          if (config[key] && typeof config[key] === 'object' && !Array.isArray(config[key])) {
+            updatedConfig[key] = { ...(currentConfig[key] || {}), ...config[key] };
+          } else {
+            updatedConfig[key] = config[key];
+          }
+        });
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            scratchCardConfig: updatedConfig as any,
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
+      },
+
       // Update Banner config
       updateBannerConfig: (config: any) => {
         const { currentCampaign } = get();
@@ -2375,6 +2445,33 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
             alignItems: 'stretch',
             justifyContent: 'flex-start',
             gap: 12,
+          },
+        },
+      ];
+
+    case 'scratchcard':
+      return [
+        {
+          id: `layer_${baseId}`,
+          type: 'container',
+          name: 'Scratch Card Container',
+          parent: null,
+          children: [],
+          visible: true,
+          locked: false,
+          zIndex: 0,
+          position: { x: 0, y: 0 },
+          size: { width: '100%' as any, height: '100%' as any },
+          content: {},
+          style: {
+            backgroundColor: 'transparent',
+            borderRadius: 0,
+            padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
           },
         },
       ];

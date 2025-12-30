@@ -68,19 +68,21 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
             </div>
 
             {/* Screen Content Area */}
-            <div style={{
-                position: 'absolute',
-                top: frameBorderWidth,
-                left: frameBorderWidth,
-                width: width,
-                height: height,
-                backgroundColor: 'white',
-                borderRadius: `${frameRadius - 5}px`, // Slightly smaller radius for screen
-                overflow: 'hidden',
-                zIndex: 11,
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
+            <div
+                id="phone-preview-content"
+                style={{
+                    position: 'absolute',
+                    top: frameBorderWidth,
+                    left: frameBorderWidth,
+                    width: width,
+                    height: height,
+                    backgroundColor: 'white',
+                    borderRadius: `${frameRadius - 5}px`, // Slightly smaller radius for screen
+                    overflow: 'hidden',
+                    zIndex: 11,
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}>
 
                 {/* 1. App Background Layer (if selected) */}
                 {backgroundUrl && (

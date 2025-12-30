@@ -9,15 +9,71 @@ import {
     Film,
     Target,
     Flame,
-    ClipboardList
+    ClipboardList,
+    Sparkles
 } from 'lucide-react';
+
+export interface ScratchCardConfig {
+    width: number | string;
+    height: number | string;
+    borderRadius: number;
+
+    // Positioning
+    position?: 'center' | 'bottom' | 'custom';
+    x?: number;
+    y?: number;
+
+    // Cover
+    coverType: 'color' | 'image';
+    coverColor: string;
+    coverImage?: string;
+
+    // Mechanics
+    scratchType: 'brush' | 'coin';
+    scratchSize: number;
+    revealThreshold: number; // 0-100
+
+    // Celebration
+    autoReveal: boolean;
+    completionAnimation?: {
+        enabled: boolean;
+        type: 'confetti' | 'video' | 'fireworks' | 'money';
+        videoUrl?: string;
+        loop?: boolean;
+    };
+
+    // Container Background
+    backgroundColor?: string;
+    backgroundImageUrl?: string;
+    backgroundSize?: 'cover' | 'contain' | 'fill';
+
+    // Overlay (Backdrop)
+    overlay: {
+        enabled: boolean;
+        opacity: number;
+        color: string;
+        dismissOnClick: boolean;
+    };
+
+    // Editor State
+    previewRevealed?: boolean;
+
+    // Logic/Area
+    scratchArea?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
 
 export interface DesignType {
     id: string;
     label: string;
     description: string;
     icon: any;
-    category: 'all' | 'bottom-sheet' | 'modal' | 'banner' | 'full-page' | 'floater' | 'pip';
+    category: 'all' | 'bottom-sheet' | 'modal' | 'banner' | 'full-page' | 'floater' | 'pip' | 'scratchcard';
     color: string;
     bg?: string;
     iconBg?: string;
@@ -98,6 +154,17 @@ export const DESIGN_TYPES: DesignType[] = [
         bg: '#FFF1F2',
         iconBg: '#FFE4E6',
         iconColor: '#E11D48'
+    },
+    {
+        id: 'scratchcard',
+        label: 'Scratch Card',
+        description: 'Scratch to reveal prize',
+        icon: Sparkles,
+        category: 'scratchcard',
+        color: '#EAB308', // Yellow/Gold
+        bg: '#FEF9C3',
+        iconBg: '#FEF08A',
+        iconColor: '#CA8A04'
     },
 ];
 

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand } from 'lucide-react';
+import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand, Play } from 'lucide-react';
 import { DEVICE_PRESETS, DevicePreset } from '@/lib/devicePresets';
 
 interface PreviewToolbarProps {
@@ -12,6 +11,8 @@ interface PreviewToolbarProps {
     onScreenshot?: () => void;
     isInteractive: boolean;
     onInteractToggle: () => void;
+    isPreview?: boolean;
+    onPreviewToggle?: () => void;
 }
 
 export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
@@ -23,7 +24,9 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
     onGridToggle,
     onScreenshot,
     isInteractive,
-    onInteractToggle
+    onInteractToggle,
+    isPreview = false,
+    onPreviewToggle
 }) => {
     const currentDevice = DEVICE_PRESETS.find(d => d.id === selectedDevice);
     console.log('[PreviewToolbar] Rendering. isInteractive:', isInteractive);
@@ -183,6 +186,22 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
                         <Camera size={14} color="#6B7280" />
                     </button>
                 )}
+                <button
+                    onClick={onPreviewToggle}
+                    style={{
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: `1px solid ${isPreview ? '#10B981' : '#E5E7EB'}`,
+                        backgroundColor: isPreview ? '#ECFDF5' : '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        transition: 'all 0.2s'
+                    }}
+                    title={isPreview ? "Exit Preview" : "Preview Experience"}
+                >
+                    <Play size={14} color={isPreview ? '#10B981' : '#6B7280'} fill={isPreview ? '#10B981' : 'none'} />
+                </button>
             </div>
         </div>
     );

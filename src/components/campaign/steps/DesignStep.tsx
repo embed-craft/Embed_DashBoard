@@ -543,17 +543,8 @@ export const DesignStep: React.FC<any> = () => {
   //   };
   // }, []);
 
-  // Sync selectedNudgeType with current campaign
-  useEffect(() => {
-    if (currentCampaign?.nudgeType && selectedNudgeType !== currentCampaign.nudgeType) {
-      console.log('CampaignBuilder: Syncing selectedNudgeType to:', currentCampaign.nudgeType);
-      setSelectedNudgeType(currentCampaign.nudgeType);
-    } else if (!currentCampaign && selectedNudgeType) {
-      // If no campaign exists but selectedNudgeType is set, reset it
-      console.log('CampaignBuilder: No campaign but selectedNudgeType is set, resetting');
-      setSelectedNudgeType(null);
-    }
-  }, [currentCampaign, selectedNudgeType]);
+  // FIX: Conflicting useEffect removed.
+  // Logic merged into line 245 (Interface Sync) to prevent state flapping.
 
   // Auto-save initialization
   useEffect(() => {

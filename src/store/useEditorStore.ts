@@ -1343,12 +1343,12 @@ export const useEditorStore = create<EditorStore>()(
               conversion: '0.0',
               config: {
                 type: savedCampaign.type,
-                text: savedCampaign.config.text || '',
-                backgroundColor: savedCampaign.config.backgroundColor || '#FFFFFF',
-                textColor: savedCampaign.config.textColor || '#000000',
-                buttonText: savedCampaign.config.buttonText,
-                position: savedCampaign.config.position,
-                ...savedCampaign.config,
+                text: savedCampaign.config?.text || '',
+                backgroundColor: savedCampaign.config?.backgroundColor || '#FFFFFF',
+                textColor: savedCampaign.config?.textColor || '#000000',
+                buttonText: savedCampaign.config?.buttonText,
+                position: savedCampaign.config?.position,
+                ...(savedCampaign.config || {}),
               },
               rules: (savedCampaign.rules || []).map(r => ({
                 id: r.id,

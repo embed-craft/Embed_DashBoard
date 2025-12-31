@@ -562,7 +562,7 @@ export interface TooltipConfig {
 export interface CampaignInterface {
   id: string;
   name: string;
-  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner';
+  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater';
   layers: Layer[];
   // Config based on nudgeType
   bottomSheetConfig?: BottomSheetConfig;
@@ -571,6 +571,7 @@ export interface CampaignInterface {
   bannerConfig?: BannerConfig;
   pipConfig?: any;
   scratchCardConfig?: ScratchCardConfig;
+  floaterConfig?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -3367,7 +3368,9 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
 
 // Helper to get default config for interface nudge types
 function getDefaultConfigForNudgeType(nudgeType: CampaignInterface['nudgeType']): Partial<CampaignInterface> {
-  switch (nudgeType) {
+  const normalizedType = nudgeType?.toLowerCase();
+
+  switch (normalizedType) {
     case 'modal':
       return {
         modalConfig: {
@@ -3467,6 +3470,19 @@ function getDefaultConfigForNudgeType(nudgeType: CampaignInterface['nudgeType'])
             dismissOnClick: true,
           },
         },
+      };
+    case 'floater':
+      return {
+        floaterConfig: {
+          position: 'bottom-right',
+          width: 60,
+          height: 60,
+          backgroundColor: '#10B981',
+          shape: 'circle',
+          glassmorphism: { enabled: false, blur: 10, opacity: 0.2 },
+          gradient: { enabled: false, startColor: '#10B981', endColor: '#059669', angle: 45 },
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+        }
       };
     default:
       return {};

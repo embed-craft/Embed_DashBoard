@@ -16,8 +16,24 @@ export const BannerMinimalEditor = () => {
     const config = activeInterface ? activeInterface.bannerConfig : currentCampaign?.bannerConfig;
     console.log('BannerMinimalEditor rendered', { configPresent: !!config, config });
 
-    // Auto-migrate: specific defaults
+    // Auto-migrate: specific defaults OR initialize if missing
     React.useEffect(() => {
+        // If we have an active interface but NO config, initialize it immediately
+        if (activeInterface && !config) {
+            console.log('Auto-initializing missing config for interface:', activeInterface.id);
+            updateBannerConfig({
+                position: 'top',
+                width: '100%',
+                height: 'auto',
+                backgroundColor: '#FFFFFF',
+                borderRadius: 0,
+                elevation: 1,
+                overlay: { enabled: false, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
+                animation: { type: 'slide', duration: 300, easing: 'ease-out' }
+            });
+            return;
+        }
+
         if (!config) return;
 
         let hasUpdates = false;

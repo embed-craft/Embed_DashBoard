@@ -16,8 +16,22 @@ export const BottomSheetMinimalEditor = () => {
     const config = activeInterface ? activeInterface.bottomSheetConfig : currentCampaign?.bottomSheetConfig;
     console.log('BottomSheetMinimalEditor rendered', { configPresent: !!config, config });
 
-    // Auto-migrate legacy values
+    // Auto-migrate legacy values OR initialize if missing
     React.useEffect(() => {
+        // If we have an active interface but NO config, initialize it immediately
+        if (activeInterface && !config) {
+            console.log('Auto-initializing missing config for interface:', activeInterface.id);
+            updateBottomSheetConfig({
+                height: 'auto',
+                backgroundColor: '#FFFFFF',
+                borderRadius: { topLeft: 16, topRight: 16 },
+                elevation: 2,
+                overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
+                animation: { type: 'slide', duration: 300, easing: 'ease-out' }
+            });
+            return;
+        }
+
         if (!config) return;
 
         let hasUpdates = false;

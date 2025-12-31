@@ -66,7 +66,22 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
     id: campaign.id,
     name: campaign.name,
     type: campaign.nudgeType,
-    interfaces: campaign.interfaces || [], // ✅ FIX: Persist Interfaces
+    interfaces: (campaign.interfaces || []).map(int => ({
+      id: int.id,
+      name: int.name,
+      nudgeType: int.nudgeType,
+      // Explicitly preserve config based on nudgeType to prevent data stripping
+      ...(int.nudgeType === 'modal' && int.modalConfig ? { modalConfig: int.modalConfig } : {}),
+      ...(int.nudgeType === 'bottomsheet' && int.bottomSheetConfig ? { bottomSheetConfig: int.bottomSheetConfig } : {}),
+      ...(int.nudgeType === 'banner' && int.bannerConfig ? { bannerConfig: int.bannerConfig } : {}),
+      ...(int.nudgeType === 'tooltip' && int.tooltipConfig ? { tooltipConfig: int.tooltipConfig } : {}),
+      ...(int.nudgeType === 'scratchcard' && int.scratchCardConfig ? { scratchCardConfig: int.scratchCardConfig } : {}),
+      ...(int.nudgeType === 'pip' && int.pipConfig ? { pipConfig: int.pipConfig } : {}),
+      ...(int.nudgeType === 'floater' && int.floaterConfig ? { floaterConfig: int.floaterConfig } : {}),
+      layers: int.layers || [],
+      createdAt: int.createdAt,
+      updatedAt: int.updatedAt,
+    })), // ✅ FIX: explicitly map and preserve interface configs
     experience: campaign.experienceType, // ✅ FIX: Send experience type
     status: campaign.status || 'draft', // ✅ FIX: Pass status directly (active|paused|draft)
     trigger: campaign.trigger || extractTriggerFromTargeting(campaign.targeting), // ✅ FIX: Prefer direct trigger

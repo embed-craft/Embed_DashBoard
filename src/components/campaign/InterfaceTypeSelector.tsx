@@ -75,6 +75,13 @@ const INTERFACE_TYPES: Array<{
             gradient: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
             description: 'Interactive reveal card',
         },
+        {
+            id: 'floater',
+            label: 'Floater',
+            icon: <MessageCircle size={24} style={{ transform: 'rotate(180deg)' }} />, // Reusing distinct icon style
+            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            description: 'Floating action button',
+        },
     ];
 
 export const InterfaceTypeSelector: React.FC<InterfaceTypeSelectorProps> = ({

@@ -32,7 +32,10 @@ export const ScratchCardMinimalEditor = () => {
         addLayer
     } = useEditorStore();
 
-    const config = currentCampaign?.scratchCardConfig;
+    // Resolve config from active interface OR main campaign
+    const { activeInterfaceId } = useEditorStore();
+    const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
+    const config = activeInterface ? activeInterface.scratchCardConfig : currentCampaign?.scratchCardConfig;
 
     // View State: 'foil' (Scratch Surface) vs 'prize' (Reveal Layers)
     // We default based on the current preview state
@@ -50,7 +53,7 @@ export const ScratchCardMinimalEditor = () => {
                 position: 'center'
             });
         }
-    }, [config, updateScratchCardConfig]);
+    }, [config, activeInterfaceId, updateScratchCardConfig]);
 
     if (!config) return null;
 

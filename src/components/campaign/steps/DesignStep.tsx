@@ -1627,7 +1627,8 @@ export const DesignStep: React.FC<any> = () => {
   const renderPipConfig = () => {
     if (selectedNudgeType !== 'pip') return null;
 
-    const config = currentCampaign?.pipConfig || {};
+    // Resolve config from active interface OR main campaign
+    const config = activeInterface ? (activeInterface.pipConfig || {}) : (currentCampaign?.pipConfig || {});
 
     const handleConfigUpdate = (field: string, value: any) => {
       updatePipConfig({ [field]: value });
@@ -1672,7 +1673,8 @@ export const DesignStep: React.FC<any> = () => {
   const renderTooltipConfig = () => {
     if (selectedNudgeType !== 'tooltip') return null;
 
-    const config: Partial<TooltipConfig> = currentCampaign?.tooltipConfig || {};
+    // Resolve config from active interface OR main campaign
+    const config: Partial<TooltipConfig> = activeInterface ? (activeInterface.tooltipConfig || {}) : (currentCampaign?.tooltipConfig || {});
     const selectedPage = pages.find(p => p._id === config.targetPageId);
 
     const handleTooltipUpdate = (field: string, value: any) => {
@@ -2080,7 +2082,9 @@ export const DesignStep: React.FC<any> = () => {
     const renderModalConfig = () => {
       if (selectedNudgeType !== 'modal') return null;
 
-      const config = currentCampaign?.modalConfig || {
+      // Resolve config from active interface OR main campaign
+      const activeConfig = activeInterface ? (activeInterface.modalConfig as any) : currentCampaign?.modalConfig;
+      const config = activeConfig || {
         mode: 'image-only',
         width: '90%',
         height: 'auto',
@@ -2966,7 +2970,9 @@ export const DesignStep: React.FC<any> = () => {
     const renderFloaterConfig = () => {
       if ((selectedNudgeType as string) !== 'floater') return null;
 
-      const config = currentCampaign?.floaterConfig || {
+      // Resolve config from active interface OR main campaign
+      const activeConfig = activeInterface ? activeInterface.floaterConfig : currentCampaign?.floaterConfig;
+      const config = activeConfig || {
         mode: 'default',
         shape: 'circle',
         position: 'bottom-right',

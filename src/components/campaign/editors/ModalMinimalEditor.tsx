@@ -9,8 +9,11 @@ const colors = {
 };
 
 export const ModalMinimalEditor = () => {
-    const { currentCampaign, updateModalConfig, addLayer, updateLayer, updateLayerStyle } = useEditorStore();
-    const config = currentCampaign?.modalConfig;
+    const { currentCampaign, activeInterfaceId, updateModalConfig, addLayer, updateLayer, updateLayerStyle } = useEditorStore();
+
+    // Resolve config from active interface OR main campaign
+    const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
+    const config = activeInterface ? activeInterface.modalConfig : currentCampaign?.modalConfig;
     console.log('ModalMinimalEditor rendered', { configPresent: !!config, config });
 
     // Auto-migrate: specific defaults
@@ -45,7 +48,7 @@ export const ModalMinimalEditor = () => {
                 }
             }
         }
-    }, [config?.backgroundColor, config?.showCloseButton, currentCampaign?.layers, updateModalConfig]);
+    }, [config, activeInterface, currentCampaign?.layers, updateModalConfig]);
 
     if (!config) {
         return (

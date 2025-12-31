@@ -9,8 +9,11 @@ const colors = {
 };
 
 export const BottomSheetMinimalEditor = () => {
-    const { currentCampaign, updateBottomSheetConfig, addLayer } = useEditorStore();
-    const config = currentCampaign?.bottomSheetConfig;
+    const { currentCampaign, activeInterfaceId, updateBottomSheetConfig, addLayer } = useEditorStore();
+
+    // Resolve config from active interface OR main campaign
+    const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
+    const config = activeInterface ? activeInterface.bottomSheetConfig : currentCampaign?.bottomSheetConfig;
     console.log('BottomSheetMinimalEditor rendered', { configPresent: !!config, config });
 
     // Auto-migrate legacy values
@@ -53,7 +56,7 @@ export const BottomSheetMinimalEditor = () => {
                 }
             }
         }
-    }, [config?.backgroundColor, config?.showCloseButton, config?.dragHandle]);
+    }, [config, activeInterface, currentCampaign?.layers, updateBottomSheetConfig]);
 
     if (!config) {
         return (

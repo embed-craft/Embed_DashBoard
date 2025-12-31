@@ -9,8 +9,11 @@ const colors = {
 };
 
 export const BannerMinimalEditor = () => {
-    const { currentCampaign, updateBannerConfig, addLayer, updateLayer, updateLayerStyle } = useEditorStore();
-    const config = currentCampaign?.bannerConfig;
+    const { currentCampaign, activeInterfaceId, updateBannerConfig, addLayer, updateLayer, updateLayerStyle } = useEditorStore();
+
+    // Resolve config from active interface OR main campaign
+    const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
+    const config = activeInterface ? activeInterface.bannerConfig : currentCampaign?.bannerConfig;
     console.log('BannerMinimalEditor rendered', { configPresent: !!config, config });
 
     // Auto-migrate: specific defaults
@@ -51,7 +54,7 @@ export const BannerMinimalEditor = () => {
                 }
             }
         }
-    }, [config?.backgroundColor, config?.showCloseButton, (config as any)?.position, currentCampaign?.layers, updateBannerConfig]); // Added missing deps for safety
+    }, [config, activeInterface, currentCampaign?.layers, updateBannerConfig]); // Added missing deps for safety
 
     if (!config) {
         return (

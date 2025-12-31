@@ -2165,7 +2165,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, bottomSheetConfig: updatedConfig, updatedAt: new Date().toISOString() }
@@ -2195,7 +2197,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, pipConfig: updatedConfig, updatedAt: new Date().toISOString() }
@@ -2244,7 +2248,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, modalConfig: updatedConfig as any, updatedAt: new Date().toISOString() }
@@ -2297,7 +2303,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, scratchCardConfig: updatedConfig as any, updatedAt: new Date().toISOString() }
@@ -2325,7 +2333,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, bannerConfig: updatedBannerConfig, updatedAt: new Date().toISOString() }
@@ -2354,7 +2364,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, floaterConfig: updatedFloaterConfig, updatedAt: new Date().toISOString() }
@@ -2383,7 +2395,9 @@ export const useEditorStore = create<EditorStore>()(
         // Also sync to interface if editing a sub-interface
         const { activeInterfaceId } = get();
         let updatedInterfaces = currentCampaign.interfaces;
-        if (activeInterfaceId) {
+        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
+        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
+        if (interfaceExists) {
           updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, tooltipConfig: updatedTooltipConfig, updatedAt: new Date().toISOString() }

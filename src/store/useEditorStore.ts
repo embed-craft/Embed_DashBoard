@@ -2162,10 +2162,22 @@ export const useEditorStore = create<EditorStore>()(
           }
         });
 
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, bottomSheetConfig: updatedConfig, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
             bottomSheetConfig: updatedConfig,
+            interfaces: updatedInterfaces,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -2180,10 +2192,22 @@ export const useEditorStore = create<EditorStore>()(
         const currentConfig = currentCampaign.pipConfig || {};
         const updatedConfig = { ...currentConfig, ...config };
 
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, pipConfig: updatedConfig, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
             pipConfig: updatedConfig,
+            interfaces: updatedInterfaces,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -2217,10 +2241,22 @@ export const useEditorStore = create<EditorStore>()(
           }
         });
 
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, modalConfig: updatedConfig as any, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
             modalConfig: updatedConfig as any,
+            interfaces: updatedInterfaces,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -2258,10 +2294,22 @@ export const useEditorStore = create<EditorStore>()(
           }
         });
 
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, scratchCardConfig: updatedConfig as any, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
             scratchCardConfig: updatedConfig as any,
+            interfaces: updatedInterfaces,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -2272,10 +2320,25 @@ export const useEditorStore = create<EditorStore>()(
       updateBannerConfig: (config: any) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
+        const updatedBannerConfig = { ...(currentCampaign.bannerConfig || {}), ...config };
+
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, bannerConfig: updatedBannerConfig, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
-            bannerConfig: { ...(currentCampaign.bannerConfig || {}), ...config },
+            bannerConfig: updatedBannerConfig,
+            interfaces: updatedInterfaces,
+            updatedAt: new Date().toISOString(),
             isDirty: true,
           },
         });
@@ -2286,10 +2349,24 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
+        const updatedFloaterConfig = { ...currentCampaign.floaterConfig, ...config };
+
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, floaterConfig: updatedFloaterConfig, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
-            floaterConfig: { ...currentCampaign.floaterConfig, ...config },
+            floaterConfig: updatedFloaterConfig,
+            interfaces: updatedInterfaces,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -2300,10 +2377,25 @@ export const useEditorStore = create<EditorStore>()(
       updateTooltipConfig: (config: any) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
+
+        const updatedTooltipConfig = { ...(currentCampaign.tooltipConfig || {}), ...config };
+
+        // Also sync to interface if editing a sub-interface
+        const { activeInterfaceId } = get();
+        let updatedInterfaces = currentCampaign.interfaces;
+        if (activeInterfaceId) {
+          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, tooltipConfig: updatedTooltipConfig, updatedAt: new Date().toISOString() }
+              : iface
+          );
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
-            tooltipConfig: { ...(currentCampaign.tooltipConfig || {}), ...config },
+            tooltipConfig: updatedTooltipConfig,
+            interfaces: updatedInterfaces,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },

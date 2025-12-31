@@ -3,7 +3,7 @@
  * Converts between rich frontend CampaignEditor model and simplified backend Campaign model
  */
 
-import type { CampaignEditor, Layer, TargetingRule, BottomSheetConfig, DisplayRules } from '@/store/useEditorStore';
+import type { CampaignEditor, Layer, TargetingRule, BottomSheetConfig, DisplayRules, ModalConfig, BannerConfig, ScratchCardConfig } from '@/store/useEditorStore';
 
 // Backend campaign structure (as expected by server)
 export interface BackendCampaign {
@@ -271,7 +271,15 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     : undefined;
 
   const modalConfig = campaignType === 'modal' || !campaignType
-    ? backendCampaign.config?.modalConfig
+    ? (backendCampaign.config?.modalConfig || extractModalConfig(backendCampaign.config || {}))
+    : undefined;
+
+  const bannerConfig = campaignType === 'banner'
+    ? (backendCampaign.config?.bannerConfig || extractBannerConfig(backendCampaign.config || {}))
+    : undefined;
+
+  const scratchCardConfig = campaignType === 'scratchcard'
+    ? (backendCampaign.config?.scratchCardConfig || extractScratchCardConfig(backendCampaign.config || {}))
     : undefined;
 
   const result = {
@@ -290,6 +298,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     } : undefined, // ✅ FIX: Map from snake_case to camelCase
     bottomSheetConfig,
     modalConfig,
+    bannerConfig,
+    scratchCardConfig,
 
     tooltipConfig: campaignType === 'tooltip' ? (backendCampaign.config?.tooltipConfig || {
       // Fallback/Legacy migration: check if properties exist on root config
@@ -1938,6 +1948,112 @@ function extractBottomSheetConfig(config: Record<string, any>): BottomSheetConfi
       easing: 'ease-out',
     },
   };
+}
+
+/**
+ * Extract modal config from backend config
+ */
+function extractModalConfig(config: Record<string, any>): ModalConfig {
+  return {
+    width: config.width,
+    height: config.height,
+    sizeUnit: config.sizeUnit || (typeof config.width === 'string' && config.width.includes('%') ? '%' : 'px'),
+    backgroundColor: config.backgroundColor || '#FFFFFF',
+    backgroundImageUrl: config.backgroundImageUrl,
+    backgroundSize: config.backgroundSize,
+    backgroundPosition: config.backgroundPosition,
+    borderRadius: config.borderRadius || 16,
+    elevation: config.elevation !== undefined ? config.elevation : 2,
+    showCloseButton: config.showCloseButton !== false,
+    mode: config.mode || 'container',
+    overlay: {
+      enabled: config.overlay?.enabled ?? true,
+      opacity: config.overlay?.opacity ?? config.overlayOpacity ?? 0.5,
+      blur: config.overlay?.blur ?? config.backdropBlur ?? 0,
+      color: config.overlay?.color ?? config.backdropColor ?? '#000000',
+      dismissOnClick: config.overlay?.dismissOnClick ?? config.dismissOnClick ?? true,
+    },
+    animation: config.animation || {
+      type: config.animationType || 'pop',
+      duration: config.animationDuration || 300,
+      easing: config.animationEasing || 'ease-out',
+    },
+  };
+}
+
+/**
+ * Extract banner config from backend config
+ */
+function extractBannerConfig(config: Record<string, any>): BannerConfig {
+  return {
+    position: config.position || 'top',
+    width: config.width || '100%',
+    height: config.height || 'auto',
+    sizeUnit: config.sizeUnit || (typeof config.width === 'string' && config.width.includes('%') ? '%' : 'px'),
+    backgroundColor: config.backgroundColor || '#FFFFFF',
+    backgroundImageUrl: config.backgroundImageUrl,
+    backgroundSize: config.backgroundSize,
+    backgroundPosition: config.backgroundPosition,
+    borderRadius: config.borderRadius || 0,
+    elevation: config.elevation !== undefined ? config.elevation : 2,
+    showCloseButton: config.showCloseButton !== false,
+    margin: config.margin || { top: 0, bottom: 0, left: 0, right: 0 },
+    overlay: {
+      enabled: config.overlay?.enabled ?? false,
+      opacity: config.overlay?.opacity ?? 0.5,
+      blur: config.overlay?.blur ?? 0,
+      dismissOnSwipe: config.overlay?.dismissOnSwipe ?? true,
+    },
+    animation: config.animation || {
+      enabled: true,
+      type: 'slide',
+      duration: 300,
+      easing: 'ease-out'
+    },
+    shadow: config.shadow || {
+      enabled: true,
+      color: 'rgba(0,0,0,0.1)',
+      x: 0,
+      y: 4,
+      blur: 12,
+      spread: 0,
+      opacity: 0.1
+    }
+  };
+}
+
+/**
+ * Extract scratch card config from backend config
+ */
+function extractScratchCardConfig(config: Record<string, any>): ScratchCardConfig {
+  return {
+    width: config.width || 300,
+    height: config.height || 400,
+    backgroundColor: config.backgroundColor || '#FFFFFF',
+    backgroundImageUrl: config.backgroundImageUrl,
+    backgroundSize: config.backgroundSize || 'cover',
+    borderRadius: config.borderRadius || 16,
+    position: config.position || 'center',
+    coverType: config.coverType || 'color',
+    coverColor: config.coverColor || '#CCCCCC',
+    coverImage: config.coverImage,
+    scratchSize: config.scratchSize || 20,
+    revealThreshold: config.revealThreshold || 50,
+    autoReveal: config.autoReveal !== false,
+    scratchArea: config.scratchArea || { x: 0, y: 0, width: '100%', height: '100%' },
+    completionAnimation: config.completionAnimation || {
+      type: 'confetti',
+      duration: 3000,
+      loop: false
+    },
+    overlay: {
+      enabled: config.overlay?.enabled ?? true,
+      opacity: config.overlay?.opacity ?? 0.5,
+      blur: config.overlay?.blur ?? 0,
+      color: config.overlay?.color ?? '#000000',
+      dismissOnClick: config.overlay?.dismissOnClick ?? true
+    }
+  }; // Final check brace match
 }
 
 /**

@@ -53,6 +53,7 @@ export interface ScratchCardConfig {
         opacity: number;
         color: string;
         dismissOnClick: boolean;
+        blur?: number;
     };
 
     // Editor State

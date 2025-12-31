@@ -244,6 +244,17 @@ export const DesignStep: React.FC<any> = () => {
     ? currentCampaign?.interfaces?.find((i: any) => i.id === activeInterfaceId)
     : null;
 
+  // FIX: Sync selectedNudgeType with activeInterface to ensure correct editor is shown
+  useEffect(() => {
+    if (activeInterface) {
+      console.log('Syncing selectedNudgeType to active interface:', activeInterface.nudgeType);
+      setSelectedNudgeType(activeInterface.nudgeType);
+    } else if (currentCampaign?.nudgeType) {
+      console.log('Syncing selectedNudgeType to main campaign:', currentCampaign.nudgeType);
+      setSelectedNudgeType(currentCampaign.nudgeType);
+    }
+  }, [activeInterface?.id, activeInterface?.nudgeType, currentCampaign?.nudgeType]);
+
   // Display layers: from active interface or main campaign
   const displayLayers = activeInterface?.layers || currentCampaign?.layers || [];
   const displayNudgeType = activeInterface?.nudgeType || currentCampaign?.nudgeType || 'modal';

@@ -1022,7 +1022,7 @@ export const useEditorStore = create<EditorStore>()(
           isDirty: false,
         };
 
-        set({ currentCampaign: newCampaign, showEditor: true });
+        set({ currentCampaign: newCampaign, showEditor: true, activeInterfaceId: null });
       },
 
       // Load existing campaign
@@ -1107,7 +1107,8 @@ export const useEditorStore = create<EditorStore>()(
           console.log('loadCampaign: Setting campaign in store:', loadedCampaign.id);
           set({
             currentCampaign: loadedCampaign,
-            showEditor: true
+            showEditor: true,
+            activeInterfaceId: null
           });
         } catch (error) {
           console.error('Load campaign error:', error);
@@ -2472,7 +2473,7 @@ export const useEditorStore = create<EditorStore>()(
 
       // Reset current campaign
       resetCurrentCampaign: () => {
-        set({ currentCampaign: null, showEditor: false });
+        set({ currentCampaign: null, showEditor: false, activeInterfaceId: null });
       },
 
       // Update display rules

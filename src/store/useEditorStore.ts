@@ -1350,7 +1350,7 @@ export const useEditorStore = create<EditorStore>()(
                 position: savedCampaign.config.position,
                 ...savedCampaign.config,
               },
-              rules: savedCampaign.rules.map(r => ({
+              rules: (savedCampaign.rules || []).map(r => ({
                 id: r.id,
                 type: r.type as 'event' | 'attribute',
                 field: r.field,
@@ -2620,6 +2620,8 @@ export const useEditorStore = create<EditorStore>()(
           updatedAt: new Date().toISOString(),
         };
 
+        console.log('Creates New Interface:', newInterface); // DEBUG LOG to verify config existence
+
         set({
           currentCampaign: {
             ...currentCampaign,
@@ -3369,6 +3371,7 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
 // Helper to get default config for interface nudge types
 function getDefaultConfigForNudgeType(nudgeType: CampaignInterface['nudgeType']): Partial<CampaignInterface> {
   const normalizedType = nudgeType?.toLowerCase();
+  console.log('Generating default config for type:', normalizedType); // DEBUG LOG checking input
 
   switch (normalizedType) {
     case 'modal':

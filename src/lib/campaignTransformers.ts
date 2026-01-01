@@ -327,7 +327,22 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     }) : undefined,
     // Store other configs dynamically if needed in future
     displayRules: (backendCampaign.config && backendCampaign.config.displayRules) || getDefaultDisplayRules(),
-    interfaces: backendCampaign.interfaces || [], // ✅ FIX: Load Interfaces
+    interfaces: (backendCampaign.interfaces || []).map((iface: any) => ({
+      id: iface.id,
+      name: iface.name,
+      nudgeType: iface.nudgeType,
+      layers: iface.layers || [],
+      // Transform configs based on nudgeType - CRITICAL FIX
+      modalConfig: iface.nudgeType === 'modal' ? iface.modalConfig : undefined,
+      bottomSheetConfig: iface.nudgeType === 'bottomsheet' ? iface.bottomSheetConfig : undefined,
+      bannerConfig: iface.nudgeType === 'banner' ? iface.bannerConfig : undefined,
+      tooltipConfig: iface.nudgeType === 'tooltip' ? iface.tooltipConfig : undefined,
+      scratchCardConfig: iface.nudgeType === 'scratchcard' ? iface.scratchCardConfig : undefined,
+      pipConfig: iface.nudgeType === 'pip' ? iface.pipConfig : undefined,
+      floaterConfig: iface.nudgeType === 'floater' ? iface.floaterConfig : undefined,
+      createdAt: iface.createdAt || new Date().toISOString(),
+      updatedAt: iface.updatedAt || new Date().toISOString(),
+    })), // ✅ CRITICAL FIX: Transform interfaces with proper config structure
     selectedLayerId: layers[0]?.id || null, // Select first layer if exists
     history: [layers],
     historyIndex: 0,
@@ -337,6 +352,10 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     isDirty: false, // Ensure we start clean
   };
 
+  console.log('backendToEditor: Loaded interfaces count:', result.interfaces.length);
+  if (result.interfaces.length > 0) {
+    console.log('backendToEditor: First interface:', result.interfaces[0]);
+  }
   console.log('backendToEditor: Final campaign editor:', result);
   return result;
 }

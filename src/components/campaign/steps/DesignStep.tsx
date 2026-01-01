@@ -1089,8 +1089,7 @@ export const DesignStep: React.FC<any> = () => {
             onLayerSelect={selectLayer}
             onLayerUpdate={updateLayer}
             colors={colors}
-            config={currentCampaign?.bottomSheetConfig}
-            config={currentCampaign?.bottomSheetConfig}
+            config={activeInterface?.bottomSheetConfig || currentCampaign?.bottomSheetConfig}
             onDismiss={() => {
               if (isInteractive) setIsInteractive(false);
               else toast.success('Dismiss action triggered');

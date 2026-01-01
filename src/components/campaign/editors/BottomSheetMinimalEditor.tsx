@@ -14,7 +14,33 @@ export const BottomSheetMinimalEditor = () => {
     // Resolve config from active interface OR main campaign
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
     const config = activeInterface ? activeInterface.bottomSheetConfig : currentCampaign?.bottomSheetConfig;
-    console.log('BottomSheetMinimalEditor rendered', { configPresent: !!config, config });
+
+    console.log('BottomSheetMinimalEditor DEBUG:', {
+        activeInterfaceId,
+        hasActiveInterface: !!activeInterface,
+        activeInterfaceName: activeInterface?.name,
+        activeInterfaceType: activeInterface?.nudgeType,
+        hasInterfaceConfig: !!activeInterface?.bottomSheetConfig,
+        hasCampaignConfig: !!currentCampaign?.bottomSheetConfig,
+        configPresent: !!config,
+        config,
+        fullInterface: activeInterface
+    });
+
+    // CRITICAL DEBUG: Log the EXACT config values
+    if (config) {
+        console.log('CONFIG VALUES:', {
+            height: config.height,
+            backgroundColor: config.backgroundColor,
+            backgroundImageUrl: config.backgroundImageUrl,
+            borderRadius: config.borderRadius,
+            elevation: config.elevation,
+            overlay: config.overlay,
+            animation: config.animation,
+            dragHandle: config.dragHandle,
+            swipeToDismiss: config.swipeToDismiss
+        });
+    }
 
     // Auto-migrate legacy values OR initialize if missing
     React.useEffect(() => {

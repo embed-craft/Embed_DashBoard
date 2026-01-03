@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Layer, BottomSheetConfig, LayerStyle } from '@/store/useEditorStore';
 import { Settings2, X, Code } from 'lucide-react';
 import { ShadowDomWrapper } from '@/components/ShadowDomWrapper';
@@ -48,6 +48,14 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         if (isNaN(num)) return val;
         return `${num * factor}px`;
     };
+
+    // Guard: Track when interact mode was enabled to prevent auto-triggering
+    const interactModeEntryTimeRef = useRef<number>(0);
+    useEffect(() => {
+        if (isInteractive) {
+            interactModeEntryTimeRef.current = Date.now();
+        }
+    }, [isInteractive]);
 
     // MODAL PARITY: Convert X position to percentage of design width
     const toPercentX = (val: any): string | undefined => {
@@ -447,6 +455,16 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
             {/* Sheet */}
             <div
                 ref={containerRef}
+                onClick={(e) => {
+                    // Handle container-level action in interact mode
+                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
+                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                    if (isInteractive && rootLayer?.content?.action && timeSinceInteractEnabled > 200) {
+                        handleAction(rootLayer.content.action);
+                    } else if (!isInteractive && rootLayer) {
+                        onLayerSelect(rootLayer.id);
+                    }
+                }}
                 style={sheetStyle}
             >
                 {/* Handle bar (cosmetic) - Controlled by config */}

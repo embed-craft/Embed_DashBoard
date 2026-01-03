@@ -502,6 +502,14 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         return `${num * factor}px`;
     };
 
+    // Guard: Track when interact mode was enabled to prevent auto-triggering
+    const interactModeEntryTimeRef = useRef<number>(0);
+    useEffect(() => {
+        if (isInteractive) {
+            interactModeEntryTimeRef.current = Date.now();
+        }
+    }, [isInteractive]);
+
     console.log('[ModalRenderer] DEBUG:', {
         configWidth: (config as any)?.width,
         configHeight: (config as any)?.height,
@@ -970,6 +978,16 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
             {/* Modal Container */}
             <div
                 ref={containerRef}
+                onClick={(e) => {
+                    // Handle container-level action in interact mode
+                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
+                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                    if (isInteractive && modalLayer?.content?.action && timeSinceInteractEnabled > 200) {
+                        handleAction(modalLayer.content.action);
+                    } else if (!isInteractive) {
+                        onLayerSelect(modalLayer.id);
+                    }
+                }}
                 style={{
                     position: 'absolute',
                     top: '50%',

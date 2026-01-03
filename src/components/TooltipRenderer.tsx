@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Layer, LayerStyle, TooltipConfig } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
@@ -47,6 +47,7 @@ interface TooltipRendererProps {
     scaleY?: number;
     isInteractive?: boolean;
     onDismiss?: () => void;
+    onInterfaceAction?: (interfaceId: string) => void;
 }
 
 // ============ MAIN COMPONENT ============
@@ -62,9 +63,18 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     scale = 1,
     scaleY = 1,
     isInteractive = false,
-    onDismiss
+    onDismiss,
+    onInterfaceAction
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Guard: Track when interact mode was enabled to prevent auto-triggering
+    const interactModeEntryTimeRef = useRef<number>(0);
+    useEffect(() => {
+        if (isInteractive) {
+            interactModeEntryTimeRef.current = Date.now();
+        }
+    }, [isInteractive]);
 
     // ============ SCALING HELPERS (Same as Modal) ============
     const safeScale = (val: any, factor: number) => {
@@ -107,6 +117,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 break;
             case 'deeplink':
                 if (action.url) window.open(action.url, '_blank');
+                break;
+            case 'interface':
+                if (action.interfaceId && onInterfaceAction) {
+                    onInterfaceAction(action.interfaceId);
+                }
                 break;
             default:
                 console.log('Action triggered:', action);
@@ -454,6 +469,16 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             {/* Tooltip Container */}
             <div
                 ref={containerRef}
+                onClick={(e) => {
+                    // Handle container-level action in interact mode
+                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
+                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                    if (isInteractive && tooltipLayer?.content?.action && timeSinceInteractEnabled > 200) {
+                        handleAction(tooltipLayer.content.action);
+                    } else if (!isInteractive && tooltipLayer) {
+                        onLayerSelect(tooltipLayer.id);
+                    }
+                }}
                 style={{
                     position: 'absolute',
                     ...position,

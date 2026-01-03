@@ -455,6 +455,47 @@ export interface BannerConfig {
   };
 }
 
+// Floater Configuration (Video/Image floating overlay)
+export interface FloaterConfig {
+  mode?: 'video' | 'image';
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center-right' | 'center-left';
+  offsetX?: number;
+  offsetY?: number;
+  width?: number;
+  height?: number;
+  sizeUnit?: 'px' | '%';
+  shape?: 'rectangle' | 'circle';
+  borderRadius?: number;
+  backgroundColor?: string;
+  backgroundSize?: 'cover' | 'contain';
+  boxShadow?: string;
+  opacity?: number;
+  videoUrl?: string;
+  imageUrl?: string;
+  draggable?: boolean;
+  showCloseButton?: boolean;
+  showExpandButton?: boolean;
+  autoPlay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
+  glassmorphism?: {
+    enabled: boolean;
+    blur: number;
+    opacity: number;
+  };
+  gradient?: {
+    enabled: boolean;
+    startColor: string;
+    endColor: string;
+    angle: number;
+  };
+  animation?: {
+    type: 'scale' | 'slide' | 'fade' | 'bounce';
+    duration: number;
+  };
+}
+
+
 export interface CampaignSchedule {
   startDate?: string;
   endDate?: string;
@@ -972,12 +1013,12 @@ export const useEditorStore = create<EditorStore>()(
           floaterConfig: nudgeType === 'floater' ? {
             position: 'bottom-right',
             mode: 'image-only',
-            shape: 'circle',
-            width: 60,
-            height: 60,
-            backgroundColor: '#10B981',
-            borderRadius: 30,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+            shape: 'rectangle', // Square like PIP
+            width: 280, // PIP-like width
+            height: 180, // PIP-like height
+            backgroundColor: '#000000', // Black like PIP
+            borderRadius: 0, // Square corners
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
             opacity: 1,
             offsetX: 20,
             offsetY: 20,
@@ -988,8 +1029,8 @@ export const useEditorStore = create<EditorStore>()(
             },
             gradient: {
               enabled: false,
-              startColor: '#10B981',
-              endColor: '#059669',
+              startColor: '#000000',
+              endColor: '#333333',
               angle: 135,
             },
             animation: {
@@ -2601,6 +2642,15 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return '';
 
+        // Validate nudgeType
+        const validTypes: CampaignInterface['nudgeType'][] = [
+          'modal', 'bottomsheet', 'banner', 'tooltip', 'pip', 'floater', 'scratchcard'
+        ];
+        if (!validTypes.includes(nudgeType)) {
+          console.error(`Invalid nudgeType: ${nudgeType}. Must be one of: ${validTypes.join(', ')}`);
+          throw new Error(`Invalid nudgeType: ${nudgeType}`);
+        }
+
         const interfaceId = `interface_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const interfaceName = name || `Interface ${(currentCampaign.interfaces || []).length + 1}`;
 
@@ -3111,6 +3161,34 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
         },
       ];
 
+    case 'floater':
+      return [
+        {
+          id: `layer_${baseId}`,
+          type: 'container',
+          name: 'Floater Container',
+          parent: null,
+          children: [], // No default layers - user adds layers manually
+          visible: true,
+          locked: false,
+          zIndex: 0,
+          position: { x: 0, y: 0 },
+          size: { width: 280, height: 180 }, // PIP-like size
+          content: {},
+          style: {
+            backgroundColor: '#000000', // Black like PIP video
+            borderRadius: 0, // Square corners
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        },
+      ];
+
+
     case 'tooltip':
       return [
         {
@@ -3478,13 +3556,14 @@ function getDefaultConfigForNudgeType(nudgeType: CampaignInterface['nudgeType'])
       return {
         floaterConfig: {
           position: 'bottom-right',
-          width: 60,
-          height: 60,
-          backgroundColor: '#10B981',
-          shape: 'circle',
+          width: 280, // PIP-like width
+          height: 180, // PIP-like height
+          backgroundColor: '#000000', // Black like PIP
+          borderRadius: 0, // Square corners
+          shape: 'rectangle', // Square like PIP
           glassmorphism: { enabled: false, blur: 10, opacity: 0.2 },
-          gradient: { enabled: false, startColor: '#10B981', endColor: '#059669', angle: 45 },
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+          gradient: { enabled: false, startColor: '#000000', endColor: '#333333', angle: 45 },
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
         }
       };
     default:

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Draggable from 'react-draggable';
 import { X, Maximize2, Minimize2, Volume2, VolumeX, ExternalLink } from 'lucide-react';
 
 interface PipRendererProps {
@@ -12,6 +13,9 @@ interface PipRendererProps {
     isInteractive?: boolean;
     onDismiss?: () => void;
     onNavigate?: (screenName: string) => void;
+    onInterfaceAction?: (interfaceId: string) => void;
+    scale?: number;
+    scaleY?: number;
 }
 
 export const PipRenderer: React.FC<PipRendererProps> = ({
@@ -24,7 +28,10 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
     onLayerUpdate,
     isInteractive = false,
     onDismiss,
-    onNavigate
+    onNavigate,
+    onInterfaceAction,
+    scale = 1,
+    scaleY = 1
 }) => {
     // Action Handler
     const handleAction = (action: any) => {
@@ -49,6 +56,11 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                     console.log('Navigation action triggered:', action.screenName);
                 }
                 break;
+            case 'interface':
+                if (action.interfaceId && onInterfaceAction) {
+                    onInterfaceAction(action.interfaceId);
+                }
+                break;
             case 'custom':
                 console.log('Custom action triggered:', action);
                 break;
@@ -56,10 +68,18 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
     };
     // State
     const [isMaximized, setIsMaximized] = useState(false);
-    const [isMuted, setIsMuted] = useState(true);
+    const nodeRef = useRef(null);
+    const [isMuted, setIsMuted] = useState(config.defaultMuted ?? true);
 
-    // Find the root container layer for the PIP
-    const pipContainerLayer = layers.find(l => l.type === 'container' && l.name === 'PIP Container');
+    // Sync state with config changes
+    useEffect(() => {
+        if (config.defaultMuted !== undefined) {
+            setIsMuted(config.defaultMuted);
+        }
+    }, [config.defaultMuted]);
+
+    // Find the root container layer for the PIP (Robust check)
+    const pipContainerLayer = layers.find(l => l.type === 'container' && (l.name === 'PIP Container' || l.name?.toLowerCase().includes('container'))) || layers.find(l => l.type === 'container');
     const videoLayer = layers.find(l => l.type === 'video');
 
     const containerStyle = pipContainerLayer?.style || {};
@@ -72,19 +92,39 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
     const showCloseButton = config.showCloseButton !== false;
     const cornerRadius = config.cornerRadius || 12;
 
-    // CTA Config (could be added to store later)
-    const ctaText = config.ctaText || 'Learn More';
-    const ctaUrl = config.ctaUrl || '#';
-
     // Helper to get embed URL
     const getEmbedUrl = (url: string) => {
         if (!url) return '';
+        const cleanUrl = url.trim();
+
         // Handle YouTube
-        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^#&?]*)/);
+        // Supports: youtu.be/ID, youtube.com/watch?v=ID, youtube.com/embed/ID, youtube.com/v/ID, youtube.com/shorts/ID
+        // Also captures if there are other query params
+        const ytMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([^#&?]+)/);
+
         if (ytMatch && ytMatch[1]) {
-            return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&mute=${isMuted ? 1 : 0}&loop=1&playlist=${ytMatch[1]}`;
+            const videoId = ytMatch[1];
+            return `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&mute=${isMuted ? 1 : 0}&loop=1&playlist=${videoId}`;
         }
-        return url;
+
+        // Fallback for direct video files or already embedded URLs?
+        // If it's just a raw ID (11 chars), assume YouTube?
+        if (cleanUrl.match(/^[a-zA-Z0-9_-]{11}$/)) {
+            return `https://www.youtube.com/embed/${cleanUrl}?autoplay=1&controls=0&modestbranding=1&rel=0&mute=${isMuted ? 1 : 0}&loop=1&playlist=${cleanUrl}`;
+        }
+
+        return cleanUrl;
+    };
+
+    // Helper for safe scaling
+    const safeScale = (val: any, factor: number) => {
+        if (val == null) return undefined;
+        const strVal = val.toString().trim();
+        // Ignore viewport units
+        if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return val;
+        const num = parseFloat(strVal);
+        if (isNaN(num)) return val;
+        return num * factor; // Return number for calculations
     };
 
     // Calculate position styles
@@ -102,13 +142,41 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
             };
         }
 
-        const margin = config.margin !== undefined ? config.margin : 16;
+        const margin = config.margin !== undefined ? config.margin : 16; // Fallback
+
+        // Use offsets if available, otherwise fallback to margin
+        const offX = config.offsetX !== undefined ? config.offsetX : margin;
+        const offY = config.offsetY !== undefined ? config.offsetY : margin;
+
+        const scaledOffX = safeScale(offX, scale);
+        const scaledOffY = safeScale(offY, scale);
+
+        // Custom Positioning
+        if (position === 'custom') {
+            const x = config.x || 0;
+            const y = config.y || 0;
+            return {
+                left: safeScale(x, scale),
+                top: safeScale(y, scale),
+                right: 'auto',
+                bottom: 'auto'
+            };
+        }
+
         switch (position) {
-            case 'top-left': return { top: margin, left: margin };
-            case 'top-right': return { top: margin, right: margin };
-            case 'bottom-left': return { bottom: margin, left: margin };
-            case 'bottom-right': return { bottom: margin, right: margin };
-            default: return { bottom: margin, right: margin };
+            case 'top-left': return { top: scaledOffY, left: scaledOffX };
+            case 'top-center': return { top: scaledOffY, left: '50%', transform: 'translateX(-50%)' };
+            case 'top-right': return { top: scaledOffY, right: scaledOffX };
+
+            case 'center-left': return { top: '50%', left: scaledOffX, transform: 'translateY(-50%)' };
+            case 'center': return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+            case 'center-right': return { top: '50%', right: scaledOffX, transform: 'translateY(-50%)' };
+
+            case 'bottom-left': return { bottom: scaledOffY, left: scaledOffX };
+            case 'bottom-center': return { bottom: scaledOffY, left: '50%', transform: 'translateX(-50%)' };
+            case 'bottom-right': return { bottom: scaledOffY, right: scaledOffX };
+
+            default: return { bottom: scaledOffY, right: scaledOffX };
         }
     };
 
@@ -360,92 +428,132 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                     </div>
                 );
 
+            case 'custom_html':
+                return (
+                    <div
+                        key={layer.id}
+                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
+                        style={{
+                            ...finalStyle,
+                            ...selectionStyle,
+                            cursor: 'pointer',
+                            display: isMaximized ? 'block' : 'none', // Only show when maximized
+                            pointerEvents: isMaximized ? 'auto' : 'none',
+                            width: style.width || '100%',
+                            height: style.height || '100%',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <div
+                            dangerouslySetInnerHTML={{ __html: layer.content?.html || '<div style="padding:10px; border:1px dashed #ccc; color:#999">Empty HTML</div>' }}
+                            style={{ width: '100%', height: '100%' }}
+                        />
+                    </div>
+                );
+
             default:
                 return null;
         }
     };
 
     return (
-        <div style={{
-            position: 'absolute',
-            ...getPositionStyles(),
-            width: isMaximized ? '100%' : (containerStyle.width !== undefined ? (typeof containerStyle.width === 'number' ? `${containerStyle.width}px` : containerStyle.width) : `${width}px`),
-            height: isMaximized ? '100%' : (containerStyle.height !== undefined ? (typeof containerStyle.height === 'number' ? `${containerStyle.height}px` : containerStyle.height) : `${height}px`),
-            backgroundColor: containerStyle.backgroundColor || backgroundColor,
-            borderRadius: isMaximized ? 0 : (containerStyle.borderRadius !== undefined ? containerStyle.borderRadius : `${cornerRadius}px`),
-            overflow: 'hidden',
-            boxShadow: containerStyle.boxShadow || '0 8px 24px rgba(0,0,0,0.2)',
-            zIndex: isMaximized ? 100 : 50,
-            transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-            ...containerStyle,
-            ...(isMaximized ? {
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                width: '100%',
-                height: '100%',
-                borderRadius: 0,
-                transform: 'none',
-                margin: 0
-            } : {})
-        }}
-            onClick={(e) => {
-                if (pipContainerLayer) {
-                    e.stopPropagation();
-                    if (isInteractive) handleAction(pipContainerLayer);
-                    else onLayerSelect(pipContainerLayer.id);
-                }
-            }}
-        >
-            {/* Render all children (Video + Button + etc) */}
-            {pipContainerLayer?.children?.map((childId: string) => {
-                const child = layers.find(l => l.id === childId);
-                return child ? renderLayer(child) : null;
-            })}
-
-            {/* Controls Overlay */}
-            <div style={{
+        <Draggable nodeRef={nodeRef} disabled={!isInteractive || isMaximized} bounds="parent">
+            <div ref={nodeRef} style={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                padding: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)',
-                pointerEvents: 'none' // Let clicks pass through to container
-            }}>
-                {/* Mute Button */}
-                <button
-                    onClick={(e) => {
+                ...getPositionStyles(),
+                width: isMaximized ? '100%' : safeScale(containerStyle.width ?? width, scale),
+                height: isMaximized ? '100%' : safeScale(containerStyle.height ?? height, scale),
+                backgroundColor: containerStyle.backgroundColor || backgroundColor,
+                borderRadius: isMaximized ? 0 : safeScale(containerStyle.borderRadius ?? cornerRadius, scale),
+                overflow: 'hidden',
+                boxShadow: containerStyle.boxShadow || '0 8px 24px rgba(0,0,0,0.2)',
+                zIndex: isMaximized ? 100 : 50,
+                transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                ...containerStyle,
+                // Removed bgImageStyle per user request
+                ...(isMaximized ? {
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 0,
+                    transform: 'none',
+                    margin: 0
+                } : {})
+            }}
+                onClick={(e) => {
+                    if (pipContainerLayer) {
                         e.stopPropagation();
-                        setIsMuted(!isMuted);
-                    }}
-                    style={{
-                        background: 'rgba(0,0,0,0.5)',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '28px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        cursor: 'pointer',
-                        pointerEvents: 'auto'
-                    }}
-                >
-                    {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                </button>
+                        if (isInteractive) handleAction(pipContainerLayer);
+                        else onLayerSelect(pipContainerLayer.id);
+                    }
+                }}
+            >
+                {/* 1. Force RENDER Video from Config (Background Layer) */}
+                {(() => {
+                    // Determine active video URL (Config takes priority, then fallback to layer)
+                    const activeVideoUrl = config.videoUrl || videoLayer?.content?.url || videoLayer?.content?.videoUrl;
+                    if (!activeVideoUrl) return null;
 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    {/* Maximize/Minimize Button */}
+                    const embedUrl = getEmbedUrl(activeVideoUrl);
+                    if (!embedUrl) return null;
+
+                    return (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                zIndex: 0, // Behind other content
+                                overflow: 'hidden',
+                                pointerEvents: 'none', // Allow clicks to pass through
+                            }}
+                        >
+                            <iframe
+                                src={embedUrl}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    pointerEvents: isMaximized ? 'auto' : 'none'
+                                }}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
+                        </div>
+                    );
+                })()}
+
+                {/* 2. Render other children (Buttons etc), EXCLUDING the video layer to avoid dupe */}
+                {pipContainerLayer?.children?.map((childId: string) => {
+                    const child = layers.find(l => l.id === childId);
+                    // Skip if it's a video layer, as we handled it above
+                    if (child?.type === 'video') return null;
+                    return child ? renderLayer(child) : null;
+                })}
+
+                {/* Controls Overlay */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    padding: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)',
+                    pointerEvents: 'none' // Let clicks pass through to container
+                }}>
+                    {/* Mute Button */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            setIsMaximized(!isMaximized);
+                            setIsMuted(!isMuted);
                         }}
                         style={{
                             background: 'rgba(0,0,0,0.5)',
@@ -461,19 +569,15 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                             pointerEvents: 'auto'
                         }}
                     >
-                        {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                        {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
                     </button>
 
-                    {/* Close Button */}
-                    {showCloseButton && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {/* Maximize/Minimize Button */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                // Handle close logic
-                                if (isInteractive && onDismiss) {
-                                    onDismiss();
-                                }
-                                console.log('Close PIP');
+                                setIsMaximized(!isMaximized);
                             }}
                             style={{
                                 background: 'rgba(0,0,0,0.5)',
@@ -489,11 +593,40 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                                 pointerEvents: 'auto'
                             }}
                         >
-                            <X size={14} />
+                            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                         </button>
-                    )}
+
+                        {/* Close Button */}
+                        {showCloseButton && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle close logic
+                                    if (isInteractive && onDismiss) {
+                                        onDismiss();
+                                    }
+                                    console.log('Close PIP');
+                                }}
+                                style={{
+                                    background: 'rgba(0,0,0,0.5)',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '28px',
+                                    height: '28px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    pointerEvents: 'auto'
+                                }}
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </Draggable>
     );
 };

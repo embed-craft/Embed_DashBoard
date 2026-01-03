@@ -496,6 +496,7 @@ interface BannerRendererProps {
     isInteractive?: boolean;
     onDismiss?: () => void;
     onNavigate?: (screenName: string) => void;
+    onInterfaceAction?: (interfaceId: string) => void;
     scale?: number;
     scaleY?: number;
 }
@@ -512,6 +513,7 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
     isInteractive = false,
     onDismiss,
     onNavigate,
+    onInterfaceAction,
     scale = 1,
     scaleY = 1
 }) => {
@@ -526,6 +528,14 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
         if (isNaN(num)) return val;
         return `${num * factor}px`;
     };
+
+    // Guard: Track when interact mode was enabled to prevent auto-triggering
+    const interactModeEntryTimeRef = useRef<number>(0);
+    useEffect(() => {
+        if (isInteractive) {
+            interactModeEntryTimeRef.current = Date.now();
+        }
+    }, [isInteractive]);
 
     console.log('[BannerRenderer] DEBUG:', {
         configWidth: (config as any)?.width,
@@ -588,6 +598,11 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                     onNavigate(action.screenName);
                 } else {
                     console.log('Navigation action triggered:', action.screenName);
+                }
+                break;
+            case 'interface':
+                if (action.interfaceId && onInterfaceAction) {
+                    onInterfaceAction(action.interfaceId);
                 }
                 break;
             case 'custom':
@@ -998,6 +1013,16 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
             {/* Banner Container - Positioned at top or bottom */}
             <div
                 ref={containerRef}
+                onClick={(e) => {
+                    // Handle container-level action in interact mode
+                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
+                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                    if (isInteractive && bannerLayer?.content?.action && timeSinceInteractEnabled > 200) {
+                        handleAction(bannerLayer.content.action);
+                    } else if (!isInteractive) {
+                        onLayerSelect(bannerLayer.id);
+                    }
+                }}
                 style={{
                     position: 'absolute',
                     // BANNER POSITIONING: Edge-based (top or bottom)

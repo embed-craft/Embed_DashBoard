@@ -52,6 +52,14 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
     const [scratchedPercent, setScratchedPercent] = useState(0);
     const [showCelebration, setShowCelebration] = useState(false);
 
+    // Guard: Track when interact mode was enabled to prevent auto-triggering
+    const interactModeEntryTimeRef = useRef<number>(0);
+    useEffect(() => {
+        if (isInteractive) {
+            interactModeEntryTimeRef.current = Date.now();
+        }
+    }, [isInteractive]);
+
     // SDK Parity: Safe Scale Helper
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
@@ -397,35 +405,50 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
         );
     };
 
+    // Find the root container layer (for container-level actions)
+    const containerLayer = layers.find(l => l.name === 'Scratch Card Container' && l.type === 'container');
+
     // --- Main Render ---
     return (
-        <div style={{
-            position: 'absolute', // Always absolute positioning relative to preview container
-            ...((config?.position === 'custom') ? {
-                top: safeScale(config.y || 0, scaleY),
-                left: safeScale(config.x || 0, scale),
-            } : (config?.position === 'bottom') ? {
-                bottom: safeScale(config.y || 0, scaleY),
-                left: '50%',
-                transform: 'translateX(-50%)',
-            } : {
-                // Default: Center
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-            }),
+        <div
+            style={{
+                position: 'absolute', // Always absolute positioning relative to preview container
+                ...((config?.position === 'custom') ? {
+                    top: safeScale(config.y || 0, scaleY),
+                    left: safeScale(config.x || 0, scale),
+                } : (config?.position === 'bottom') ? {
+                    bottom: safeScale(config.y || 0, scaleY),
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                } : {
+                    // Default: Center
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                }),
 
-            width: safeScale(width, scale),
-            height: safeScale(height, scaleY),
-            borderRadius: safeScale(borderRadius, scale),
-            overflow: 'hidden',
-            backgroundColor: config?.backgroundColor || 'white',
-            backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-            backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
-            backgroundPosition: 'center',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-
-        }}>
+                width: safeScale(width, scale),
+                height: safeScale(height, scaleY),
+                borderRadius: safeScale(borderRadius, scale),
+                overflow: 'hidden',
+                backgroundColor: config?.backgroundColor || 'white',
+                backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
+                backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
+                backgroundPosition: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            }}
+            onClick={(e) => {
+                // Handle container-level action in interact mode
+                // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
+                const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                if (containerLayer && isInteractive && timeSinceInteractEnabled > 200) {
+                    handleLayerAction(containerLayer);
+                } else if (!isInteractive && containerLayer) {
+                    // In editor mode, select the container
+                    onLayerSelect(containerLayer.id);
+                }
+            }}
+        >
 
             {/* The "Prize" Content (Rendered Layers) */}
             <div style={{
@@ -436,7 +459,9 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 1
+                zIndex: 1,
+                // Allow scratch when not revealed, allow button clicks after revealed
+                pointerEvents: isRevealed ? 'auto' : 'none'
             }}>
                 {layers.map(renderLayer)}
             </div>

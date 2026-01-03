@@ -27,6 +27,8 @@ import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
 import { ModalMinimalEditor } from '@/components/campaign/editors/ModalMinimalEditor';
 import { BannerMinimalEditor } from '@/components/campaign/editors/BannerMinimalEditor';
+import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinimalEditor';
+import { PipMinimalEditor } from '@/components/campaign/editors/PipMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
@@ -77,6 +79,7 @@ const nudgeTypes = [
   { id: 'bottomsheet', label: 'Bottom Sheet', Icon: Square, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'tooltip', label: 'Tooltip', Icon: MessageCircle, bg: '#FEF3C7', iconBg: '#FDE68A', iconColor: '#F59E0B' },
   { id: 'pip', label: 'Picture in Picture', Icon: PictureIcon, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
+  { id: 'floater', label: 'Floater', Icon: Film, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'scratchcard', label: 'Scratch Card', Icon: CreditCard, bg: '#FCE7F3', iconBg: '#F9A8D4', iconColor: '#EC4899' },
   { id: 'carousel', label: 'Story Carousel', Icon: PlayCircle, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
   { id: 'inline', label: 'Inline Widget', Icon: Grid3x3, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
@@ -87,7 +90,7 @@ const nudgeTypes = [
 
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip', 'spotlight', 'coachmark'],
-  'messages': ['modal', 'pip', 'bottomsheet', 'banner', 'scratchcard'],
+  'messages': ['modal', 'pip', 'floater', 'bottomsheet', 'banner', 'scratchcard'],
   'stories': ['carousel'],
   // Default fallbacks for others or future types
   'challenges': [],
@@ -1136,7 +1139,7 @@ export const DesignStep: React.FC<any> = () => {
               selectedLayerId={selectedLayerId}
               onLayerSelect={selectLayer}
               colors={colors}
-              config={currentCampaign?.modalConfig || defaultModalConfig}
+              config={activeInterface?.modalConfig || currentCampaign?.modalConfig || defaultModalConfig}
               onConfigChange={(config) => updateModalConfig(config)}
               onLayerUpdate={updateLayer}
               onDismiss={() => {
@@ -1165,7 +1168,7 @@ export const DesignStep: React.FC<any> = () => {
               selectedLayerId={selectedLayerId}
               onLayerSelect={selectLayer}
               colors={colors}
-              config={currentCampaign?.bannerConfig}
+              config={activeInterface?.bannerConfig || currentCampaign?.bannerConfig}
               onConfigChange={(newConfig) => updateBannerConfig(newConfig)}
               onLayerUpdate={updateLayer}
               onDismiss={() => {
@@ -1180,6 +1183,48 @@ export const DesignStep: React.FC<any> = () => {
             />
           </ErrorBoundary>
         );
+
+      case 'floater':
+        const defaultFloaterConfig = {
+          mode: 'image' as const,
+          position: 'bottom-right' as const,
+          offsetX: 20,
+          offsetY: 20,
+          width: 320,
+          height: 180,
+          borderRadius: 16,
+          backgroundColor: '#10B981',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+          showCloseButton: true,
+        };
+
+        const currentDeviceConfigFloater = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        const pureDeviceScaleXFloater = (currentDeviceConfigFloater?.width || 393) / 393;
+        const pureDeviceScaleYFloater = (currentDeviceConfigFloater?.height || 852) / 852;
+        const scaleFactorFloater = pureDeviceScaleXFloater * previewZoom;
+        const scaleYFactorFloater = pureDeviceScaleYFloater * previewZoom;
+
+        return (
+          <ErrorBoundary>
+            <FloaterRenderer
+              layers={campaignLayers}
+              selectedLayerId={selectedLayerId}
+              onLayerSelect={selectLayer}
+              colors={colors}
+              config={activeInterface?.floaterConfig || currentCampaign?.floaterConfig || defaultFloaterConfig}
+              onLayerUpdate={updateLayer}
+              onDismiss={() => {
+                if (isInteractive) setIsInteractive(false);
+                else toast.success('Dismiss action triggered');
+              }}
+              isInteractive={isInteractive}
+              onNavigate={handlePreviewNavigate}
+              scale={scaleFactorFloater}
+              scaleY={scaleYFactorFloater}
+            />
+          </ErrorBoundary>
+        );
+
 
       case 'tooltip':
         const device = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
@@ -1242,7 +1287,7 @@ export const DesignStep: React.FC<any> = () => {
             selectedLayerId={selectedLayerId}
             onLayerSelect={selectLayer}
             colors={colors}
-            config={currentCampaign?.tooltipConfig || defaultTooltipConfig}
+            config={activeInterface?.tooltipConfig || currentCampaign?.tooltipConfig || defaultTooltipConfig}
             onConfigChange={(config) => updateTooltipConfig(config)}
             targetElement={targetElement}
             scale={scaleX}
@@ -1253,17 +1298,25 @@ export const DesignStep: React.FC<any> = () => {
         );
 
       case 'pip':
+        const currentDeviceConfigPip = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        const pureDeviceScaleXPip = (currentDeviceConfigPip?.width || 393) / 393;
+        const pureDeviceScaleYPip = (currentDeviceConfigPip?.height || 852) / 852;
+        const scaleFactorPip = pureDeviceScaleXPip * previewZoom;
+        const scaleYFactorPip = pureDeviceScaleYPip * previewZoom;
+
         return (
           <PipRenderer
             layers={campaignLayers}
             selectedLayerId={selectedLayerId}
             onLayerSelect={selectLayer}
             colors={colors}
-            config={currentCampaign?.pipConfig}
+            config={activeInterface?.pipConfig || currentCampaign?.pipConfig}
             onConfigChange={(config) => updatePipConfig(config)}
             isInteractive={isInteractive}
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
             onNavigate={handleNavigate}
+            scale={scaleFactorPip}
+            scaleY={scaleYFactorPip}
           />
         );
       case 'floater':
@@ -1274,7 +1327,7 @@ export const DesignStep: React.FC<any> = () => {
             onLayerSelect={selectLayer}
             onLayerUpdate={updateLayer}
             scale={previewZoom}
-            config={currentCampaign.floaterConfig}
+            config={activeInterface?.floaterConfig || currentCampaign.floaterConfig}
             isInteractive={isInteractive}
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
             onNavigate={handleNavigate}
@@ -1297,7 +1350,7 @@ export const DesignStep: React.FC<any> = () => {
               onLayerSelect={selectLayer}
               colors={colors}
               config={{
-                ...currentCampaign?.scratchCardConfig,
+                ...(activeInterface?.scratchCardConfig || currentCampaign?.scratchCardConfig),
                 previewRevealed: isPreview ? false : (currentCampaign?.scratchCardConfig?.previewRevealed || false)
               }}
               onConfigChange={(config) => updateScratchCardConfig(config)}
@@ -2056,6 +2109,12 @@ export const DesignStep: React.FC<any> = () => {
 
     if (selectedLayerObj.type === 'custom_html') {
       return <CustomHtmlEditor />;
+    }
+
+    // PIP Editor Integration
+    // PIP Editor Integration
+    if (selectedNudgeType === 'pip' && (!selectedLayerObj || selectedLayerObj.name?.toLowerCase().includes('container'))) {
+      return <PipMinimalEditor />;
     }
 
     // Check if layer is locked (Phase A - Fix 1)
@@ -2970,418 +3029,7 @@ export const DesignStep: React.FC<any> = () => {
 
     const renderFloaterConfig = () => {
       if ((selectedNudgeType as string) !== 'floater') return null;
-
-      // Resolve config from active interface OR main campaign
-      const activeConfig = activeInterface ? activeInterface.floaterConfig : currentCampaign?.floaterConfig;
-      const config = activeConfig || {
-        mode: 'default',
-        shape: 'circle',
-        position: 'bottom-right',
-        width: 60,
-        height: 60,
-        backgroundColor: '#10B981',
-        glassmorphism: { enabled: false, blur: 10, opacity: 0.2 },
-        gradient: { enabled: false, startColor: '#10B981', endColor: '#059669', angle: 45 },
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
-      };
-
-      const handleConfigUpdate = (field: string, value: any) => {
-        // If updating mode to image-only, ensure shape is circle by default or keep current?
-        // If updating shape to circle, force width=height?
-        const updates: any = { [field]: value };
-
-        if (field === 'shape' && value === 'circle') {
-          // If switching to circle, maybe sync width/height?
-          // For now, let user decide or use defaults in renderer
-        }
-
-        // Update store
-        useEditorStore.getState().updateFloaterConfig(updates);
-      };
-
-      const handleNestedConfigUpdate = (parent: 'glassmorphism' | 'gradient' | 'animation', field: string, value: any) => {
-        const parentObj = config[parent] as any || {};
-        useEditorStore.getState().updateFloaterConfig({ [parent]: { ...parentObj, [field]: value } });
-      };
-
-      return (
-        <>
-          {/* Mode Selection */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              🎨 Floater Mode
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                onClick={() => handleConfigUpdate('mode', 'default')}
-                style={{
-                  padding: '12px',
-                  border: `2px solid ${(config.mode || 'default') === 'default' ? colors.primary[500] : colors.gray[200]}`,
-                  borderRadius: '8px',
-                  background: (config.mode || 'default') === 'default' ? colors.primary[50] : 'white',
-                  color: (config.mode || 'default') === 'default' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                Default
-              </button>
-              <button
-                onClick={() => {
-                  handleConfigUpdate('mode', 'image-only');
-                  handleConfigUpdate('shape', 'rectangle'); // Auto-set to rectangle
-
-                  // Reset container styles for image-only mode
-                  const floaterContainer = currentCampaign?.layers?.find((l: any) => l.type === 'container' && l.name === 'Floater Container');
-                  if (floaterContainer) {
-                    updateLayerStyle(floaterContainer.id, {
-                      backgroundColor: 'transparent',
-                      boxShadow: 'none',
-                      borderRadius: 0
-                    });
-                  }
-                }}
-                style={{
-                  padding: '12px',
-                  border: `2px solid ${config.mode === 'image-only' ? colors.primary[500] : colors.gray[200]}`,
-                  borderRadius: '8px',
-                  background: config.mode === 'image-only' ? colors.primary[50] : 'white',
-                  color: config.mode === 'image-only' ? colors.primary[600] : colors.text.secondary,
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                Image Only
-              </button>
-            </div>
-          </div >
-
-          {/* Background Image (Image-Only Mode) */}
-          {
-            config.mode === 'image-only' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                  🖼️ Floater Image
-                </h5>
-
-                {/* Image Preview */}
-                {config.backgroundImageUrl && (
-                  <div style={{
-                    width: '100%',
-                    height: '100px',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    marginBottom: '12px',
-                    border: `1px solid ${colors.gray[200]}`,
-                    position: 'relative'
-                  }}>
-                    <img
-                      src={config.backgroundImageUrl}
-                      alt="Floater preview"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        backgroundColor: '#f0f0f0'
-                      }}
-                    />
-                    <button
-                      onClick={() => handleConfigUpdate('backgroundImageUrl', '')}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '24px',
-                        height: '24px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-
-                {/* Upload Button */}
-                <label style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '20px',
-                  border: `2px dashed ${colors.gray[200]}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  background: colors.gray[50],
-                  transition: 'all 0.2s'
-                }}>
-                  <Upload size={20} color={colors.text.secondary} style={{ marginBottom: '8px' }} />
-                  <span style={{ fontSize: '12px', color: colors.text.secondary, fontWeight: 500 }}>
-                    {config.backgroundImageUrl ? 'Change Image' : 'Upload Image'}
-                  </span>
-                  <span style={{ fontSize: '10px', color: colors.text.secondary, marginTop: '4px' }}>
-                    PNG, JPG, GIF (Max 5MB)
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      if (file.size > 5 * 1024 * 1024) {
-                        // toast.error('Image size must be less than 5MB');
-                        alert('Image size must be less than 5MB');
-                        return;
-                      }
-
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        handleConfigUpdate('backgroundImageUrl', event.target?.result);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
-              </div>
-            )
-          }
-
-          {/* Image URL Input (Image-Only Mode) */}
-          {
-            config.mode === 'image-only' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                  🔗 Image URL
-                </h5>
-                <input
-                  type="text"
-                  placeholder="https://example.com/image.png"
-                  value={config.backgroundImageUrl || ''}
-                  onChange={(e) => handleConfigUpdate('backgroundImageUrl', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: `1px solid ${colors.gray[200]}`,
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                />
-              </div>
-            )
-          }
-
-          {/* Size Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                📏 Size
-              </h5>
-              <div style={{ display: 'flex', background: colors.gray[100], borderRadius: '4px', padding: '2px' }}>
-                <button
-                  onClick={() => handleConfigUpdate('sizeUnit', 'px')}
-                  style={{
-                    padding: '2px 8px',
-                    fontSize: '10px',
-                    borderRadius: '3px',
-                    border: 'none',
-                    background: (config.sizeUnit || 'px') === 'px' ? 'white' : 'transparent',
-                    boxShadow: (config.sizeUnit || 'px') === 'px' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  PX
-                </button>
-                <button
-                  onClick={() => handleConfigUpdate('sizeUnit', '%')}
-                  style={{
-                    padding: '2px 8px',
-                    fontSize: '10px',
-                    borderRadius: '3px',
-                    border: 'none',
-                    background: config.sizeUnit === '%' ? 'white' : 'transparent',
-                    boxShadow: config.sizeUnit === '%' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  %
-                </button>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                  Width {(config.sizeUnit || 'px') === '%' ? '(%)' : '(px)'}
-                </label>
-                <input
-                  type="number"
-                  value={config.width || 60}
-                  onChange={(e) => handleConfigUpdate('width', Number(e.target.value))}
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>
-                  Height {(config.sizeUnit || 'px') === '%' ? '(%)' : '(px)'}
-                </label>
-                <input
-                  type="number"
-                  value={config.height || 60}
-                  onChange={(e) => handleConfigUpdate('height', Number(e.target.value))}
-                  style={{ width: '100%', padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px', fontSize: '12px' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Shape Selection - Hide in Image Only mode if user wants "no circle" */}
-          {
-            config.mode !== 'image-only' && (
-              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-                  📐 Shape
-                </h5>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => handleConfigUpdate('shape', 'circle')}
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: `1px solid ${config.shape === 'circle' ? colors.primary[500] : colors.gray[200]}`,
-                      borderRadius: '6px',
-                      background: config.shape === 'circle' ? colors.primary[50] : 'white',
-                      color: config.shape === 'circle' ? colors.primary[600] : colors.text.secondary,
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Circle (FAB)
-                  </button>
-                  <button
-                    onClick={() => handleConfigUpdate('shape', 'rectangle')}
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: `1px solid ${config.shape === 'rectangle' ? colors.primary[500] : colors.gray[200]}`,
-                      borderRadius: '6px',
-                      background: config.shape === 'rectangle' ? colors.primary[50] : 'white',
-                      color: config.shape === 'rectangle' ? colors.primary[600] : colors.text.secondary,
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Rectangle
-                  </button>
-                </div>
-              </div>
-            )
-          }
-
-          {/* Position Control */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              📍 Position
-            </h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              {['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center-left', 'center-right'].map((pos) => (
-                <button
-                  key={pos}
-                  onClick={() => handleConfigUpdate('position', pos)}
-                  style={{
-                    padding: '8px',
-                    border: `1px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`,
-                    borderRadius: '6px',
-                    background: config.position === pos ? colors.primary[50] : 'white',
-                    color: config.position === pos ? colors.primary[600] : colors.text.secondary,
-                    fontSize: '11px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize'
-                  }}
-                >
-                  {pos.replace('-', ' ')}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset X</label>
-                <input type="number" value={config.offsetX || 20} onChange={(e) => handleConfigUpdate('offsetX', Number(e.target.value))} style={{ width: '100%', padding: '4px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary, marginBottom: '4px' }}>Offset Y</label>
-                <input type="number" value={config.offsetY || 20} onChange={(e) => handleConfigUpdate('offsetY', Number(e.target.value))} style={{ width: '100%', padding: '4px', border: `1px solid ${colors.gray[200]}`, borderRadius: '4px' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Styling - Glassmorphism & Gradient */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}` }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>
-              ✨ Styling
-            </h5>
-
-            {/* Glassmorphism Toggle */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: colors.text.secondary }}>Glassmorphism</span>
-                <input type="checkbox" checked={config.glassmorphism?.enabled} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'enabled', e.target.checked)} />
-              </label>
-              {config.glassmorphism?.enabled && (
-                <div style={{ paddingLeft: '8px', borderLeft: `2px solid ${colors.gray[200]}` }}>
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Blur ({config.glassmorphism.blur}px)</label>
-                    <input type="range" min="0" max="20" value={config.glassmorphism.blur} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'blur', Number(e.target.value))} style={{ width: '100%' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Opacity ({Math.round(config.glassmorphism.opacity * 100)}%)</label>
-                    <input type="range" min="0" max="1" step="0.1" value={config.glassmorphism.opacity} onChange={(e) => handleNestedConfigUpdate('glassmorphism', 'opacity', Number(e.target.value))} style={{ width: '100%' }} />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Gradient Toggle */}
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: colors.text.secondary }}>Gradient Background</span>
-                <input type="checkbox" checked={config.gradient?.enabled} onChange={(e) => handleNestedConfigUpdate('gradient', 'enabled', e.target.checked)} />
-              </label>
-              {config.gradient?.enabled && (
-                <div style={{ paddingLeft: '8px', borderLeft: `2px solid ${colors.gray[200]}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Start</label>
-                    <input type="color" value={config.gradient.startColor} onChange={(e) => handleNestedConfigUpdate('gradient', 'startColor', e.target.value)} style={{ width: '100%', height: '30px', border: 'none', padding: 0 }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>End</label>
-                    <input type="color" value={config.gradient.endColor} onChange={(e) => handleNestedConfigUpdate('gradient', 'endColor', e.target.value)} style={{ width: '100%', height: '30px', border: 'none', padding: 0 }} />
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label style={{ display: 'block', fontSize: '11px', color: colors.text.secondary }}>Angle ({config.gradient.angle}deg)</label>
-                    <input type="range" min="0" max="360" value={config.gradient.angle} onChange={(e) => handleNestedConfigUpdate('gradient', 'angle', Number(e.target.value))} style={{ width: '100%' }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      );
+      return <FloaterMinimalEditor />;
     };
 
     // PIP Configuration (Phase 13)
@@ -3503,9 +3151,11 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedLayerObj.name === 'Scratch Card Container') {
         return <ScratchCardMinimalEditor />;
       }
+      if (selectedLayerObj.name === 'Floater Container') {
+        return renderFloaterConfig();
+      }
       return (
         <>
-          {selectedLayerObj.name === 'Floater Container' && renderFloaterConfig()}
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
           {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
           <ContainerEditor

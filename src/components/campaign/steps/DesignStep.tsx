@@ -667,8 +667,10 @@ export const DesignStep: React.FC<any> = () => {
   }, [searchParams, editorMode, loadCampaign, setEditorMode, setShowEditor, navigate, currentCampaign]);
 
   // Get layers from current campaign
-  const campaignLayers = currentCampaign?.layers || [];
-  const campaignName = currentCampaign?.name || 'New Campaign';
+  // Get layers from context (Campaign OR Active Interface)
+  const activeInterface = currentCampaign?.interfaces?.find((i: any) => i.id === activeInterfaceId);
+  const campaignLayers = activeInterface ? activeInterface.layers : (currentCampaign?.layers || []);
+  const campaignName = activeInterface ? activeInterface.name : (currentCampaign?.name || 'New Campaign');
 
   // Debug logging for preview
   console.log('CampaignBuilder: Current campaign:', currentCampaign?.id);
@@ -3139,20 +3141,30 @@ export const DesignStep: React.FC<any> = () => {
 
     // Container properties (Generic)
     if (selectedLayerObj.type === 'container') {
-      if (selectedLayerObj.name === 'Bottom Sheet') {
+      // FIX: Check nudgeType FIRST to prevent "Modal Settings" showing for "Bottomsheet" due to legacy names
+      // Ensure we check ACTIVE INTERFACE context primarily
+      const activeInterface = currentCampaign?.interfaces?.find((i: any) => i.id === activeInterfaceId);
+      const effectiveNudgeType = activeInterface ? activeInterface.nudgeType : currentCampaign?.nudgeType;
+
+      const nudgeType = effectiveNudgeType;
+
+      // Root Layer Authority: If it's the root container, force the correct editor based on campaign type
+      // regardless of what the layer is named.
+      const isRootLayer = !selectedLayerObj.parent;
+
+      if (isRootLayer) {
+        if (nudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
+        if (nudgeType === 'modal') return <ModalMinimalEditor />;
+        if (nudgeType === 'banner') return <BannerMinimalEditor />;
+        if (nudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
+        if (nudgeType === 'floater') return renderFloaterConfig();
+        if (nudgeType === 'tooltip') return renderTooltipConfig();
+        if (nudgeType === 'pip') return renderPipConfig();
+      }
+
+      // Fallback for non-root containers or if nudgeType match failed (generic handling)
+      if (nudgeType === 'bottomsheet' && (selectedLayerObj.name === 'Bottom Sheet' || selectedLayerObj.name === 'Modal Container')) {
         return <BottomSheetMinimalEditor />;
-      }
-      if (selectedLayerObj.name === 'Modal Container') {
-        return <ModalMinimalEditor />;
-      }
-      if (selectedLayerObj.name === 'Banner Container') {
-        return <BannerMinimalEditor />;
-      }
-      if (selectedLayerObj.name === 'Scratch Card Container') {
-        return <ScratchCardMinimalEditor />;
-      }
-      if (selectedLayerObj.name === 'Floater Container') {
-        return renderFloaterConfig();
       }
       return (
         <>

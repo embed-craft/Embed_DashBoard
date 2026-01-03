@@ -698,6 +698,7 @@ interface EditorStore {
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
   createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => void;
   updateCampaign: (updates: Partial<CampaignEditor>) => void; // ✅ FIX: Add generic updateCampaign
+  validateAndFixCampaign: () => void;
   resetCurrentCampaign: () => void;
 
   // Actions - Bottom Sheet Config (Phase 3)
@@ -1101,10 +1102,14 @@ export const useEditorStore = create<EditorStore>()(
           }
 
           // FIX: Migration for legacy campaigns - Convert root layer type 'text' -> 'container' AND Fix missing root layers
-          if (['bottomsheet', 'modal', 'scratchcard'].includes(campaignData.nudgeType)) {
+          if (['bottomsheet', 'modal', 'scratchcard', 'banner', 'tooltip', 'pip', 'floater'].includes(campaignData.nudgeType)) {
             let rootLayerName = 'Modal Container'; // default
             if (campaignData.nudgeType === 'bottomsheet') rootLayerName = 'Bottom Sheet';
             if (campaignData.nudgeType === 'scratchcard') rootLayerName = 'Scratch Card Container';
+            if (campaignData.nudgeType === 'banner') rootLayerName = 'Banner Container';
+            if (campaignData.nudgeType === 'tooltip') rootLayerName = 'Tooltip Container';
+            if (campaignData.nudgeType === 'pip') rootLayerName = 'PIP Container';
+            if (campaignData.nudgeType === 'floater') rootLayerName = 'Floater Container';
 
             let rootLayer = campaignData.layers.find(l => l.name === rootLayerName);
 
@@ -1112,6 +1117,28 @@ export const useEditorStore = create<EditorStore>()(
             if (rootLayer && rootLayer.type === 'text') {
               console.log(`loadCampaign: Migrating legacy ${campaignData.nudgeType} root layer from 'text' to 'container'`);
               rootLayer.type = 'container';
+            } else {
+              // Fallback: Check if we have a name mismatch (e.g. 'Modal Container' inside a 'bottomsheet' campaign)
+              if (!rootLayer) {
+                const firstLayer = campaignData.layers[0];
+                // Check for Bottomsheet mismatch
+                if (campaignData.nudgeType === 'bottomsheet' && firstLayer?.name === 'Modal Container') {
+                  console.log('loadCampaign: Renaming "Modal Container" to "Bottom Sheet"');
+                  firstLayer.name = 'Bottom Sheet';
+                  firstLayer.type = 'container'; // Ensure type is correct
+                }
+                // Check for Modal mismatch
+                else if (campaignData.nudgeType === 'modal' && firstLayer?.name === 'Bottom Sheet') {
+                  console.log('loadCampaign: Renaming "Bottom Sheet" to "Modal Container"');
+                  firstLayer.name = 'Modal Container';
+                  firstLayer.type = 'container';
+                }
+                // Generic fallback for other types if 0th layer exists
+                else if (firstLayer && !firstLayer.parent && firstLayer.type === 'text') {
+                  console.log(`loadCampaign: Force-fixing 0th layer ${firstLayer.name} to container as fallback`);
+                  firstLayer.type = 'container';
+                }
+              }
             }
 
             // Scenario 2: Root layer is MISSING (common in old bottomsheet campaigns)
@@ -1500,6 +1527,103 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       // Update Campaign (Generic)
+      validateAndFixCampaign: () => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        let updates = {};
+        let layers = [...currentCampaign.layers];
+        let hasChanges = false;
+
+        // Check 1: Root layer mismatch rename
+        if (currentCampaign.nudgeType === 'bottomsheet' && layers[0]?.name === 'Modal Container') {
+          console.log('validateAndFix: Renaming Modal Container -> Bottom Sheet');
+          layers[0] = { ...layers[0], name: 'Bottom Sheet', type: 'container' };
+          hasChanges = true;
+        }
+        else if (currentCampaign.nudgeType === 'modal' && layers[0]?.name === 'Bottom Sheet') {
+          console.log('validateAndFix: Renaming Bottom Sheet -> Modal Container');
+          layers[0] = { ...layers[0], name: 'Modal Container', type: 'container' };
+          hasChanges = true;
+        }
+
+        // Check 2: Text type on container root
+        if (['banner', 'tooltip', 'pip', 'floater'].includes(currentCampaign.nudgeType)) {
+          const root = layers[0];
+          if (root && root.type === 'text') {
+            console.log(`validateAndFix: Fixing ${currentCampaign.nudgeType} root layer type text -> container`);
+            layers[0] = { ...root, type: 'container' };
+            hasChanges = true;
+          }
+        }
+
+        if (hasChanges) {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true
+            }
+          });
+        }
+
+        // FIX: Also check interfaces for the same issues (Separate update to avoid complexity)
+        const { currentCampaign: updatedCamp } = get();
+        if (!updatedCamp || !updatedCamp.interfaces) return;
+
+        let interfacesChanged = false;
+        const interfaces = [...updatedCamp.interfaces];
+
+        interfaces.forEach((iface, index) => {
+          // Fix Interface Type mismatch based on name (heuristic)
+          if (iface.name.toLowerCase().includes('bottom') && iface.nudgeType !== 'bottomsheet') {
+            console.log(`validateAndFix: Fixing Interface ${iface.id} type modal -> bottomsheet`);
+            interfaces[index] = { ...iface, nudgeType: 'bottomsheet' };
+            interfacesChanged = true;
+          }
+
+          // Fix Interface Layers
+          let iLayers = [...iface.layers];
+          let iLayersChanged = false;
+
+          // Interface Root Rename
+          if (interfaces[index].nudgeType === 'bottomsheet' && iLayers[0]?.name === 'Modal Container') {
+            console.log(`validateAndFix: Renaming Interface ${iface.id} root Modal Container -> Bottom Sheet`);
+            iLayers[0] = { ...iLayers[0], name: 'Bottom Sheet', type: 'container' };
+            iLayersChanged = true;
+          }
+          else if (interfaces[index].nudgeType === 'modal' && iLayers[0]?.name === 'Bottom Sheet') {
+            iLayers[0] = { ...iLayers[0], name: 'Modal Container', type: 'container' };
+            iLayersChanged = true;
+          }
+
+          // Interface Root Type Fix
+          if (['banner', 'tooltip', 'pip', 'floater'].includes(interfaces[index].nudgeType)) {
+            if (iLayers[0] && iLayers[0].type === 'text') {
+              iLayers[0] = { ...iLayers[0], type: 'container' };
+              iLayersChanged = true;
+            }
+          }
+
+          if (iLayersChanged) {
+            interfaces[index] = { ...interfaces[index], layers: iLayers };
+            interfacesChanged = true;
+          }
+        });
+
+        if (interfacesChanged) {
+          set({
+            currentCampaign: {
+              ...updatedCamp,
+              interfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true
+            }
+          });
+        }
+      },
+
       updateCampaign: (updates) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
@@ -2808,6 +2932,7 @@ export const useEditorStore = create<EditorStore>()(
         } : null,
         // Persist other UI preferences if needed
         showEditor: state.showEditor,
+        activeInterfaceId: state.activeInterfaceId,
       }),
     }
   )
@@ -3091,7 +3216,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'text',
+          type: 'container',
           name: 'PIP Container',
           parent: null,
           children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`],
@@ -3193,7 +3318,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       return [
         {
           id: `layer_${baseId}`,
-          type: 'text',
+          type: 'container',
           name: 'Tooltip Container',
           parent: null,
           children: [`layer_${baseId + 1}`],
@@ -3238,55 +3363,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
         },
       ];
 
-    case 'floater':
-      return [
-        {
-          id: `layer_${baseId}`,
-          type: 'text',
-          name: 'Floater Container',
-          parent: null,
-          children: [`layer_${baseId + 1}`],
-          visible: true,
-          locked: false,
-          zIndex: 0,
-          position: { x: 0, y: 0 },
-          size: { width: 60, height: 60 },
-          content: {},
-          style: {
-            backgroundColor: '#10B981',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-            position: 'absolute',
-            bottom: 20,
-            right: 20,
-          },
-        },
-        {
-          id: `layer_${baseId + 1}`,
-          type: 'icon',
-          name: 'Icon',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 1,
-          position: { x: 0, y: 0 },
-          size: { width: 32, height: 32 },
-          content: {
-            iconName: 'MessageCircle',
-            fontSize: 32,
-            textColor: '#FFFFFF',
-          },
-          style: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-        },
-      ];
+
 
     default:
       return [];

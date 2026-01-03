@@ -55,7 +55,8 @@ const CampaignBuilder: React.FC = () => {
     setSaveTemplateModalOpen,
     isTemplateModalOpen,
     isSaveTemplateModalOpen,
-    applyTemplate
+    applyTemplate,
+    validateAndFixCampaign
   } = useEditorStore();
 
   // Mode detection: Sync store mode with URL param
@@ -78,8 +79,9 @@ const CampaignBuilder: React.FC = () => {
     if (mode === 'template') return;
 
     if (campaignId) {
-      // Don't reload if it's already the current campaign
+      // Don't reload if it's already the current campaign (prevents 500 on unsaved drafts)
       if (currentCampaign?.id === campaignId) return;
+
       loadCampaign(campaignId);
     }
   }, [searchParams, loadCampaign]);

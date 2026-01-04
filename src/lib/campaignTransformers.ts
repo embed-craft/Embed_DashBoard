@@ -505,6 +505,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
       shape: fc.borderRadius >= Math.min(fc.width || 60, fc.height || 60) / 2 ? 'circle' : 'rectangle',
       overlay: fc.overlay,
       showCloseButton: fc.showCloseButton,
+      dismissOnTapOutside: fc.dismissOnTapOutside, // NEW: dismiss when tapping outside floater
     });
   }
 

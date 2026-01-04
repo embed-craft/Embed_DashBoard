@@ -10,7 +10,7 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'countdown' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html' | 'container';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html' | 'container' | 'image';
 
 export interface LayerContent {
   // Media content

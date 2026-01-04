@@ -357,7 +357,7 @@ export const FloaterMinimalEditor = () => {
                 </div>
             </div>
 
-            {/* Dismiss Options */}
+            {/* Dismiss Options - PROMINENT SECTION */}
             <div style={{ paddingBottom: '20px', borderBottom: `1px solid ${colors.gray[200]}` }}>
                 <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <X size={14} />
@@ -365,30 +365,66 @@ export const FloaterMinimalEditor = () => {
                 </h5>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-                    {/* Tap Scrim Custom Toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: colors.gray[100], borderRadius: '8px' }}>
+                    {/* Option 1: Show Close Button */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: colors.gray[100], borderRadius: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '4px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Maximize size={14} color={colors.text.secondary} />
+                            <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                <X size={14} color={colors.text.secondary} />
                             </div>
-                            <span style={{ fontSize: '13px', color: colors.text.primary }}>Tap Scrim to Close</span>
+                            <div>
+                                <span style={{ fontSize: '13px', color: colors.text.primary, fontWeight: 500 }}>Show Close Button</span>
+                                <p style={{ margin: 0, fontSize: '11px', color: colors.text.secondary }}>Shows X button on the floater</p>
+                            </div>
                         </div>
                         <button
-                            onClick={() => updateNestedConfig('overlay', 'dismissOnClick', !config.overlay?.dismissOnClick)}
+                            onClick={() => updateConfig('showCloseButton', !config.showCloseButton)}
                             style={{
-                                width: '36px', height: '20px',
-                                borderRadius: '12px',
-                                backgroundColor: config.overlay?.dismissOnClick ? colors.primary[500] : colors.gray[300],
+                                width: '40px', height: '22px',
+                                borderRadius: '11px',
+                                backgroundColor: config.showCloseButton ? colors.primary[500] : colors.gray[300],
                                 position: 'relative',
                                 transition: 'background-color 0.2s',
                                 cursor: 'pointer', border: 'none'
                             }}
                         >
                             <div style={{
-                                width: '16px', height: '16px',
+                                width: '18px', height: '18px',
                                 borderRadius: '50%', backgroundColor: 'white',
                                 position: 'absolute', top: '2px',
-                                left: config.overlay?.dismissOnClick ? '18px' : '2px',
+                                left: config.showCloseButton ? '20px' : '2px',
+                                transition: 'left 0.2s',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                            }} />
+                        </button>
+                    </div>
+
+                    {/* Option 2: Tap Outside to Close */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: colors.gray[100], borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                <Maximize size={14} color={colors.text.secondary} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '13px', color: colors.text.primary, fontWeight: 500 }}>Tap Outside to Close</span>
+                                <p style={{ margin: 0, fontSize: '11px', color: colors.text.secondary }}>Closes when tapping the screen (not floater)</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => updateConfig('dismissOnTapOutside', !config.dismissOnTapOutside)}
+                            style={{
+                                width: '40px', height: '22px',
+                                borderRadius: '11px',
+                                backgroundColor: config.dismissOnTapOutside ? colors.primary[500] : colors.gray[300],
+                                position: 'relative',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer', border: 'none'
+                            }}
+                        >
+                            <div style={{
+                                width: '18px', height: '18px',
+                                borderRadius: '50%', backgroundColor: 'white',
+                                position: 'absolute', top: '2px',
+                                left: config.dismissOnTapOutside ? '20px' : '2px',
                                 transition: 'left 0.2s',
                                 boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
                             }} />

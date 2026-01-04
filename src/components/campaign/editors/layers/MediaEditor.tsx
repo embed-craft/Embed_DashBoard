@@ -6,7 +6,7 @@ import { SizeControls } from '../shared/SizeControls';
 interface MediaEditorProps extends LayerEditorProps {
     handleContentUpdate: (key: string, value: any) => void;
     onStyleUpdate: (key: string, value: any) => void;
-    handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'banner' | 'modal') => void;
+    handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'background' | 'tooltip_image_only') => void;
 }
 
 export const MediaEditor: React.FC<MediaEditorProps> = ({

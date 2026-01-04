@@ -668,7 +668,7 @@ export const DesignStep: React.FC<any> = () => {
 
   // Get layers from current campaign
   // Get layers from context (Campaign OR Active Interface)
-  const activeInterface = currentCampaign?.interfaces?.find((i: any) => i.id === activeInterfaceId);
+  // Note: activeInterface is already defined above at line 246
   const campaignLayers = activeInterface ? activeInterface.layers : (currentCampaign?.layers || []);
   const campaignName = activeInterface ? activeInterface.name : (currentCampaign?.name || 'New Campaign');
 

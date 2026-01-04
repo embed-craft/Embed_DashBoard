@@ -51,6 +51,19 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
     const [isRevealed, setIsRevealed] = useState(false);
     const [scratchedPercent, setScratchedPercent] = useState(0);
     const [showCelebration, setShowCelebration] = useState(false);
+    // NEW: Delay interaction for 1s after reveal
+    const [isPrizeInteractable, setIsPrizeInteractable] = useState(false);
+
+    useEffect(() => {
+        if (isRevealed) {
+            const timer = setTimeout(() => {
+                setIsPrizeInteractable(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else {
+            setIsPrizeInteractable(false);
+        }
+    }, [isRevealed]);
 
     // Guard: Track when interact mode was enabled to prevent auto-triggering
     const interactModeEntryTimeRef = useRef<number>(0);
@@ -460,8 +473,8 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 1,
-                // Allow scratch when not revealed, allow button clicks after revealed
-                pointerEvents: isRevealed ? 'auto' : 'none'
+                // Allow scratch when not revealed, allow button clicks after revealed AND delay (1s)
+                pointerEvents: isPrizeInteractable ? 'auto' : 'none'
             }}>
                 {layers.map(renderLayer)}
             </div>

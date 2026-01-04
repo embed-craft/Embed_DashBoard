@@ -488,6 +488,26 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     });
   }
 
+  // ✅ FIX: Add Floater config flattening
+  if (campaign.nudgeType === 'floater' && (campaign as any).floaterConfig) {
+    const fc = (campaign as any).floaterConfig;
+    Object.assign(config, {
+      width: fc.width,
+      height: fc.height,
+      backgroundColor: fc.backgroundColor,
+      backgroundImageUrl: fc.backgroundImageUrl,
+      backgroundSize: fc.backgroundSize,
+      borderRadius: fc.borderRadius,
+      position: fc.position,
+      offsetX: fc.offsetX,
+      offsetY: fc.offsetY,
+      // Shape detection: if borderRadius is very high (>= min(width,height)/2), likely circle
+      shape: fc.borderRadius >= Math.min(fc.width || 60, fc.height || 60) / 2 ? 'circle' : 'rectangle',
+      overlay: fc.overlay,
+      showCloseButton: fc.showCloseButton,
+    });
+  }
+
   // ========== TEXT LAYER (Description/Body) ==========
   const textLayer = campaign.layers.find(l => l.type === 'text' && (l.name.toLowerCase().includes('description') || l.name.toLowerCase().includes('body') || l.name === 'Text'));
   const buttonLayer = campaign.layers.find(l => l.type === 'button');

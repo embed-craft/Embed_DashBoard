@@ -306,7 +306,7 @@ export interface TargetingRule {
 
   // User Property Logic
   property?: string;
-  operator?: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'set' | 'not_set';
+  operator?: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'greater_than_or_equal' | 'less_than_or_equal' | 'set' | 'not_set';
   value?: string | number | boolean;
 
   // Event Logic
@@ -315,10 +315,11 @@ export interface TargetingRule {
   properties?: {
     id: string;
     field: string;
-    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'set' | 'not_set';
+    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'greater_than_or_equal' | 'less_than_or_equal' | 'set' | 'not_set';
     value: string | number | boolean;
   }[];
   count?: number;
+  countOperator?: 'equals' | 'greater_than' | 'less_than' | 'greater_than_or_equal' | 'less_than_or_equal' | 'not_equals'; // ✅ New field for event count operator
   timeWindow?: number; // In seconds
 }
 
@@ -697,6 +698,13 @@ interface EditorStore {
   updateGoal: (goal: Partial<CampaignGoal>) => void;
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
   createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => void;
+  // Actions - Targeting
+  addTargetingRule: (rule: Omit<TargetingRule, 'id'>) => void;
+  updateTargetingRule: (id: string, rule: Partial<TargetingRule>) => void;
+  deleteTargetingRule: (id: string) => void;
+  updateDisplayRules: (rules: Partial<DisplayRules>) => void;
+
+
   updateCampaign: (updates: Partial<CampaignEditor>) => void; // ✅ FIX: Add generic updateCampaign
   validateAndFixCampaign: () => void;
   resetCurrentCampaign: () => void;
@@ -827,7 +835,17 @@ export const useEditorStore = create<EditorStore>()(
             metadataService.getProperties(),
             metadataService.getPages() // Fetch pages
           ]);
-          set({ availableEvents: events, availableProperties: properties, availablePages: pages, isLoadingMetadata: false });
+          set({
+            availableEvents: events,
+            // FIX: Inject default properties if missing
+            availableProperties: [
+              ...properties,
+              ...(!properties.some(p => p.name === 'email') ? [{ id: 'email', name: 'email', displayName: 'Email', type: 'string', description: 'User Email' }] : []),
+              ...(!properties.some(p => p.name === 'referralCode') ? [{ id: 'referralCode', name: 'referralCode', displayName: 'Referral Code', type: 'string', description: 'User Referral Code' }] : [])
+            ] as PropertyDefinition[],
+            availablePages: pages,
+            isLoadingMetadata: false
+          });
         } catch (error) {
           console.error('Failed to fetch metadata:', error);
           set({ isLoadingMetadata: false });
@@ -2612,10 +2630,20 @@ export const useEditorStore = create<EditorStore>()(
           r.id === id ? { ...r, ...rule } : r
         );
 
+        // FIX: Sync 'trigger' field if we are updating an event rule
+        let updatedTrigger = currentCampaign.trigger;
+        const updatedRule = updatedRules.find(r => r.id === id);
+        if (updatedRule && updatedRule.type === 'event' && updatedRule.event) {
+          // Heuristic: If this is the *first* event rule, or the only one, sync it to the legacy 'trigger' field
+          // For now, we sync if it matches the current trigger OR if trigger is default
+          updatedTrigger = updatedRule.event;
+        }
+
         set({
           currentCampaign: {
             ...currentCampaign,
             targeting: updatedRules,
+            trigger: updatedTrigger,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },
@@ -2647,10 +2675,29 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
+        // FIX: Deep merge display rules to prevent data loss
+        const existingRules = currentCampaign.displayRules || {};
+        const mergedRules = { ...existingRules };
+
+        Object.keys(rules).forEach(key => {
+          // @ts-ignore
+          const value = rules[key];
+          // @ts-ignore
+          const existingValue = existingRules[key];
+
+          if (value && typeof value === 'object' && !Array.isArray(value) && existingValue && typeof existingValue === 'object') {
+            // @ts-ignore
+            mergedRules[key] = { ...existingValue, ...value };
+          } else if (value !== undefined) {
+            // @ts-ignore
+            mergedRules[key] = value;
+          }
+        });
+
         set({
           currentCampaign: {
             ...currentCampaign,
-            displayRules: { ...currentCampaign.displayRules, ...rules },
+            displayRules: mergedRules as DisplayRules,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },

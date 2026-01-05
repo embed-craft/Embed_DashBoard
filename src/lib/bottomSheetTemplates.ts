@@ -27,9 +27,9 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0 },
         size: { width: 360, height: 'auto' },
         content: {},
-        style: { 
-          backgroundColor: '#FFFFFF', 
-          borderRadius: 24, 
+        style: {
+          backgroundColor: '#FFFFFF',
+          borderRadius: 24,
           padding: { top: 24, right: 20, bottom: 24, left: 20 },
           layout: 'stack',
           gap: 16
@@ -46,17 +46,17 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 1,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 8 },
-        content: { 
-          value: 150, 
-          max: 300, 
+        content: {
+          value: 150,
+          max: 300,
           showPercentage: false,
           milestones: [
             { value: 300, label: 'Free delivery unlocked! 🎉', color: '#22C55E' }
           ]
         },
-        style: { 
-          backgroundColor: '#22C55E', 
-          borderRadius: 4 
+        style: {
+          backgroundColor: '#22C55E',
+          borderRadius: 4
         },
         children: []
       },
@@ -70,8 +70,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: '₹150 away from free delivery', 
+        content: {
+          text: '₹150 away from free delivery',
           fontSize: 14,
           fontWeight: 'semibold',
           textColor: '#111827',
@@ -90,8 +90,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 3,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'You\'re halfway there! Add more items to unlock free delivery.', 
+        content: {
+          text: 'You\'re halfway there! Add more items to unlock free delivery.',
           fontSize: 13,
           fontWeight: 'normal',
           textColor: '#6B7280',
@@ -110,15 +110,15 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 48 },
-        content: { 
+        content: {
           label: 'Add Items',
           textColor: '#FFFFFF',
           buttonStyle: 'primary',
           action: { type: 'deeplink', url: '/products', trackConversion: true }
         },
-        style: { 
-          backgroundColor: '#22C55E', 
-          borderRadius: 10 
+        style: {
+          backgroundColor: '#22C55E',
+          borderRadius: 10
         },
         children: []
       }
@@ -134,17 +134,17 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
       backgroundColor: '#FFFFFF',
       borderRadius: { topLeft: 24, topRight: 24 },
       elevation: 4,
-      overlay: { 
-        enabled: true, 
-        opacity: 0.5, 
-        blur: 0, 
-        color: '#000000', 
-        dismissOnClick: true 
+      overlay: {
+        enabled: true,
+        opacity: 0.5,
+        blur: 0,
+        color: '#000000',
+        dismissOnClick: true
       },
-      animation: { 
-        type: 'slide', 
-        duration: 300, 
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)' 
+      animation: {
+        type: 'slide',
+        duration: 300,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
       },
       safeArea: { top: false, bottom: true }
     }
@@ -171,9 +171,9 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0 },
         size: { width: 360, height: 'auto' },
         content: {},
-        style: { 
-          backgroundColor: '#FFFFFF', 
-          borderRadius: 24, 
+        style: {
+          backgroundColor: '#FFFFFF',
+          borderRadius: 24,
           padding: { top: 32, right: 24, bottom: 32, left: 24 },
           layout: 'stack',
           gap: 16,
@@ -191,7 +191,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 1,
         position: { x: 0, y: 0 },
         size: { width: 80, height: 80 },
-        content: { 
+        content: {
           imageUrl: 'https://images.unsplash.com/photo-1516534775068-ba3e7458af70?w=100&h=100&fit=crop',
           imageSize: { width: 80, height: 80 }
         },
@@ -208,8 +208,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'You\'re 75% to your daily goal! 🎯', 
+        content: {
+          text: 'You\'re 75% to your daily goal! 🎯',
           fontSize: 18,
           fontWeight: 'bold',
           textColor: '#111827',
@@ -228,8 +228,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 3,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Just 5 more minutes to reach your daily reading target!', 
+        content: {
+          text: 'Just 5 more minutes to reach your daily reading target!',
           fontSize: 14,
           fontWeight: 'normal',
           textColor: '#6B7280',
@@ -248,12 +248,12 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0 },
         size: { width: 120, height: 120 },
-        content: { 
+        content: {
           value: 75,
           max: 100,
           showPercentage: true
         },
-        style: { 
+        style: {
           backgroundColor: '#6366F1',
           borderRadius: 60
         },
@@ -269,14 +269,14 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 5,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 48 },
-        content: { 
+        content: {
           label: 'Continue Reading',
           textColor: '#FFFFFF',
           buttonStyle: 'primary'
         },
-        style: { 
-          backgroundColor: '#6366F1', 
-          borderRadius: 10 
+        style: {
+          backgroundColor: '#6366F1',
+          borderRadius: 10
         },
         children: []
       }
@@ -289,17 +289,17 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
       backgroundColor: '#FFFFFF',
       borderRadius: { topLeft: 24, topRight: 24 },
       elevation: 3,
-      overlay: { 
-        enabled: true, 
-        opacity: 0.6, 
-        blur: 4, 
-        color: '#000000', 
-        dismissOnClick: true 
+      overlay: {
+        enabled: true,
+        opacity: 0.6,
+        blur: 4,
+        color: '#000000',
+        dismissOnClick: true
       },
-      animation: { 
-        type: 'slide', 
-        duration: 350, 
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)' 
+      animation: {
+        type: 'slide',
+        duration: 350,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
       }
     }
   },
@@ -325,9 +325,9 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0 },
         size: { width: 360, height: 'auto' },
         content: {},
-        style: { 
-          backgroundColor: '#FFFFFF', 
-          borderRadius: 24, 
+        style: {
+          backgroundColor: '#FFFFFF',
+          borderRadius: 24,
           padding: { top: 20, right: 20, bottom: 20, left: 20 },
           layout: 'stack',
           gap: 16
@@ -344,7 +344,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 1,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 160 },
-        content: { 
+        content: {
           imageUrl: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&h=200&fit=crop',
           imageSize: { width: 320, height: 160 }
         },
@@ -361,13 +361,13 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
+        content: {
           endTime: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
           format: 'HH:MM:SS',
           urgencyThreshold: 300, // 5 minutes in seconds
           autoHide: false
         },
-        style: { 
+        style: {
           backgroundColor: '#FEE2E2',
           borderRadius: 8,
           padding: 12
@@ -384,8 +384,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 3,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Get 30% off on all flights! ✈️', 
+        content: {
+          text: 'Get 30% off on all flights! ✈️',
           fontSize: 20,
           fontWeight: 'bold',
           textColor: '#111827',
@@ -404,8 +404,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Limited time offer! Book your tickets before the deal expires.', 
+        content: {
+          text: 'Limited time offer! Book your tickets before the deal expires.',
           fontSize: 14,
           fontWeight: 'normal',
           textColor: '#6B7280',
@@ -441,13 +441,13 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 6,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 44 },
-        content: { 
+        content: {
           label: 'Maybe Later',
           textColor: '#6B7280',
           buttonStyle: 'outline',
           action: { type: 'close' }
         },
-        style: { 
+        style: {
           backgroundColor: 'transparent',
           borderColor: '#E5E7EB',
           borderWidth: 1,
@@ -466,14 +466,14 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 7,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 44 },
-        content: { 
+        content: {
           label: 'Book Now',
           textColor: '#FFFFFF',
           buttonStyle: 'primary',
           action: { type: 'deeplink', url: '/flights', trackConversion: true }
         },
-        style: { 
-          backgroundColor: '#EF4444', 
+        style: {
+          backgroundColor: '#EF4444',
           borderRadius: 8,
           padding: 12
         },
@@ -487,17 +487,17 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
       backgroundColor: '#FFFFFF',
       borderRadius: { topLeft: 24, topRight: 24 },
       elevation: 4,
-      overlay: { 
-        enabled: true, 
-        opacity: 0.7, 
-        blur: 2, 
-        color: '#000000', 
-        dismissOnClick: false 
+      overlay: {
+        enabled: true,
+        opacity: 0.7,
+        blur: 2,
+        color: '#000000',
+        dismissOnClick: false
       },
-      animation: { 
-        type: 'bounce', 
-        duration: 400, 
-        easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' 
+      animation: {
+        type: 'bounce',
+        duration: 400,
+        easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
       }
     }
   },
@@ -523,9 +523,9 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0 },
         size: { width: 360, height: 'auto' },
         content: {},
-        style: { 
+        style: {
           backgroundColor: '#FEF3C7',
-          borderRadius: 24, 
+          borderRadius: 24,
           padding: { top: 24, right: 20, bottom: 24, left: 20 },
           layout: 'stack',
           gap: 16
@@ -542,7 +542,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 1,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 120 },
-        content: { 
+        content: {
           imageUrl: 'https://images.unsplash.com/photo-1543946602-a0fce8117697?w=400&h=150&fit=crop',
           imageSize: { width: 320, height: 120 }
         },
@@ -559,8 +559,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Diwali Special! 🪔', 
+        content: {
+          text: 'Diwali Special! 🪔',
           fontSize: 22,
           fontWeight: 'bold',
           textColor: '#92400E',
@@ -579,7 +579,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 3,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
+        content: {
           value: 500,
           prefix: '₹',
           suffix: 'FREE COINS',
@@ -603,8 +603,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Complete your first transaction and get 500 coins instantly!', 
+        content: {
+          text: 'Complete your first transaction and get 500 coins instantly!',
           fontSize: 14,
           fontWeight: 'normal',
           textColor: '#78350F',
@@ -623,15 +623,15 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 5,
         position: { x: 0, y: 0 },
         size: { width: 'auto', height: 52 },
-        content: { 
+        content: {
           label: 'Claim Reward 🎁',
           textColor: '#FFFFFF',
           buttonStyle: 'primary',
           action: { type: 'deeplink', url: '/rewards', trackConversion: true }
         },
-        style: { 
-          backgroundColor: '#F59E0B', 
-          borderRadius: 12 
+        style: {
+          backgroundColor: '#F59E0B',
+          borderRadius: 12
         },
         children: []
       }
@@ -648,17 +648,17 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         value: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
         opacity: 1
       },
-      overlay: { 
-        enabled: true, 
-        opacity: 0.5, 
-        blur: 0, 
-        color: '#000000', 
-        dismissOnClick: true 
+      overlay: {
+        enabled: true,
+        opacity: 0.5,
+        blur: 0,
+        color: '#000000',
+        dismissOnClick: true
       },
-      animation: { 
-        type: 'slide', 
-        duration: 300, 
-        easing: 'ease-out' 
+      animation: {
+        type: 'slide',
+        duration: 300,
+        easing: 'ease-out'
       }
     }
   },
@@ -685,7 +685,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 375, height: 'auto' },
         content: {},
-        style: { 
+        style: {
           backgroundImage: 'url(https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800&h=600&fit=crop)',
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
@@ -709,7 +709,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 24, y: 16, type: 'absolute' },
         size: { width: 'auto', height: 'auto' },
         content: { badgeText: '70% OFF', badgeVariant: 'error' },
-        style: { 
+        style: {
           badgeBackgroundColor: '#EF4444',
           badgeTextColor: '#FFFFFF',
           badgeBorderRadius: 20,
@@ -727,8 +727,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'MEGA FLASH SALE', 
+        content: {
+          text: 'MEGA FLASH SALE',
           fontSize: 28,
           fontWeight: 'bold',
           textColor: '#FFFFFF',
@@ -747,8 +747,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 3,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Ends in 2 hours • Limited Stock', 
+        content: {
+          text: 'Ends in 2 hours • Limited Stock',
           fontSize: 14,
           fontWeight: 'medium',
           textColor: '#FFFFFF',
@@ -767,11 +767,11 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: '100%', height: 'auto' },
-        content: { 
+        content: {
           label: 'Shop Now',
           buttonStyle: 'primary'
         },
-        style: { 
+        style: {
           backgroundColor: '#FFFFFF',
           borderRadius: 12,
           padding: { top: 16, right: 24, bottom: 16, left: 24 }
@@ -812,7 +812,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 375, height: 'auto' },
         content: {},
-        style: { 
+        style: {
           backgroundImage: 'url(https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop)',
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
@@ -834,8 +834,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 1,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: '🍔🍕🍜', 
+        content: {
+          text: '🍔🍕🍜',
           fontSize: 48,
           textAlign: 'center'
         },
@@ -852,8 +852,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'FREE DELIVERY', 
+        content: {
+          text: 'FREE DELIVERY',
           fontSize: 32,
           fontWeight: 'bold',
           textColor: '#FFFFFF',
@@ -872,8 +872,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 3,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'On orders above ₹199', 
+        content: {
+          text: 'On orders above ₹199',
           fontSize: 16,
           fontWeight: 'medium',
           textColor: '#FFFFFF',
@@ -892,11 +892,11 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: '100%', height: 'auto' },
-        content: { 
+        content: {
           label: 'Order Now',
           buttonStyle: 'primary'
         },
-        style: { 
+        style: {
           backgroundColor: '#FBBF24',
           borderRadius: 16,
           padding: { top: 16, right: 24, bottom: 16, left: 24 }
@@ -937,7 +937,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 375, height: 'auto' },
         content: {},
-        style: { 
+        style: {
           backgroundImage: 'url(https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=800&h=600&fit=crop)',
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
@@ -980,8 +980,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 1,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Welcome Aboard!', 
+        content: {
+          text: 'Welcome Aboard!',
           fontSize: 28,
           fontWeight: 'bold',
           textColor: '#FFFFFF',
@@ -1000,8 +1000,8 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 2,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
-        content: { 
-          text: 'Get ₹200 OFF on your first ride', 
+        content: {
+          text: 'Get ₹200 OFF on your first ride',
           fontSize: 16,
           fontWeight: 'medium',
           textColor: '#FFFFFF',
@@ -1021,7 +1021,7 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: 'auto', height: 'auto' },
         content: { badgeText: 'FIRST200', badgeVariant: 'success' },
-        style: { 
+        style: {
           badgeBackgroundColor: '#10B981',
           badgeTextColor: '#FFFFFF',
           badgeBorderRadius: 8,
@@ -1039,11 +1039,11 @@ export const BOTTOM_SHEET_TEMPLATES: BottomSheetTemplate[] = [
         zIndex: 4,
         position: { x: 0, y: 0, type: 'relative' },
         size: { width: '100%', height: 'auto' },
-        content: { 
+        content: {
           label: 'Book Your First Ride',
           buttonStyle: 'primary'
         },
-        style: { 
+        style: {
           backgroundColor: '#FFFFFF',
           borderRadius: 12,
           padding: { top: 16, right: 24, bottom: 16, left: 24 }
@@ -1075,6 +1075,4 @@ export const getTemplatesByCategory = (category: BottomSheetTemplate['category']
 };
 
 // Helper function to get featured templates
-export const getFeaturedTemplates = (): BottomSheetTemplate[] => {
-  return BOTTOM_SHEET_TEMPLATES.filter(t => t.featured);
-};
+

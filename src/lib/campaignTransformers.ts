@@ -297,6 +297,34 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     ? (backendCampaign.config?.scratchCardConfig || extractScratchCardConfig(backendCampaign.config || {}))
     : undefined;
 
+  // ✅ FIX: Add floaterConfig extraction
+  const floaterConfig = campaignType === 'floater'
+    ? (backendCampaign.config?.floaterConfig || backendCampaign.floaterConfig || {
+      width: backendCampaign.config?.width || 280,
+      height: backendCampaign.config?.height || 180,
+      backgroundColor: backendCampaign.config?.backgroundColor || '#000000',
+      borderRadius: backendCampaign.config?.borderRadius || 0,
+      position: backendCampaign.config?.position || 'bottom-right',
+      offsetX: backendCampaign.config?.offsetX || 20,
+      offsetY: backendCampaign.config?.offsetY || 20,
+      backgroundImageUrl: backendCampaign.config?.backgroundImageUrl,
+      backgroundSize: backendCampaign.config?.backgroundSize || 'cover',
+      showCloseButton: backendCampaign.config?.showCloseButton ?? false,
+    })
+    : undefined;
+
+  // ✅ FIX: Add pipConfig extraction
+  const pipConfig = campaignType === 'pip'
+    ? (backendCampaign.config?.pipConfig || backendCampaign.pipConfig || {
+      width: backendCampaign.config?.width || 160,
+      height: backendCampaign.config?.height || 220,
+      backgroundColor: backendCampaign.config?.backgroundColor || 'black',
+      cornerRadius: backendCampaign.config?.cornerRadius || 12,
+      position: backendCampaign.config?.position || 'bottom-right',
+      showCloseButton: backendCampaign.config?.showCloseButton ?? true,
+    })
+    : undefined;
+
   const result = {
     id: campaignId,
     name: campaignName,
@@ -315,6 +343,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     modalConfig,
     bannerConfig,
     scratchCardConfig,
+    floaterConfig,
+    pipConfig,
 
     tooltipConfig: campaignType === 'tooltip' ? (backendCampaign.config?.tooltipConfig || {
       // Fallback/Legacy migration: check if properties exist on root config
@@ -1314,11 +1344,23 @@ function reconstructLayersFromConfig(config: Record<string, any>, type: string):
   const baseId = Date.now();
   const layers: Layer[] = [];
 
+  // ✅ FIX: Determine container name based on nudge type
+  let containerName = 'Modal Container'; // default
+  switch (type) {
+    case 'bottomsheet': containerName = 'Bottom Sheet'; break;
+    case 'scratchcard': containerName = 'Scratch Card Container'; break;
+    case 'banner': containerName = 'Banner Container'; break;
+    case 'tooltip': containerName = 'Tooltip Container'; break;
+    case 'pip': containerName = 'PIP Container'; break;
+    case 'floater': containerName = 'Floater Container'; break;
+    default: containerName = 'Modal Container';
+  }
+
   // Container layer
   const containerLayer: Layer = {
     id: `layer_${baseId}`,
     type: 'container',
-    name: 'Bottom Sheet',
+    name: containerName,
     parent: null,
     children: [],
     visible: true,

@@ -136,36 +136,7 @@ export const DisplayRules: React.FC = () => {
                 </div>
             </div>
 
-            <Separator />
 
-            {/* SDK Version Filter */}
-            <div className="space-y-4">
-                <Label className="text-base font-semibold">Filter SDK Version</Label>
-                <p className="text-sm text-muted-foreground">Add filter for Nudge SDK version.</p>
-
-                <div className="flex items-center gap-4">
-                    <Select
-                        value={displayRules.sdkVersion?.operator || 'greater_than'}
-                        onValueChange={(val: any) => updateDisplayRules({ sdkVersion: { operator: val, value: displayRules.sdkVersion?.value || '' } })}
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Operator" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="equals">Equal to</SelectItem>
-                            <SelectItem value="greater_than">Greater than</SelectItem>
-                            <SelectItem value="less_than">Less than</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Input
-                        placeholder="e.g. 1.0.0"
-                        className="w-[180px]"
-                        value={displayRules.sdkVersion?.value || ''}
-                        onChange={(e) => updateDisplayRules({ sdkVersion: { ...displayRules.sdkVersion, value: e.target.value } as any })}
-                    />
-                </div>
-            </div>
 
         </div>
     );

@@ -27,7 +27,6 @@ export const TriggerBuilder: React.FC = () => {
         fetchMetadata,
         createEvent,
         createProperty,
-        updateTrigger // ✅ FIX: Destructure updateTrigger
     } = useEditorStore();
 
     // Event Creation State
@@ -45,6 +44,8 @@ export const TriggerBuilder: React.FC = () => {
 
     // Track which rule triggered the property creation
     const [activeRuleIdForProperty, setActiveRuleIdForProperty] = useState<string | null>(null);
+    // Track which rule triggered the event creation
+    const [activeRuleIdForEvent, setActiveRuleIdForEvent] = useState<string | null>(null);
 
     useEffect(() => {
         fetchMetadata();
@@ -59,6 +60,7 @@ export const TriggerBuilder: React.FC = () => {
             type: 'event',
             event: '',
             count: 1,
+            countOperator: 'greater_than_or_equal', // Default to at least
             operator: 'greater_than',
             properties: []
         });
@@ -114,6 +116,13 @@ export const TriggerBuilder: React.FC = () => {
             });
             toast.success('Event created successfully');
             setIsCreateEventOpen(false);
+
+            // UX Fix: Auto-select the new event
+            if (activeRuleIdForEvent) {
+                updateTargetingRule(activeRuleIdForEvent, { event: newEventName });
+                setActiveRuleIdForEvent(null);
+            }
+
             setNewEventName('');
             setNewEventDescription('');
         } catch (error) {
@@ -137,11 +146,27 @@ export const TriggerBuilder: React.FC = () => {
             });
             toast.success('Property created successfully');
             setIsCreatePropertyOpen(false);
+
+            // UX Fix: Auto-add the new property filter
+            if (activeRuleIdForProperty) {
+                const rule = rules.find(r => r.id === activeRuleIdForProperty);
+                if (rule) {
+                    const newProperties = [
+                        ...(rule.properties || []),
+                        {
+                            id: Math.random().toString(36).substr(2, 9),
+                            field: newPropertyName,
+                            operator: 'equals' as const,
+                            value: ''
+                        }
+                    ];
+                    updateTargetingRule(activeRuleIdForProperty, { properties: newProperties });
+                }
+                setActiveRuleIdForProperty(null);
+            }
+
             setNewPropertyName('');
             setNewPropertyDescription('');
-
-            // If we were adding to a rule, we could auto-select it here, 
-            // but for now just closing the dialog is enough as the list will update
         } catch (error) {
             toast.error('Failed to create property');
         } finally {
@@ -175,10 +200,11 @@ export const TriggerBuilder: React.FC = () => {
                                             value={rule.event}
                                             onValueChange={(val) => {
                                                 if (val === '__create_new__') {
+                                                    setActiveRuleIdForEvent(rule.id);
                                                     setIsCreateEventOpen(true);
                                                 } else {
                                                     updateTargetingRule(rule.id, { event: val });
-                                                    updateTrigger(val); // ✅ FIX: Update main trigger
+                                                    // Redundant updateTrigger removed - handled by store
                                                 }
                                             }}
                                         >
@@ -213,7 +239,23 @@ export const TriggerBuilder: React.FC = () => {
                                             </SelectContent>
                                         </Select>
 
-                                        <span className="text-sm text-gray-500">at least</span>
+                                        {/* Count Operator Selector */}
+                                        <Select
+                                            value={rule.countOperator || 'greater_than_or_equal'}
+                                            onValueChange={(val: any) => updateTargetingRule(rule.id, { countOperator: val })}
+                                        >
+                                            <SelectTrigger className="w-[140px] h-9">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="greater_than_or_equal">At least (&ge;)</SelectItem>
+                                                <SelectItem value="equals">Exactly (=)</SelectItem>
+                                                <SelectItem value="less_than_or_equal">At most (&le;)</SelectItem>
+                                                <SelectItem value="greater_than">More than (&gt;)</SelectItem>
+                                                <SelectItem value="less_than">Less than (&lt;)</SelectItem>
+                                                <SelectItem value="not_equals">Not equal to (&ne;)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
 
                                         {/* Count Input */}
                                         <Input
@@ -225,6 +267,21 @@ export const TriggerBuilder: React.FC = () => {
                                         />
 
                                         <span className="text-sm text-gray-500">time(s)</span>
+
+                                        {/* Time Window Input (Optional) */}
+                                        <span className="text-sm text-gray-500 ml-2">within last</span>
+                                        <Input
+                                            type="number"
+                                            className="w-16 h-9"
+                                            min={0}
+                                            placeholder="∞"
+                                            value={rule.timeWindow ? Math.floor(rule.timeWindow / 3600) : ''}
+                                            onChange={(e) => {
+                                                const hours = parseInt(e.target.value) || 0;
+                                                updateTargetingRule(rule.id, { timeWindow: hours > 0 ? hours * 3600 : undefined });
+                                            }}
+                                        />
+                                        <span className="text-sm text-gray-500">hours</span>
 
                                         <Button
                                             variant="ghost"
@@ -308,16 +365,22 @@ export const TriggerBuilder: React.FC = () => {
                                                         <SelectItem value="contains">contains</SelectItem>
                                                         <SelectItem value="greater_than">greater than</SelectItem>
                                                         <SelectItem value="less_than">less than</SelectItem>
+                                                        <SelectItem value="greater_than_or_equal">at least (&ge;)</SelectItem>
+                                                        <SelectItem value="less_than_or_equal">at most (&le;)</SelectItem>
+                                                        <SelectItem value="set">is set</SelectItem>
+                                                        <SelectItem value="not_set">is not set</SelectItem>
                                                     </SelectContent>
                                                 </Select>
 
                                                 {/* Value Input */}
-                                                <Input
-                                                    className="w-[150px] h-8 text-sm"
-                                                    placeholder="Value"
-                                                    value={String(prop.value)}
-                                                    onChange={(e) => updatePropertyFilter(rule.id, prop.id, { value: e.target.value })}
-                                                />
+                                                {prop.operator !== 'set' && prop.operator !== 'not_set' && (
+                                                    <Input
+                                                        className="w-[150px] h-8 text-sm"
+                                                        placeholder="Value"
+                                                        value={String(prop.value)}
+                                                        onChange={(e) => updatePropertyFilter(rule.id, prop.id, { value: e.target.value })}
+                                                    />
+                                                )}
 
                                                 <Button
                                                     variant="ghost"

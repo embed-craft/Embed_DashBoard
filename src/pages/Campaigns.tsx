@@ -326,7 +326,7 @@ const Campaigns = () => {
               <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(row.id); toast.success('Copied'); }}>
                 <Copy className="mr-2 h-4 w-4" /> Copy ID
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleGenerateReport}>
+              <DropdownMenuItem onClick={() => navigate(`/campaigns/${row.id}/report`)}>
                 <BarChart2 className="mr-2 h-4 w-4" /> Usage Report
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDelete(row.id)} className="text-red-600">

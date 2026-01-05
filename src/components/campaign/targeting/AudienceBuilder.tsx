@@ -73,8 +73,7 @@ export const AudienceBuilder: React.FC = () => {
                                                 ));
                                             })()}
                                             {/* Fallback for standard properties if not in DB yet */}
-                                            {!availableProperties.some(p => p.name === 'email') && <SelectItem value="email">Email</SelectItem>}
-                                            {!availableProperties.some(p => p.name === 'referralCode') && <SelectItem value="referralCode">Referral Code</SelectItem>}
+                                            {/* Fallback for standard properties if not in DB yet - Handled by store defaults now */}
                                         </SelectContent>
                                     </Select>
 
@@ -92,6 +91,8 @@ export const AudienceBuilder: React.FC = () => {
                                             <SelectItem value="contains">contains</SelectItem>
                                             <SelectItem value="greater_than">greater than</SelectItem>
                                             <SelectItem value="less_than">less than</SelectItem>
+                                            <SelectItem value="greater_than_or_equal">at least (&ge;)</SelectItem>
+                                            <SelectItem value="less_than_or_equal">at most (&le;)</SelectItem>
                                             <SelectItem value="set">is set</SelectItem>
                                             <SelectItem value="not_set">is not set</SelectItem>
                                         </SelectContent>

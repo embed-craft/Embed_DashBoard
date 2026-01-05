@@ -12,6 +12,7 @@ import Stats from "./pages/admin/Stats";
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
+import CampaignReport from "./pages/CampaignReport";
 import CampaignBuilder from "./pages/CampaignBuilder";
 import Segments from "./pages/Segments";
 import Analytics from "./pages/Analytics";
@@ -49,6 +50,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/campaigns/:id/report" element={<CampaignReport />} />
                 <Route path="/campaign-builder" element={<CampaignBuilder />} />
                 <Route path="/flows" element={<Flows />} />
                 <Route path="/segments" element={<Segments />} />

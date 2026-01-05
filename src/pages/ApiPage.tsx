@@ -413,14 +413,14 @@ func application(...) -> Bool {
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-900">Integration Guide</h4>
                     <p className="text-sm text-gray-600">
-                      To listen to events triggered by the Nudge SDK, you need to implement the <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500">NudgeCallbackListener</code> interface.
+                      To listen to events triggered by the Ninja SDK, you need to implement the <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500">NinjaCallbackListener</code> interface.
                     </p>
 
                     <div className="space-y-6">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
-                          <span className="text-sm font-medium">Implement Nudge Callback</span>
+                          <span className="text-sm font-medium">Implement Ninja Callback</span>
                         </div>
                         <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-800 relative group">
                           <Button
@@ -428,7 +428,7 @@ func application(...) -> Bool {
                             size="sm"
                             className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
                             onClick={() => {
-                              navigator.clipboard.writeText(`class _HomePageState extends State<HomePage>\n    with SingleTickerProviderStateMixin implements NudgeCallbackListener {\n  ...\n}`);
+                              navigator.clipboard.writeText(`class _HomePageState extends State<HomePage>\n    with SingleTickerProviderStateMixin implements NinjaCallbackListener {\n  ...\n}`);
                               toast.success("Code copied");
                             }}
                           >
@@ -436,7 +436,7 @@ func application(...) -> Bool {
                           </Button>
                           <pre className="text-xs font-mono text-gray-300 leading-relaxed">
                             {`class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin implements NudgeCallbackListener {
+    with SingleTickerProviderStateMixin implements NinjaCallbackListener {
   ...
 }`}
                           </pre>
@@ -454,7 +454,7 @@ func application(...) -> Bool {
                             size="sm"
                             className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
                             onClick={() => {
-                              navigator.clipboard.writeText(`@Override\nvoid initState() {\n  super.initState();\n  NudgeCallbackManager.registerListener(this);\n}`);
+                              navigator.clipboard.writeText(`@Override\nvoid initState() {\n  super.initState();\n  NinjaCallbackManager.registerListener(this);\n}`);
                               toast.success("Code copied");
                             }}
                           >
@@ -464,7 +464,7 @@ func application(...) -> Bool {
                             {`@Override
 void initState() {
   super.initState();
-  NudgeCallbackManager.registerListener(this);
+  NinjaCallbackManager.registerListener(this);
 }`}
                           </pre>
                         </div>
@@ -481,7 +481,7 @@ void initState() {
                             size="sm"
                             className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
                             onClick={() => {
-                              navigator.clipboard.writeText(`@override\nvoid onEvent(NudgeCallbackData event) {\n  print("callback event: \${event}");\n  switch (event.type) {\n    case "CORE":\n      break;\n    case "UI":\n      break;\n    default:\n      break;\n  }\n}`);
+                              navigator.clipboard.writeText(`@override\nvoid onEvent(NinjaCallbackData event) {\n  print("callback event: \${event}");\n  switch (event.type) {\n    case "CORE":\n      break;\n    case "UI":\n      break;\n    default:\n      break;\n  }\n}`);
                               toast.success("Code copied");
                             }}
                           >
@@ -489,7 +489,7 @@ void initState() {
                           </Button>
                           <pre className="text-xs font-mono text-gray-300 leading-relaxed">
                             {`@override
-void onEvent(NudgeCallbackData event) {
+void onEvent(NinjaCallbackData event) {
   print("callback event: \${event}");
   switch (event.type) {
     case "CORE":
@@ -510,7 +510,7 @@ void onEvent(NudgeCallbackData event) {
 
                   {/* Schema */}
                   <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-900">NudgeCallbackData Schema</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">NinjaCallbackData Schema</h4>
                     <div className="border rounded-lg overflow-hidden">
                       <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50 border-b">
@@ -562,27 +562,27 @@ void onEvent(NudgeCallbackData event) {
                         </thead>
                         <tbody className="divide-y">
                           <tr>
-                            <td className="px-4 py-3 font-mono text-purple-600">NUDGE_INITIALISED</td>
+                            <td className="px-4 py-3 font-mono text-purple-600">NINJA_INITIALISED</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ sdk_version: string }`}</td>
                             <td className="px-4 py-3 text-gray-600">SDK Initialisation</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-purple-600">NUDGE_USER_IDENTIFIER_SUCCESS</td>
+                            <td className="px-4 py-3 font-mono text-purple-600">NINJA_USER_IDENTIFIER_SUCCESS</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ user_details: { ... } }`}</td>
                             <td className="px-4 py-3 text-gray-600">User Identification Success</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-purple-600">NUDGE_USER_IDENTIFIER_FAILURE</td>
+                            <td className="px-4 py-3 font-mono text-purple-600">NINJA_USER_IDENTIFIER_FAILURE</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ error: string, ... }`}</td>
                             <td className="px-4 py-3 text-gray-600">User Identification Failure</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-purple-600">NUDGE_TRACK_EVENT</td>
+                            <td className="px-4 py-3 font-mono text-purple-600">NINJA_TRACK_EVENT</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ event: string, ... }`}</td>
                             <td className="px-4 py-3 text-gray-600">Tracking Events Success</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-purple-600">NUDGE_REWARD_RECEIVED</td>
+                            <td className="px-4 py-3 font-mono text-purple-600">NINJA_REWARD_RECEIVED</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ rewards: object[] }`}</td>
                             <td className="px-4 py-3 text-gray-600">Reward Received</td>
                           </tr>
@@ -596,7 +596,7 @@ void onEvent(NudgeCallbackData event) {
                   {/* UI Callbacks */}
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-900">UI Callbacks</h4>
-                    <p className="text-sm text-gray-600 mb-4">Events triggered by user interactions with Nudges (Floater, Banners, In-App, etc.)</p>
+                    <p className="text-sm text-gray-600 mb-4">Events triggered by user interactions with Ninjas (Floater, Banners, In-App, etc.)</p>
 
                     <div className="border rounded-lg overflow-hidden">
                       <table className="w-full text-sm text-left">
@@ -609,22 +609,22 @@ void onEvent(NudgeCallbackData event) {
                         </thead>
                         <tbody className="divide-y">
                           <tr>
-                            <td className="px-4 py-3 font-mono text-pink-600">NUDGE_EXPERIENCE_OPEN</td>
+                            <td className="px-4 py-3 font-mono text-pink-600">NINJA_EXPERIENCE_OPEN</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ CAMPAIGN_ID, DISPLAY_TYPE ... }`}</td>
                             <td className="px-4 py-3 text-gray-600">Experience Visible to User</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-pink-600">NUDGE_EXPERIENCE_DISMISS</td>
+                            <td className="px-4 py-3 font-mono text-pink-600">NINJA_EXPERIENCE_DISMISS</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ CAMPAIGN_ID, DISPLAY_TYPE ... }`}</td>
                             <td className="px-4 py-3 text-gray-600">Experience is Dismissed</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-pink-600">NUDGE_COMPONENT_CTA_CLICK</td>
+                            <td className="px-4 py-3 font-mono text-pink-600">NINJA_COMPONENT_CTA_CLICK</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ TARGET, WIDGET_ID, CLICK_TYPE ... }`}</td>
                             <td className="px-4 py-3 text-gray-600">User Clicks on any Widget</td>
                           </tr>
                           <tr>
-                            <td className="px-4 py-3 font-mono text-pink-600">NUDGE_FLOATER_EXPANDED</td>
+                            <td className="px-4 py-3 font-mono text-pink-600">NINJA_FLOATER_EXPANDED</td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{`{ CAMPAIGN_ID, DISPLAY_ID ... }`}</td>
                             <td className="px-4 py-3 text-gray-600">Floater Expanded</td>
                           </tr>
@@ -794,7 +794,7 @@ void onEvent(NudgeCallbackData event) {
                   <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between mb-2">
                       <Label>Simulator Logs</Label>
-                      <Button variant="ghost" size="xs" onClick={() => setLogs([])} className="h-6 text-xs text-muted-foreground">
+                      <Button variant="ghost" size="sm" onClick={() => setLogs([])} className="h-6 text-xs text-muted-foreground">
                         Clear
                       </Button>
                     </div>

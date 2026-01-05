@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import { useEditorStore, getDefaultLayersForNudgeType, TooltipConfig } from '@/store/useEditorStore';
 
-import { BOTTOM_SHEET_TEMPLATES, getFeaturedTemplates } from '@/lib/bottomSheetTemplates';
+import { BOTTOM_SHEET_TEMPLATES } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 
 import { TooltipRenderer } from '@/components/TooltipRenderer';
@@ -923,7 +923,40 @@ export const DesignStep: React.FC<any> = () => {
     const interfaceWrapper = (renderer: React.ReactNode) => {
       // Helper to convert hex/config to rgba
       const getOverlayStyle = () => {
-        const config = iface.modalConfig?.overlay || iface.bottomSheetConfig?.overlay || iface.scratchCardConfig?.overlay || {};
+
+        let overlayConfig = {};
+        switch (iface.nudgeType) {
+          case 'modal':
+            overlayConfig = iface.modalConfig?.overlay;
+            break;
+          case 'bottomsheet':
+            overlayConfig = iface.bottomSheetConfig?.overlay;
+            break;
+          case 'banner':
+            overlayConfig = iface.bannerConfig?.overlay;
+            break;
+          case 'tooltip':
+            // Tooltip usually handles its own overlay, but if we wrap it, we respect it.
+            // Note: TooltipRenderer typically renders its own spotlight overlay.
+            // If we are wrapping it here, we might want to check overlayEnabled too.
+            overlayConfig = iface.tooltipConfig?.overlay || {};
+            // For tooltip, if overlayEnabled is explicit false, we might want transparent.
+            // But for now, let's just grab the config if it exists.
+            break;
+          case 'scratchcard':
+            overlayConfig = iface.scratchCardConfig?.overlay;
+            break;
+          case 'floater':
+            overlayConfig = iface.floaterConfig?.overlay;
+            break;
+          case 'pip':
+            overlayConfig = iface.pipConfig?.overlay;
+            break;
+          default:
+            overlayConfig = iface.config?.overlay;
+        }
+
+        const config = overlayConfig || {};
         const color = config.color || '#000000';
         const opacity = config.opacity !== undefined ? config.opacity : 0.4;
 
@@ -1005,6 +1038,7 @@ export const DesignStep: React.FC<any> = () => {
             scaleY={scaleYFactor}
             isInteractive={true}
             onDismiss={closePreviewInterface}
+            onInterfaceAction={handleInterfaceAction}
           />
         );
       case 'banner':
@@ -1020,6 +1054,7 @@ export const DesignStep: React.FC<any> = () => {
             isInteractive={true}
             onDismiss={closePreviewInterface}
             onNavigate={() => { }}
+            onInterfaceAction={handleInterfaceAction}
             scale={scaleFactor}
             scaleY={scaleYFactor}
           />
@@ -1230,6 +1265,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
+              onInterfaceAction={handleInterfaceAction}
               scale={scaleFactorFloater}
               scaleY={scaleYFactorFloater}
             />
@@ -1305,6 +1341,7 @@ export const DesignStep: React.FC<any> = () => {
             scaleY={scaleY}
             isInteractive={isInteractive}
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onInterfaceAction={handleInterfaceAction}
           />
         );
 
@@ -1326,25 +1363,12 @@ export const DesignStep: React.FC<any> = () => {
             isInteractive={isInteractive}
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
             onNavigate={handleNavigate}
+            onInterfaceAction={handleInterfaceAction}
             scale={scaleFactorPip}
             scaleY={scaleYFactorPip}
           />
         );
-      case 'floater':
-        return (
-          <FloaterRenderer
-            layers={currentCampaign.layers}
-            selectedLayerId={selectedLayerId}
-            onLayerSelect={selectLayer}
-            onLayerUpdate={updateLayer}
-            colors={colors}
-            scale={previewZoom}
-            config={activeInterface?.floaterConfig || currentCampaign.floaterConfig}
-            isInteractive={isInteractive}
-            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
-            onNavigate={handleNavigate}
-          />
-        );
+
       case 'scratchcard':
         const currentDeviceConfigScratch = DEVICE_PRESETS.find(d => d.id === selectedDevice);
         const deviceWidthScratch = currentDeviceConfigScratch?.width || 375;

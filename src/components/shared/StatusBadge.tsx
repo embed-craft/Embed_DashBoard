@@ -1,7 +1,7 @@
 import React from 'react';
 import { theme } from '../../styles/design-tokens';
 
-export type StatusType = 'active' | 'paused' | 'draft' | 'archived';
+export type StatusType = 'active' | 'paused' | 'draft' | 'archived' | 'scheduled' | 'completed';
 
 interface StatusBadgeProps {
   status: StatusType | string;
@@ -34,6 +34,24 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
           bg: '#F3F4F6', // gray-100
           text: '#4B5563', // gray-600
           dot: '#9CA3AF', // gray-400
+        };
+      case 'scheduled':
+        return {
+          bg: '#EFF6FF', // blue-50
+          text: '#2563EB', // blue-600
+          dot: '#3B82F6', // blue-500
+        };
+      case 'completed':
+        return {
+          bg: '#F5F3FF', // violet-50
+          text: '#7C3AED', // violet-600
+          dot: '#8B5CF6', // violet-500
+        };
+      case 'archived':
+        return {
+          bg: '#FEF2F2', // red-50
+          text: '#DC2626', // red-600
+          dot: '#EF4444', // red-500
         };
       default:
         return {

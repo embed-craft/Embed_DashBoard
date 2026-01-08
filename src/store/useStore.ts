@@ -26,6 +26,12 @@ export interface Campaign {
   tags?: string[];
   createdAt: string;
   updatedAt: string;
+  experience?: string;
+  schedule?: {
+    start_date?: string;
+    end_date?: string;
+    timezone?: string;
+  } | null;
 }
 
 export interface Rule {

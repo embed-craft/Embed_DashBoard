@@ -600,11 +600,14 @@ export interface TooltipConfig {
   scale?: number;
 }
 
+// Spotlight Config - Reuses TooltipConfig structure with overlay always enabled
+export type SpotlightConfig = TooltipConfig;
+
 // Campaign Interface (Sub-campaign within main campaign)
 export interface CampaignInterface {
   id: string;
   name: string;
-  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater';
+  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater' | 'spotlight';
   layers: Layer[];
   // Config based on nudgeType
   bottomSheetConfig?: BottomSheetConfig;
@@ -614,6 +617,7 @@ export interface CampaignInterface {
   pipConfig?: any;
   scratchCardConfig?: ScratchCardConfig;
   floaterConfig?: any;
+  spotlightConfig?: SpotlightConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -623,7 +627,7 @@ export interface CampaignEditor {
   _id?: string; // Support for backend ID
   name: string;
   experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey';
-  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater';
+  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight';
 
   // Trigger configuration (industry-standard events)
   trigger?: string; // e.g., 'screen_viewed', 'button_clicked', 'product_viewed'
@@ -646,6 +650,7 @@ export interface CampaignEditor {
   tooltipConfig?: TooltipConfig;
   pipConfig?: any;
   floaterConfig?: any;
+  spotlightConfig?: SpotlightConfig;
 
   // Editor state
   selectedLayerId: string | null;

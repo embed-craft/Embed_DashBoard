@@ -14,7 +14,8 @@ import {
   AlertCircle,
   SlidersHorizontal,
   Download,
-  Columns
+  Columns,
+  Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStore } from '@/store/useStore';
@@ -59,24 +60,44 @@ const Campaigns = () => {
         const { campaigns: backendCampaigns } = await api.listCampaigns({ limit: 100 });
 
         // Convert backend campaigns to dashboard format
-        const dashboardCampaigns = backendCampaigns.map((bc: any) => ({
-          id: bc.id || bc._id || bc.nudge_id,
-          name: bc.campaign_name || bc.name || 'Untitled Campaign',
-          status: (bc.status === 'inactive' ? 'paused' : bc.status) as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
-          trigger: bc.trigger_event || bc.trigger,
-          experience: bc.config?.type === 'modal' ? 'In-app messages' : 'In-App', // Infer experience
-          events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
-          tags: bc.tags || [], // Show actual tags
-          segment: 'All Users',
-          impressions: 0,
-          clicks: 0,
-          conversions: 0,
-          conversion: '0.0',
-          config: bc.config || {},
-          rules: bc.rules || [],
-          createdAt: bc.createdAt || new Date().toISOString(),
-          updatedAt: bc.updatedAt || new Date().toISOString(),
-        }));
+        const dashboardCampaigns = backendCampaigns.map((bc: any) => {
+          let status = (bc.status === 'inactive' ? 'paused' : bc.status);
+
+          // Apply smart status for filtering
+          if (status === 'active' && bc.schedule) {
+            const now = new Date();
+            const startDate = bc.schedule.start_date ? new Date(bc.schedule.start_date) : null;
+            const endDate = bc.schedule.end_date ? new Date(bc.schedule.end_date) : null;
+
+            if (startDate && now < startDate) {
+              status = 'scheduled';
+            } else if (endDate && now > endDate) {
+              status = 'completed';
+            }
+          }
+
+          return {
+            id: bc.id || bc._id || bc.nudge_id,
+            name: bc.campaign_name || bc.name || 'Untitled Campaign',
+            status: status as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
+            trigger: bc.trigger_event || bc.trigger,
+            experience: bc.config?.type === 'modal' ? 'In-app messages' : 'In-App', // Infer experience
+            events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
+            tags: bc.tags || [], // Show actual tags
+            segment: 'All Users',
+            impressions: bc.stats?.impressions || 0,
+            clicks: bc.stats?.clicks || 0,
+            conversions: bc.stats?.conversions || 0,
+            conversion: bc.stats?.impressions > 0
+              ? ((bc.stats.conversions || 0) / bc.stats.impressions * 100).toFixed(1)
+              : '0.0',
+            config: bc.config || {},
+            rules: bc.rules || [],
+            schedule: bc.schedule || null, // Include schedule from backend
+            createdAt: bc.createdAt || new Date().toISOString(),
+            updatedAt: bc.updatedAt || new Date().toISOString(),
+          };
+        });
 
         syncCampaigns(dashboardCampaigns);
       } catch (error) {
@@ -229,8 +250,57 @@ const Campaigns = () => {
     {
       key: 'status',
       header: 'Status',
-      width: '10%',
-      render: (row: any) => <div style={{ transform: 'scale(0.9)', transformOrigin: 'left' }}><StatusBadge status={row.status as any} /></div>
+      width: '15%',
+      render: (row: any) => {
+        const schedule = row.schedule;
+        const hasSchedule = schedule && (schedule.start_date || schedule.end_date);
+
+        const formatDate = (dateStr: string) => {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+
+        // Compute smart status based on schedule
+        let displayStatus = row.status;
+        let scheduleInfo = null;
+
+        if (hasSchedule) {
+          const now = new Date();
+          const startDate = schedule.start_date ? new Date(schedule.start_date) : null;
+          const endDate = schedule.end_date ? new Date(schedule.end_date) : null;
+
+          if (startDate && now < startDate) {
+            // Campaign hasn't started yet
+            displayStatus = 'scheduled';
+            scheduleInfo = { label: `Starts ${formatDate(schedule.start_date)}`, color: '#3b82f6' };
+          } else if (endDate && now > endDate) {
+            // Campaign has ended
+            displayStatus = 'completed';
+            scheduleInfo = { label: `Ended ${formatDate(schedule.end_date)}`, color: '#6b7280' };
+          } else if (startDate || endDate) {
+            // Campaign is in schedule period
+            scheduleInfo = {
+              label: `${startDate ? formatDate(schedule.start_date) : 'Now'} - ${endDate ? formatDate(schedule.end_date) : '∞'}`,
+              color: '#22c55e'
+            };
+          }
+        }
+
+        return (
+          <div>
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'left' }}>
+              <StatusBadge status={displayStatus as any} />
+            </div>
+            {scheduleInfo && (
+              <div style={{ fontSize: '9px', color: scheduleInfo.color, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                <Calendar size={10} />
+                {scheduleInfo.label}
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     {
       key: 'experience',
@@ -246,18 +316,36 @@ const Campaigns = () => {
     {
       key: 'stats', // New Stats Column
       header: 'Metrics',
-      width: '20%',
-      render: (row: any) => (
-        <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: theme.colors.text.secondary }}>
-          <span title="Impressions">👁️ 0</span>
-          <span title="Clicks">👆 0</span>
-        </div>
-      )
+      width: '24%',
+      render: (row: any) => {
+        const ctr = row.impressions > 0 ? ((row.clicks / row.impressions) * 100).toFixed(1) : '0.0';
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {/* Primary Stat: CTR */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.text.primary }}>{ctr}%</span>
+              <span style={{ fontSize: '10px', color: theme.colors.text.tertiary }}>CTR</span>
+            </div>
+
+            {/* Secondary Stats: Impressions & Clicks */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: theme.colors.text.secondary }}>
+              <div title="Impressions" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#60A5FA' }} />
+                <span>{row.impressions?.toLocaleString() || 0}</span>
+              </div>
+              <div title="Clicks" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34D399' }} />
+                <span>{row.clicks?.toLocaleString() || 0}</span>
+              </div>
+            </div>
+          </div>
+        );
+      }
     },
     {
       key: 'tags',
       header: 'Tags',
-      width: '15%',
+      width: '12%',
       render: (row: any) => (
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
           {(row.tags || []).slice(0, 2).map((tag: string, i: number) => (
@@ -411,10 +499,6 @@ const Campaigns = () => {
             </div>
 
             <div style={{ flex: 1 }} />
-
-            <Button variant="secondary" onClick={handleGenerateReport} className="gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border-none h-8 text-xs">
-              <Download size={14} /> Generate Report
-            </Button>
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

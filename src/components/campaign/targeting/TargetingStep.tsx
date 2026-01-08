@@ -1,19 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { PlatformSelector } from './PlatformSelector';
 import { AudienceBuilder } from './AudienceBuilder';
 import { TriggerBuilder } from './TriggerBuilder';
 import { DisplayRules } from './DisplayRules';
+import { PrioritySelector } from '@/components/PrioritySelector';
+import { ConflictWarning } from '@/components/ConflictWarning';
 import { Separator } from '@/components/ui/separator';
 
 export const TargetingStep: React.FC = () => {
-    const { currentCampaign, fetchMetadata } = useEditorStore();
+    const { currentCampaign, fetchMetadata, updateCurrentCampaign } = useEditorStore();
+    const [hasConflicts, setHasConflicts] = useState(false);
 
     React.useEffect(() => {
         fetchMetadata();
     }, []);
 
     if (!currentCampaign) return null;
+
+    // Extract trigger event from targeting rules
+    const eventRules = (currentCampaign?.targeting || []).filter(r => r.type === 'event');
+    const firstEventName = eventRules.length > 0 ? eventRules[0].event : null;
+
+    // Check for conflicts when event changes
+    useEffect(() => {
+        async function checkConflicts() {
+            if (!firstEventName || !currentCampaign) {
+                setHasConflicts(false);
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    event: firstEventName,
+                    ...(currentCampaign._id && { exclude: currentCampaign._id })
+                });
+
+                const response = await fetch(`/api/v1/admin/campaigns/check-conflicts?${params}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setHasConflicts(data.count > 0);
+                }
+            } catch (error) {
+                console.error('Failed to check conflicts:', error);
+                setHasConflicts(false);
+            }
+        }
+
+        checkConflicts();
+    }, [firstEventName, currentCampaign?._id]);
 
     return (
         <div className="h-full flex flex-col overflow-y-auto bg-gray-50/50">
@@ -44,6 +79,28 @@ export const TargetingStep: React.FC = () => {
                         <p className="text-sm text-muted-foreground">Decide what events must the user do to qualify for the campaign.</p>
                     </div>
                     <TriggerBuilder />
+
+                    {/* Conflict Warning & Priority - Only show when there are conflicts */}
+                    {firstEventName && hasConflicts && (
+                        <div className="mt-6 space-y-6">
+                            <ConflictWarning
+                                triggerEvent={firstEventName}
+                                currentCampaignId={currentCampaign._id}
+                                currentPriority={currentCampaign.priority || 0}
+                            />
+
+                            {/* Priority Selector - Only visible when conflicts exist */}
+                            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-4">
+                                    Set Campaign Priority
+                                </h3>
+                                <PrioritySelector
+                                    value={currentCampaign.priority || 0}
+                                    onChange={(priority) => updateCurrentCampaign({ priority })}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </section>
 
                 {/* Section 4: Display Rules */}

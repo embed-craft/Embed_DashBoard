@@ -10,6 +10,7 @@ import { BOTTOM_SHEET_TEMPLATES } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 
 import { TooltipRenderer } from '@/components/TooltipRenderer';
+import { SpotlightRenderer } from '@/components/SpotlightRenderer';
 import { ModalRenderer } from '@/components/ModalRenderer';
 import { BannerRenderer } from '@/components/BannerRenderer';
 import { PipRenderer } from '@/components/PipRenderer';
@@ -1341,6 +1342,40 @@ export const DesignStep: React.FC<any> = () => {
             scaleY={scaleY}
             isInteractive={isInteractive}
             onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onInterfaceAction={handleInterfaceAction}
+          />
+        );
+
+      case 'spotlight':
+        const deviceSpotlight = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
+        const previewWidthSpotlight = deviceSpotlight.width * previewZoom;
+        const previewHeightSpotlight = deviceSpotlight.height * previewZoom;
+        const scaleXSpotlight = previewWidthSpotlight / 393;
+        const scaleYSpotlight = previewHeightSpotlight / 852;
+
+        const defaultSpotlightConfig = {
+          position: 'bottom' as const,
+          backgroundColor: '#1F2937',
+          borderRadius: 12,
+          padding: 16,
+          arrowEnabled: true,
+          arrowSize: 10,
+          overlayEnabled: true,
+          overlayColor: '#000000',
+          overlayOpacity: 0.6,
+        };
+
+        return (
+          <SpotlightRenderer
+            layers={campaignLayers}
+            selectedLayerId={selectedLayerId}
+            onLayerSelect={selectLayer}
+            colors={colors}
+            config={activeInterface?.spotlightConfig || currentCampaign?.spotlightConfig || defaultSpotlightConfig}
+            scale={scaleXSpotlight}
+            scaleY={scaleYSpotlight}
+            isInteractive={isInteractive}
+            onDismiss={() => toast.success('Spotlight dismissed')}
             onInterfaceAction={handleInterfaceAction}
           />
         );

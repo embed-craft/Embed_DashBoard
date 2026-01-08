@@ -78,10 +78,12 @@ const processEvents = (events: any[], campaignId: string, dateRange: DateRange) 
         const inDateRange = dateRange.from && (!dateRange.to || isWithinInterval(eventTime, { start: dateRange.from, end: dateRange.to }));
 
         // Check if event belongs to this campaign
-        // Note: Adjust property access based on actual API payload
+        // Check multiple possible locations for campaign ID
         const matchesCampaign =
-            e.metadata?.campaignId === campaignId ||
+            e.nudge_id === campaignId ||
             e.campaignId === campaignId ||
+            e.metadata?.campaignId === campaignId ||
+            e.metadata?.nudgeId === campaignId ||
             (e.action && e.action.includes('NINJA') && e.metadata?.CAMPAIGN_ID === campaignId);
 
         return inDateRange && matchesCampaign;
@@ -107,9 +109,10 @@ const aggregateTrend = (events: any[], dateRange: DateRange) => {
         const dateKey = format(new Date(e.createdAt || e.timestamp), 'yyyy-MM-dd');
         if (days.has(dateKey)) {
             const dayStats = days.get(dateKey)!;
-            if (e.action === 'NINJA_EXPERIENCE_OPEN' || e.action.includes('IMPRESSION')) {
+            const action = (e.action || '').toLowerCase();
+            if (action === 'impression' || action === 'campaign_impression' || action === 'ninja_experience_open' || action.includes('impression')) {
                 dayStats.impressions++;
-            } else if (e.action === 'NINJA_COMPONENT_CTA_CLICK' || e.action.includes('CLICK')) {
+            } else if (action === 'click' || action === 'campaign_clicked' || action === 'ninja_component_cta_click' || action.includes('click')) {
                 dayStats.clicks++;
             }
         }
@@ -124,9 +127,10 @@ const aggregateFunnel = (events: any[]) => {
     let conversions = 0; // Assuming specific conversion event or inferred
 
     events.forEach(e => {
-        if (e.action === 'NINJA_EXPERIENCE_OPEN') impressions++;
-        if (e.action === 'NINJA_COMPONENT_CTA_CLICK') clicks++;
-        if (e.action === 'NINJA_CONVERSION' || e.action === 'CONVERSION') conversions++;
+        const action = (e.action || '').toLowerCase();
+        if (action === 'impression' || action === 'campaign_impression' || action === 'ninja_experience_open' || action.includes('impression')) impressions++;
+        if (action === 'click' || action === 'campaign_clicked' || action === 'ninja_component_cta_click' || action.includes('click')) clicks++;
+        if (action === 'conversion' || action === 'campaign_conversion' || action === 'ninja_conversion') conversions++;
     });
 
     // If no explicit conversions, maybe mock strictly based on clicks for now or hide

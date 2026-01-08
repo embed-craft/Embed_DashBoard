@@ -116,8 +116,9 @@ const CampaignBuilder: React.FC = () => {
   const handleSave = async () => {
     if (!currentCampaign) return;
     try {
+      updateStatus('draft'); // Ensure it saves as draft
       await saveCampaign();
-      toast.success('Campaign saved successfully');
+      toast.success('Campaign saved as draft');
     } catch (error) {
       toast.error('Failed to save campaign');
     }
@@ -274,40 +275,133 @@ const CampaignBuilder: React.FC = () => {
                     <label className="text-sm font-medium">Start Date</label>
                     <Input
                       type="datetime-local"
+                      min={new Date().toISOString().slice(0, 16)}
                       value={currentCampaign?.schedule?.startDate || ''}
-                      onChange={(e) => updateSchedule({
-                        ...currentCampaign?.schedule,
-                        startDate: e.target.value
-                      })}
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        const endDate = currentCampaign?.schedule?.endDate;
+
+                        // If end date exists and is before new start date, clear it
+                        if (endDate && newStartDate && new Date(endDate) < new Date(newStartDate)) {
+                          updateSchedule({
+                            ...currentCampaign?.schedule,
+                            startDate: newStartDate,
+                            endDate: '' // Clear invalid end date
+                          });
+                          toast.warning('End date was cleared because it was before the new start date');
+                        } else {
+                          updateSchedule({
+                            ...currentCampaign?.schedule,
+                            startDate: newStartDate
+                          });
+                        }
+                      }}
                     />
+                    <p className="text-xs text-muted-foreground">Campaign starts at this date/time</p>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">End Date</label>
                     <Input
                       type="datetime-local"
+                      min={currentCampaign?.schedule?.startDate || new Date().toISOString().slice(0, 16)}
                       value={currentCampaign?.schedule?.endDate || ''}
-                      onChange={(e) => updateSchedule({
-                        ...currentCampaign?.schedule,
-                        endDate: e.target.value
-                      })}
+                      onChange={(e) => {
+                        const newEndDate = e.target.value;
+                        const startDate = currentCampaign?.schedule?.startDate;
+
+                        // Validate end date is after start date
+                        if (startDate && newEndDate && new Date(newEndDate) <= new Date(startDate)) {
+                          toast.error('End date must be after the start date');
+                          return;
+                        }
+
+                        updateSchedule({
+                          ...currentCampaign?.schedule,
+                          endDate: newEndDate
+                        });
+                      }}
                     />
+                    <p className="text-xs text-muted-foreground">Campaign ends at this date/time (optional)</p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Time Zone</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g. UTC, Asia/Kolkata"
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Time Zone</label>
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => {
+                          const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                          updateSchedule({
+                            ...currentCampaign?.schedule,
+                            timeZone: detectedTz
+                          });
+                          toast.success(`Timezone set to ${detectedTz}`);
+                        }}
+                      >
+                        Detect my timezone
+                      </button>
+                    </div>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       value={currentCampaign?.schedule?.timeZone || ''}
                       onChange={(e) => updateSchedule({
                         ...currentCampaign?.schedule,
                         timeZone: e.target.value
                       })}
-                    />
+                    >
+                      <option value="">Select timezone...</option>
+                      <optgroup label="Common">
+                        <option value="UTC">UTC (Coordinated Universal Time)</option>
+                        <option value="America/New_York">Eastern Time (US & Canada)</option>
+                        <option value="America/Chicago">Central Time (US & Canada)</option>
+                        <option value="America/Denver">Mountain Time (US & Canada)</option>
+                        <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                        <option value="Europe/London">London (GMT/BST)</option>
+                        <option value="Europe/Paris">Paris (CET/CEST)</option>
+                        <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                      </optgroup>
+                      <optgroup label="Asia">
+                        <option value="Asia/Kolkata">India (IST)</option>
+                        <option value="Asia/Dubai">Dubai (GST)</option>
+                        <option value="Asia/Singapore">Singapore (SGT)</option>
+                        <option value="Asia/Tokyo">Tokyo (JST)</option>
+                        <option value="Asia/Shanghai">China (CST)</option>
+                        <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+                        <option value="Asia/Seoul">Seoul (KST)</option>
+                        <option value="Asia/Bangkok">Bangkok (ICT)</option>
+                        <option value="Asia/Jakarta">Jakarta (WIB)</option>
+                      </optgroup>
+                      <optgroup label="Pacific">
+                        <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                        <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
+                        <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
+                      </optgroup>
+                      <optgroup label="Americas">
+                        <option value="America/Toronto">Toronto (EST/EDT)</option>
+                        <option value="America/Vancouver">Vancouver (PST/PDT)</option>
+                        <option value="America/Mexico_City">Mexico City (CST/CDT)</option>
+                        <option value="America/Sao_Paulo">São Paulo (BRT)</option>
+                        <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
+                      </optgroup>
+                      <optgroup label="Europe">
+                        <option value="Europe/Madrid">Madrid (CET/CEST)</option>
+                        <option value="Europe/Rome">Rome (CET/CEST)</option>
+                        <option value="Europe/Amsterdam">Amsterdam (CET/CEST)</option>
+                        <option value="Europe/Moscow">Moscow (MSK)</option>
+                        <option value="Europe/Istanbul">Istanbul (TRT)</option>
+                      </optgroup>
+                      <optgroup label="Middle East & Africa">
+                        <option value="Africa/Cairo">Cairo (EET)</option>
+                        <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
+                        <option value="Asia/Jerusalem">Jerusalem (IST)</option>
+                        <option value="Asia/Riyadh">Riyadh (AST)</option>
+                      </optgroup>
+                    </select>
                   </div>
 
-                  {currentCampaign?.schedule && (
+                  {currentCampaign?.schedule && (currentCampaign?.schedule?.startDate || currentCampaign?.schedule?.endDate) && (
                     <Button
                       variant="ghost"
                       size="sm"

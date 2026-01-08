@@ -398,9 +398,9 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
             ? 'transparent'
             : (config?.backgroundColor || 'white'),
         backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-        // MODAL PARITY: Force stretch mode for layer-background alignment
+        // SDK PARITY: Force 'stretch' (fill) to match Flutter's BoxFit.fill
         backgroundSize: '100% 100%',
-        backgroundPosition: 'top left',
+        backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         borderTopLeftRadius: safeScale(config?.borderRadius?.topLeft || 16, scale),
         borderTopRightRadius: safeScale(config?.borderRadius?.topRight || 16, scale),

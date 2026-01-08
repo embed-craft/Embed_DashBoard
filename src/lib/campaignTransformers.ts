@@ -440,8 +440,8 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
   // ✅ FIX: Merge Source-of-Truth Configs (Modal/BottomSheet) directly
   // This ensures settings from the Editor Side Panel are ALWAYS sent, 
   // regardless of matching layer names or structure.
-  if (campaign.nudgeType === 'modal' && campaign.modalConfig) {
-    const mc = campaign.modalConfig;
+  if (campaign.nudgeType === 'modal') {
+    const mc = campaign.modalConfig || extractModalConfig({}); // Fallback to defaults
     Object.assign(config, {
       width: mc.width,
       height: mc.height,
@@ -460,11 +460,19 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     });
   }
 
-  if (campaign.nudgeType === 'bottomsheet' && campaign.bottomSheetConfig) {
-    const bsc = campaign.bottomSheetConfig;
-    Object.assign(config, {
+  if (campaign.nudgeType === 'bottomsheet') {
+    // Robust fallback: If config missing, create default
+    const bsc = campaign.bottomSheetConfig || extractBottomSheetConfig({});
+
+    console.log('buildConfigFromLayers: Processing BottomSheet Config', {
+      hasConfig: !!campaign.bottomSheetConfig,
       height: bsc.height,
-      backgroundColor: bsc.backgroundColor,
+      bg: bsc.backgroundColor
+    });
+
+    Object.assign(config, {
+      height: bsc.height || 'auto',
+      backgroundColor: bsc.backgroundColor || '#FFFFFF',
       backgroundImageUrl: bsc.backgroundImageUrl,
       backgroundSize: bsc.backgroundSize,
       backgroundPosition: bsc.backgroundPosition,
@@ -474,7 +482,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
       dragHandle: bsc.dragHandle,
       swipeToDismiss: bsc.swipeToDismiss,
       overlay: bsc.overlay,
-      dismissOnClick: bsc.overlay?.dismissOnClick,
+      dismissOnClick: bsc.overlay?.dismissOnClick ?? true,
       overlayColor: bsc.overlay?.color,
       overlayOpacity: bsc.overlay?.opacity
     });

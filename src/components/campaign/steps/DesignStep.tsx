@@ -29,7 +29,6 @@ import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSh
 import { ModalMinimalEditor } from '@/components/campaign/editors/ModalMinimalEditor';
 import { BannerMinimalEditor } from '@/components/campaign/editors/BannerMinimalEditor';
 import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinimalEditor';
-import { PipMinimalEditor } from '@/components/campaign/editors/PipMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
@@ -80,7 +79,7 @@ const nudgeTypes = [
   { id: 'banner', label: 'Banner', Icon: Layout, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
   { id: 'bottomsheet', label: 'Bottom Sheet', Icon: Square, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'tooltip', label: 'Tooltip', Icon: MessageCircle, bg: '#FEF3C7', iconBg: '#FDE68A', iconColor: '#F59E0B' },
-  { id: 'pip', label: 'Picture in Picture', Icon: PictureIcon, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
+  // PIP removed - Floater now handles PIP functionality
   { id: 'floater', label: 'Floater', Icon: Film, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'scratchcard', label: 'Scratch Card', Icon: CreditCard, bg: '#FCE7F3', iconBg: '#F9A8D4', iconColor: '#EC4899' },
   { id: 'carousel', label: 'Story Carousel', Icon: PlayCircle, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
@@ -92,7 +91,7 @@ const nudgeTypes = [
 
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip', 'spotlight', 'coachmark'],
-  'messages': ['modal', 'pip', 'floater', 'bottomsheet', 'banner', 'scratchcard'],
+  'messages': ['modal', 'floater', 'bottomsheet', 'banner', 'scratchcard'], // PIP removed - Floater handles it
   'stories': ['carousel'],
   // Default fallbacks for others or future types
   'challenges': [],
@@ -2182,10 +2181,9 @@ export const DesignStep: React.FC<any> = () => {
       return <CustomHtmlEditor />;
     }
 
-    // PIP Editor Integration
-    // PIP Editor Integration
+    // PIP Editor - Now uses unified Floater editor
     if (selectedNudgeType === 'pip' && (!selectedLayerObj || selectedLayerObj.name?.toLowerCase().includes('container'))) {
-      return <PipMinimalEditor />;
+      return <FloaterMinimalEditor />;  // PiP consolidated into Floater
     }
 
     // Check if layer is locked (Phase A - Fix 1)
@@ -3672,8 +3670,9 @@ export const DesignStep: React.FC<any> = () => {
             {/* Nudge Type Selection - Show for ANY experience that has mapped types */}
             {(selectedExperience && EXPERIENCE_MAPPING[selectedExperience]) && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Nudge Type</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Choose Nudge Type</h2>
+                <p className="text-sm text-gray-500 mb-6">Select the type of nudge you want to create for your campaign</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {nudgeTypes
                     .filter(type => {
                       // FIX: Filter based on selected experience mapping
@@ -3687,16 +3686,42 @@ export const DesignStep: React.FC<any> = () => {
                       <div
                         key={type.id}
                         onClick={() => handleNudgeTypeSelect(type.id)}
-                        className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all duration-200 group"
+                        className="group relative bg-white p-6 rounded-2xl border-2 border-gray-100 hover:border-indigo-400 hover:shadow-xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
+                        style={{
+                          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+                        }}
                       >
+                        {/* Background decoration */}
                         <div
-                          className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                          style={{ backgroundColor: type.bg, color: type.iconColor }}
+                          className="absolute top-0 right-0 w-24 h-24 opacity-10 group-hover:opacity-20 transition-opacity duration-300 rounded-2xl"
+                          style={{
+                            background: `radial-gradient(circle at top right, ${type.iconColor} 0%, transparent 70%)`
+                          }}
+                        />
+
+                        {/* Icon container with gradient */}
+                        <div
+                          className="relative w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+                          style={{
+                            background: `linear-gradient(135deg, ${type.bg} 0%, ${type.iconBg} 100%)`,
+                            boxShadow: `0 4px 12px ${type.bg}80`
+                          }}
                         >
-                          <type.Icon size={24} />
+                          <type.Icon size={26} style={{ color: type.iconColor }} />
                         </div>
-                        <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                        <p className="text-sm text-gray-500">Select to create a {type.label.toLowerCase()}</p>
+
+                        {/* Text content */}
+                        <h3 className="font-bold text-gray-800 text-lg mb-1.5 group-hover:text-indigo-600 transition-colors">
+                          {type.label}
+                        </h3>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          Create a {type.label.toLowerCase()} campaign
+                        </p>
+
+                        {/* Arrow indicator */}
+                        <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                          <ChevronRight size={20} className="text-indigo-400" />
+                        </div>
                       </div>
                     ))}
                 </div>

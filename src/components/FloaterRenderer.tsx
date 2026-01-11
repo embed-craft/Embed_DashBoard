@@ -3,7 +3,7 @@ import { Layer, LayerStyle } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
-import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
+import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -510,6 +510,19 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         scaleY
     });
     const containerRef = useRef<HTMLDivElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    // Video State
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isMuted, setIsMuted] = useState(config?.media?.muted ?? true); // Correct: Default to config.media.muted
+    const [isPlaying, setIsPlaying] = useState(config?.media?.autoPlay ?? true);
+    const [videoProgress, setVideoProgress] = useState(0);
+
+    // Sync state with config changes
+    useEffect(() => {
+        if (config?.media?.autoPlay !== undefined) setIsPlaying(config.media.autoPlay);
+        if (config?.media?.muted !== undefined) setIsMuted(config.media.muted);
+    }, [config?.media]);
 
     // Find floater container layer (not 'modal' type, but 'container' with name 'Floater Container')
     const floaterLayer = layers.find(l => l.type === 'container' && l.name === 'Floater Container') || layers[0] || { id: 'fallback', type: 'container', content: {}, style: {} } as any;
@@ -717,6 +730,9 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
                 : safeScale(layer.style?.borderRadius, scale),
             fontSize: safeScale(layer.style?.fontSize, scale),
+            // FIX: Parity with ModalRenderer - Serialize transform and filter objects
+            transform: getTransformString(layer.style?.transform),
+            filter: getFilterString(layer.style?.filter),
         };
 
         // SDK PARITY: Margin Precedence Logic
@@ -913,7 +929,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
 
         // Calculate Clip Path
         let clipPath = layer.style?.clipPath;
-        const shape = layer.style?.clipPathShape;
+        const shape = (layer.style as any)?.clipPathShape;
 
         if (shape === 'circle') {
             clipPath = 'circle(50% at 50% 50%)';
@@ -962,8 +978,9 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
     // Helper to get position styles based on config.position
     const getPositionStyle = (): React.CSSProperties => {
         const position = config?.position || 'bottom-right';
-        const offsetX = config?.offsetX || 20;
-        const offsetY = config?.offsetY || 20;
+        // SCALE FIX: Apply scaling to offsets so they match the visual scale of the device
+        const offsetX = safeScale(config?.offsetX || 20, scale);
+        const offsetY = safeScale(config?.offsetY || 20, scaleY); // Vertical offset uses scaleY
 
         const baseStyle: React.CSSProperties = {
             position: 'absolute',
@@ -974,8 +991,8 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         if (position === 'custom') {
             return {
                 ...baseStyle,
-                left: config?.x || 0,
-                top: config?.y || 0,
+                left: safeScale(config?.x || 0, scale),
+                top: safeScale(config?.y || 0, scaleY),
             };
         }
 
@@ -1013,7 +1030,12 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
     const dragStartRef = useRef<{ startX: number, startY: number, initialOffsetX: number, initialOffsetY: number } | null>(null);
 
     const handlePointerDown = (e: React.PointerEvent) => {
-        if (!isInteractive) return;
+        // Check interactive mode AND draggable config (support root or nested)
+        // Default to true if neither is explicitly false
+        const isDraggable = (config as any)?.draggable ?? config?.behavior?.draggable ?? true;
+
+        if (!isInteractive || isDraggable === false) return;
+
         e.preventDefault();
         e.stopPropagation();
 
@@ -1031,8 +1053,8 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         if (!isDragging || !dragStartRef.current) return;
         e.preventDefault();
 
-        const deltaX = e.clientX - dragStartRef.current.startX;
-        const deltaY = e.clientY - dragStartRef.current.startY;
+        const deltaX = (e.clientX - dragStartRef.current.startX) / scale;
+        const deltaY = (e.clientY - dragStartRef.current.startY) / scale;
 
         setDragOffset({
             x: dragStartRef.current.initialOffsetX + deltaX,
@@ -1045,6 +1067,104 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             setIsDragging(false);
             dragStartRef.current = null;
             (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+
+            // SNAP TO CORNER LOGIC
+            // Support root or nested config
+            const isSnapEnabled = (config as any)?.snapToCorner ?? config?.behavior?.snapToCorner ?? false;
+
+            console.log('[FloaterRenderer] PointerUp - Checking Snap', {
+                enabled: isSnapEnabled,
+                isDragging,
+                offset: dragOffset
+            });
+
+            if (isSnapEnabled) {
+                console.log('[FloaterRenderer] Snap Enabled - Calculating Physics');
+
+                // DIAGNOSTIC LOGGING
+                const floaterEl = e.currentTarget as HTMLElement;
+                const offsetParentEl = floaterEl.offsetParent as HTMLElement;
+
+                const parentElement = floaterEl.parentElement as HTMLElement;
+
+                // CRITICAL FIX: Use parentElement (Device Frame) for bounds
+                // offsetParent is likely Body/Window, which causes "Behind Screen" snap
+                const rect = parentElement?.getBoundingClientRect();
+                const floaterRect = floaterEl.getBoundingClientRect();
+
+                console.log('[FloaterRenderer] Physics Data:', {
+                    offsetParentTag: offsetParentEl?.tagName,
+                    containerRect: rect ? { w: rect.width, h: rect.height, l: rect.left, t: rect.top } : null,
+                    floaterRect: { w: floaterRect.width, h: floaterRect.height, l: floaterRect.left, t: floaterRect.top },
+                    scale
+                });
+
+                if (rect) {
+                    const floaterRect = containerRef.current?.getBoundingClientRect();
+
+                    if (floaterRect) {
+                        // Calculate center points
+                        const containerCenter = { x: rect.width / 2, y: rect.height / 2 };
+                        const floaterCenter = {
+                            x: (floaterRect.left - rect.left) + floaterRect.width / 2,
+                            y: (floaterRect.top - rect.top) + floaterRect.height / 2
+                        };
+
+                        // Determine quadrant
+                        const isLeft = floaterCenter.x < containerCenter.x;
+                        const isTop = floaterCenter.y < containerCenter.y;
+
+                        const currentLeft = floaterRect.left - rect.left;
+                        const currentTop = floaterRect.top - rect.top;
+
+                        // UNIT NORMALIZATION: Explicit Scaling (Layout * Scale)
+                        // Matches 'safeScale' logic used in ModalRenderer
+
+                        // Helper to safely parse and scale config values
+                        const safeScaleNum = (val: any, factor: number) => {
+                            if (val == null) return 20 * factor; // Default 20px scaled
+                            const strVal = val.toString().trim();
+                            const num = parseFloat(strVal);
+                            return (isNaN(num) ? 20 : num) * factor;
+                        };
+
+                        const configOffsetX = safeScaleNum(config?.offsetX, scale);
+                        const configOffsetY = safeScaleNum(config?.offsetY, scaleY);
+
+                        // 1. Get Visual Padding
+                        const MIN_SAFE_PADDING = 12;
+
+                        // configOffsets are already scaled by safeScaleNum, so we just clamp them
+                        const paddingX = Math.max(configOffsetX, MIN_SAFE_PADDING);
+                        const paddingY = Math.max(configOffsetY, MIN_SAFE_PADDING);
+
+                        // UNIT NORMALIZATION: Everything must be in SCALED VISUAL PIXELS
+                        // 1. Get Computed Border Widths (Layout Pixels) and Scale them
+                        // 2. Get Visual Container Bounds using Layout Props * Scale
+                        const visualBorderL = parentElement.clientLeft || 0;
+                        const visualBorderT = parentElement.clientTop || 0;
+                        const visualContentW = parentElement.clientWidth;
+                        const visualContentH = parentElement.clientHeight;
+
+                        // 2. Use rect (Visual Dimensions) for container bounds
+                        // Target = BorderOffset + Padding
+                        const snapLeft = visualBorderL + paddingX;
+                        const snapTop = visualBorderT + paddingY;
+
+                        // Right/Bottom target: ContainerVisualWidth - VisualBorder - FloaterVisualWidth - VisualPadding
+                        const snapRight = visualBorderL + visualContentW - floaterRect.width - paddingX;
+                        const snapBottom = visualBorderT + visualContentH - floaterRect.height - paddingY;
+
+                        const targetLeft = isLeft ? snapLeft : snapRight;
+                        const targetTop = isTop ? snapTop : snapBottom;
+
+                        const deltaX = targetLeft - currentLeft;
+                        const deltaY = targetTop - currentTop;
+
+                        setDragOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
+                    }
+                }
+            }
         }
     };
 
@@ -1058,14 +1178,20 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             ...baseStyle,
             // Append our drag transform to any existing transform (like centering)
             transform: baseStyle.transform ? `${baseStyle.transform} ${translateString}` : translateString,
-            zIndex: isDragging ? 1000 : (baseStyle.zIndex ?? 50)
+            zIndex: isDragging ? 1000 : (baseStyle.zIndex ?? 50),
+            // Smoothly animate snap-back when not dragging
+            transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'
         };
     }, [dragOffset, isDragging, getPositionStyle]);
+
+    const isVideo = useMemo(() => {
+        return config?.media?.type === 'video' || config?.media?.type === 'youtube';
+    }, [config?.media?.type]);
 
     return (
         <>
             {/* Overlay (Backdrop) */}
-            {config?.overlay?.enabled && (
+            {(config?.overlay?.enabled || config?.backdrop?.show) && (
                 <div
                     style={{
                         position: 'absolute',
@@ -1073,15 +1199,18 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: config.overlay.color || '#000000',
-                        opacity: config.overlay.opacity ?? 0.5,
+                        backgroundColor: config?.overlay?.color || config?.backdrop?.color || '#000000',
+                        opacity: config?.overlay?.opacity ?? config?.backdrop?.opacity ?? 0.5,
                         zIndex: 49, // Just below floater (50)
                         pointerEvents: 'auto', // Catch clicks
+                        // Support Blur if present
+                        backdropFilter: (config?.overlay?.blur || config?.backdrop?.blur) ? `blur(${config?.overlay?.blur || config?.backdrop?.blur}px)` : 'none'
                     }}
                     onClick={(e) => {
                         e.stopPropagation();
                         // Handle dismiss if enabled
-                        if (config.overlay.dismissOnClick) {
+                        const dismissOnClick = config?.overlay?.dismissOnClick ?? config?.backdrop?.dismissOnTap ?? false;
+                        if (dismissOnClick) {
                             if (onDismiss) onDismiss();
                         }
                     }}
@@ -1089,6 +1218,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             )}
 
             {/* Floater Container */}
+            {/* Floater Container (Outer Shell - Logic/Position) */}
             <div
                 ref={containerRef}
                 onPointerDown={handlePointerDown}
@@ -1096,7 +1226,6 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 onPointerUp={handlePointerUp}
                 onClick={(e) => {
                     // Handle container-level action in interact mode
-                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
                     const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
                     if (isInteractive && floaterLayer?.content?.action && timeSinceInteractEnabled > 200) {
                         handleAction(floaterLayer.content.action);
@@ -1104,24 +1233,57 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         onLayerSelect(floaterLayer.id);
                     }
                 }}
+                onDoubleClick={(e) => {
+                    // Double-tap to dismiss feature
+                    if (isInteractive && config?.doubleTapToDismiss && onDismiss) {
+                        e.stopPropagation();
+                        onDismiss();
+                    }
+                }}
                 style={{
-                    ...finalStyle,
+                    ...finalStyle, // Position, Transform(Drag), ZIndex, Transition
 
-                    // FLOATER DIMENSIONS: Use config width/height directly (no modal layer sizing)
-                    width: safeScale(config?.width || 280, scale), // PIP-like default
-                    maxWidth: '100%',
+                    display: 'flex', // Hold inner box
 
-                    backgroundColor: floaterLayer.style?.backgroundColor || config?.backgroundColor || '#000000', // Black fallback
-                    // FIX: Priority Config > Layer. Also handle 'none' explicitly.
-                    backgroundImage: (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
+                    // EXPANDED MODE OVERRIDES (Layout)
+                    ...(isExpanded ? {
+                        position: 'absolute' as any,
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        width: '100%', height: '100%',
+                        maxWidth: 'none', maxHeight: 'none',
+                        transform: 'none', // Override drag transform
+                        margin: 0,
+                        zIndex: 100
+                    } : {
+                        // FLOATER DIMENSIONS: MATCH MODAL PARITY
+                        width: safeScale(resolveDimension(configWidth, floaterLayer?.style?.width, '280'), scale),
+                        maxWidth: '100%',
+                        height: safeScale(resolveDimension(configHeight, floaterLayer?.style?.height, '180'), scaleY),
+                    })
+                }}
+            >
+                {/* Inner Box (Visuals/Animation) */}
+                <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+
+                    // Background
+                    backgroundColor: config?.backgroundColor === 'transparent'
+                        ? 'transparent'
+                        : (floaterLayer.style?.backgroundColor || config?.backgroundColor || '#000000'),
+
+                    backgroundImage: (config?.media?.url ? `url(${config.media.url})` : undefined) ||
+                        (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
                         (floaterLayer.style?.backgroundImage && floaterLayer.style?.backgroundImage !== 'none' ? floaterLayer.style?.backgroundImage : undefined),
-                    // FORCED - to match Modal behavior per user request (Force stretch)
-                    backgroundSize: '100% 100%',
-                    backgroundPosition: 'top left',
+                    backgroundSize: config?.media?.fit === 'contain' ? 'contain' : (config?.media?.fit === 'cover' ? 'cover' : '100% 100%'),
+                    backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
 
-                    // FLOATER STYLING: Simplified from modal
-                    borderRadius: safeScale(config?.borderRadius ?? 0, scale), // Square fallback
+                    // Borders
+                    borderRadius: isExpanded ? 0 : (config?.shape === 'circle' ? '50%' : safeScale(config?.borderRadius ?? 0, scale)),
                     borderWidth: safeScale(floaterLayer.style?.borderWidth || 0, scale),
                     borderColor: floaterLayer.style?.borderColor || 'transparent',
                     borderStyle: floaterLayer.style?.borderStyle || 'solid',
@@ -1129,83 +1291,237 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     // Visuals
                     opacity: floaterLayer.style?.opacity ?? 1,
                     filter: getFilterString(floaterLayer.style?.filter),
-                    boxShadow: config?.boxShadow || '0 8px 32px rgba(0, 0, 0, 0.15)',
+                    boxShadow: isExpanded ? 'none' : (
+                        config?.shadow?.enabled === false
+                            ? 'none'
+                            : (config?.shadow?.blur !== undefined || config?.shadow?.spread !== undefined)
+                                ? `0 8px ${config?.shadow?.blur || 24}px ${config?.shadow?.spread || 4}px rgba(0, 0, 0, 0.25)`
+                                : (config?.boxShadow || '0 8px 32px rgba(0, 0, 0, 0.15)')
+                    ),
 
-                    // FLOATER HEIGHT: Direct from config
-                    height: safeScale(config?.height || 180, scaleY),
-
-                    // Layout
-                    overflow: 'hidden',
-                    zIndex: 50,
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                {/* Content Area - Relative/Scrollable Layers */}
-                <div style={{
-                    flex: 1,
-                    position: 'relative',
-                    // FIX: Changed to 'auto' to allow scrolling if content exceeds container height
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                    width: '100%',
-                    height: '100%',
-                    display: floaterLayer.style?.display || 'flex',
-                    flexDirection: floaterLayer.style?.flexDirection || 'column',
-                    alignItems: floaterLayer.style?.alignItems || 'stretch',
-                    justifyContent: floaterLayer.style?.justifyContent || 'flex-start',
-                    gap: safeScale(floaterLayer.style?.gap || 0, scale),
-
-                    // REMOVED: CSS transform was causing double-scaling with safeScale
-                    // Instead, positions should be calculated as percentages of container
-
-                    // SCALING FIX: Apply safeScale to Padding (Content Wrapper)
-                    paddingTop: safeScale(floaterLayer.style?.padding?.top || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
-                    paddingBottom: safeScale(floaterLayer.style?.padding?.bottom || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
-                    paddingLeft: safeScale(floaterLayer.style?.padding?.left || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
-                    paddingRight: safeScale(floaterLayer.style?.padding?.right || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
+                    // Animation entrance effect (Applied to Inner Box to avoid breaking Outer Box transform)
+                    animation: config?.animation?.type
+                        ? `floater-${config.animation.type} ${config.animation?.duration || 300}ms ${config.animation?.easing || 'ease-out'}`
+                        : 'floater-fade 300ms ease-out',
                 }}>
-                    {childLayers
-                        .filter(l => {
-                            const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
-                            return !isAbs;
-                        })
-                        .map(renderLayer)}
-                </div>
+                    {/* VIDEO PLAYER */}
+                    {isVideo && config?.media?.url && (
+                        (() => {
+                            // Helper to detect YouTube and get Embed URL
+                            const getYouTubeId = (url: string) => {
+                                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+                                const match = url.match(regExp);
+                                return (match && match[2].length === 11) ? match[2] : null;
+                            };
 
-                {/* Overlay Area - Absolute Layers (Fixed to Modal) */}
-                {childLayers
-                    .filter(l => {
-                        const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
-                        return isAbs;
-                    })
-                    .map(renderLayer)}
+                            // Handle Shorts specifically if regex misses or for robustness
+                            const isShorts = config.media.url.includes('/shorts/');
+                            let youtubeId = getYouTubeId(config.media.url);
+                            if (!youtubeId && isShorts) {
+                                const parts = config.media.url.split('/shorts/');
+                                youtubeId = parts[1]?.split('?')[0];
+                            }
 
-                {/* Close Button (Optional, if configured) */}
-                {config?.showCloseButton === true && (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: '12px',
-                            right: '12px',
-                            cursor: 'pointer',
-                            zIndex: 50,
-                            padding: '4px',
-                            borderRadius: '50%',
-                            backgroundColor: 'rgba(0,0,0,0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        <X size={20} color="#6B7280" />
+                            if (youtubeId || config.media.type === 'youtube') {
+                                // Render YouTube Iframe
+                                const finalId = youtubeId || '';
+                                const muteParam = isMuted ? '1' : '0';
+                                const loopParam = config.media.loop ? '1' : '0';
+                                const embedUrl = `https://www.youtube.com/embed/${finalId}?autoplay=${config.media.autoPlay ? 1 : 0}&mute=${muteParam}&controls=0&loop=${loopParam}&playlist=${finalId}&playsinline=1&rel=0`;
+
+                                return (
+                                    <div style={{
+                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0,
+                                        pointerEvents: isExpanded ? 'auto' : 'none'
+                                    }}>
+                                        <iframe
+                                            width="100%" height="100%" src={embedUrl} title="YouTube video player" frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                                        />
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
+                                    </div>
+                                );
+                            } else {
+                                // Render Direct Video File
+                                return (
+                                    <video
+                                        ref={videoRef}
+                                        src={config.media.url}
+                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: config?.media?.fit || 'cover', zIndex: 0 }}
+                                        autoPlay={config.media.autoPlay ?? true}
+                                        muted={isMuted}
+                                        loop={config.media.loop ?? false}
+                                        playsInline
+                                        onTimeUpdate={(e) => setVideoProgress((e.currentTarget.currentTime / e.currentTarget.duration) * 100)}
+                                    />
+                                );
+                            }
+                        })()
+                    )}
+
+                    {/* Content Area - Relative/Scrollable Layers */}
+                    <div style={{
+                        flex: 1,
+                        position: 'relative',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        width: '100%',
+                        height: '100%',
+                        display: floaterLayer.style?.display || 'flex',
+                        flexDirection: floaterLayer.style?.flexDirection || 'column',
+                        alignItems: floaterLayer.style?.alignItems || 'stretch',
+                        justifyContent: floaterLayer.style?.justifyContent || 'flex-start',
+                        gap: safeScale(floaterLayer.style?.gap || 0, scale),
+                        paddingTop: safeScale(floaterLayer.style?.padding?.top || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
+                        paddingBottom: safeScale(floaterLayer.style?.padding?.bottom || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
+                        paddingLeft: safeScale(floaterLayer.style?.padding?.left || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
+                        paddingRight: safeScale(floaterLayer.style?.padding?.right || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
+                    }}>
+                        {childLayers.filter(l => !(l.style?.position === 'absolute' || l.style?.position === 'fixed')).map(renderLayer)}
                     </div>
-                )}
+
+                    {/* Overlay Area - Absolute Layers */}
+                    {childLayers.filter(l => (l.style?.position === 'absolute' || l.style?.position === 'fixed')).map(renderLayer)}
+
+                    {/* === VIDEO CONTROLS OVERLAY === */}
+                    {/* === VIDEO CONTROLS OVERLAY === */}
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 60
+                    }}>
+                        {/* Top Group */}
+                        <div style={{
+                            position: 'absolute', top: 8, left: 8, right: 8,
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'
+                        }}>
+                            {/* Top Left */}
+                            <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
+                                {config?.controls?.expandButton?.show && isVideo && (config?.controls?.expandButton?.position === 'top-left' || !config?.controls?.expandButton?.position) && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'top-left' && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'top-left' && (
+                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        <X size={config?.controls?.closeButton?.size || 14} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Top Right */}
+                            <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
+                                {config?.controls?.expandButton?.show && isVideo && config?.controls?.expandButton?.position === 'top-right' && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {config?.controls?.muteButton?.show && isVideo && (config?.controls?.muteButton?.position === 'top-right' || !config?.controls?.muteButton?.position) && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && (config?.controls?.closeButton?.position === 'top-right' || !config?.controls?.closeButton?.position) && (
+                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        <X size={config?.controls?.closeButton?.size || 14} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Bottom Group */}
+                        <div style={{
+                            position: 'absolute', bottom: 8, left: 8, right: 8,
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'
+                        }}>
+                            {/* Bottom Left */}
+                            <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
+                                {config?.controls?.expandButton?.show && isVideo && config?.controls?.expandButton?.position === 'bottom-left' && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-left' && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-left' && (
+                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        <X size={config?.controls?.closeButton?.size || 14} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Bottom Right */}
+                            <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
+                                {config?.controls?.expandButton?.show && isVideo && config?.controls?.expandButton?.position === 'bottom-right' && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-right' && (
+                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
+                                    </div>
+                                )}
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-right' && (
+                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
+                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        <X size={config?.controls?.closeButton?.size || 14} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Progress Bar - respects position config (top or bottom) */}
+                    {config?.controls?.progressBar?.show && isVideo && (
+                        <div style={{
+                            position: 'absolute',
+                            [config?.controls?.progressBar?.position === 'top' ? 'top' : 'bottom']: 0,
+                            left: 0, right: 0, height: '3px',
+                            backgroundColor: 'rgba(255,255,255,0.2)', zIndex: 60, pointerEvents: 'none'
+                        }}>
+                            <div style={{ width: `${videoProgress}%`, height: '100%', backgroundColor: config?.colors?.primary || '#ffffff', transition: 'width 0.1s linear', boxShadow: '0 0 4px rgba(0,0,0,0.3)' }} />
+                        </div>
+                    )}
+                </div>
             </div >
 
             <style>{`
             @keyframes floater-fade {
-              0% { opacity: 0; transform: scale(0.9); }
+              0% { opacity: 0; }
+              100% { opacity: 1; }
+            }
+            @keyframes floater-scale {
+              0% { opacity: 0; transform: scale(0.8); }
+              100% { opacity: 1; transform: scale(1); }
+            }
+            @keyframes floater-slide {
+              0% { opacity: 0; transform: translateY(20px); }
+              100% { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes floater-bounce {
+              0% { opacity: 0; transform: scale(0.6); }
+              50% { transform: scale(1.1); }
+              70% { transform: scale(0.95); }
               100% { opacity: 1; transform: scale(1); }
             }
           `}</style>

@@ -297,19 +297,49 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     ? (backendCampaign.config?.scratchCardConfig || extractScratchCardConfig(backendCampaign.config || {}))
     : undefined;
 
-  // ✅ FIX: Add floaterConfig extraction
+  // ✅ FIX: Add floaterConfig extraction (FULL PARITY - must match buildConfigFromLayers)
   const floaterConfig = campaignType === 'floater'
     ? (backendCampaign.config?.floaterConfig || backendCampaign.floaterConfig || {
+      // Dimensions
       width: backendCampaign.config?.width || 280,
       height: backendCampaign.config?.height || 180,
+
+      // Background
       backgroundColor: backendCampaign.config?.backgroundColor || '#000000',
+      backgroundImageUrl: backendCampaign.config?.backgroundImageUrl,
+      backgroundSize: backendCampaign.config?.backgroundSize || 'cover',
+
+      // Border & Shape
       borderRadius: backendCampaign.config?.borderRadius || 0,
+      shape: backendCampaign.config?.shape,
+
+      // Position
       position: backendCampaign.config?.position || 'bottom-right',
       offsetX: backendCampaign.config?.offsetX || 20,
       offsetY: backendCampaign.config?.offsetY || 20,
-      backgroundImageUrl: backendCampaign.config?.backgroundImageUrl,
-      backgroundSize: backendCampaign.config?.backgroundSize || 'cover',
+
+      // Controls (close button, expand, mute, etc.)
       showCloseButton: backendCampaign.config?.showCloseButton ?? false,
+      controls: backendCampaign.config?.controls,
+
+      // Media/Video (critical for PIP)
+      media: backendCampaign.config?.media,
+
+      // Animation
+      animation: backendCampaign.config?.animation,
+
+      // Behavior
+      draggable: backendCampaign.config?.draggable ?? true,
+      snapToCorner: backendCampaign.config?.snapToCorner ?? true,
+      dismissOnTapOutside: backendCampaign.config?.dismissOnTapOutside,
+      doubleTapToDismiss: backendCampaign.config?.doubleTapToDismiss ?? false,
+
+      // Backdrop/Overlay
+      backdrop: backendCampaign.config?.backdrop,
+      overlay: backendCampaign.config?.overlay,
+
+      // Shadow
+      shadow: backendCampaign.config?.shadow,
     })
     : undefined;
 
@@ -526,24 +556,57 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     });
   }
 
-  // ✅ FIX: Add Floater config flattening
+  // ✅ FIX: Add Floater config flattening (FULL PARITY)
   if (campaign.nudgeType === 'floater' && (campaign as any).floaterConfig) {
     const fc = (campaign as any).floaterConfig;
     Object.assign(config, {
+      // Dimensions
       width: fc.width,
       height: fc.height,
+
+      // Background
       backgroundColor: fc.backgroundColor,
       backgroundImageUrl: fc.backgroundImageUrl,
       backgroundSize: fc.backgroundSize,
+
+      // Border & Shape
       borderRadius: fc.borderRadius,
+      shape: fc.shape || (fc.borderRadius >= Math.min(fc.width || 60, fc.height || 60) / 2 ? 'circle' : 'rectangle'),
+
+      // Position
       position: fc.position,
       offsetX: fc.offsetX,
       offsetY: fc.offsetY,
-      // Shape detection: if borderRadius is very high (>= min(width,height)/2), likely circle
-      shape: fc.borderRadius >= Math.min(fc.width || 60, fc.height || 60) / 2 ? 'circle' : 'rectangle',
-      overlay: fc.overlay,
+
+      // Close Button
       showCloseButton: fc.showCloseButton,
-      dismissOnTapOutside: fc.dismissOnTapOutside, // NEW: dismiss when tapping outside floater
+
+      // Animation (NEW)
+      animation: fc.animation, // { type: 'scale'|'slide'|'fade'|'bounce', duration: number, easing: string }
+
+      // Media/Video (NEW)
+      media: fc.media, // { url, type: 'video'|'youtube'|'image', autoPlay, muted, loop, fit }
+
+      // Controls (NEW)
+      controls: fc.controls, // { closeButton: { show, position }, expandButton: { show }, muteButton: { show }, progressBar: { show } }
+
+      // Behavior (NEW)
+      draggable: fc.draggable ?? true,
+      snapToCorner: fc.snapToCorner ?? true,
+      dismissOnTapOutside: fc.dismissOnTapOutside,
+
+      // Backdrop (NEW - also alias to 'overlay' for SDK compatibility)
+      backdrop: fc.backdrop,
+      overlay: fc.backdrop ? {
+        enabled: fc.backdrop.show ?? false,
+        color: fc.backdrop.color ?? '#000000',
+        opacity: fc.backdrop.opacity ?? 0.3,
+        blur: fc.backdrop.blur ?? 0,
+        dismissOnClick: fc.backdrop.dismissOnTap ?? false,
+      } : fc.overlay, // Fallback to existing overlay if no backdrop
+
+      // Shadow (NEW)
+      shadow: fc.shadow, // { enabled, blur, spread }
     });
   }
 

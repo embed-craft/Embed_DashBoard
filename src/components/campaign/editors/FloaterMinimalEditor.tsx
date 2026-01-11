@@ -336,22 +336,68 @@ export const FloaterMinimalEditor = () => {
         behavior: false
     });
 
-    // Auto-initialize config if missing
+    // Auto-initialize config if missing (fallback - store should already have defaults)
     React.useEffect(() => {
         if (!config) {
             updateFloaterConfig({
+                // Position
                 position: 'bottom-right',
                 offsetX: 20,
                 offsetY: 20,
+
+                // Size & Shape
                 width: 280,
                 height: 180,
                 borderRadius: 12,
+                shape: 'rectangle',
+
+                // Background
                 backgroundColor: '#000000',
+
+                // Shadow - MUST be initialized for toggle to render
+                shadow: {
+                    enabled: true,
+                    blur: 24,
+                    spread: 4,
+                },
+
+                // Media - MUST be initialized for editor to work
+                media: {
+                    url: '',
+                    type: 'image',
+                    autoPlay: true,
+                    muted: true,
+                    loop: true,
+                    fit: 'cover',
+                },
+
+                // Controls - MUST be initialized for toggles to render
+                controls: {
+                    closeButton: { show: true, position: 'top-right', size: 14 },
+                    expandButton: { show: false, position: 'top-left', size: 14 },
+                    muteButton: { show: false, position: 'top-left', size: 14 },
+                    progressBar: { show: false },
+                },
+
+                // Animation
+                animation: {
+                    type: 'scale',
+                    duration: 300,
+                    easing: 'ease-out',
+                },
+
+                // Behavior
                 draggable: true,
                 snapToCorner: true,
-                controls: {
-                    closeButton: { show: true, position: 'top-right' }
-                }
+                doubleTapToDismiss: false,
+
+                // Backdrop
+                backdrop: {
+                    show: false,
+                    color: '#000000',
+                    opacity: 0.3,
+                    blur: 0,
+                },
             });
         }
     }, [config, updateFloaterConfig]);

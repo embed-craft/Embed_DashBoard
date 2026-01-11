@@ -1035,31 +1035,99 @@ export const useEditorStore = create<EditorStore>()(
           } : undefined,
           // Initialize floater config for floater nudge type
           floaterConfig: nudgeType === 'floater' ? {
+            // Position
             position: 'bottom-right',
-            mode: 'image-only',
-            shape: 'rectangle', // Square like PIP
-            width: 280, // PIP-like width
-            height: 180, // PIP-like height
-            backgroundColor: '#000000', // Black like PIP
-            borderRadius: 0, // Square corners
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
-            opacity: 1,
             offsetX: 20,
             offsetY: 20,
+
+            // Size & Shape
+            mode: 'image-only',
+            shape: 'rectangle',
+            width: 280,
+            height: 180,
+            borderRadius: 12,
+
+            // Background
+            backgroundColor: '#000000',
+            backgroundImageUrl: '',
+            backgroundSize: 'cover',
+
+            // Shadow - Must be initialized for toggle to work
+            shadow: {
+              enabled: true,
+              blur: 24,
+              spread: 4,
+            },
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+            opacity: 1,
+
+            // Media - Must be initialized for editor to work
+            media: {
+              url: '',
+              type: 'image',
+              autoPlay: true,
+              muted: true,
+              loop: true,
+              fit: 'cover',
+            },
+
+            // Controls - Must be initialized for toggles to work
+            controls: {
+              closeButton: {
+                show: true,
+                position: 'top-right',
+                size: 14,
+              },
+              expandButton: {
+                show: false,
+                position: 'top-left',
+                size: 14,
+              },
+              muteButton: {
+                show: false,
+                position: 'top-left',
+                size: 14,
+              },
+              progressBar: {
+                show: false,
+              },
+            },
+
+            // Animation
+            animation: {
+              type: 'scale',
+              duration: 300,
+              easing: 'ease-out',
+            },
+
+            // Behavior - Must be initialized for toggles to work
+            draggable: true,
+            snapToCorner: true,
+            doubleTapToDismiss: false,
+            dismissOnTapOutside: false,
+
+            // Backdrop
+            backdrop: {
+              show: false,
+              color: '#000000',
+              opacity: 0.3,
+              blur: 0,
+              dismissOnTap: false,
+            },
+
+            // Glassmorphism (future use)
             glassmorphism: {
               enabled: false,
               blur: 10,
               opacity: 0.7,
             },
+
+            // Gradient (future use)
             gradient: {
               enabled: false,
               startColor: '#000000',
               endColor: '#333333',
               angle: 135,
-            },
-            animation: {
-              type: 'scale',
-              duration: 300,
             },
           } : undefined,
           // Initialize tooltip config for tooltip nudge type

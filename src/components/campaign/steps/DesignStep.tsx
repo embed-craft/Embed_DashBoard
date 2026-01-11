@@ -1301,7 +1301,8 @@ export const DesignStep: React.FC<any> = () => {
         };
 
         // Try to find real target element, fallback to mock
-        const targetElementId = currentCampaign?.tooltipConfig?.targetElementId;
+        const activeConfig = activeInterface ? activeInterface.tooltipConfig : currentCampaign?.tooltipConfig;
+        const targetElementId = activeConfig?.targetElementId || currentCampaign?.tooltipConfig?.targetElementId;
         const realTargetElement = selectedPage?.elements?.find((e: any) => e.id === targetElementId);
 
         // FIX: Convert target rect from physical pixels to design coordinates

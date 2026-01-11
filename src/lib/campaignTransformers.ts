@@ -594,6 +594,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
       draggable: fc.draggable ?? true,
       snapToCorner: fc.snapToCorner ?? true,
       dismissOnTapOutside: fc.dismissOnTapOutside,
+      doubleTapToDismiss: fc.doubleTapToDismiss ?? false,
 
       // Backdrop (NEW - also alias to 'overlay' for SDK compatibility)
       backdrop: fc.backdrop,

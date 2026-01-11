@@ -1270,10 +1270,10 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     flexDirection: 'column',
                     overflow: 'hidden',
 
-                    // Background
+                    // Background - ✅ FIX: config?.backgroundColor takes precedence over layer style
                     backgroundColor: config?.backgroundColor === 'transparent'
                         ? 'transparent'
-                        : (floaterLayer.style?.backgroundColor || config?.backgroundColor || '#000000'),
+                        : (config?.backgroundColor || floaterLayer.style?.backgroundColor || '#000000'),
 
                     backgroundImage: (config?.media?.url ? `url(${config.media.url})` : undefined) ||
                         (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||

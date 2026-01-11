@@ -10,7 +10,6 @@ import { BOTTOM_SHEET_TEMPLATES } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 
 import { TooltipRenderer } from '@/components/TooltipRenderer';
-import { SpotlightRenderer } from '@/components/SpotlightRenderer';
 import { ModalRenderer } from '@/components/ModalRenderer';
 import { BannerRenderer } from '@/components/BannerRenderer';
 import { PipRenderer } from '@/components/PipRenderer';
@@ -84,13 +83,11 @@ const nudgeTypes = [
   { id: 'scratchcard', label: 'Scratch Card', Icon: CreditCard, bg: '#FCE7F3', iconBg: '#F9A8D4', iconColor: '#EC4899' },
   { id: 'carousel', label: 'Story Carousel', Icon: PlayCircle, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
   { id: 'inline', label: 'Inline Widget', Icon: Grid3x3, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
-  // New types requested
-  { id: 'spotlight', label: 'Spotlight', Icon: Zap, bg: '#F3E8FF', iconBg: '#E9D5FF', iconColor: '#A855F7' },
-  { id: 'coachmark', label: 'Coachmark', Icon: Compass, bg: '#E0F2FE', iconBg: '#BAE6FD', iconColor: '#0EA5E9' },
 ];
 
+
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
-  'nudges': ['tooltip', 'spotlight', 'coachmark'],
+  'nudges': ['tooltip'],
   'messages': ['modal', 'floater', 'bottomsheet', 'banner', 'scratchcard'], // PIP removed - Floater handles it
   'stories': ['carousel'],
   // Default fallbacks for others or future types
@@ -1345,39 +1342,6 @@ export const DesignStep: React.FC<any> = () => {
           />
         );
 
-      case 'spotlight':
-        const deviceSpotlight = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
-        const previewWidthSpotlight = deviceSpotlight.width * previewZoom;
-        const previewHeightSpotlight = deviceSpotlight.height * previewZoom;
-        const scaleXSpotlight = previewWidthSpotlight / 393;
-        const scaleYSpotlight = previewHeightSpotlight / 852;
-
-        const defaultSpotlightConfig = {
-          position: 'bottom' as const,
-          backgroundColor: '#1F2937',
-          borderRadius: 12,
-          padding: 16,
-          arrowEnabled: true,
-          arrowSize: 10,
-          overlayEnabled: true,
-          overlayColor: '#000000',
-          overlayOpacity: 0.6,
-        };
-
-        return (
-          <SpotlightRenderer
-            layers={campaignLayers}
-            selectedLayerId={selectedLayerId}
-            onLayerSelect={selectLayer}
-            colors={colors}
-            config={activeInterface?.spotlightConfig || currentCampaign?.spotlightConfig || defaultSpotlightConfig}
-            scale={scaleXSpotlight}
-            scaleY={scaleYSpotlight}
-            isInteractive={isInteractive}
-            onDismiss={() => toast.success('Spotlight dismissed')}
-            onInterfaceAction={handleInterfaceAction}
-          />
-        );
 
       case 'pip':
         const currentDeviceConfigPip = DEVICE_PRESETS.find(d => d.id === selectedDevice);

@@ -603,11 +603,56 @@ export interface TooltipConfig {
 // Spotlight Config - Reuses TooltipConfig structure with overlay always enabled
 export type SpotlightConfig = TooltipConfig;
 
+// Coachmark Config (V3: Full Screen Overlay + Cutout)
+export interface CoachmarkConfig {
+  // 📍 TARGETING (Strict Dependency)
+  targetPageId?: string;               // Required: Page Context
+  targetElementId?: string;            // Required: Element on Page
+
+  // 🔵 CUTOUT (The Hole)
+  cutoutShape: 'circle' | 'rect' | 'rounded-rect';
+  cutoutSizeMode: 'auto' | 'custom';   // Auto = uses target element bounds + padding
+  cutoutPadding: number;               // 10px default
+  cutoutRadius?: number;               // For custom circle
+  cutoutWidth?: number;                // For custom rect
+  cutoutHeight?: number;               // For custom rect
+  cutoutCornerRadius?: number;         // For rounded rect
+  cutoutPulseAnimation?: boolean;      // Pulse effect
+  cutoutBorderEnabled?: boolean;
+  cutoutBorderColor?: string;
+  cutoutBorderWidth?: number;
+
+  // 🎭 OVERLAY (Full Screen Dim)
+  overlayColor: string;                // #000000 (Black)
+  overlayOpacity: number;              // 50-80%
+  overlayClickBehavior: 'dismiss' | 'none'; // Click on background behavior
+
+  // 📦 CONTENT (Floating Box)
+  contentX: number;                    // 50%
+  contentY: number;                    // 50%
+  contentAnchor?: 'cutout-top' | 'cutout-bottom' | 'cutout-left' | 'cutout-right' | 'free';
+  contentOffset?: number;              // Distance from cutout
+  orientation: 'vertical' | 'horizontal';
+
+  // 🎨 CONTENT STYLE
+  backgroundColor: string;
+  backgroundOpacity: number;
+  width?: number;                      // Content width (e.g., 280px)
+  roundness: number;                   // 12px
+  padding: number;                     // 16px
+  shadowEnabled?: boolean;
+
+  // 🎛️ BEHAVIOR
+  nextButtonText?: string;             // "Next" or "Got it"
+  showSkipButton?: boolean;
+  closeOnTargetClick: boolean;         // Advances to next step
+}
+
 // Campaign Interface (Sub-campaign within main campaign)
 export interface CampaignInterface {
   id: string;
   name: string;
-  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater' | 'spotlight';
+  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater' | 'spotlight' | 'coachmark';
   layers: Layer[];
   // Config based on nudgeType
   bottomSheetConfig?: BottomSheetConfig;
@@ -627,7 +672,7 @@ export interface CampaignEditor {
   _id?: string; // Support for backend ID
   name: string;
   experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey';
-  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight';
+  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight' | 'coachmark';
 
   // Trigger configuration (industry-standard events)
   trigger?: string; // e.g., 'screen_viewed', 'button_clicked', 'product_viewed'
@@ -722,6 +767,7 @@ interface EditorStore {
   updateTooltipConfig: (config: any) => void;
   updatePipConfig: (config: any) => void;
   updateFloaterConfig: (config: any) => void;
+  updateCoachmarkConfig: (config: Partial<CoachmarkConfig>) => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
 
@@ -2385,13 +2431,13 @@ export const useEditorStore = create<EditorStore>()(
 
       // Update bottom sheet config (Phase 3)
       updateBottomSheetConfig: (config) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
 
-        const currentConfig = currentCampaign.bottomSheetConfig || {
+        const defaults = {
           height: 'auto',
-          dragHandle: false, // Default HIDDEN per user request
-          showCloseButton: false, // Default HIDDEN per user request
+          dragHandle: false,
+          showCloseButton: false,
           swipeToDismiss: true,
           backgroundColor: '#FFFFFF',
           borderRadius: { topLeft: 16, topRight: 16 },
@@ -2410,75 +2456,90 @@ export const useEditorStore = create<EditorStore>()(
           },
         };
 
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
+        const currentConfig = (activeInterface ? activeInterface.bottomSheetConfig : currentCampaign.bottomSheetConfig) || defaults;
+
         // Deep merge for nested objects
         const updatedConfig = { ...currentConfig };
         Object.keys(config).forEach(key => {
+          // @ts-ignore
           if (config[key] && typeof config[key] === 'object' && !Array.isArray(config[key])) {
+            // @ts-ignore
             updatedConfig[key] = { ...currentConfig[key], ...config[key] };
           } else {
+            // @ts-ignore
             updatedConfig[key] = config[key];
           }
         });
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        if (activeInterface) {
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, bottomSheetConfig: updatedConfig, updatedAt: new Date().toISOString() }
               : iface
           );
-        }
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            bottomSheetConfig: updatedConfig,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              bottomSheetConfig: updatedConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+        }
       },
 
       // Update PIP config
       updatePipConfig: (config: any) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
 
-        const currentConfig = currentCampaign.pipConfig || {};
-        const updatedConfig = { ...currentConfig, ...config };
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        if (activeInterface) {
+          const currentConfig = activeInterface.pipConfig || {};
+          const updatedConfig = { ...currentConfig, ...config };
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, pipConfig: updatedConfig, updatedAt: new Date().toISOString() }
               : iface
           );
-        }
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            pipConfig: updatedConfig,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          const currentConfig = currentCampaign.pipConfig || {};
+          const updatedConfig = { ...currentConfig, ...config };
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              pipConfig: updatedConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+        }
       },
 
       // Update Modal config
       updateModalConfig: (config: any) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
 
         const defaults = {
@@ -2491,7 +2552,9 @@ export const useEditorStore = create<EditorStore>()(
           animation: { type: 'pop', duration: 300, easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' }
         };
 
-        const currentConfig = currentCampaign.modalConfig || defaults;
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
+        // @ts-ignore
+        const currentConfig = (activeInterface ? activeInterface.modalConfig : currentCampaign.modalConfig) || defaults;
 
         // Deep merge for nested objects
         const updatedConfig = { ...currentConfig };
@@ -2503,34 +2566,37 @@ export const useEditorStore = create<EditorStore>()(
           }
         });
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        if (activeInterface) {
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, modalConfig: updatedConfig as any, updatedAt: new Date().toISOString() }
               : iface
           );
-        }
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            modalConfig: updatedConfig as any,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              modalConfig: updatedConfig as any,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+        }
       },
 
 
       // Update ScratchCard config
       updateScratchCardConfig: (config: any) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
 
         const defaults = {
@@ -2546,7 +2612,9 @@ export const useEditorStore = create<EditorStore>()(
           overlay: { enabled: true, opacity: 0.5, color: '#000000', dismissOnClick: true },
         };
 
-        const currentConfig = currentCampaign.scratchCardConfig || defaults;
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
+        // @ts-ignore
+        const currentConfig = (activeInterface ? activeInterface.scratchCardConfig : currentCampaign.scratchCardConfig) || defaults;
 
         // Deep merge
         const updatedConfig = { ...currentConfig };
@@ -2558,120 +2626,136 @@ export const useEditorStore = create<EditorStore>()(
           }
         });
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        if (activeInterface) {
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, scratchCardConfig: updatedConfig as any, updatedAt: new Date().toISOString() }
               : iface
           );
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              scratchCardConfig: updatedConfig as any,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
         }
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            scratchCardConfig: updatedConfig as any,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
       },
 
       // Update Banner config
       updateBannerConfig: (config: any) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
-        const updatedBannerConfig = { ...(currentCampaign.bannerConfig || {}), ...config };
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
+
+        if (activeInterface) {
+          const updatedBannerConfig = { ...(activeInterface.bannerConfig || {}), ...config };
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, bannerConfig: updatedBannerConfig, updatedAt: new Date().toISOString() }
               : iface
           );
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          const updatedBannerConfig = { ...(currentCampaign.bannerConfig || {}), ...config };
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              bannerConfig: updatedBannerConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
         }
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            bannerConfig: updatedBannerConfig,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
       },
 
       // Update Floater config
       updateFloaterConfig: (config: any) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
 
-        const updatedFloaterConfig = { ...currentCampaign.floaterConfig, ...config };
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        if (activeInterface) {
+          const updatedFloaterConfig = { ...activeInterface.floaterConfig, ...config };
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, floaterConfig: updatedFloaterConfig, updatedAt: new Date().toISOString() }
               : iface
           );
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          const updatedFloaterConfig = { ...currentCampaign.floaterConfig, ...config };
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              floaterConfig: updatedFloaterConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
         }
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            floaterConfig: updatedFloaterConfig,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
       },
 
       // Update Tooltip config
       updateTooltipConfig: (config: any) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return;
 
-        const updatedTooltipConfig = { ...(currentCampaign.tooltipConfig || {}), ...config };
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
 
-        // Also sync to interface if editing a sub-interface
-        const { activeInterfaceId } = get();
-        let updatedInterfaces = currentCampaign.interfaces;
-        // BUGFIX: Validate activeInterfaceId exists in current campaign to prevent cross-campaign corruption
-        const interfaceExists = activeInterfaceId && currentCampaign.interfaces?.some(i => i.id === activeInterfaceId);
-        if (interfaceExists) {
-          updatedInterfaces = currentCampaign.interfaces.map(iface =>
+        if (activeInterface) {
+          const updatedTooltipConfig = { ...(activeInterface.tooltipConfig || {}), ...config };
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, tooltipConfig: updatedTooltipConfig, updatedAt: new Date().toISOString() }
               : iface
           );
-        }
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            tooltipConfig: updatedTooltipConfig,
-            interfaces: updatedInterfaces,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+        } else {
+          const updatedTooltipConfig = { ...(currentCampaign.tooltipConfig || {}), ...config };
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              tooltipConfig: updatedTooltipConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+        }
       },
 
       // Add targeting rule

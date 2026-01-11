@@ -1022,6 +1022,28 @@ export const DesignStep: React.FC<any> = () => {
           />
         );
       case 'tooltip':
+        // Fix: Resolve target element for interactive preview
+        const targetElementId = iface.tooltipConfig?.targetElementId;
+        const realTargetElement = selectedPage?.elements?.find((e: any) => e.id === targetElementId);
+
+        // Normalize coordinates
+        let targetElement = undefined;
+        if (realTargetElement?.rect) {
+          const deviceMeta = selectedPage?.deviceMetadata || { width: 1080, height: 1920 };
+          const density = deviceMeta.density || 1;
+          const normalizeX = 393 / (deviceMeta.width * density);
+          const normalizeY = 852 / (deviceMeta.height * density);
+
+          targetElement = {
+            rect: {
+              x: realTargetElement.rect.x * normalizeX,
+              y: realTargetElement.rect.y * normalizeY,
+              width: realTargetElement.rect.width * normalizeX,
+              height: realTargetElement.rect.height * normalizeY,
+            }
+          };
+        }
+
         return interfaceWrapper(
           <TooltipRenderer
             layers={interfaceLayers}
@@ -1030,7 +1052,7 @@ export const DesignStep: React.FC<any> = () => {
             colors={colors}
             config={iface.tooltipConfig || {}}
             onConfigChange={() => { }}
-            targetElement={undefined}
+            targetElement={targetElement}
             scale={scaleFactor}
             scaleY={scaleYFactor}
             isInteractive={true}

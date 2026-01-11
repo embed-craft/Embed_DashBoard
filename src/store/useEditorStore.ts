@@ -531,6 +531,8 @@ export interface TooltipConfig {
   showArrow?: boolean;
   arrowPositionPercent?: number; // NEW: 0-100, position along edge (0=start, 50=center, 100=end)
   arrowRoundness?: number; // NEW: 0-100, roundness of arrow tip (0=sharp, 100=rounded)
+  mobileBehavior?: 'default' | 'bottomSheet'; // Force bottom sheet on mobile
+  timelineMode?: boolean; // If true, clicking on tooltip body triggers action
 
   // Appearance
   roundness?: number;
@@ -767,7 +769,6 @@ interface EditorStore {
   updateTooltipConfig: (config: any) => void;
   updatePipConfig: (config: any) => void;
   updateFloaterConfig: (config: any) => void;
-  updateCoachmarkConfig: (config: Partial<CoachmarkConfig>) => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
 

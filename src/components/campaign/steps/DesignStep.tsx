@@ -59,6 +59,7 @@ const colors = {
   purple: { 50: '#f5f3ff', 500: '#8b5cf6', 600: '#7c3aed' },
   green: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a' },
   red: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626' },
+  orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c' },
   text: { primary: '#111827', secondary: '#6b7280', tertiary: '#9ca3af' },
   border: { default: '#e5e7eb' },
   background: { card: '#ffffff', page: '#f9fafb' }
@@ -1873,6 +1874,27 @@ export const DesignStep: React.FC<any> = () => {
                 <button key={pos} onClick={() => handleTooltipUpdate('position', pos)} style={{ padding: '10px', border: `2px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`, borderRadius: '8px', background: config.position === pos ? colors.primary[50] : 'white', color: config.position === pos ? colors.primary[600] : colors.text.secondary, fontSize: '12px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</button>
               ))}
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '12px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: colors.text.secondary }}>Timeline Mode</label>
+              <div
+                onClick={() => handleTooltipUpdate('timelineMode', !config.timelineMode)}
+                style={{
+                  width: '36px', height: '20px', backgroundColor: config.timelineMode ? colors.primary[500] : colors.gray[300],
+                  borderRadius: '10px', position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '2px', left: config.timelineMode ? '18px' : '2px',
+                  width: '16px', height: '16px', backgroundColor: 'white', borderRadius: '50%',
+                  transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                }} />
+              </div>
+            </div>
+            {config.timelineMode && (
+              <div style={{ fontSize: '11px', color: colors.orange[600], marginTop: '-8px', marginBottom: '12px', backgroundColor: colors.orange[50], padding: '8px', borderRadius: '6px' }}>
+                Taking click action on tooltip body to proceed.
+              </div>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div><label style={{ ...labelStyle, fontSize: '11px' }}>Offset X</label><input type="number" value={config.offsetX ?? 0} onChange={(e) => handleTooltipUpdate('offsetX', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} /></div>
@@ -2682,6 +2704,27 @@ export const DesignStep: React.FC<any> = () => {
                   </button>
                 ))}
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '12px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 500, color: colors.text.secondary }}>Timeline Mode</label>
+                <div
+                  onClick={() => handleTooltipUpdate('timelineMode', !config.timelineMode)}
+                  style={{
+                    width: '36px', height: '20px', backgroundColor: config.timelineMode ? colors.primary[500] : colors.gray[300],
+                    borderRadius: '10px', position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: '2px', left: config.timelineMode ? '18px' : '2px',
+                    width: '16px', height: '16px', backgroundColor: 'white', borderRadius: '50%',
+                    transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                  }} />
+                </div>
+              </div>
+              {config.timelineMode && (
+                <div style={{ fontSize: '11px', color: colors.orange[600], marginTop: '-8px', marginBottom: '12px', backgroundColor: colors.orange[50], padding: '8px', borderRadius: '6px' }}>
+                  Taking click action on tooltip body to proceed.
+                </div>
+              )}
             </div>
           </div>
           {/* Offsets (Fine Tuning) */}

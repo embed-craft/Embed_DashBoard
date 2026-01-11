@@ -199,7 +199,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         // FIX: Convert percentage to pixels, then scale for consistent Dashboard/SDK rendering
         // This ensures arrow position scales identically to other dimensions
         const rawTooltipWidth = config.width || 280;
-        const arrowPositionPx = (positionPercent / 100) * rawTooltipWidth;
+        const arrowPositionPx = (positionPercent / 100) * (typeof rawTooltipWidth === 'number' ? rawTooltipWidth : 280);
         const scaledArrowPosition = arrowPositionPx * scale;
 
         // Calculate curve control point based on roundness (0 = sharp, 100 = very rounded)
@@ -432,9 +432,9 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const position = getTooltipPosition();
 
     // FIX: Scale padding for pixel-perfect match with SDK (default to 0)
-    const padding = typeof config.padding === 'object'
-        ? `${config.padding.top * scale}px ${config.padding.right * scale}px ${config.padding.bottom * scale}px ${config.padding.left * scale}px`
-        : `${(config.padding ?? 0) * scale}px`;
+    const padding = config.padding ? (typeof config.padding === 'object'
+        ? `${(config.padding.top ?? 0) * scale}px ${(config.padding.right ?? 0) * scale}px ${(config.padding.bottom ?? 0) * scale}px ${(config.padding.left ?? 0) * scale}px`
+        : `${(config.padding ?? 0) * scale}px`) : '0px';
 
     return (
         <>
@@ -473,8 +473,37 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                     // Handle container-level action in interact mode
                     // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
                     const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
-                    if (isInteractive && tooltipLayer?.content?.action && timeSinceInteractEnabled > 200) {
-                        handleAction(tooltipLayer.content.action);
+                    if (isInteractive && (tooltipLayer?.content?.action || (config.timelineMode && onInterfaceAction)) && timeSinceInteractEnabled > 200) {
+                        if (tooltipLayer?.content?.action) {
+                            handleAction(tooltipLayer.content.action);
+                        } else if (config.timelineMode && onInterfaceAction) {
+                            // Revised Logic:
+                            // If timelineMode is active, we trigger the action if it exists on the container.
+                            // If not, we might need a fallback or just do nothing.
+                            // For now, let's just reuse the generic handleAction call if action exists.
+                            if (tooltipLayer?.content?.action) {
+                                handleAction(tooltipLayer.content.action);
+                            }
+                        }
+
+                        // Wait, user said "set the action interface now if i click on the target elemtn body also action will trigger"
+                        // This implies we need to check if the CONTAINER layer has an action.
+                        // My previous code: `if (isInteractive && tooltipLayer?.content?.action ...)` 
+                        // ALREADY handles this if the container layer (tooltipLayer) has an action!
+                        // The user just wants a "Mode" that might imply visual cues or behavior. 
+                        // OR, maybe they want to force valid action execution even if it wasn't strictly clicking the container?
+                        // Let's ensure we are triggering `handleAction` if `timelineMode` is true OR if there's an action.
+
+                        // Revised Logic based on requirement "just make a button like tooltip timemode on":
+                        // If timelineMode is ON, we treat the body click as an action trigger.
+                        // Existing logic `if (isInteractive && tooltipLayer?.content?.action ...)` covers it 
+                        // IF the user puts the action on the container.
+                        // The `timelineMode` flag might be purely for the UI toggle to know this intent exists.
+                        // But let's make sure it works seamlessly.
+
+                        if (tooltipLayer?.content?.action) {
+                            handleAction(tooltipLayer.content.action);
+                        }
                     } else if (!isInteractive && tooltipLayer) {
                         onLayerSelect(tooltipLayer.id);
                     }

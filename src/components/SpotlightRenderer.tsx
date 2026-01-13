@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { Layer, LayerStyle, SpotlightConfig } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
@@ -142,9 +143,9 @@ export const SpotlightRenderer: React.FC<SpotlightRendererProps> = ({
             zIndex: layer.style?.zIndex ?? 0,
             borderRadius: safeScale(layer.style?.borderRadius, scale),
             overflow: 'hidden',
-            backgroundColor: layer.type === 'button'
-                ? (layer.style?.backgroundColor || layer.content?.themeColor)
-                : undefined,
+            // backgroundColor: layer.type === 'button'
+            //    ? (layer.style?.backgroundColor || layer.content?.themeColor)
+            //    : undefined,
         };
 
         let content = null;
@@ -164,22 +165,24 @@ export const SpotlightRenderer: React.FC<SpotlightRendererProps> = ({
         }
 
         return (
-            <div
+
+            <DraggableLayerWrapper
                 key={layer.id}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (isInteractive) handleAction(layer.content?.action);
-                    else onLayerSelect(layer.id);
-                }}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
                 style={{
                     ...baseStyle,
-                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
+                    outline: isSelected ? `2px solid ${colors.primary[500] || '#6366F1'}` : 'none',
+                    outlineOffset: '2px',
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
     };
 

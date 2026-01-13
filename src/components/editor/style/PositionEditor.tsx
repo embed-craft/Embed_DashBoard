@@ -9,6 +9,7 @@ interface PositionEditorProps {
     showZIndex?: boolean;
     showCoordinates?: boolean;
     showPositionType?: boolean;
+    allowedPositions?: string[];
 }
 
 export const PositionEditor: React.FC<PositionEditorProps> = ({
@@ -17,7 +18,8 @@ export const PositionEditor: React.FC<PositionEditorProps> = ({
     colors,
     showZIndex = true,
     showCoordinates = true,
-    showPositionType = true
+    showPositionType = true,
+    allowedPositions = ['relative', 'absolute', 'fixed', 'sticky']
 }) => {
     const position = style.position || 'relative';
 
@@ -40,7 +42,7 @@ export const PositionEditor: React.FC<PositionEditorProps> = ({
                         Position
                     </label>
                     <div style={{ display: 'flex', gap: '1px', backgroundColor: colors.border.default, padding: '1px', borderRadius: '6px', overflow: 'hidden' }}>
-                        {['relative', 'absolute', 'fixed', 'sticky'].map((pos) => (
+                        {allowedPositions.map((pos) => (
                             <button
                                 key={pos}
                                 onClick={() => onChange({ position: pos as any })}

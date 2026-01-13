@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { DraggableLayerWrapper } from './DraggableLayerWrapper';
 import { Layer, ScratchCardConfig, LayerStyle } from '@/store/useEditorStore';
 import { TextRenderer } from './TextRenderer';
 import { ButtonRenderer } from './ButtonRenderer';
 import { MediaRenderer } from './MediaRenderer';
-import { Confetti } from '@/components/ui/Confetti';
+import { ContainerRenderer } from './ContainerRenderer';
+import { InputRenderer } from './InputRenderer';
+import { CopyButtonRenderer } from './CopyButtonRenderer';
+
 
 interface ScratchCardRendererProps {
     layers: Layer[];
@@ -50,7 +54,7 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const [scratchedPercent, setScratchedPercent] = useState(0);
-    const [showCelebration, setShowCelebration] = useState(false);
+
     // NEW: Delay interaction for 1s after reveal
     const [isPrizeInteractable, setIsPrizeInteractable] = useState(false);
 
@@ -84,8 +88,9 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
     };
 
     // Configuration Defaults
-    const width = typeof config?.width === 'number' ? config.width : 320;
-    const height = typeof config?.height === 'number' ? config.height : 480;
+    // Configuration Defaults
+    const width = config?.width ?? 320;
+    const height = config?.height ?? 480;
     const borderRadius = config?.borderRadius || 16;
     const scratchSize = config?.scratchSize || 20;
     const revealThreshold = config?.revealThreshold || 50;
@@ -98,25 +103,17 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Set canvas size (scaled)
-        const w = typeof width === 'number' ? width : parseInt(String(width)) || 320;
-        const h = typeof height === 'number' ? height : parseInt(String(height)) || 480;
-
-        // Calculate Scratch Area Dimensions
-        const areaX = (config?.scratchArea?.x || 0) * scale;
-        // Step 292 passed `scaleFactorScratch` and `scaleYFactorScratch`.
-        // So I should use scale for X and scaleY for Y.
-
-        const areaW = (config?.scratchArea?.width ?? w) * scale; // Assuming width is number
-        const areaH = (config?.scratchArea?.height ?? h) * scaleY;
-
-        canvas.width = areaW;
-        canvas.height = areaH;
+        // Set canvas resolution to match rendered size (fix for % vs px and blurriness)
+        const rect = canvas.getBoundingClientRect();
+        // Adjust for scale being part of the transform?
+        // The rect.width/height is the actual screen pixels. This gives us 1:1 pixel mapping (crisp).
+        canvas.width = rect.width;
+        canvas.height = rect.height;
 
         // Reset state on config change
         setIsRevealed(false);
         setScratchedPercent(0);
-        setShowCelebration(false);
+
 
         // Draw Cover
         ctx.globalCompositeOperation = 'source-over';
@@ -173,7 +170,7 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
 
             if (percent > revealThreshold) {
                 setIsRevealed(true);
-                setShowCelebration(true);
+
 
                 // Auto-clear
                 if (config?.autoReveal) {
@@ -206,8 +203,17 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
             const pos = getPos(e);
 
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
+            ctx.lineJoin = config?.brushStyle === 'round' ? 'round' : 'bevel';
+            ctx.lineCap = config?.brushStyle === 'round' ? 'round' : 'butt';
+
+            // Spray Logic sim
+            if (config?.brushStyle === 'spray') {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'black';
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
             ctx.lineWidth = scratchSize * scale; // Scale brush size
 
             ctx.beginPath();
@@ -247,11 +253,8 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
 
 
     // --- Action Handling ---
-    const handleLayerAction = (layer: Layer) => {
-        if (!isInteractive) return;
-
-        const action = layer.content?.action;
-        if (!action) return;
+    const handleActionObject = (action: any) => {
+        if (!isInteractive || !action) return;
 
         switch (action.type) {
             case 'interface':
@@ -262,19 +265,39 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
             case 'close':
                 if (onDismiss) onDismiss();
                 break;
+            case 'link':
+                // New distinct type for External URLs
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
             case 'navigate':
+                // FIX: ActionsEditor saves External URL as 'navigate' type but puts value in 'url'
+                // Deeplink saves value in 'url'
+                // Screen navigation saves value in 'screenName' (not yet in ActionsEditor?)
+                // So for 'navigate', check both.
                 if (action.screenName && onNavigate) {
                     onNavigate(action.screenName);
+                } else if (action.url) {
+                    // Legacy fallback: Treat as external URL if url is present
+                    window.open(action.url, '_blank');
                 }
                 break;
             case 'deeplink':
                 if (action.url) {
+                    // Deep links also often open via window.open, or custom logic
                     window.open(action.url, '_blank');
                 }
                 break;
         }
     };
 
+    const handleLayerAction = (layer: Layer) => {
+        if (!isInteractive) return;
+        // Prioritize root action (Global Tab)
+        const action = (layer as any).action || layer.content?.action;
+        handleActionObject(action);
+    };
 
     // --- Layer Rendering Logic (Copied from ModalRenderer) ---
     const renderLayer = (layer: Layer) => {
@@ -330,6 +353,21 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
             fontSize: safeScale(layer.style?.fontSize, scale),
         };
 
+        // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
+        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
+            delete scaledStyle.backgroundColor;
+            delete scaledStyle.border;
+            delete scaledStyle.borderWidth;
+            delete scaledStyle.borderColor;
+            delete scaledStyle.borderStyle;
+            delete scaledStyle.borderRadius;
+            delete scaledStyle.paddingTop;
+            delete scaledStyle.paddingBottom;
+            delete scaledStyle.paddingLeft;
+            delete scaledStyle.paddingRight;
+            delete scaledStyle.padding;
+        }
+
         let finalMarginTop = safeScale(layer.style?.marginTop, scaleY);
         let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
         let finalMarginLeft = safeScale(layer.style?.marginLeft, scale);
@@ -376,6 +414,7 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
         let content = null;
         switch (layer.type) {
             case 'text': content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
+            case 'copy_button': content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'media': content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'button':
                 content = (
@@ -387,6 +426,24 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
                     />
                 );
                 break;
+            case 'input':
+                content = (
+                    <InputRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
+                        onInterfaceAction={(actionIdOrObj) => {
+                            // Handle full action object or string ID
+                            if (typeof actionIdOrObj === 'string') {
+                                if (onInterfaceAction) onInterfaceAction(actionIdOrObj);
+                            } else {
+                                // Calls handleActionObject which handles logic safely
+                                handleActionObject(actionIdOrObj);
+                            }
+                        }}
+                    />
+                );
+                break;
             case 'custom_html':
                 content = (
                     <div
@@ -395,145 +452,279 @@ export const ScratchCardRenderer: React.FC<ScratchCardRendererProps> = ({
                     />
                 );
                 break;
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer} // renderLayer now handles onInterfaceAction via InputRenderer call
+                    />
+                );
+                break;
             // Add other renderers as needed (progress, countdown, etc.) - keeping it simple for now
             default: content = null;
         }
 
         return (
-            <div
+            <DraggableLayerWrapper
                 key={layer.id}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={handleLayerAction}
                 className={`layer-item ${layer.type}-layer`}
-                style={baseStyle}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (isInteractive) {
-                        handleLayerAction(layer);
-                    } else {
-                        onLayerSelect(layer.id);
-                    }
+                style={{
+                    ...baseStyle,
+                    outline: isSelected ? '2px solid #6366F1' : 'none',
+                    outlineOffset: '2px',
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
     };
 
+    // --- Confetti Logic ---
+    const triggerConfetti = () => {
+        // Default to true if not explicitly disabled
+        const enabled = config?.completionAnimation?.enabled ?? true;
+        if (!enabled) return;
+
+        const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899'];
+        const particleCount = 50;
+
+        // Use the container or document body if container not found
+        const container = canvasRef.current?.parentElement || document.body;
+
+        for (let i = 0; i < particleCount; i++) {
+            const p = document.createElement('div');
+            p.style.position = 'absolute';
+            p.style.width = '6px';
+            p.style.height = '6px';
+            p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            p.style.borderRadius = '50%';
+            // Start from center of card
+            p.style.left = '50%';
+            p.style.top = '50%';
+            p.style.zIndex = '100';
+            p.style.pointerEvents = 'none';
+
+            container.appendChild(p);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = 2 + Math.random() * 4;
+            const tx = Math.cos(angle) * (velocity * 20); // Distance
+            const ty = Math.sin(angle) * (velocity * 20);
+
+            p.animate([
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+            ], {
+                duration: 800 + Math.random() * 400,
+                easing: 'cubic-bezier(0, .9, .57, 1)',
+                fill: 'forwards'
+            }).onfinish = () => p.remove();
+        }
+    };
+
+    // Watch for reveal to trigger confetti
+    useEffect(() => {
+        if (isRevealed) {
+            triggerConfetti();
+        }
+    }, [isRevealed]);
+
     // Find the root container layer (for container-level actions)
-    const containerLayer = layers.find(l => l.name === 'Scratch Card Container' && l.type === 'container');
+    // FIX: Don't rely on strict name 'Scratch Card Container', find any root container
+    const containerLayer = layers.find(l => l.type === 'container' && !l.parent) || layers.find(l => l.type === 'container');
 
     // --- Main Render ---
+    // WRAPPER for Backdrop + Card
     return (
-        <div
-            style={{
-                position: 'absolute', // Always absolute positioning relative to preview container
-                ...((config?.position === 'custom') ? {
-                    top: safeScale(config.y || 0, scaleY),
-                    left: safeScale(config.x || 0, scale),
-                } : (config?.position === 'bottom') ? {
-                    bottom: safeScale(config.y || 0, scaleY),
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                } : {
-                    // Default: Center
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                }),
-
-                width: safeScale(width, scale),
-                height: safeScale(height, scaleY),
-                borderRadius: safeScale(borderRadius, scale),
-                overflow: 'hidden',
-                backgroundColor: config?.backgroundColor || 'white',
-                backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-                backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
-                backgroundPosition: 'center',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            }}
-            onClick={(e) => {
-                // Handle container-level action in interact mode
-                // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
-                const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
-                if (containerLayer && isInteractive && timeSinceInteractEnabled > 200) {
-                    handleLayerAction(containerLayer);
-                } else if (!isInteractive && containerLayer) {
-                    // In editor mode, select the container
-                    onLayerSelect(containerLayer.id);
-                }
-            }}
-        >
-
-            {/* The "Prize" Content (Rendered Layers) */}
-            <div style={{
-                position: 'absolute',
-                inset: 0,
-                padding: safeScale(20, scale),
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1,
-                // Allow scratch when not revealed, allow button clicks after revealed AND delay (1s)
-                pointerEvents: isPrizeInteractable ? 'auto' : 'none'
-            }}>
-                {layers.map(renderLayer)}
-            </div>
-
-            {/* The Scratch Foil (Canvas) */}
-            <canvas
-                ref={canvasRef}
-                style={{
-                    position: 'absolute',
-                    top: config?.scratchArea?.y ? config.scratchArea.y : 0,
-                    left: config?.scratchArea?.x ? config.scratchArea.x : 0,
-                    width: config?.scratchArea?.width ? config.scratchArea.width : '100%',
-                    height: config?.scratchArea?.height ? config.scratchArea.height : '100%',
-                    zIndex: 10,
-                    cursor: config?.previewRevealed ? 'default' : (isInteractive && !isRevealed ? 'grab' : 'default'),
-                    // Hide if revealing for preview, OR if naturally revealed and autoReveal is on
-                    opacity: config?.previewRevealed ? 0.05 : (isRevealed && config?.autoReveal ? 0 : 1),
-                    // Note: 0.05 opacity so it's barely visible as a ghost (user knows it exists), instead of 0.
-
-                    transition: 'opacity 0.5s ease-out',
-                    pointerEvents: config?.previewRevealed ? 'none' : (isRevealed ? 'none' : 'auto')
-                }}
-            />
-
-            {/* Celebration Video Overlay */}
-            {showCelebration && config?.completionAnimation?.type === 'video' && config?.completionAnimation?.videoUrl && (
-                <div style={{
-                    position: 'fixed', // Fixed to cover entire screen/preview area? Or absolute to cover card? 
-                    // User requested full screen overlay in previous turns, but let's stick to container for now to avoid z-index hell in preview
-                    // Actually, let's make it cover the CARD.
-                    inset: 0,
-                    zIndex: 20,
-                    pointerEvents: 'none', // Let clicks pass through to the now-revealed content?
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <video
-                        src={config.completionAnimation.videoUrl}
-                        autoPlay
-                        loop={config.completionAnimation.loop}
-                        playsInline
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                        }}
-                    />
-                </div>
-            )}
-
-            {/* Confetti / Fireworks / Money Celebration */}
-            {showCelebration && ['confetti', 'fireworks', 'money'].includes(config?.completionAnimation?.type || '') && (
-                <Confetti
-                    duration={3000}
-                    containerId="phone-preview-content"
-                    type={config.completionAnimation?.type as any}
+        <>
+            {/* Backdrop Overlay */}
+            {(config?.overlay?.enabled ?? true) && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundColor: config?.overlay?.color || 'black',
+                        opacity: config?.overlay?.opacity ?? 0.5,
+                        zIndex: 0, // Behind card
+                        pointerEvents: isInteractive ? 'auto' : 'none', // Block clicks if interactive
+                        transition: 'opacity 0.3s ease'
+                    }}
+                    onClick={() => {
+                        if (isInteractive && config?.overlay?.dismissOnClick !== false && onDismiss) {
+                            onDismiss();
+                        }
+                    }}
                 />
             )}
-        </div>
+
+            {/* Main Card Container */}
+            <div
+                style={{
+                    position: 'absolute', // Always absolute positioning relative to preview container
+                    zIndex: 10, // Above backdrop
+                    ...((config?.position === 'custom') ? {
+                        top: safeScale(config.y || 0, scaleY),
+                        left: safeScale(config.x || 0, scale),
+                    } : (config?.position === 'bottom') ? {
+                        bottom: safeScale(config.y || 0, scaleY),
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                    } : {
+                        // Default: Center
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                    }),
+
+                    width: safeScale(width, scale),
+                    height: safeScale(height, scaleY),
+                    borderRadius: safeScale(borderRadius, scale),
+                    borderWidth: safeScale(config?.borderWidth || 0, scale),
+                    borderColor: config?.borderColor || 'transparent',
+                    borderStyle: config?.borderStyle || ((config?.borderWidth && config.borderWidth > 0) ? 'solid' : 'none'),
+                    overflow: 'hidden',
+                    backgroundColor: config?.backgroundColor || 'white',
+                    backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
+                    backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
+                    backgroundPosition: 'center',
+                    boxShadow: config?.boxShadow?.enabled
+                        ? `${safeScale(0, scale)} ${safeScale(10, scale)} ${safeScale(config.boxShadow.blur, scale)} ${safeScale(0, scale)} ${config.boxShadow.color}`
+                        : `0 ${safeScale(20, scale)} ${safeScale(25, scale)} ${safeScale(-5, scale)} rgba(0, 0, 0, 0.1), 0 ${safeScale(10, scale)} ${safeScale(10, scale)} ${safeScale(-5, scale)} rgba(0, 0, 0, 0.04)`,
+                }}
+                onClick={(e) => {
+                    // Handle container-level action in interact mode
+                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
+                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                    if (containerLayer && isInteractive && timeSinceInteractEnabled > 200) {
+                        console.log('Container Clicked, Action:', containerLayer.content?.action, 'Layer:', containerLayer);
+                        handleLayerAction(containerLayer);
+                    } else if (!isInteractive && containerLayer) {
+                        // In editor mode, select the container
+                        onLayerSelect(containerLayer.id);
+                    }
+                }}
+            >
+
+                {/* The "Prize" Content (Rendered Layers) */}
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    padding: safeScale(20, scale),
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1,
+                    // Allow scratch when not revealed, allow button clicks after revealed AND delay (1s)
+                    // FIX: Also allow interaction if previewRevealed is true (Editor Mode)
+                    pointerEvents: (isPrizeInteractable || config?.previewRevealed) ? 'auto' : 'none'
+                }}>
+                    {layers
+                        .filter(l => !l.parent || (containerLayer && l.id !== containerLayer.id && l.parent === containerLayer.id))
+                        .map(renderLayer)}
+                </div>
+
+                {/* The Scratch Foil (Canvas) */}
+                <canvas
+                    ref={canvasRef}
+                    style={{
+                        position: 'absolute',
+                        top: config?.scratchArea?.y ? config.scratchArea.y : 0,
+                        left: config?.scratchArea?.x ? config.scratchArea.x : 0,
+                        width: config?.scratchArea?.width ? config.scratchArea.width : '100%',
+                        height: config?.scratchArea?.height ? config.scratchArea.height : '100%',
+                        zIndex: 10,
+                        cursor: config?.previewRevealed ? 'default' : (isInteractive && !isRevealed ? 'grab' : 'default'),
+                        // Hide if revealing for preview, OR if naturally revealed and autoReveal is on
+                        opacity: config?.previewRevealed ? 0 : (isRevealed && config?.autoReveal ? 0 : 1),
+                        // Note: 0.05 opacity so it's barely visible as a ghost (user knows it exists), instead of 0.
+
+                        transition: 'opacity 0.5s ease-out',
+                        pointerEvents: config?.previewRevealed ? 'none' : (isRevealed ? 'none' : 'auto')
+                    }}
+                />
+
+
+                {/* Overlay Hint */}
+                {(config?.overlayHint?.enabled && !isRevealed && !config?.previewRevealed) && (
+                    <div style={{
+                        position: 'absolute', inset: 0, zIndex: 20, pointerEvents: 'none',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        animation: 'pulse 2s infinite'
+                    }}>
+                        <div style={{
+                            backgroundColor: 'rgba(0,0,0,0.6)', padding: `${safeScale(8, scale)} ${safeScale(16, scale)}`,
+                            borderRadius: safeScale(20, scale), color: 'white', fontSize: safeScale(14, scale), fontWeight: 600,
+                            backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: safeScale(8, scale)
+                        }}>
+                            <span>👆</span> {config.overlayHint.text || 'Scratch Here!'}
+                        </div>
+                    </div>
+                )}
+
+                {/* Progress Bar */}
+                {(config?.progressBar?.enabled && !isRevealed && !config?.previewRevealed) && (
+                    <div style={{
+                        position: 'absolute', bottom: safeScale(20, scaleY), left: '50%', transform: 'translateX(-50%)',
+                        width: '80%', height: safeScale(6, scaleY), backgroundColor: 'rgba(255,255,255,0.3)',
+                        borderRadius: safeScale(10, scale), overflow: 'hidden', zIndex: 20, pointerEvents: 'none',
+                        backdropFilter: 'blur(4px)'
+                    }}>
+                        <div style={{
+                            width: `${scratchedPercent}%`, height: '100%',
+                            backgroundColor: config.progressBar.color || '#6366F1',
+                            transition: 'width 0.1s linear'
+                        }} />
+                    </div>
+                )}
+
+                {/* Close Button */}
+                {(config?.closeButton?.enabled ?? true) && (
+                    <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInteractive && onDismiss) onDismiss();
+                        }}
+                        style={{
+                            position: 'absolute',
+                            zIndex: 30, // Above everything
+                            cursor: 'pointer',
+                            padding: safeScale(6, scale),
+                            borderRadius: '50%',
+                            backgroundColor: config.closeButton?.backgroundColor || 'white',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+
+                            // Positioning
+                            ...(config.closeButton?.position === 'outside-right' ? {
+                                top: safeScale(-12, scaleY),
+                                right: safeScale(-12, scale),
+                            } : config.closeButton?.position === 'top-left' ? {
+                                top: safeScale(12, scaleY),
+                                left: safeScale(12, scale),
+                            } : {
+                                // Default: Top Right Inside
+                                top: safeScale(12, scaleY),
+                                right: safeScale(12, scale),
+                            })
+                        }}
+                    >
+                        <svg width={safeScale(16, scale)} height={safeScale(16, scale)} viewBox="0 0 24 24" fill="none" stroke={config.closeButton?.color || 'black'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                )}
+
+            </div>
+        </>
     );
 };

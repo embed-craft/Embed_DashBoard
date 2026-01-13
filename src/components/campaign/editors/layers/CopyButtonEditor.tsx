@@ -3,23 +3,14 @@ import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
 import {
-    Layout,
+    Copy,
     Palette,
+    Layout,
+    ImageIcon,
     Type,
-    MousePointerClick,
-    Check,
-    ArrowRight,
-    ArrowLeft,
-    Play,
-    Search,
-    Home,
-    Monitor,
-    X,
-    Download,
-    Upload,
-    User,
-    Settings,
-    Grid
+    Maximize,
+    Link,
+    MessageSquare
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -53,24 +44,25 @@ const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
     </div>
 );
 
-interface ButtonEditorProps extends LayerEditorProps {
+interface CopyButtonEditorProps extends LayerEditorProps {
     handleContentUpdate: (key: string, value: any) => void;
     onStyleUpdate: (key: string, value: any) => void;
+    handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'background' | 'tooltip_image_only') => void;
 }
 
-export const ButtonEditor: React.FC<ButtonEditorProps> = ({
+export const CopyButtonEditor: React.FC<CopyButtonEditorProps> = ({
     layer,
     selectedLayerId,
     updateLayer,
     handleContentUpdate,
     onStyleUpdate,
     handleTooltipUpdate,
+    handleImageUpload,
     colors
 }) => {
     const content = layer.content || {};
     const style = layer.style || {};
-
-    const buttonIcons = ['ArrowRight', 'ArrowLeft', 'Play', 'Search', 'Home', 'Check', 'X', 'Download', 'Upload', 'User', 'Settings'];
+    const imageUrl = content.imageUrl || '';
 
     return (
         <div className="p-1">
@@ -87,85 +79,103 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                 {/* --- GENERAL TAB --- */}
                 <TabsContent value="general" className="space-y-5 animate-in fade-in-50 duration-300">
 
-                    {/* Text Config */}
+                    {/* Copy Text Section */}
                     <div className="space-y-3">
                         <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3">
-                            <Label className="text-blue-900">Button Text</Label>
+                            <Label className="text-blue-900">Copy Text</Label>
                             <Input
-                                value={content.label || ''}
-                                onChange={(e) => handleContentUpdate('label', e.target.value)}
-                                placeholder="Button Label"
-                                className="bg-white border-blue-200 focus-visible:ring-blue-400 font-medium"
+                                value={content.copyText || ''}
+                                onChange={(e) => handleContentUpdate('copyText', e.target.value)}
+                                placeholder="e.g. DISCOUNT2024"
+                                className="bg-white border-blue-200 focus-visible:ring-blue-400 font-mono text-xs"
                             />
+                            <p className="text-[10px] text-blue-600/80 mt-1.5 flex items-center gap-1">
+                                <Copy size={10} />
+                                Text to be copied to clipboard
+                            </p>
                         </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Label>Copy Trigger</Label>
+                        <Select
+                            value={content.copyTrigger || 'anywhere'}
+                            onChange={(e) => handleContentUpdate('copyTrigger', e.target.value)}
+                        >
+                            <option value="anywhere">Click Anywhere</option>
+                            <option value="icon">Click Icon Only</option>
+                        </Select>
+                        <p className="text-[10px] text-gray-400">
+                            {content.copyTrigger === 'icon'
+                                ? "Only clicking the icon will trigger the copy action."
+                                : "Clicking anywhere on the button will trigger the copy action."}
+                        </p>
                     </div>
 
                     <Separator />
 
-                    {/* Icon Config */}
+                    {/* Toast Configuration */}
                     <div className="space-y-4">
                         <h5 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
-                            <Grid size={12} className="text-gray-500" />
-                            Icon
+                            <MessageSquare size={12} className="text-gray-500" />
+                            Feedback (Toast)
                         </h5>
 
-                        <div>
-                            <Label>Select Icon</Label>
+                        <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50/50">
+                            <Label className="mb-0 cursor-pointer text-gray-900">Show Toast Notification</Label>
+                            <Switch
+                                checked={content.showToast || false}
+                                onCheckedChange={(checked) => handleContentUpdate('showToast', checked)}
+                            />
+                        </div>
+
+                        {content.showToast && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Label>Toast Message</Label>
+                                <textarea
+                                    value={content.toastMessage || ''}
+                                    onChange={(e) => handleContentUpdate('toastMessage', e.target.value)}
+                                    placeholder="e.g. Code copied!"
+                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-y"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <Separator />
+
+                    {/* Media / Icon Section */}
+                    <div className="space-y-4">
+                        <h5 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                            <ImageIcon size={12} className="text-gray-500" />
+                            Icon / Image
+                        </h5>
+
+
+
+                        {/* Icon Selection */}
+                        <div className="space-y-3">
+                            <Label>Button Icon</Label>
                             <div className="flex gap-2 flex-wrap">
-                                <button
-                                    onClick={() => handleContentUpdate('buttonIcon', '')}
-                                    className={`h-9 px-3 rounded-md border text-xs flex items-center justify-center transition-all ${!content.buttonIcon
-                                        ? 'bg-gray-800 text-white'
-                                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    None
-                                </button>
-                                {buttonIcons.map((icon) => (
+                                {['Copy', 'Clipboard', 'FileText', 'Link', 'Check'].map((icon) => (
                                     <button
                                         key={icon}
-                                        onClick={() => handleContentUpdate('buttonIcon', icon)}
-                                        className={`h-9 w-9 rounded-md border flex items-center justify-center transition-all ${(content.buttonIcon) === icon
+                                        onClick={() => handleContentUpdate('copyIcon', icon)}
+                                        className={`h-9 w-9 rounded-md border flex items-center justify-center transition-all ${(content.copyIcon || 'Copy') === icon
                                             ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                                             : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                                             }`}
                                         title={icon}
                                     >
-                                        {icon === 'ArrowRight' && <ArrowRight size={16} />}
-                                        {icon === 'ArrowLeft' && <ArrowLeft size={16} />}
-                                        {icon === 'Play' && <Play size={16} fill="currentColor" />}
-                                        {icon === 'Search' && <Search size={16} />}
-                                        {icon === 'Home' && <Home size={16} />}
-                                        {icon === 'Check' && <Check size={16} />}
-                                        {icon === 'X' && <X size={16} />}
-                                        {icon === 'Download' && <Download size={16} />}
-                                        {icon === 'Upload' && <Upload size={16} />}
-                                        {icon === 'User' && <User size={16} />}
-                                        {icon === 'Settings' && <Settings size={16} />}
+                                        {icon === 'Copy' && <Copy size={16} />}
+                                        {icon === 'Clipboard' && <Layout size={16} />}
+                                        {icon === 'FileText' && <Type size={16} />}
+                                        {icon === 'Link' && <Link size={16} />}
+                                        {icon === 'Check' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                                     </button>
                                 ))}
                             </div>
                         </div>
-
-                        {content.buttonIcon && (
-                            <div>
-                                <Label>Icon Position</Label>
-                                <div className="flex bg-gray-100 p-1 rounded-md w-fit">
-                                    <button
-                                        onClick={() => handleContentUpdate('buttonIconPosition', 'left')}
-                                        className={`px-3 py-1.5 text-xs rounded-sm transition-all ${content.buttonIconPosition === 'left' ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
-                                    >
-                                        Left
-                                    </button>
-                                    <button
-                                        onClick={() => handleContentUpdate('buttonIconPosition', 'right')}
-                                        className={`px-3 py-1.5 text-xs rounded-sm transition-all ${(!content.buttonIconPosition || content.buttonIconPosition === 'right') ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
-                                    >
-                                        Right
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </TabsContent>
 
@@ -197,8 +207,8 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                                 <div className="relative">
                                     <Input
                                         type="number"
-                                        value={content.fontSize || 14}
-                                        onChange={(e) => handleContentUpdate('fontSize', parseInt(e.target.value))}
+                                        value={style.fontSize || 14}
+                                        onChange={(e) => onStyleUpdate('fontSize', parseInt(e.target.value))}
                                         className="pr-8"
                                     />
                                     <span className="absolute right-3 top-2 text-xs text-gray-400">px</span>
@@ -209,11 +219,8 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                         <div>
                             <Label>Font Family</Label>
                             <Select
-                                value={content.fontFamily || 'Roboto'}
-                                onChange={(e) => {
-                                    handleContentUpdate('fontFamily', e.target.value);
-                                    handleContentUpdate('fontUrl', `https://fonts.googleapis.com/css2?family=${e.target.value.replace(/ /g, '+')}&display=swap`);
-                                }}
+                                value={style.fontFamily || 'Roboto'}
+                                onChange={(e) => onStyleUpdate('fontFamily', e.target.value)}
                             >
                                 <optgroup label="Sans-Serif">
                                     <option value="Roboto">Roboto</option>
@@ -230,25 +237,9 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                                 </optgroup>
                             </Select>
                         </div>
-
-                        <div>
-                            <Label>Font Weight</Label>
-                            <Select
-                                value={style.fontWeight || content.fontWeight || 'button'}
-                                onChange={(e) => {
-                                    onStyleUpdate('fontWeight', e.target.value);
-                                    handleContentUpdate('fontWeight', e.target.value); // Sync for legacy
-                                }}
-                            >
-                                <option value="normal">Normal</option>
-                                <option value="medium">Medium</option>
-                                <option value="semibold">Semibold</option>
-                                <option value="bold">Bold</option>
-                            </Select>
-                        </div>
                     </div>
 
-                    {/* Box Model */}
+                    {/* Box Model / Background */}
                     <div className="space-y-3">
                         <h5 className="text-xs font-semibold text-gray-900 border-b pb-2">Background & Borders</h5>
 
@@ -256,8 +247,8 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                             <div>
                                 <Label>Background</Label>
                                 <div className="flex gap-2">
-                                    <input type="color" value={style.backgroundColor || '#6366f1'} onChange={(e) => onStyleUpdate('backgroundColor', e.target.value)} className="h-9 w-9 rounded border cursor-pointer p-0.5 bg-white" />
-                                    <Input value={style.backgroundColor || '#6366f1'} onChange={e => onStyleUpdate('backgroundColor', e.target.value)} />
+                                    <input type="color" value={style.backgroundColor || 'transparent'} onChange={(e) => onStyleUpdate('backgroundColor', e.target.value)} className="h-9 w-9 rounded border cursor-pointer p-0.5 bg-white" />
+                                    <Input value={style.backgroundColor || 'transparent'} onChange={e => onStyleUpdate('backgroundColor', e.target.value)} />
                                 </div>
                             </div>
                             <div>
@@ -276,7 +267,7 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                             </div>
                             <div>
                                 <Label>Width</Label>
-                                <Input type="number" value={style.borderWidth ?? 0} onChange={e => onStyleUpdate('borderWidth', parseInt(e.target.value))} />
+                                <Input type="number" value={style.borderWidth ?? 1} onChange={e => onStyleUpdate('borderWidth', parseInt(e.target.value))} />
                             </div>
                             <div>
                                 <Label>Style</Label>
@@ -345,7 +336,7 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                         )}
                     </div>
 
-                    {/* Spacing Section */}
+                    {/* Spacing */}
                     <div className="space-y-3">
                         <h5 className="text-xs font-semibold text-gray-900 border-b pb-2">Spacing</h5>
                         <div className="grid grid-cols-2 gap-3">
@@ -354,29 +345,14 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                                 <Input
                                     type="number"
                                     value={style.margin ?? 0}
-                                    onChange={(e) => {
-                                        const val = parseInt(e.target.value);
-                                        // Clear granular margins to ensure unified value takes precedence
-                                        updateLayer(selectedLayerId, {
-                                            style: {
-                                                ...layer.style,
-                                                margin: val,
-                                                marginTop: undefined,
-                                                marginBottom: undefined,
-                                                marginLeft: undefined,
-                                                marginRight: undefined,
-                                                marginVertical: undefined,
-                                                marginHorizontal: undefined
-                                            }
-                                        });
-                                    }}
+                                    onChange={(e) => onStyleUpdate('margin', parseInt(e.target.value))}
                                 />
                             </div>
                             <div>
                                 <Label>Padding Vertical</Label>
                                 <Input
                                     type="number"
-                                    value={style.paddingVertical ?? style.paddingTop ?? 10}
+                                    value={style.paddingVertical ?? style.paddingTop ?? 0}
                                     onChange={(e) => {
                                         const val = parseInt(e.target.value);
                                         updateLayer(selectedLayerId, {
@@ -413,57 +389,51 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                         </div>
                     </div>
 
-                    {/* Offsets Section */}
-                    <div className="space-y-3">
-                        <Label>Element Offsets</Label>
 
-                        {/* Text Offsets */}
-                        <div className="space-y-1">
-                            <Label className="text-gray-500 font-normal text-[10px]">Text Label</Label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="text-xs font-normal text-gray-400">Offset X</Label>
-                                    <Input
-                                        type="number"
-                                        value={style.textOffsetX || 0}
-                                        onChange={(e) => onStyleUpdate('textOffsetX', parseInt(e.target.value))}
-                                    />
-                                </div>
-                                <div>
-                                    <Label className="text-xs font-normal text-gray-400">Offset Y</Label>
-                                    <Input
-                                        type="number"
-                                        value={style.textOffsetY || 0}
-                                        onChange={(e) => onStyleUpdate('textOffsetY', parseInt(e.target.value))}
-                                    />
-                                </div>
+                    {/* Text Offsets */}
+                    <div className="space-y-3">
+                        <Label>Text Offsets</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label className="text-gray-500 font-normal">Offset X</Label>
+                                <Input
+                                    type="number"
+                                    value={style.textOffsetX || 0}
+                                    onChange={(e) => onStyleUpdate('textOffsetX', parseInt(e.target.value))}
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-gray-500 font-normal">Offset Y</Label>
+                                <Input
+                                    type="number"
+                                    value={style.textOffsetY || 0}
+                                    onChange={(e) => onStyleUpdate('textOffsetY', parseInt(e.target.value))}
+                                />
                             </div>
                         </div>
+                    </div>
 
-                        {/* Icon Offsets */}
-                        {content.buttonIcon && (
-                            <div className="space-y-1 mt-2">
-                                <Label className="text-gray-500 font-normal text-[10px]">Icon</Label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <Label className="text-xs font-normal text-gray-400">Offset X</Label>
-                                        <Input
-                                            type="number"
-                                            value={style.iconOffsetX || 0}
-                                            onChange={(e) => onStyleUpdate('iconOffsetX', parseInt(e.target.value))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs font-normal text-gray-400">Offset Y</Label>
-                                        <Input
-                                            type="number"
-                                            value={style.iconOffsetY || 0}
-                                            onChange={(e) => onStyleUpdate('iconOffsetY', parseInt(e.target.value))}
-                                        />
-                                    </div>
-                                </div>
+                    {/* Icon Offsets */}
+                    <div className="space-y-3">
+                        <Label>Icon Offsets</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label className="text-gray-500 font-normal">Offset X</Label>
+                                <Input
+                                    type="number"
+                                    value={style.iconOffsetX || 0}
+                                    onChange={(e) => onStyleUpdate('iconOffsetX', parseInt(e.target.value))}
+                                />
                             </div>
-                        )}
+                            <div>
+                                <Label className="text-gray-500 font-normal">Offset Y</Label>
+                                <Input
+                                    type="number"
+                                    value={style.iconOffsetY || 0}
+                                    onChange={(e) => onStyleUpdate('iconOffsetY', parseInt(e.target.value))}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <SizeControls
@@ -481,7 +451,6 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                         onStyleUpdate={onStyleUpdate}
                         handleTooltipUpdate={handleTooltipUpdate}
                         colors={colors}
-                        showPosition={true}
                         showPadding={false}
                     />
                 </TabsContent>

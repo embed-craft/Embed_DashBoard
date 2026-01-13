@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Draggable from 'react-draggable';
-import { X, Maximize2, Minimize2, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { ExternalLink, Maximize2, Minimize2, Move, Volume2, VolumeX, X } from 'lucide-react';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
+import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { InputRenderer } from './campaign/renderers/InputRenderer';
 
 interface PipRendererProps {
     layers: any[];
@@ -192,39 +195,42 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                 .join(' ');
         }
 
-        const finalStyle = {
-            ...style,
-            transform: transformString
+        // Separate layout styles from visual styles
+        const { left, top, right, bottom, position, transform, ...visualStyle } = style;
+
+        // Wrapper gets layout styles
+        const wrapperStyle = {
+            left, top, right, bottom, position, transform: transformString,
+            // Ensure wrapper has size so children can fill it if needed
+            // But usually children have size?
+            // If child is 100% w/h, wrapper needs size.
+            // Usually layer.style has width/height.
+            width: safeScale(style.width, scale),
+            height: safeScale(style.height, scaleY),
         };
 
-        // Common selection style (disable in maximized mode to avoid visual clutter)
-        const selectionStyle = isSelected && !isMaximized ? {
-            outline: `2px solid ${colors.purple[500]}`,
-            outlineOffset: '2px',
-            zIndex: 10
-        } : {};
+        // Inner gets visual styles
+        const innerStyle = {
+            ...visualStyle,
+            width: '100%', // Fill wrapper
+            height: '100%', // Fill wrapper
+        };
+
+        let content = null;
 
         switch (layer.type) {
             case 'video':
                 const videoUrl = layer.content?.videoUrl || layer.content?.url;
                 const embedUrl = getEmbedUrl(videoUrl);
-
-                return (
+                content = (
                     <div
-                        key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...finalStyle,
-                            ...selectionStyle,
-                            cursor: 'pointer',
+                            ...innerStyle,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: '#000',
                             color: '#fff',
-                            height: '100%',
-                            width: '100%',
-                            position: 'relative',
                             overflow: 'hidden'
                         }}
                     >
@@ -248,6 +254,7 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         )}
                     </div>
                 );
+                break;
 
             case 'button':
                 const label = layer.content?.label || layer.content?.text || 'Button';
@@ -274,7 +281,6 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                 // Icon mapping (simplified)
                 const icons: Record<string, React.ReactNode> = {
                     ExternalLink: <ExternalLink size={16} />,
-                    // Add more if needed, currently PipRenderer only imports ExternalLink
                 };
 
                 const icon = iconName ? icons[iconName] : (layer.content?.action?.url ? <ExternalLink size={16} /> : null);
@@ -295,8 +301,7 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                     outline: 'none',
                     pointerEvents: isMaximized ? 'auto' : 'none',
                     fontFamily: layer.style?.fontFamily || 'inherit',
-                    ...finalStyle,
-                    ...selectionStyle,
+                    ...innerStyle, // Apply visual styles
                 };
 
                 switch (variant) {
@@ -343,36 +348,19 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         variantStyle = { ...variantStyle, backgroundColor: themeColor, color: textColor };
                 }
 
-                return (
-                    <button
-                        key={layer.id}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (isInteractive) {
-                                handleAction(layer.content?.action);
-                            } else {
-                                onLayerSelect(layer.id);
-                                if (isMaximized && layer.content?.action?.url) {
-                                    window.open(layer.content.action.url, '_blank');
-                                }
-                            }
-                        }}
-                        style={variantStyle}
-                    >
+                content = (
+                    <button style={variantStyle}>
                         <span>{label}</span>
                         {icon && <span>{icon}</span>}
                     </button>
                 );
+                break;
 
             case 'media':
-                return (
+                content = (
                     <div
-                        key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...finalStyle,
-                            ...selectionStyle,
-                            cursor: 'pointer',
+                            ...innerStyle,
                             display: isMaximized ? 'block' : 'none', // Only show when maximized
                             pointerEvents: isMaximized ? 'auto' : 'none',
                             overflow: 'hidden'
@@ -405,16 +393,13 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         )}
                     </div>
                 );
+                break;
 
             case 'text':
-                return (
+                content = (
                     <div
-                        key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...finalStyle,
-                            ...selectionStyle,
-                            cursor: 'pointer',
+                            ...innerStyle,
                             display: isMaximized ? 'block' : 'none', // Only show when maximized
                             pointerEvents: isMaximized ? 'auto' : 'none',
                             fontSize: style.fontSize || '14px',
@@ -427,20 +412,15 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         {layer.content?.text || 'Text Layer'}
                     </div>
                 );
+                break;
 
             case 'custom_html':
-                return (
+                content = (
                     <div
-                        key={layer.id}
-                        onClick={(e) => { e.stopPropagation(); onLayerSelect(layer.id); }}
                         style={{
-                            ...finalStyle,
-                            ...selectionStyle,
-                            cursor: 'pointer',
+                            ...innerStyle,
                             display: isMaximized ? 'block' : 'none', // Only show when maximized
                             pointerEvents: isMaximized ? 'auto' : 'none',
-                            width: style.width || '100%',
-                            height: style.height || '100%',
                             overflow: 'hidden'
                         }}
                     >
@@ -450,10 +430,44 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
                         />
                     </div>
                 );
+                break;
+
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
+                    />
+                );
+                break;
 
             default:
                 return null;
         }
+
+        return (
+            <DraggableLayerWrapper
+                key={layer.id}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
+                designWidth={config.width || 160} // Use PIP width for accurate dragging
+                designHeight={config.height || 220} // Use PIP height for accurate dragging
+                style={{
+                    ...wrapperStyle,
+                    outline: isSelected && !isMaximized ? `2px solid ${colors.purple[500]}` : 'none',
+                    outlineOffset: '2px',
+                    zIndex: isSelected ? 10 : undefined,
+                }}
+            >
+                {content}
+            </DraggableLayerWrapper>
+        );
     };
 
     return (

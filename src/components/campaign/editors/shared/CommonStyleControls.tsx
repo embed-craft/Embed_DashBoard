@@ -6,12 +6,15 @@ import { LayerEditorProps } from '../types';
 interface CommonStyleControlsProps extends LayerEditorProps {
     onStyleUpdate: (key: string, value: any) => void;
     showPosition?: boolean;
+    showPadding?: boolean;
 }
 
 export const CommonStyleControls: React.FC<CommonStyleControlsProps> = ({
     layer,
     selectedLayerId,
     updateLayer,
+    showPosition = true,
+    showPadding = true,
     colors = {
         gray: { 200: '#e5e7eb', 300: '#d1d5db' },
         text: { primary: '#111827', secondary: '#6b7280' },
@@ -40,13 +43,15 @@ export const CommonStyleControls: React.FC<CommonStyleControlsProps> = ({
             )}
 
             {/* 2. Padding (Top/Right/Bottom/Left) */}
-            <div className="border-t border-gray-200 pt-4">
-                <PaddingEditor
-                    style={layer.style || {}}
-                    onChange={(updates) => updateLayer(selectedLayerId, { style: { ...layer.style, ...updates } })}
-                    colors={colors}
-                />
-            </div>
+            {showPadding && (
+                <div className="border-t border-gray-200 pt-4">
+                    <PaddingEditor
+                        style={layer.style || {}}
+                        onChange={(updates) => updateLayer(selectedLayerId, { style: { ...layer.style, ...updates } })}
+                        colors={colors}
+                    />
+                </div>
+            )}
 
         </div>
     );

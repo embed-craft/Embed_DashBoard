@@ -10,37 +10,61 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'countdown' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'custom_html' | 'container' | 'image';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image';
 
 export interface LayerContent {
+  // Copy Button content
+  copyText?: string;
+  showToast?: boolean;
+  toastMessage?: string;
+
   // Media content
   imageUrl?: string;
   imageSize?: { width: number; height: number };
   videoUrl?: string;
   iconName?: string;
 
-  // Text content
+  // Text
   text?: string;
-  fontSize?: number;
-  fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
   textColor?: string;
-  textAlign?: 'left' | 'center' | 'right';
+  fontSize?: number;
+  fontWeight?: number | string;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
   fontFamily?: string;
-  fontUrl?: string;
+  fontUrl?: string; // For Google Fonts
+  lineHeight?: number;
+  letterSpacing?: number;
+  textDecoration?: 'none' | 'underline' | 'line-through';
+  textTransform?: 'none' | 'uppercase' | 'lowercase';
+
+  // Text Stroke (Border)
+  textStrokeWidth?: number;
+  textStrokeColor?: string;
+
+  // Text Offset (Transform)
+  textOffsetX?: number;
+  textOffsetY?: number;
+
+  // Text Shadow
   textShadowX?: number;
   textShadowY?: number;
   textShadowBlur?: number;
   textShadowColor?: string;
 
-  // Button content
-  label?: string;
+  // Button
+  label?: string; // Restored for backwards compatibility
+  buttonText?: string;
   buttonStyle?: 'primary' | 'secondary' | 'outline' | 'ghost';
+
+  // Copy Button & Input
+  copyTrigger?: 'anywhere' | 'icon';
+  copyIcon?: string;
   buttonVariant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'soft' | 'glass' | 'gradient' | 'shine' | '3d' | 'elevated' | 'neumorphic' | 'pill' | 'underline' | 'glow' | 'cyberpunk' | 'two-tone' | 'comic' | 'skeuomorphic' | 'liquid' | 'block';
   themeColor?: string;
   buttonIcon?: string; // Lucide icon name
   buttonIconPosition?: 'left' | 'right';
   action?: {
-    type: 'close' | 'deeplink' | 'navigate' | 'custom' | 'interface';
+    type: 'close' | 'deeplink' | 'navigate' | 'custom' | 'interface' | 'link';
     url?: string;
     screenName?: string;
     eventName?: string;
@@ -69,10 +93,15 @@ export interface LayerContent {
   listStyle?: 'bullet' | 'numbered' | 'checkmark' | 'icon';
 
   // Input content (Phase 2)
-  inputType?: 'text' | 'email' | 'number' | 'textarea';
+  inputType?: 'text' | 'email' | 'number' | 'phone' | 'password' | 'date' | 'multiline';
+  errorMessage?: string;
   placeholder?: string;
   required?: boolean;
   validation?: string;
+  validationRegex?: string; // Phase 2: Custom Regex
+  helperText?: string;
+  showSubmitButton?: boolean;
+  submitIcon?: string; // Icon name e.g. 'Send', 'ArrowRight'
 
   // Statistic content (Phase 2)
   prefix?: string;
@@ -134,6 +163,17 @@ export interface LayerStyle {
   padding?: { top: number | string; right: number | string; bottom: number | string; left: number | string } | number | string;
   margin?: { top: number | string; right: number | string; bottom: number | string; left: number | string } | number | string;
 
+  // Input styling
+  labelColor?: string;
+  helperColor?: string;
+  focusBorderColor?: string;
+  errorColor?: string;
+  placeholderColor?: string;
+  labelFontSize?: number;
+  labelFontWeight?: number | string;
+  paddingVertical?: number | string;
+  paddingHorizontal?: number | string;
+
   // Common style properties
   width?: number | string;
   height?: number | string;
@@ -177,6 +217,12 @@ export interface LayerStyle {
   marginRight?: number | string;
   paddingTop?: number | string;
   paddingBottom?: number | string;
+
+  // Element Offsets (SDK Parity)
+  textOffsetX?: number;
+  textOffsetY?: number;
+  iconOffsetX?: number;
+  iconOffsetY?: number;
   paddingLeft?: number | string;
   paddingRight?: number | string;
 
@@ -189,9 +235,12 @@ export interface LayerStyle {
   // Typography
   fontUrl?: string; // For custom fonts
   textDecoration?: 'none' | 'underline' | 'line-through';
+  textDecorationColor?: string;
+  textDecorationStyle?: 'solid' | 'double' | 'dotted' | 'dashed' | 'wavy'; // Added to fix lint
   textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
 
   // Text Shadow
+  textShadow?: string; // Added to fix lint (shorthand support)
   textShadowX?: number;
   textShadowY?: number;
   textShadowBlur?: number;
@@ -202,6 +251,9 @@ export interface LayerStyle {
   backgroundSize?: 'cover' | 'contain' | 'auto' | string;
   backgroundPosition?: string;
   backgroundRepeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y';
+
+  // Advanced Visuals (Phase 3.5 - Media Upgrade)
+  aspectRatio?: number | string; // Helper for ratio-based resizing
   backgroundAttachment?: 'scroll' | 'fixed' | 'local';
   backgroundBlendMode?: string;
   gradient?: {
@@ -212,6 +264,7 @@ export interface LayerStyle {
 
   // Shapes & Geometry (Phase 1)
   clipPath?: string; // polygon, circle, ellipse, path
+  clipPathShape?: 'rectangle' | 'circle' | 'ellipse' | 'polygon' | 'pill' | 'custom'; // Added
   maskImage?: string;
 
   // Badge Specific (Phase 3.5)
@@ -219,6 +272,13 @@ export interface LayerStyle {
   badgeTextColor?: string;
   badgeBorderRadius?: number;
   badgePadding?: number | { horizontal: number; vertical: number };
+
+  // Shadow Props
+  shadowEnabled?: boolean;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowSpread?: number;
+  shadowOffsetY?: number;
 
   // Rating Specific (Phase 3.5)
   starColor?: string;
@@ -401,6 +461,9 @@ export interface ModalConfig {
   backgroundSize?: 'cover' | 'contain' | 'fill';
   backgroundPosition?: string;
   borderRadius?: number | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
+  borderWidth?: number;
+  borderColor?: string;
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
   elevation: 0 | 1 | 2 | 3 | 4 | 5;
   overlay: {
     enabled: boolean;
@@ -728,6 +791,10 @@ interface EditorStore {
   isSaving: boolean;
   saveError: string | null;
 
+  // Saved Callbacks (Local Persistence)
+  customCallbackIds: string[];
+  addCustomCallbackId: (id: string) => void;
+
   duplicateLayer: (id: string) => string;
   reorderLayer: (id: string, newIndex: number) => void;
   moveLayerToParent: (layerId: string, newParentId: string | null) => void;
@@ -866,6 +933,13 @@ export const useEditorStore = create<EditorStore>()(
       isTemplateModalOpen: false,
       isSaveTemplateModalOpen: false,
       activeInterfaceId: null,
+
+      // Saved Callbacks Initial State
+      customCallbackIds: [],
+      addCustomCallbackId: (id) => set((state) => {
+        if (!id || state.customCallbackIds.includes(id)) return state;
+        return { customCallbackIds: [...state.customCallbackIds, id] };
+      }),
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
@@ -1778,30 +1852,14 @@ export const useEditorStore = create<EditorStore>()(
 
       // Add layer
       addLayer: (type, parentId) => {
-        const { currentCampaign } = get();
+        const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return '';
 
         // FIX #7: Generate unique layer ID to prevent duplicates
         const uniqueLayerId = `layer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-        // Check if parent is PIP Container
-        const parentLayer = currentCampaign.layers.find(l => l.id === parentId);
-        const isPipContainer = parentLayer?.name === 'PIP Container';
-
+        // Helper to get initial style
         let initialStyle = getDefaultStyleForType(type);
-
-        // Apply specific styles for PIP layers
-        if (isPipContainer) {
-          initialStyle = {
-            ...initialStyle,
-            position: 'absolute',
-            bottom: 32,
-            left: '50%',
-            transform: { translateX: '-50%' }, // Store as object for consistency
-            zIndex: 100,
-            width: '90%', // Default to 90% width for PIP buttons
-          };
-        }
 
         const newLayer: Layer = {
           id: uniqueLayerId,
@@ -1811,12 +1869,81 @@ export const useEditorStore = create<EditorStore>()(
           children: [],
           visible: true,
           locked: false,
-          zIndex: currentCampaign.layers.length,
+          zIndex: 0, // Will be updated below
           position: { x: 0, y: 0 },
           size: { width: 'auto', height: 'auto' },
           content: getDefaultContentForType(type),
           style: initialStyle,
         };
+
+        // --- SCENARIO 1: ADD TO SUB-INTERFACE ---
+        if (activeInterfaceId) {
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (iface.id !== activeInterfaceId) return iface;
+
+            // Check if parent is PIP Container (within interface)
+            const parentLayer = iface.layers.find(l => l.id === parentId);
+            const isPipContainer = parentLayer?.name === 'PIP Container';
+
+            if (isPipContainer) {
+              newLayer.style = {
+                ...newLayer.style,
+                position: 'absolute',
+                bottom: 32,
+                left: '50%',
+                transform: { translateX: '-50%' },
+                zIndex: 100,
+                width: '90%',
+              };
+            }
+
+            // Set Z-index
+            newLayer.zIndex = iface.layers.length;
+
+            const updatedLayers = [...iface.layers, newLayer];
+
+            // Update parent's children array
+            if (parentId) {
+              const parentIndex = updatedLayers.findIndex(l => l.id === parentId);
+              if (parentIndex !== -1) {
+                updatedLayers[parentIndex] = {
+                  ...updatedLayers[parentIndex],
+                  children: [...updatedLayers[parentIndex].children, newLayer.id]
+                };
+              }
+            }
+
+            return { ...iface, layers: updatedLayers, updatedAt: new Date().toISOString() };
+          });
+
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              selectedLayerId: newLayer.id,
+              isDirty: true
+            }
+          });
+          return newLayer.id;
+        }
+
+        // --- SCENARIO 2: ADD TO MAIN CAMPAIGN (Legacy/Default) ---
+        const parentLayer = currentCampaign.layers.find(l => l.id === parentId);
+        const isPipContainer = parentLayer?.name === 'PIP Container';
+
+        if (isPipContainer) {
+          newLayer.style = {
+            ...newLayer.style,
+            position: 'absolute',
+            bottom: 32,
+            left: '50%',
+            transform: { translateX: '-50%' },
+            zIndex: 100,
+            width: '90%',
+          };
+        }
+
+        newLayer.zIndex = currentCampaign.layers.length;
 
         const updatedLayers = [...currentCampaign.layers, newLayer];
 
@@ -1849,6 +1976,8 @@ export const useEditorStore = create<EditorStore>()(
 
         return newLayer.id;
       },
+
+
 
       // Update layer (Universal - Main Campaign or Interfaces)
       updateLayer: (id, updates) => {
@@ -2476,7 +2605,7 @@ export const useEditorStore = create<EditorStore>()(
         if (activeInterface) {
           const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
-              ? { ...iface, bottomSheetConfig: updatedConfig, updatedAt: new Date().toISOString() }
+              ? { ...iface, bottomSheetConfig: updatedConfig as BottomSheetConfig, updatedAt: new Date().toISOString() }
               : iface
           );
 
@@ -2492,7 +2621,7 @@ export const useEditorStore = create<EditorStore>()(
           set({
             currentCampaign: {
               ...currentCampaign,
-              bottomSheetConfig: updatedConfig,
+              bottomSheetConfig: updatedConfig as BottomSheetConfig,
               updatedAt: new Date().toISOString(),
               isDirty: true,
             },
@@ -3696,6 +3825,18 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
         padding: { top: 10, right: 20, bottom: 10, left: 20 },
       };
     case 'input':
+      return {
+        ...baseStyle,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#D1D5DB', // Gray-300
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        labelColor: '#374151', // Gray-700
+        helperColor: '#6B7280', // Gray-500
+        padding: { top: 0, right: 0, bottom: 0, left: 0 }, // Reset overlapping padding
+      };
     case 'checkbox':
       return {
         ...baseStyle,

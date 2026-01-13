@@ -77,9 +77,22 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
     const icon = iconName ? icons[iconName] : null;
 
     const baseStyle: React.CSSProperties = {
-        // FIX: Default padding to 0, use single scale factor (SDK parity)
-        padding: `${safeScale(layer.style?.paddingTop ?? 0, scale)} ${safeScale(layer.style?.paddingRight ?? 0, scale)} ${safeScale(layer.style?.paddingBottom ?? 0, scale)} ${safeScale(layer.style?.paddingLeft ?? 0, scale)}`,
-        borderRadius: 'inherit', // Parent wrapper handles radius
+        // FIX: Default padding to 0, use scaleY for vertical padding (Parity with SDK/Input)
+        padding: (() => {
+            // Priority: Granular > Vertical/Horizontal > Single Padding > Default 12/10
+            const pTop = layer.style?.paddingTop ?? layer.style?.paddingVertical ?? (layer.style?.padding != null ? layer.style.padding : 10);
+            const pRight = layer.style?.paddingRight ?? layer.style?.paddingHorizontal ?? (layer.style?.padding != null ? layer.style.padding : 12);
+            const pBottom = layer.style?.paddingBottom ?? layer.style?.paddingVertical ?? (layer.style?.padding != null ? layer.style.padding : 10);
+            const pLeft = layer.style?.paddingLeft ?? layer.style?.paddingHorizontal ?? (layer.style?.padding != null ? layer.style.padding : 12);
+
+            return `${safeScale(pTop, scaleY)} ${safeScale(pRight, scale)} ${safeScale(pBottom, scaleY)} ${safeScale(pLeft, scale)}`;
+        })(),
+        borderRadius: safeScale(borderRadius, scale),
+        // FIX: Default slightly better logic for borderStyle if width > 0
+        borderWidth: safeScale(layer.style?.borderWidth ?? 0, scale),
+        borderStyle: layer.style?.borderStyle || (typeof layer.style?.borderWidth === 'number' && layer.style.borderWidth > 0 ? 'solid' : 'none'),
+        // FIX: Default to themeColor for outline variant if no specific color is set, otherwise transparent
+        borderColor: layer.style?.borderColor || (variant === 'outline' ? themeColor : 'transparent'),
         fontSize: safeScale(fontSize, scale),
         fontWeight,
         cursor: 'pointer',
@@ -89,91 +102,24 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
         justifyContent: 'center',
         gap: '8px',
         flexDirection: iconPosition === 'left' ? 'row-reverse' : 'row',
-        border: 'none',
-        outline: 'none',
         width: '100%',
         height: '100%',
         fontFamily: layer.content?.fontFamily || layer.style?.fontFamily || 'inherit',
         lineHeight: 1,
-        // FIX: Ensure proper text centering by resetting text defaults
         textAlign: 'center' as const,
         verticalAlign: 'middle',
         margin: 0,
-        backgroundColor: 'transparent', // Wrapper handles background usually, but variant might override
-        color: textColor
+        backgroundColor: themeColor, // Use theme/bg color
+        color: textColor,
+        outline: 'none',
+        boxSizing: 'border-box', // Critical for padding/border to work with 100% width
     };
 
     let variantStyle: React.CSSProperties = {};
 
-    // Apply variants implies we might need to set internal background if wrapper doesn't handle it.
-    // In BottomSheetRenderer, the wrapper gets the background for 'button' type.
-    // HOWEVER, for variants like 'outline', 'ghost', etc., the background logic differs.
-    // Ideally, the wrapper should be transparent and the button handles it, OR the wrapper handles it.
-    // BottomSheetRenderer:
-    // wrapper.style.backgroundColor = layer.style?.backgroundColor || themeColor
-    // button.style.backgroundColor = 'transparent'
-
-    // This means the Wrapper is the colored box.
-    // The Button is just the text/icon container.
-
-    // BUT what about 'outline' variant? Border is usually on the button?
-    // Let's stick to the BottomSheet pattern: Wrapper = Box, Button = Content.
-    // Wait, BottomSheetRenderer says:
-    /*
-       ...(layer.type === 'button' ? {
-          backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
-       } : {})
-    */
-    // So the WRAPPER gets the color.
-    // And the BUTTON has backgroundColor: 'transparent'.
-
-    // So ButtonRenderer just renders the content?
-    // No, ModalRenderer has complex logic for 'comic', '3d', etc. inside renderButton.
-    // BottomSheetRenderer seemed simpler in the view I saw.
-
-    // ModalRenderer logic was:
-    /*
-        switch (variant) {
-              case 'primary':
-                  variantStyle = {
-                      backgroundColor: themeColor,
-                      color: textColor,
-                      boxShadow: ...
-                  };
-    */
-    // So ModalRenderer applies styles to the BUTTON element, not just the wrapper?
-    // Let's check ModalRenderer wrapper style.
-    /*
-       wrapper style includes:
-       ...(layer.type === 'button' ? {
-           backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
-       } : {})
-    */
-    // It seems ModalRenderer wrapper ALSO gets the color.
-    // If the button ALSO gets the color, that's fine (nested).
-
-    // To resolve this cleanly:
-    // The ButtonRenderer should style the <button> element.
-    // The parent (Renderer) should hopefully NOT double-apply the background if the child handles it.
-    // Or, we assume standard 'primary' button relies on Wrapper background, and 'transparent' button background.
-
-    // Let's include the full ModalRenderer variant logic for maximum fidelity.
-
-    let content = (
-        <>
-            <span style={{ textAlign: 'center', width: '100%' }}>{label}</span>
-            {icon && <span>{icon}</span>}
-        </>
-    );
-
     switch (variant) {
         case 'primary':
-            // Standard solid button.
-            // If wrapper has color, we can be transparent.
-            variantStyle = {
-                // backgroundColor: themeColor, // Handled by wrapper?
-                color: textColor,
-            };
+            // Explicitly set bg if defined, else defaults are fine
             break;
         case 'secondary':
             variantStyle = {
@@ -184,35 +130,65 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
         case 'outline':
             variantStyle = {
                 backgroundColor: 'transparent',
-                border: `2px solid ${themeColor}`,
+                // We use baseStyle properties for border now to allow overrides
+                // border: `2px solid ${themeColor}`, 
                 color: themeColor,
             };
+            // Note: We don't use the 'border' shorthand here anymore because it conflicts with granular overrides.
+            // baseStyle handles the defaults for outline (width/color) via the fallbacks above?
+            // Wait, baseStyle borderWidth defaults to 0. 
+            // We need to FORCE borderWidth to 2 for outline if undefined.
+            if (layer.style?.borderWidth === undefined) {
+                baseStyle.borderWidth = safeScale(2, scale);
+                baseStyle.borderStyle = 'solid';
+            }
+            // And color is handled by baseStyle borderColor fallback.
             break;
         case 'ghost':
             variantStyle = {
                 backgroundColor: 'transparent',
                 color: themeColor,
             };
+            if (layer.style?.backgroundColor !== undefined) delete (variantStyle as any).backgroundColor;
             break;
-        // ... Add other variants as needed from ModalRenderer ...
-        default:
-            variantStyle = {
-                color: textColor
-            };
     }
 
     // Merge styles
     const finalStyle = {
         ...baseStyle,
         ...variantStyle,
-        // Ensure font overrides
-        fontSize: safeScale(layer.content?.fontSize || 14, scale),
-        fontWeight: layer.style?.fontWeight || '600',
+        // Ensure manual overrides persist
+        ...(layer.style?.backgroundColor ? { backgroundColor: layer.style.backgroundColor } : {}),
+        ...(layer.style?.borderColor ? { borderColor: layer.style.borderColor } : {}),
+        ...(layer.style?.borderWidth !== undefined ? { borderWidth: safeScale(layer.style.borderWidth, scale) } : {}),
+        ...(layer.style?.borderStyle ? { borderStyle: layer.style.borderStyle } : {}),
+        // Add shadow support
+        ...(layer.style?.shadowEnabled ? {
+            boxShadow: `${safeScale(0, scale)} ${safeScale(layer.style.shadowOffsetY || 4, scale)} ${safeScale(layer.style.shadowBlur || 0, scale)} ${safeScale(layer.style.shadowSpread || 0, scale)} ${layer.style.shadowColor || '#000000'}`
+        } : {}),
     };
+
 
     return (
         <button style={finalStyle} onClick={onClick}>
-            {content}
+            {/* Text Label */}
+            <span style={{
+                display: 'inline-block', // Required for transform
+                transform: `translate(${safeScale(layer.style?.textOffsetX || 0, scale)}, ${safeScale(layer.style?.textOffsetY || 0, scale)})`
+            }}>
+                {label}
+            </span>
+
+            {/* Icon */}
+            {icon && (
+                <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    transform: `translate(${safeScale(layer.style?.iconOffsetX || 0, scale)}, ${safeScale(layer.style?.iconOffsetY || 0, scale)})`
+                }}>
+                    {icon}
+                </span>
+            )}
         </button>
     );
 };

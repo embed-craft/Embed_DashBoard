@@ -1,8 +1,12 @@
 import React, { useRef, useEffect } from 'react';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { Layer, LayerStyle, TooltipConfig } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
+import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { InputRenderer } from './campaign/renderers/InputRenderer';
+import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { X } from 'lucide-react';
 
 const getTransformString = (transform?: LayerStyle['transform']) => {
@@ -118,6 +122,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             case 'deeplink':
                 if (action.url) window.open(action.url, '_blank');
                 break;
+            case 'link':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
             case 'interface':
                 if (action.interfaceId && onInterfaceAction) {
                     onInterfaceAction(action.interfaceId);
@@ -141,12 +150,14 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             width: safeScale(layer.style?.width || layer.size?.width, scale),
             height: safeScale(layer.style?.height || layer.size?.height, scaleY),
             zIndex: layer.style?.zIndex ?? 0,
-            borderRadius: safeScale(layer.style?.borderRadius, scale),
+            borderRadius: (layer.type === 'input' || layer.type === 'copy_button')
+                ? undefined
+                : safeScale(layer.style?.borderRadius, scale),
             overflow: 'hidden',
             // FIX: Include backgroundColor for button layers (wrapper needs it)
-            backgroundColor: layer.type === 'button'
-                ? (layer.style?.backgroundColor || layer.content?.themeColor)
-                : undefined,
+            // backgroundColor: layer.type === 'button'
+            //     ? (layer.style?.backgroundColor || layer.content?.themeColor)
+            //     : undefined,
         };
 
         let content = null;
@@ -161,27 +172,43 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             case 'button':
                 content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
+            case 'input':
+                content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
+                break;
+            case 'copy_button':
+                content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
+                    />
+                );
+                break;
             default:
                 content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown: {layer.type}</div>;
         }
 
         return (
-            <div
+            <DraggableLayerWrapper
                 key={layer.id}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (isInteractive) handleAction(layer.content?.action);
-                    else onLayerSelect(layer.id);
-                }}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
                 style={{
                     ...baseStyle,
-                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
+                    outline: isSelected ? `2px solid ${colors.primary[500] || '#6366F1'}` : 'none',
+                    outlineOffset: '2px',
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
     };
 
@@ -407,7 +434,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // Strategy 2: Find by name containing 'tooltip' 
     // Strategy 3: Find first container
     // Strategy 4: Use first layer as fallback
-    const tooltipLayer = layers.find(l => l.type === 'tooltip')
+    // Strategy 1: Find by type 'tooltip'
+    // Strategy 2: Find by name containing 'tooltip' 
+    // Strategy 3: Find first container
+    // Strategy 4: Use first layer as fallback
+    const tooltipLayer = layers.find(l => (l.type as string) === 'tooltip')
         || layers.find(l => l.name?.toLowerCase().includes('tooltip'))
         || layers.find(l => l.type === 'container')
         || layers[0];
@@ -417,8 +448,9 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     // This ensures newly added layers show up in preview even without parent relationship
     const layersToRender = layers.filter(l =>
         l.id !== tooltipLayer?.id &&
-        l.type !== 'container' &&
-        (l.type as string) !== 'tooltip' &&
+        // l.type !== 'container' && // Allow containers to render!
+        // (l.type as string) !== 'tooltip' && // Removed as tooltip is not a valid LayerType
+        (!l.parent || l.parent === tooltipLayer?.id) && // Only render top-level or direct children of tooltip
         l.visible !== false
     );
 
@@ -432,9 +464,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const position = getTooltipPosition();
 
     // FIX: Scale padding for pixel-perfect match with SDK (default to 0)
-    const padding = config.padding ? (typeof config.padding === 'object'
-        ? `${(config.padding.top ?? 0) * scale}px ${(config.padding.right ?? 0) * scale}px ${(config.padding.bottom ?? 0) * scale}px ${(config.padding.left ?? 0) * scale}px`
-        : `${(config.padding ?? 0) * scale}px`) : '0px';
+    const getPaddingString = () => {
+        if (!config.padding) return '0px';
+        if (typeof config.padding === 'object') {
+            const p = config.padding as { top?: number; right?: number; bottom?: number; left?: number };
+            return `${(p.top ?? 0) * scale}px ${(p.right ?? 0) * scale}px ${(p.bottom ?? 0) * scale}px ${(p.left ?? 0) * scale}px`;
+        }
+        return `${(config.padding ?? 0) * scale}px`;
+    };
+    const padding = getPaddingString();
 
     return (
         <>

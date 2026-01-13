@@ -37,21 +37,39 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
 
     return (
         <div style={{
+            // Typography (from Content)
             fontSize: `${scaledFontSize}px`,
             color: layer.content?.textColor || 'black',
             fontWeight: layer.content?.fontWeight || 400,
             textAlign: layer.content?.textAlign || 'left',
             fontFamily: layer.content?.fontFamily ? `'${layer.content.fontFamily}', sans-serif` : 'inherit',
-            // FIX: lineHeight changed to 1.4 to match SDK (was 1.2)
-            lineHeight: 1.4,
+            lineHeight: layer.content?.lineHeight || 1.4,
+            letterSpacing: layer.content?.letterSpacing ? safeScale(layer.content.letterSpacing, scale) : 'normal',
+            textDecoration: layer.content?.textDecoration || 'none',
+            textTransform: layer.content?.textTransform || 'none',
+            WebkitTextStroke: (layer.content?.textStrokeWidth && layer.content?.textStrokeWidth > 0)
+                ? `${safeScale(layer.content.textStrokeWidth, scale)} ${layer.content.textStrokeColor || '#000000'}`
+                : undefined,
             textShadow: textShadow,
-            whiteSpace: 'pre-wrap', // Better multi-line support
+            whiteSpace: 'pre-wrap',
+
+            // Box Model (from Style)
+            backgroundColor: layer.style?.backgroundColor || 'transparent',
+            borderWidth: layer.style?.borderWidth ? `${safeScale(layer.style.borderWidth, scale)}` : 0,
+            borderColor: layer.style?.borderColor || 'transparent',
+            borderStyle: layer.style?.borderStyle || 'solid',
+            borderRadius: layer.style?.borderRadius ? `${safeScale(layer.style.borderRadius, scale)}` : 0,
+            opacity: layer.style?.opacity !== undefined ? layer.style.opacity : 1,
+
+            // Layout
             width: '100%',
             height: '100%',
-            // FIX: Reset browser defaults to match Flutter (no default margin/padding)
             margin: 0,
-            padding: 0,
+            padding: layer.style?.padding ? `${safeScale(layer.style.padding, scale)}` : 0, // Enable padding if set
             boxSizing: 'border-box' as const,
+            display: 'flex',
+            flexDirection: 'column',
+            outline: 'none',
         }}>
             {/* Inject Custom Font CSS if URL provided */}
             {layer.content?.fontUrl && (
@@ -59,7 +77,18 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
                     {`@import url('${layer.content.fontUrl}');`}
                 </style>
             )}
-            {layer.content?.text || 'Text'}
+
+            {/* Text Offset Wrapper */}
+            {(layer.content?.textOffsetX || layer.content?.textOffsetY) ? (
+                <div style={{
+                    transform: `translate(${safeScale(layer.content.textOffsetX || 0, scale)}, ${safeScale(layer.content.textOffsetY || 0, scale)})`,
+                    width: '100%' // Ensure alignment still works
+                }}>
+                    {layer.content?.text || 'Text'}
+                </div>
+            ) : (
+                layer.content?.text || 'Text'
+            )}
         </div>
     );
 };

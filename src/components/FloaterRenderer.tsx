@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { Layer, LayerStyle } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
+import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { InputRenderer } from './campaign/renderers/InputRenderer';
+import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -573,6 +577,11 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     window.open(action.url, '_blank');
                 }
                 break;
+            case 'link':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
             case 'navigate':
                 if (action.screenName && onNavigate) {
                     onNavigate(action.screenName);
@@ -735,6 +744,22 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             filter: getFilterString(layer.style?.filter),
         };
 
+        // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
+        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
+            delete scaledStyle.backgroundColor;
+            delete scaledStyle.border;
+            delete scaledStyle.borderWidth;
+            delete scaledStyle.borderColor;
+            delete scaledStyle.borderStyle;
+            delete scaledStyle.borderRadius;
+            delete scaledStyle.paddingTop;
+            delete scaledStyle.paddingBottom;
+            delete scaledStyle.paddingLeft;
+            delete scaledStyle.paddingRight;
+            delete scaledStyle.padding;
+            delete scaledStyle.margin;
+        }
+
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
 
@@ -791,6 +816,9 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             case 'text':
                 content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
+            case 'copy_button':
+                content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
             case 'media': // Handle 'media' alias
             case 'image':
                 content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
@@ -827,21 +855,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 );
                 break;
             case 'input':
-                content = (
-                    <input
-                        type="text"
-                        placeholder={layer.content?.placeholder || 'Enter text...'}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: `${layer.style?.borderRadius || 4}px`,
-                            border: `1px solid ${layer.style?.borderColor || '#E5E7EB'}`,
-                            fontSize: `${layer.content?.fontSize || 14}px`,
-                            color: layer.content?.textColor || '#000000',
-                            backgroundColor: layer.style?.backgroundColor || '#FFFFFF',
-                        }}
-                    />
-                );
+                content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
                 break;
             case 'checkbox':
                 content = (
@@ -923,6 +937,15 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     }} />
                 );
                 break;
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
+                    />
+                );
+                break;
             default:
                 content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown Layer: {layer.type}</div>;
         }
@@ -949,78 +972,24 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         }
 
         return (
-            <div
+            <DraggableLayerWrapper
                 key={layer.id}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (isInteractive) {
-                        handleAction(layer.content?.action);
-                    } else {
-                        onLayerSelect(layer.id);
-                    }
-                }}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
                 style={{
                     ...baseStyle,
-                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box', // SDK Match
-                    // Apply button background to wrapper to match SDK "Container" behavior
-                    ...(layer.type === 'button' ? {
-                        backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
-                    } : {})
+                    outline: isSelected ? `5px solid ${colors.primary[500] || '#6366F1'}` : 'none',
+                    outlineOffset: '2px',
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
-    };
-
-    // Helper to get position styles based on config.position
-    const getPositionStyle = (): React.CSSProperties => {
-        const position = config?.position || 'bottom-right';
-        // SCALE FIX: Apply scaling to offsets so they match the visual scale of the device
-        const offsetX = safeScale(config?.offsetX || 20, scale);
-        const offsetY = safeScale(config?.offsetY || 20, scaleY); // Vertical offset uses scaleY
-
-        const baseStyle: React.CSSProperties = {
-            position: 'absolute',
-            zIndex: 50,
-        };
-
-        // Handle Custom Positioning
-        if (position === 'custom') {
-            return {
-                ...baseStyle,
-                left: safeScale(config?.x || 0, scale),
-                top: safeScale(config?.y || 0, scaleY),
-            };
-        }
-
-        switch (position) {
-            case 'bottom-right':
-                return { ...baseStyle, bottom: offsetY, right: offsetX };
-            case 'bottom-left':
-                return { ...baseStyle, bottom: offsetY, left: offsetX };
-            case 'bottom-center':
-                return { ...baseStyle, bottom: offsetY, left: '50%', transform: 'translateX(-50%)' };
-
-            case 'top-right':
-                return { ...baseStyle, top: offsetY, right: offsetX };
-            case 'top-left':
-                return { ...baseStyle, top: offsetY, left: offsetX };
-            case 'top-center':
-                return { ...baseStyle, top: offsetY, left: '50%', transform: 'translateX(-50%)' };
-
-            case 'center-right':
-                return { ...baseStyle, top: '50%', right: offsetX, transform: 'translateY(-50%)' };
-            case 'center-left':
-                return { ...baseStyle, top: '50%', left: offsetX, transform: 'translateY(-50%)' };
-            case 'center':
-                return { ...baseStyle, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
-
-            default:
-                return { ...baseStyle, bottom: offsetY, right: offsetX };
-        }
     };
 
     // Drag Implementation
@@ -1056,9 +1025,51 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         const deltaX = (e.clientX - dragStartRef.current.startX) / scale;
         const deltaY = (e.clientY - dragStartRef.current.startY) / scale;
 
+        let newX = dragStartRef.current.initialOffsetX + deltaX;
+        let newY = dragStartRef.current.initialOffsetY + deltaY;
+
+        // BOUNDS CHECKING: Prevent dragging outside container
+        const floaterEl = containerRef.current;
+        const parentElement = floaterEl?.parentElement;
+
+        if (floaterEl && parentElement) {
+            const containerRect = parentElement.getBoundingClientRect();
+            const floaterRect = floaterEl.getBoundingClientRect();
+
+            // Calculate max allowed offsets in both directions based on CURRENT position logic
+            // NOTE: This logic assumes 'bottom-right' base positioning.
+            // If base positioning differs, the signs/logic might need adjustment.
+            // However, since dragOffset is RELATIVE to base position, we just need to ensuring 
+            // the resulting ABSOLUTE position stays within bounds.
+
+            // Get current visual boundaries relative to viewport
+            // We want: containerRect.left <= (floaterRect.left + delta) <= containerRect.right - floaterRect.width
+
+            // Since we are operating on `dragOffset` which translates the element,
+            // we can clamp the resulting visual position.
+
+            // Current visual Base (without drag)
+            const baseLeft = floaterRect.left - (dragOffset.x * scale);
+            const baseTop = floaterRect.top - (dragOffset.y * scale);
+
+            // Allowed range for dragOffset.x:
+            // Min Left: containerRect.left
+            // Max Left: containerRect.right - floaterRect.width
+
+            const minX = (containerRect.left - baseLeft) / scale;
+            const maxX = (containerRect.right - floaterRect.width - baseLeft) / scale;
+
+            const minY = (containerRect.top - baseTop) / scale;
+            const maxY = (containerRect.bottom - floaterRect.height - baseTop) / scale;
+
+            // Apply clamp
+            newX = Math.max(minX, Math.min(newX, maxX));
+            newY = Math.max(minY, Math.min(newY, maxY));
+        }
+
         setDragOffset({
-            x: dragStartRef.current.initialOffsetX + deltaX,
-            y: dragStartRef.current.initialOffsetY + deltaY
+            x: newX,
+            y: newY
         });
     };
 
@@ -1327,11 +1338,11 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                                 const finalId = youtubeId || '';
                                 const muteParam = isMuted ? '1' : '0';
                                 const loopParam = config.media.loop ? '1' : '0';
-                                const embedUrl = `https://www.youtube.com/embed/${finalId}?autoplay=${config.media.autoPlay ? 1 : 0}&mute=${muteParam}&controls=0&loop=${loopParam}&playlist=${finalId}&playsinline=1&rel=0`;
+                                const embedUrl = `https://www.youtube.com/embed/${finalId}?autoplay=${(config.media.autoPlay ?? true) ? 1 : 0}&mute=${muteParam}&controls=0&loop=${loopParam}&playlist=${finalId}&playsinline=1&rel=0`;
 
                                 return (
                                     <div style={{
-                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0,
+                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1,
                                         pointerEvents: isExpanded ? 'auto' : 'none'
                                     }}>
                                         <iframe
@@ -1348,7 +1359,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                                     <video
                                         ref={videoRef}
                                         src={config.media.url}
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: config?.media?.fit || 'cover', zIndex: 0 }}
+                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: config?.media?.fit || 'cover', zIndex: -1 }}
                                         autoPlay={config.media.autoPlay ?? true}
                                         muted={isMuted}
                                         loop={config.media.loop ?? false}
@@ -1361,28 +1372,33 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     )}
 
                     {/* Content Area - Relative/Scrollable Layers */}
-                    <div style={{
-                        flex: 1,
-                        position: 'relative',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        width: '100%',
-                        height: '100%',
-                        display: floaterLayer.style?.display || 'flex',
-                        flexDirection: floaterLayer.style?.flexDirection || 'column',
-                        alignItems: floaterLayer.style?.alignItems || 'stretch',
-                        justifyContent: floaterLayer.style?.justifyContent || 'flex-start',
-                        gap: safeScale(floaterLayer.style?.gap || 0, scale),
-                        paddingTop: safeScale(floaterLayer.style?.padding?.top || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
-                        paddingBottom: safeScale(floaterLayer.style?.padding?.bottom || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
-                        paddingLeft: safeScale(floaterLayer.style?.padding?.left || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
-                        paddingRight: safeScale(floaterLayer.style?.padding?.right || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
-                    }}>
-                        {childLayers.filter(l => !(l.style?.position === 'absolute' || l.style?.position === 'fixed')).map(renderLayer)}
-                    </div>
+                    {/* PARITY FIX: Only show layers if Expanded OR if it's NOT a video (Image mode shows layers always) */}
+                    {(isExpanded || !isVideo) && (
+                        <>
+                            <div style={{
+                                flex: 1,
+                                position: 'relative',
+                                overflowY: 'auto',
+                                overflowX: 'hidden',
+                                width: '100%',
+                                height: '100%',
+                                display: floaterLayer.style?.display || 'flex',
+                                flexDirection: floaterLayer.style?.flexDirection || 'column',
+                                alignItems: floaterLayer.style?.alignItems || 'stretch',
+                                justifyContent: floaterLayer.style?.justifyContent || 'flex-start',
+                                gap: safeScale(floaterLayer.style?.gap || 0, scale),
+                                paddingTop: safeScale(floaterLayer.style?.padding?.top || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
+                                paddingBottom: safeScale(floaterLayer.style?.padding?.bottom || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scaleY),
+                                paddingLeft: safeScale(floaterLayer.style?.padding?.left || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
+                                paddingRight: safeScale(floaterLayer.style?.padding?.right || (typeof floaterLayer.style?.padding === 'number' ? floaterLayer.style.padding : 0), scale),
+                            }}>
+                                {childLayers.filter(l => !(l.style?.position === 'absolute' || l.style?.position === 'fixed')).map(renderLayer)}
+                            </div>
 
-                    {/* Overlay Area - Absolute Layers */}
-                    {childLayers.filter(l => (l.style?.position === 'absolute' || l.style?.position === 'fixed')).map(renderLayer)}
+                            {/* Overlay Area - Absolute Layers */}
+                            {childLayers.filter(l => (l.style?.position === 'absolute' || l.style?.position === 'fixed')).map(renderLayer)}
+                        </>
+                    )}
 
                     {/* === VIDEO CONTROLS OVERLAY === */}
                     {/* === VIDEO CONTROLS OVERLAY === */}

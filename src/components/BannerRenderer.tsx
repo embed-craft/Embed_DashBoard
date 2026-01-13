@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { Layer, BannerConfig, LayerStyle } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
+import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
+import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -593,6 +597,11 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                     window.open(action.url, '_blank');
                 }
                 break;
+            case 'link':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
             case 'navigate':
                 if (action.screenName && onNavigate) {
                     onNavigate(action.screenName);
@@ -757,6 +766,22 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
             fontSize: safeScale(layer.style?.fontSize, scale),
         };
 
+        // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
+        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
+            delete scaledStyle.backgroundColor;
+            delete scaledStyle.border;
+            delete scaledStyle.borderWidth;
+            delete scaledStyle.borderColor;
+            delete scaledStyle.borderStyle;
+            delete scaledStyle.borderRadius;
+            delete scaledStyle.paddingTop;
+            delete scaledStyle.paddingBottom;
+            delete scaledStyle.paddingLeft;
+            delete scaledStyle.paddingRight;
+            delete scaledStyle.padding;
+            delete scaledStyle.margin;
+        }
+
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
 
@@ -842,21 +867,7 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                 );
                 break;
             case 'input':
-                content = (
-                    <input
-                        type="text"
-                        placeholder={layer.content?.placeholder || 'Enter text...'}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: `${layer.style?.borderRadius || 4}px`,
-                            border: `1px solid ${layer.style?.borderColor || '#E5E7EB'}`,
-                            fontSize: `${layer.content?.fontSize || 14}px`,
-                            color: layer.content?.textColor || '#000000',
-                            backgroundColor: layer.style?.backgroundColor || '#FFFFFF',
-                        }}
-                    />
-                );
+                content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
                 break;
             case 'checkbox':
                 content = (
@@ -938,6 +949,15 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
                     }} />
                 );
                 break;
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
+                    />
+                );
+                break;
             default:
                 content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown Layer: {layer.type}</div>;
         }
@@ -964,29 +984,24 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
         }
 
         return (
-            <div
+            <DraggableLayerWrapper
                 key={layer.id}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (isInteractive) {
-                        handleAction(layer.content?.action);
-                    } else {
-                        onLayerSelect(layer.id);
-                    }
-                }}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
                 style={{
                     ...baseStyle,
-                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box', // SDK Match
-                    // Apply button background to wrapper to match SDK "Container" behavior
-                    ...(layer.type === 'button' ? {
-                        backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
-                    } : {})
+                    // ...(layer.type === 'button' ? {
+                    //    backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
+                    // } : {})
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
     };
 

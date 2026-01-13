@@ -189,7 +189,7 @@ const SectionHeader = ({ icon: Icon, title, toggle, onToggle }: { icon: any; tit
 const PositionGrid = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
     const positions = [
         ['top-left', 'top-center', 'top-right'],
-        ['left-center', 'center', 'right-center'],
+        ['center-left', 'center', 'center-right'],
         ['bottom-left', 'bottom-center', 'bottom-right']
     ];
     return (
@@ -524,36 +524,7 @@ export const FloaterMinimalEditor = () => {
             <div style={styles.section}>
                 <SectionHeader icon={Maximize2} title="Size & Shape" />
 
-                {/* Shape Selector */}
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={styles.label}>Shape</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                            onClick={() => updateConfig('shape', 'rectangle')}
-                            style={{
-                                ...styles.chipButton(config.shape !== 'circle'),
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}
-                        >
-                            <Square size={14} />
-                            Rectangle
-                        </button>
-                        <button
-                            onClick={() => updateConfig('shape', 'circle')}
-                            style={{
-                                ...styles.chipButton(config.shape === 'circle'),
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}
-                        >
-                            <Circle size={14} />
-                            Circle
-                        </button>
-                    </div>
-                </div>
+
 
                 {/* Width */}
                 <div style={{ marginBottom: '12px' }}>
@@ -630,14 +601,16 @@ export const FloaterMinimalEditor = () => {
                 </div>
 
                 {/* Border Radius */}
-                <Slider
-                    label="Corner Radius"
-                    value={config.borderRadius || 12}
-                    onChange={(v) => updateConfig('borderRadius', v)}
-                    min={0}
-                    max={50}
-                    unit="px"
-                />
+                {/* Border Radius */}
+                <div style={{ marginTop: '12px' }}>
+                    <NumberInput
+                        label="Corner Radius"
+                        value={config.borderRadius || 0}
+                        onChange={(v) => updateConfig('borderRadius', v)}
+                        min={0}
+                        max={1000}
+                    />
+                </div>
             </div>
 
             {/* ===== MEDIA SECTION ===== */}

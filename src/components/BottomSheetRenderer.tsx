@@ -1,10 +1,14 @@
 import React, { useRef, useEffect } from 'react';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { Layer, BottomSheetConfig, LayerStyle } from '@/store/useEditorStore';
 import { Settings2, X, Code } from 'lucide-react';
 import { ShadowDomWrapper } from '@/components/ShadowDomWrapper';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
+import { InputRenderer } from './campaign/renderers/InputRenderer';
+import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
+import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
 
 interface BottomSheetRendererProps {
     layers: any[];
@@ -93,6 +97,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                     // notification handled by browser opening new tab, but redundant toast doesn't hurt
                 }
                 break;
+            case 'link':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
             case 'navigate':
                 if (action.screenName && onNavigate) {
                     onNavigate(action.screenName);
@@ -135,7 +144,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     // If no root layer, we render all layers (fallback).
     let children = rootLayer
         ? layers.filter(l => l.parent === rootLayer.id)
-        : layers;
+        : layers.filter(l => !l.parent); // Fallback: Only render top-level layers
 
     // Detect Full Page Mode: Only if explicitly flagged
     const fullPageLayer = layers.find(l =>
@@ -196,6 +205,25 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 : safeScale(layer.style?.borderRadius, scale),
             fontSize: safeScale(layer.style?.fontSize, scale),
         };
+
+        // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
+        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
+            delete scaledStyle.backgroundColor;
+            delete scaledStyle.border;
+            delete scaledStyle.borderWidth;
+            delete scaledStyle.borderColor;
+            delete scaledStyle.borderStyle;
+            delete scaledStyle.borderRadius;
+            delete scaledStyle.paddingTop;
+            delete scaledStyle.paddingBottom;
+            delete scaledStyle.paddingLeft;
+            delete scaledStyle.paddingRight;
+            delete scaledStyle.padding;
+            delete scaledStyle.margin; // Ensure margin is handled by wrapper mostly, but if we strip it, wrapper handles positioning?
+            // Actually, wrapper SHOULD handle margin (positioning). 
+            // Input/CopyButton internal margin is usually 0.
+            // Let's stick to visual styles: bg, border, padding.
+        }
 
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
@@ -293,11 +321,26 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                     />
                 );
                 break;
+            case 'input':
+                content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
+                break;
+            case 'copy_button':
+                content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
             case 'custom_html':
                 content = (
                     <ShadowDomWrapper
                         html={layer.content?.html || '<div style="padding:10px; border:1px dashed #ccc; color:#999">Empty HTML Layer</div>'}
                         style={{ width: '100%', height: '100%' }}
+                    />
+                );
+                break;
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
                     />
                 );
                 break;
@@ -334,29 +377,23 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         }
 
         return (
-            <div
+            <DraggableLayerWrapper
                 key={layer.id}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (config?.isInteractive) {
-                        handleAction(layer.content?.action);
-                    } else {
-                        onLayerSelect(layer.id);
-                    }
-                }}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
                 style={{
                     ...baseStyle,
-                    outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box', // SDK Match
-                    // Apply button background to wrapper to match SDK "Container" behavior
-                    ...(layer.type === 'button' ? {
-                        backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
-                    } : {})
+                    outline: isSelected ? `2px solid ${colors.primary[500] || '#6366F1'}` : 'none',
+                    outlineOffset: '2px',
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
     };
 

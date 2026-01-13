@@ -3,9 +3,13 @@ import { Layer, ModalConfig, LayerStyle } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
+import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { InputRenderer } from './campaign/renderers/InputRenderer';
+import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
+import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { ErrorBoundary } from './ErrorBoundary';
 // ShadowDomWrapper removed as per user request
 // ShadowDomWrapper removed as per user request
@@ -558,6 +562,11 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                     window.open(action.url, '_blank');
                 }
                 break;
+            case 'link':
+                if (action.url) {
+                    window.open(action.url, '_blank');
+                }
+                break;
             case 'navigate':
                 if (action.screenName && onNavigate) {
                     onNavigate(action.screenName);
@@ -659,6 +668,8 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         );
     };
 
+
+
     const renderLayer = (layer: Layer) => {
         if (!layer.visible) return null;
         const isSelected = selectedLayerId === layer.id;
@@ -716,6 +727,22 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                 : safeScale(layer.style?.borderRadius, scale),
             fontSize: safeScale(layer.style?.fontSize, scale),
         };
+
+        // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
+        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
+            delete scaledStyle.backgroundColor;
+            delete scaledStyle.border;
+            delete scaledStyle.borderWidth;
+            delete scaledStyle.borderColor;
+            delete scaledStyle.borderStyle;
+            delete scaledStyle.borderRadius;
+            // Also ensure no padding on wrapper that would constrain the input
+            delete scaledStyle.paddingTop;
+            delete scaledStyle.paddingBottom;
+            delete scaledStyle.paddingLeft;
+            delete scaledStyle.paddingRight;
+            delete scaledStyle.padding;
+        }
 
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
@@ -808,22 +835,12 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                     />
                 );
                 break;
+                break;
             case 'input':
-                content = (
-                    <input
-                        type="text"
-                        placeholder={layer.content?.placeholder || 'Enter text...'}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: `${layer.style?.borderRadius || 4}px`,
-                            border: `1px solid ${layer.style?.borderColor || '#E5E7EB'}`,
-                            fontSize: `${layer.content?.fontSize || 14}px`,
-                            color: layer.content?.textColor || '#000000',
-                            backgroundColor: layer.style?.backgroundColor || '#FFFFFF',
-                        }}
-                    />
-                );
+                content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
+                break;
+            case 'copy_button':
+                content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
             case 'checkbox':
                 content = (
@@ -905,6 +922,17 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                     }} />
                 );
                 break;
+            case 'container':
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        scale={scale}
+                        scaleY={scaleY}
+                        renderChild={renderLayer} // Pass the recursive render function
+                    />
+                );
+                break;
             default:
                 content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown Layer: {layer.type}</div>;
         }
@@ -931,29 +959,23 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
         }
 
         return (
-            <div
+            <DraggableLayerWrapper
                 key={layer.id}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (isInteractive) {
-                        handleAction(layer.content?.action);
-                    } else {
-                        onLayerSelect(layer.id);
-                    }
-                }}
+                layer={layer}
+                isSelected={isSelected}
+                isInteractive={isInteractive}
+                scale={scale}
+                onLayerUpdate={onLayerUpdate}
+                onLayerSelect={onLayerSelect}
+                onLayerAction={(layer) => handleAction(layer.content?.action)}
                 style={{
                     ...baseStyle,
                     outline: isSelected ? `2px solid ${colors.primary[500]}` : 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box', // SDK Match
-                    // Apply button background to wrapper to match SDK "Container" behavior
-                    ...(layer.type === 'button' ? {
-                        backgroundColor: layer.style?.backgroundColor || layer.content.themeColor || '#6366f1'
-                    } : {})
+                    boxSizing: 'border-box',
                 }}
             >
                 {content}
-            </div>
+            </DraggableLayerWrapper>
         );
     };
 

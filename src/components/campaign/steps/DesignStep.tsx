@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -33,9 +33,10 @@ import { CommonStyleControls } from '@/components/campaign/editors/shared/Common
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 import { TextEditor } from '@/components/campaign/editors/layers/TextEditor';
 import { ButtonEditor } from '@/components/campaign/editors/layers/ButtonEditor';
+import { InputEditor } from '@/components/campaign/editors/layers/InputEditor';
+import { CopyButtonEditor } from '@/components/campaign/editors/layers/CopyButtonEditor';
 import { ContainerEditor } from '@/components/campaign/editors/layers/ContainerEditor';
 import { MediaEditor } from '@/components/campaign/editors/layers/MediaEditor';
-import { InputEditor } from '@/components/campaign/editors/layers/InputEditor';
 import { CheckboxEditor } from '@/components/campaign/editors/layers/CheckboxEditor';
 import { RatingEditor } from '@/components/campaign/editors/layers/RatingEditor';
 import { ProgressBarEditor } from '@/components/campaign/editors/layers/ProgressBarEditor';
@@ -149,6 +150,9 @@ export const DesignStep: React.FC<any> = () => {
     setActiveInterface,
     addInterface,
     deleteInterface,
+    // Saved Callbacks
+    customCallbackIds,
+    addCustomCallbackId,
   } = useEditorStore();
 
   // Local UI state
@@ -173,7 +177,7 @@ export const DesignStep: React.FC<any> = () => {
     lastAddRef.current = now;
 
     addLayer(type as any, parentId);
-    setShowLayerMenu(false);
+    setLayerAddMenuId(null);
     toast.success(`Added ${type} layer`);
   };
 
@@ -214,19 +218,73 @@ export const DesignStep: React.FC<any> = () => {
   };
 
   // Handle interface action in preview mode
-  const handleInterfaceAction = (interfaceId: string) => {
+  const handleInterfaceAction = (actionOrId: string | any) => {
     if (!isInteractive && !isPreview) return;
 
-    if (interfaceId === 'root') {
-      setPreviewInterfaceId(null);
-      toast.success('Navigated to Main Campaign');
+    // Handle legacy string ID (direct interface navigation)
+    if (typeof actionOrId === 'string') {
+      if (actionOrId === 'root') {
+        setPreviewInterfaceId(null);
+        toast.success('Navigated to Main Campaign');
+        return;
+      }
+      const targetInterface = currentCampaign?.interfaces?.find((i: any) => i.id === actionOrId);
+      if (targetInterface) {
+        setPreviewInterfaceId(actionOrId);
+        toast.success(`Showing: ${targetInterface.name}`);
+      }
       return;
     }
 
-    const targetInterface = currentCampaign?.interfaces?.find((i: any) => i.id === interfaceId);
-    if (targetInterface) {
-      setPreviewInterfaceId(interfaceId);
-      toast.success(`Showing: ${targetInterface.name}`);
+    // Handle Action Object (from InputRenderer, etc.)
+    if (typeof actionOrId === 'object' && actionOrId !== null) {
+      const action = actionOrId;
+      console.log('[DesignStep] Handling action:', action);
+
+      switch (action.type) {
+        case 'interface':
+          if (action.interfaceId) {
+            const targetInterface = currentCampaign?.interfaces?.find((i: any) => i.id === action.interfaceId);
+            if (targetInterface) {
+              setPreviewInterfaceId(action.interfaceId);
+              toast.success(`Showing: ${targetInterface.name}`);
+            } else if (action.interfaceId === 'root') {
+              setPreviewInterfaceId(null);
+              toast.success('Navigated to Main Campaign');
+            }
+          }
+          break;
+
+        case 'link':
+          // Explicit External URL
+          if (action.url) {
+            window.open(action.url, '_blank');
+            toast.success(`External Link: ${action.url}`);
+          }
+          break;
+
+        case 'deeplink':
+          // Deep Link (Simulate or Log)
+          if (action.url) {
+            console.log('Deep Link Triggered:', action.url);
+            toast.info(`Deep Link (Simulated): ${action.url}`);
+          }
+          break;
+
+        case 'navigate':
+          // Legacy Type or Internal Screen
+          if (action.screenName) {
+            toast.success(`Navigating to Screen: ${action.screenName}`);
+          } else if (action.url) {
+            // Legacy External URL fallback
+            window.open(action.url, '_blank');
+          }
+          break;
+
+        case 'close':
+          toast.info('Dismiss action triggered');
+          break;
+      }
     }
   };
 
@@ -236,11 +294,25 @@ export const DesignStep: React.FC<any> = () => {
     toast.info('Back to main campaign');
   };
 
-  const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const [layerAddMenuId, setLayerAddMenuId] = useState<string | null>(null);
+  const [layerAddMenuPosition, setLayerAddMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null); // Fix 3
   const [collapsedLayers, setCollapsedLayers] = useState<Set<string>>(new Set()); // For layer hierarchy
+
+  // Close layer menu on outside click
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setLayerAddMenuId(null);
+      setLayerAddMenuPosition(null);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   // Context Switching: Determine which layers/config to display based on activeInterfaceId
   const activeInterface = activeInterfaceId
@@ -765,7 +837,9 @@ export const DesignStep: React.FC<any> = () => {
             paddingLeft: `${12 + indentPx}px`,
             opacity: isDragging ? 0.4 : (layer.visible ? 1 : 0.5), // Ghost effect when dragging
             transition: 'all 0.15s ease',
-            transform: isDragging ? 'scale(0.98)' : 'scale(1)' // Subtle scale when dragging
+            transform: isDragging ? 'scale(0.98)' : 'scale(1)', // Subtle scale when dragging
+            position: 'relative',
+            zIndex: layerAddMenuId === layer.id ? 50 : 'auto'
           }}
         >
           {/* Drag handle indicator */}
@@ -809,6 +883,33 @@ export const DesignStep: React.FC<any> = () => {
           </span>
 
           {/* Action buttons */}
+          {/* Add Child Layer Button */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Toggle menu for this layer
+                if (layerAddMenuId === layer.id) {
+                  setLayerAddMenuId(null);
+                  setLayerAddMenuPosition(null);
+                } else {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setLayerAddMenuId(layer.id);
+                  setLayerAddMenuPosition({
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + window.scrollX
+                  });
+                }
+              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', marginRight: '4px' }}
+              title="Add child layer"
+            >
+              <Plus size={14} color={colors.primary[500]} />
+            </button>
+
+            {/* Layer Type Dropdown Menu for Row - MOVED TO TOP LEVEL */}
+          </div>
           <button
             type="button"
             onClick={(e) => {
@@ -1409,7 +1510,7 @@ export const DesignStep: React.FC<any> = () => {
               colors={colors}
               config={{
                 ...(activeInterface?.scratchCardConfig || currentCampaign?.scratchCardConfig),
-                previewRevealed: isPreview ? false : (currentCampaign?.scratchCardConfig?.previewRevealed || false)
+                previewRevealed: isPreview ? false : ((activeInterface?.scratchCardConfig || currentCampaign?.scratchCardConfig)?.previewRevealed || false)
               }}
               onConfigChange={(config) => updateScratchCardConfig(config)}
               scale={scaleFactorScratch}
@@ -1535,9 +1636,9 @@ export const DesignStep: React.FC<any> = () => {
           {[
             { value: 'none', label: 'No Action', icon: <CircleOff size={16} /> },
             { value: 'close', label: 'Dismiss', icon: <X size={16} /> },
-            { value: 'deeplink', label: 'Deeplink', icon: <Link size={16} /> },
-            { value: 'navigate', label: 'Navigate', icon: <Compass size={16} /> },
-            { value: 'custom', label: 'Custom', icon: <Code size={16} /> },
+            { value: 'deeplink', label: 'Deep Link', icon: <Link size={16} /> },
+            { value: 'link', label: 'External URL', icon: <Globe size={16} /> },
+            { value: 'custom', label: 'Callback', icon: <Code size={16} /> },
             { value: 'interface', label: 'Interface', icon: <Layers size={16} /> }
           ].map((option) => {
             const isSelected = (selectedLayerObj.content?.action?.type || 'none') === option.value;
@@ -1550,9 +1651,6 @@ export const DesignStep: React.FC<any> = () => {
                   } else {
                     handleContentUpdate('action', {
                       type: option.value,
-                      // Preserve existing properties if switching types, or reset? 
-                      // For now, let's preserve url if it exists, but maybe safer to reset if type changes significantly.
-                      // But simple is better:
                       ...(selectedLayerObj.content?.action || {})
                     });
                     // Ensure type is updated
@@ -1585,14 +1683,14 @@ export const DesignStep: React.FC<any> = () => {
 
         {selectedLayerObj.content?.action?.type === 'deeplink' && (
           <div style={{ marginBottom: '12px', animation: 'fadeIn 0.2s ease-in-out' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Deeplink URL</label>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>App Deeplink</label>
             <div style={{ position: 'relative' }}>
               <Link size={14} color={colors.text.secondary} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 value={selectedLayerObj.content?.action?.url || ''}
                 onChange={(e) => handleContentUpdate('action', { ...selectedLayerObj.content?.action, url: e.target.value })}
-                placeholder="myapp://screen/page OR https://example.com"
+                placeholder="myapp://screen/page"
                 style={{
                   width: '100%',
                   padding: '8px 12px 8px 32px',
@@ -1607,70 +1705,56 @@ export const DesignStep: React.FC<any> = () => {
               />
             </div>
             <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
-              <strong>App Deeplink:</strong> myapp://screen/123<br />
-              <strong>Web URL:</strong> https://example.com
+              Enter an app-scheme link (e.g., myapp://product/123) to navigate within the app.
             </div>
           </div>
         )}
 
-        {selectedLayerObj.content?.action?.type === 'navigate' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: colors.text.secondary }}>
-              Target Page
-            </label>
-            {(!pages || pages.length === 0) ? (
-              <div style={{ fontSize: '12px', color: colors.text.secondary, fontStyle: 'italic', padding: '8px', background: colors.gray[50], borderRadius: '6px', border: `1px dashed ${colors.gray[200]}` }}>
-                No pages found. Please add screens in App Context.
-              </div>
-            ) : (
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={selectedLayerObj.content?.action?.screenName || ''}
-                  onChange={(e) => updateLayer(selectedLayerObj.id, {
-                    content: {
-                      ...selectedLayerObj.content,
-                      action: { ...selectedLayerObj.content.action, screenName: e.target.value }
-                    }
-                  })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: `1px solid ${colors.gray[300]}`,
-                    fontSize: '13px',
-                    color: colors.text.primary,
-                    appearance: 'none',
-                    backgroundColor: 'white',
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="" disabled>Select a page to navigate to...</option>
-                  {pages.map((page) => (
-                    <option key={page._id} value={page.pageTag}>
-                      {page.name} ({page.pageTag})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div style={{ fontSize: '11px', color: colors.text.tertiary, marginTop: '4px' }}>
-              Select the destination page from your captured screens.
+        {selectedLayerObj.content?.action?.type === 'link' && (
+          <div style={{ marginBottom: '12px', animation: 'fadeIn 0.2s ease-in-out' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>External Web URL</label>
+            <div style={{ position: 'relative' }}>
+              <Globe size={14} color={colors.text.secondary} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type="text"
+                value={selectedLayerObj.content?.action?.url || ''}
+                onChange={(e) => handleContentUpdate('action', { ...selectedLayerObj.content?.action, url: e.target.value })}
+                placeholder="https://example.com"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 32px',
+                  border: `1px solid ${colors.gray[200]}`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = colors.primary[500]}
+                onBlur={(e) => e.target.style.borderColor = colors.gray[200]}
+              />
+            </div>
+            <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
+              Enter a valid https:// URL to open in the browser.
             </div>
           </div>
         )}
 
         {selectedLayerObj.content?.action?.type === 'custom' && (
           <div style={{ marginBottom: '12px', animation: 'fadeIn 0.2s ease-in-out' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Event Name</label>
+            <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Callback ID</label>
             <div style={{ position: 'relative' }}>
               <Code size={14} color={colors.text.secondary} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
+                list="saved-callback-ids"
                 value={selectedLayerObj.content?.action?.eventName || ''}
                 onChange={(e) => handleContentUpdate('action', { ...selectedLayerObj.content?.action, eventName: e.target.value })}
+                onBlur={(e) => {
+                  e.target.style.borderColor = colors.gray[200];
+                  if (e.target.value && e.target.value.trim().length > 0) {
+                    addCustomCallbackId(e.target.value.trim());
+                  }
+                }}
                 placeholder="e.g. track_signup_click"
                 style={{
                   width: '100%',
@@ -1682,8 +1766,12 @@ export const DesignStep: React.FC<any> = () => {
                   fontFamily: 'monospace'
                 }}
                 onFocus={(e) => e.target.style.borderColor = colors.primary[500]}
-                onBlur={(e) => e.target.style.borderColor = colors.gray[200]}
               />
+              <datalist id="saved-callback-ids">
+                {customCallbackIds?.map((id, index) => (
+                  <option key={`${id}-${index}`} value={id} />
+                ))}
+              </datalist>
             </div>
             <div style={{ fontSize: '11px', color: colors.text.secondary, marginTop: '4px' }}>
               The event will start running.
@@ -3373,6 +3461,22 @@ export const DesignStep: React.FC<any> = () => {
       );
     }
 
+    // Copy Button properties
+    if (selectedLayerObj.type === 'copy_button') {
+      return (
+        <CopyButtonEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          handleContentUpdate={handleContentUpdate}
+          onStyleUpdate={handleStyleUpdate}
+          handleTooltipUpdate={handleTooltipUpdate}
+          handleImageUpload={handleImageUpload}
+          colors={colors}
+        />
+      );
+    }
+
     // Checkbox properties
     if (selectedLayerObj.type === 'checkbox') {
       return (
@@ -4194,61 +4298,7 @@ export const DesignStep: React.FC<any> = () => {
                               </span>
                             </h4>
                             <div style={{ position: 'relative' }}>
-                              <button
-                                onClick={() => setShowLayerMenu(!showLayerMenu)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary[500], display: 'flex', alignItems: 'center', gap: '4px' }}
-                                title="Add new layer"
-                              >
-                                <Plus size={18} />
-                              </button>
-
-                              {/* Layer Type Dropdown Menu - Phase 2 */}
-                              {showLayerMenu && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  right: 0,
-                                  marginTop: '4px',
-                                  backgroundColor: 'white',
-                                  border: `1px solid ${colors.gray[200]}`,
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                  zIndex: 50,
-                                  minWidth: '200px',
-                                  overflow: 'hidden'
-                                }}>
-                                  <div style={{ padding: '8px 12px', borderBottom: `1px solid ${colors.gray[200]}`, backgroundColor: colors.gray[50] }}>
-                                    <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary, letterSpacing: '0.5px' }}>Add Layer</p>
-                                  </div>
-
-
-
-                                  {/* Basic Layers */}
-                                  <div style={{ padding: '4px' }}>
-
-                                    <button type="button" onClick={() => handleAddLayer('container', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Layout size={16} color={colors.gray[600]} />
-                                      Container
-                                    </button>
-                                    <button type="button" onClick={() => handleAddLayer('media', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <ImageIcon size={16} color={colors.gray[600]} />
-                                      Image
-                                    </button>
-                                    <button type="button" onClick={() => handleAddLayer('text', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Type size={16} color={colors.gray[600]} />
-                                      Text
-                                    </button>
-                                    <button type="button" onClick={() => handleAddLayer('button', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Square size={16} color={colors.gray[600]} />
-                                      Button
-                                    </button>
-                                    <button type="button" onClick={() => handleAddLayer('custom_html', rootContainerId)} style={{ width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: colors.text.primary, display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                      <Code size={16} color={colors.gray[600]} />
-                                      Custom HTML
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
+                              {/* Removed Global Add Button */}
                             </div>
                           </div>
                           <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
@@ -4262,7 +4312,7 @@ export const DesignStep: React.FC<any> = () => {
                   </div >
 
                   {/* Center Panel - Canvas (Enhanced with Device Selection) */}
-                  < div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  < div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
                     {/* Preview Toolbar */}
                     <PreviewToolbar
                       selectedDevice={selectedDevice}
@@ -4347,6 +4397,61 @@ export const DesignStep: React.FC<any> = () => {
         }}
         existingInterfaceCount={currentCampaign?.interfaces?.length || 0}
       />
+      {/* Global Context Menu for Add Layer (Portal-like) */}
+      {layerAddMenuId && layerAddMenuPosition && (
+        <div style={{
+          position: 'fixed',
+          top: `${layerAddMenuPosition.top + 4}px`,
+          left: `${layerAddMenuPosition.left}px`,
+          backgroundColor: '#ffffff',
+          border: `1px solid ${colors.gray[200]}`,
+          borderRadius: '8px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          zIndex: 9999,
+          minWidth: '160px',
+          overflow: 'hidden',
+          isolation: 'isolate'
+        }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ padding: '6px 12px', borderBottom: `1px solid ${colors.gray[200]}`, backgroundColor: colors.gray[50] }}>
+            <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: colors.text.secondary }}>Add Child</p>
+          </div>
+          {[
+            { id: 'input', label: 'Input Field', icon: Type },
+            { id: 'container', label: 'Container', icon: Layout },
+            { id: 'media', label: 'Image', icon: ImageIcon },
+            { id: 'text', label: 'Text', icon: Type },
+            { id: 'button', label: 'Button', icon: Square },
+            { id: 'copy_button', label: 'Copy Button', icon: Copy },
+            { id: 'custom_html', label: 'Custom HTML', icon: Code },
+          ].map(item => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleAddLayer(item.id, layerAddMenuId)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'transparent',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color: colors.text.primary,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <item.icon size={14} color={colors.gray[500]} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -28,13 +28,44 @@ export interface ScratchCardConfig {
     coverColor: string;
     coverImage?: string;
 
+    // Styling
+    borderWidth?: number;
+    borderColor?: string;
+    borderStyle?: 'solid' | 'dashed' | 'dotted' | 'double' | 'none';
+    boxShadow?: {
+        enabled: boolean;
+        color: string;
+        blur: number;
+        spread?: number;
+        x?: number;
+        y?: number;
+    };
+
     // Mechanics
     scratchType: 'brush' | 'coin';
     scratchSize: number;
     revealThreshold: number; // 0-100
+    brushStyle?: 'round' | 'rough' | 'spray';
+
+    // Interaction Support
+    overlayHint?: {
+        enabled: boolean;
+        text: string;
+        icon?: string;
+    };
 
     // Celebration
     autoReveal: boolean;
+    progressBar?: {
+        enabled: boolean;
+        color: string;
+    };
+    closeButton?: {
+        enabled: boolean;
+        position: 'top-right' | 'top-left' | 'outside-right';
+        color: string;
+        backgroundColor?: string;
+    };
     completionAnimation?: {
         enabled: boolean;
         type: 'confetti' | 'video' | 'fireworks' | 'money';

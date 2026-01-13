@@ -1319,6 +1319,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             >
                 {/* Inner Box (Visuals/Animation) */}
                 <div style={{
+                    position: 'relative', // FIX: Ensure this acts as containing block for absolute children (Video)
                     width: '100%',
                     height: '100%',
                     display: 'flex',
@@ -1337,11 +1338,15 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
 
+                    // Box Model Fixes
+                    boxSizing: 'border-box',
+                    backgroundClip: 'padding-box', // Prevents bg from bleeding through dashed borders
+
                     // Borders
                     borderRadius: isExpanded ? 0 : (config?.shape === 'circle' ? '50%' : safeScale(config?.borderRadius ?? 0, scale)),
-                    borderWidth: safeScale(floaterLayer.style?.borderWidth || 0, scale),
-                    borderColor: floaterLayer.style?.borderColor || 'transparent',
-                    borderStyle: floaterLayer.style?.borderStyle || 'solid',
+                    borderWidth: safeScale((config as any)?.borderWidth ?? floaterLayer.style?.borderWidth ?? 0, scale),
+                    borderColor: (config as any)?.borderColor || floaterLayer.style?.borderColor || 'transparent',
+                    borderStyle: (config as any)?.borderStyle || floaterLayer.style?.borderStyle || 'solid',
 
                     // Visuals
                     opacity: floaterLayer.style?.opacity ?? 1,
@@ -1364,37 +1369,39 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         (() => {
                             // Helper to detect YouTube and get Embed URL
                             const getYouTubeId = (url: string) => {
-                                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+                                // Updated regex to support /shorts/
+                                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
                                 const match = url.match(regExp);
                                 return (match && match[2].length === 11) ? match[2] : null;
                             };
 
-                            // Handle Shorts specifically if regex misses or for robustness
-                            const isShorts = config.media.url.includes('/shorts/');
-                            let youtubeId = getYouTubeId(config.media.url);
-                            if (!youtubeId && isShorts) {
-                                const parts = config.media.url.split('/shorts/');
-                                youtubeId = parts[1]?.split('?')[0];
-                            }
+                            // Debugging extracted ID
+                            const youtubeId = getYouTubeId(config.media.url);
+                            console.log('[FloaterRenderer] Parsing YouTube URL:', config.media.url, 'Extracted ID:', youtubeId);
 
                             if (youtubeId || config.media.type === 'youtube') {
                                 // Render YouTube Iframe
                                 const finalId = youtubeId || '';
                                 const muteParam = isMuted ? '1' : '0';
                                 const loopParam = config.media.loop ? '1' : '0';
-                                const embedUrl = `https://www.youtube.com/embed/${finalId}?autoplay=${(config.media.autoPlay ?? true) ? 1 : 0}&mute=${muteParam}&controls=0&loop=${loopParam}&playlist=${finalId}&playsinline=1&rel=0`;
+
+                                // Using youtube-nocookie.com, enablejsapi, and origin to minimize blocking.
+                                // Enabling controls=1 and interaction to allow manual playback if autoplay fails.
+                                const embedUrl = `https://www.youtube-nocookie.com/embed/${finalId}?autoplay=${(config.media.autoPlay ?? true) ? 1 : 0}&mute=${muteParam}&controls=1&loop=${loopParam}&playlist=${finalId}&playsinline=1&rel=0&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
 
                                 return (
                                     <div style={{
-                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1,
-                                        pointerEvents: isExpanded ? 'auto' : 'none'
+                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0,
+                                        pointerEvents: 'auto',
+                                        borderRadius: 'inherit', // FIX: Inherit border radius from parent
+                                        overflow: 'hidden'       // FIX: Clip iframe corners
                                     }}>
                                         <iframe
                                             width="100%" height="100%" src={embedUrl} title="YouTube video player" frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
-                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
+                                        {/* Blocking overlay removed to allow interaction */}
                                     </div>
                                 );
                             } else {
@@ -1456,21 +1463,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         }}>
                             {/* Top Left */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && isVideo && (config?.controls?.expandButton?.position === 'top-left' || !config?.controls?.expandButton?.position) && (
+                                {config?.controls?.expandButton?.show && (config?.controls?.expandButton?.position === 'top-left' || !config?.controls?.expandButton?.position) && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
                                     </div>
                                 )}
                                 {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'top-left' && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
                                     </div>
                                 )}
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'top-left' && (
                                     <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         <X size={config?.controls?.closeButton?.size || 14} />
                                     </div>
                                 )}
@@ -1478,21 +1485,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
 
                             {/* Top Right */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && isVideo && config?.controls?.expandButton?.position === 'top-right' && (
+                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'top-right' && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
                                     </div>
                                 )}
                                 {config?.controls?.muteButton?.show && isVideo && (config?.controls?.muteButton?.position === 'top-right' || !config?.controls?.muteButton?.position) && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
                                     </div>
                                 )}
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && (config?.controls?.closeButton?.position === 'top-right' || !config?.controls?.closeButton?.position) && (
                                     <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         <X size={config?.controls?.closeButton?.size || 14} />
                                     </div>
                                 )}
@@ -1506,21 +1513,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         }}>
                             {/* Bottom Left */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && isVideo && config?.controls?.expandButton?.position === 'bottom-left' && (
+                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-left' && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
                                     </div>
                                 )}
                                 {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-left' && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
                                     </div>
                                 )}
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-left' && (
                                     <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         <X size={config?.controls?.closeButton?.size || 14} />
                                     </div>
                                 )}
@@ -1528,21 +1535,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
 
                             {/* Bottom Right */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && isVideo && config?.controls?.expandButton?.position === 'bottom-right' && (
+                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-right' && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
                                     </div>
                                 )}
                                 {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-right' && (
                                     <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
                                     </div>
                                 )}
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-right' && (
                                     <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.4)', color: 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
+                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
                                         <X size={config?.controls?.closeButton?.size || 14} />
                                     </div>
                                 )}

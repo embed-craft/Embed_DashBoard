@@ -1,1036 +1,679 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import {
-    Settings2,
-    Move,
+    Layout,
     Maximize2,
     Image as ImageIcon,
     Video,
-    X,
-    Expand,
-    Volume2,
-    VolumeX,
-    Palette,
-    Sun,
     MousePointer2,
-    Layers,
-    Link2,
-    Play,
-    LayoutGrid,
-    Circle,
-    Square,
-    RectangleHorizontal,
-    ChevronDown,
-    Eye,
-    EyeOff,
-    Grip,
-    Upload,
+    X,
+    VolumeX,
     Sparkles,
-    Timer,
-    Zap
 } from 'lucide-react';
 
-// ============================================================================
-// DESIGN SYSTEM
-// ============================================================================
-const colors = {
-    primary: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
-    gray: { 50: '#f9fafb', 100: '#f3f4f6', 200: '#e5e7eb', 300: '#d1d5db', 400: '#9ca3af', 500: '#6b7280', 600: '#4b5563', 700: '#374151', 800: '#1f2937', 900: '#111827' },
-    text: { primary: '#111827', secondary: '#6b7280', tertiary: '#9ca3af' },
-    success: { 500: '#22c55e', 100: '#dcfce7' },
-    error: { 500: '#ef4444', 100: '#fee2e2' },
-    warning: { 500: '#f59e0b', 100: '#fef3c7' }
-};
-
-const styles = {
-    section: {
-        padding: '16px 0',
-        borderBottom: `1px solid ${colors.gray[200]}`
-    },
-    sectionHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '16px'
-    },
-    sectionTitle: {
-        margin: 0,
-        fontSize: '13px',
-        fontWeight: 600,
-        color: colors.text.primary,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-    },
-    label: {
-        display: 'block',
-        fontSize: '12px',
-        fontWeight: 500,
-        color: colors.text.secondary,
-        marginBottom: '6px'
-    },
-    input: {
-        width: '100%',
-        padding: '10px 12px',
-        border: `1px solid ${colors.gray[300]}`,
-        borderRadius: '8px',
-        fontSize: '13px',
-        color: colors.text.primary,
-        background: 'white',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
-        outline: 'none'
-    },
-    select: {
-        width: '100%',
-        padding: '10px 12px',
-        border: `1px solid ${colors.gray[300]}`,
-        borderRadius: '8px',
-        fontSize: '13px',
-        color: colors.text.primary,
-        background: 'white',
-        cursor: 'pointer'
-    },
-    toggle: (active: boolean) => ({
-        width: '44px',
-        height: '24px',
-        borderRadius: '12px',
-        backgroundColor: active ? colors.primary[500] : colors.gray[300],
-        position: 'relative' as const,
-        transition: 'background-color 0.2s',
-        cursor: 'pointer',
-        border: 'none',
-        flexShrink: 0
-    }),
-    toggleKnob: (active: boolean) => ({
-        width: '20px',
-        height: '20px',
-        borderRadius: '50%',
-        backgroundColor: 'white',
-        position: 'absolute' as const,
-        top: '2px',
-        left: active ? '22px' : '2px',
-        transition: 'left 0.2s',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-    }),
-    chipButton: (active: boolean) => ({
-        padding: '8px 14px',
-        fontSize: '12px',
-        fontWeight: 500,
-        border: `1px solid ${active ? colors.primary[500] : colors.gray[300]}`,
-        borderRadius: '8px',
-        background: active ? colors.primary[50] : 'white',
-        color: active ? colors.primary[600] : colors.text.secondary,
-        cursor: 'pointer',
-        transition: 'all 0.2s'
-    }),
-    positionGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '4px',
-        width: 'fit-content'
-    },
-    positionCell: (active: boolean) => ({
-        width: '36px',
-        height: '36px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: '6px',
-        border: `2px solid ${active ? colors.primary[500] : colors.gray[200]}`,
-        background: active ? colors.primary[50] : 'white',
-        cursor: 'pointer',
-        transition: 'all 0.2s'
-    }),
-    card: {
-        background: colors.gray[50],
-        borderRadius: '10px',
-        padding: '14px',
-        marginTop: '12px'
-    },
-    row: {
-        display: 'flex',
-        gap: '12px',
-        alignItems: 'center'
-    },
-    slider: {
-        width: '100%',
-        height: '6px',
-        borderRadius: '3px',
-        appearance: 'none' as const,
-        background: colors.gray[200],
-        cursor: 'pointer'
-    }
-};
-
-// ============================================================================
-// REUSABLE COMPONENTS
-// ============================================================================
-
-const Toggle = ({ checked, onChange, disabled = false }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) => (
-    <button
-        onClick={() => !disabled && onChange(!checked)}
-        style={{ ...styles.toggle(checked), opacity: disabled ? 0.5 : 1 }}
-        disabled={disabled}
-    >
-        <div style={styles.toggleKnob(checked)} />
-    </button>
-);
-
-const SectionHeader = ({ icon: Icon, title, toggle, onToggle }: { icon: any; title: string; toggle?: boolean; onToggle?: (v: boolean) => void }) => (
-    <div style={styles.sectionHeader}>
-        <h5 style={styles.sectionTitle}>
-            <Icon size={15} color={colors.primary[500]} />
-            {title}
-        </h5>
-        {toggle !== undefined && onToggle && <Toggle checked={toggle} onChange={onToggle} />}
-    </div>
-);
-
-const PositionGrid = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
-    const positions = [
-        ['top-left', 'top-center', 'top-right'],
-        ['center-left', 'center', 'center-right'],
-        ['bottom-left', 'bottom-center', 'bottom-right']
-    ];
-    return (
-        <div style={styles.positionGrid}>
-            {positions.flat().map((pos) => (
-                <button
-                    key={pos}
-                    onClick={() => onChange(pos)}
-                    style={styles.positionCell(value === pos)}
-                    title={pos.replace('-', ' ')}
-                >
-                    <div style={{
-                        width: value === pos ? '10px' : '6px',
-                        height: value === pos ? '10px' : '6px',
-                        borderRadius: '50%',
-                        background: value === pos ? colors.primary[500] : colors.gray[400],
-                        transition: 'all 0.2s'
-                    }} />
-                </button>
-            ))}
-        </div>
-    );
-};
-
-const NumberInput = ({ label, value, onChange, unit = 'px', min = 0, max = 1000 }: {
-    label: string; value: number; onChange: (v: number) => void; unit?: string; min?: number; max?: number;
-}) => (
-    <div style={{ flex: 1 }}>
-        <label style={styles.label}>{label}</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <input
-                type="number"
-                value={value}
-                onChange={(e) => onChange(Number(e.target.value))}
-                min={min}
-                max={max}
-                style={{ ...styles.input, width: '80px', padding: '8px 10px' }}
-            />
-            <span style={{ fontSize: '12px', color: colors.text.tertiary }}>{unit}</span>
-        </div>
-    </div>
-);
-
-const Slider = ({ label, value, onChange, min = 0, max = 100, unit = '' }: {
-    label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; unit?: string;
-}) => (
-    <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <label style={{ ...styles.label, marginBottom: 0 }}>{label}</label>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: colors.primary[600] }}>{value}{unit}</span>
-        </div>
-        <input
-            type="range"
-            min={min}
-            max={max}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            style={styles.slider}
-        />
-    </div>
-);
-
-const ColorInput = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
-    <div>
-        <label style={styles.label}>{label}</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <input
-                type="color"
-                value={value?.startsWith('#') ? value.slice(0, 7) : '#000000'}
-                onChange={(e) => onChange(e.target.value)}
-                style={{
-                    width: '40px',
-                    height: '40px',
-                    padding: 0,
-                    border: `2px solid ${colors.gray[200]}`,
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                }}
-            />
-            <input
-                type="text"
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder="#000000"
-                style={{ ...styles.input, flex: 1 }}
-            />
-        </div>
-    </div>
-);
-
-const ControlCard = ({ icon: Icon, title, enabled, onToggle, children }: {
-    icon: any; title: string; enabled: boolean; onToggle: (v: boolean) => void; children?: React.ReactNode;
-}) => (
-    <div style={{
-        background: colors.gray[50],
-        borderRadius: '10px',
-        padding: '12px 14px',
-        marginBottom: '10px',
-        border: enabled ? `1px solid ${colors.primary[200]}` : `1px solid transparent`
-    }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: enabled ? colors.primary[100] : colors.gray[200],
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Icon size={16} color={enabled ? colors.primary[600] : colors.gray[500]} />
-                </div>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: colors.text.primary }}>{title}</span>
-            </div>
-            <Toggle checked={enabled} onChange={onToggle} />
-        </div>
-        {enabled && children && (
-            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.gray[200]}` }}>
-                {children}
-            </div>
-        )}
-    </div>
-);
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
+// Colors for palette picker (Same as Scratch Card)
+const PALETTE = [
+    '#FFFFFF', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827',
+    '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899'
+];
 
 export const FloaterMinimalEditor = () => {
-    const { currentCampaign, activeInterfaceId, updateFloaterConfig, addLayer, updateLayer, updateLayerStyle } = useEditorStore();
+    const {
+        currentCampaign,
+        updateFloaterConfig,
+        activeInterfaceId
+    } = useEditorStore();
 
-    // Resolve config from active interface OR main campaign
+    // Resolve Config
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
     const config = activeInterface ? activeInterface.floaterConfig : currentCampaign?.floaterConfig;
 
-    // Expanded sections state
-    const [expandedSections, setExpandedSections] = useState({
-        position: true,
-        size: true,
-        media: true,
-        controls: true,
-        appearance: false,
-        behavior: false
-    });
-
-    // Auto-initialize config if missing (fallback - store should already have defaults)
-    React.useEffect(() => {
+    // Initial Defaults
+    useEffect(() => {
         if (!config) {
             updateFloaterConfig({
-                // Position
                 position: 'bottom-right',
-                offsetX: 20,
-                offsetY: 20,
-
-                // Size & Shape
-                width: 280,
-                height: 180,
-                borderRadius: 12,
-                shape: 'rectangle',
-
-                // Background
+                offsetX: 20, offsetY: 20,
+                width: 280, height: 180, borderRadius: 12,
                 backgroundColor: '#000000',
-
-                // Shadow - MUST be initialized for toggle to render
-                shadow: {
-                    enabled: true,
-                    blur: 24,
-                    spread: 4,
-                },
-
-                // Media - MUST be initialized for editor to work
-                media: {
-                    url: '',
-                    type: 'image',
-                    autoPlay: true,
-                    muted: true,
-                    loop: true,
-                    fit: 'cover',
-                },
-
-                // Controls - MUST be initialized for toggles to render
+                borderWidth: 0, borderStyle: 'solid', borderColor: '#000000',
+                shadow: { enabled: true, blur: 24, spread: 4 },
+                media: { url: '', type: 'none', autoPlay: true, muted: true, loop: true, fit: 'cover' },
                 controls: {
                     closeButton: { show: true, position: 'top-right', size: 14 },
                     expandButton: { show: false, position: 'top-left', size: 14 },
                     muteButton: { show: false, position: 'top-left', size: 14 },
                     progressBar: { show: false },
                 },
-
-                // Animation
-                animation: {
-                    type: 'scale',
-                    duration: 300,
-                    easing: 'ease-out',
-                },
-
-                // Behavior
-                draggable: true,
-                snapToCorner: true,
-                doubleTapToDismiss: false,
-
-                // Backdrop
-                backdrop: {
-                    show: false,
-                    color: '#000000',
-                    opacity: 0.3,
-                    blur: 0,
-                },
+                behavior: { draggable: true, snapToCorner: true, doubleTapToDismiss: false },
+                backdrop: { show: false, color: '#000000', opacity: 0.3 }
             });
         }
     }, [config, updateFloaterConfig]);
 
-    if (!config) {
-        return (
-            <div style={{ padding: '24px', textAlign: 'center' }}>
-                <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    background: colors.primary[100],
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 16px'
-                }}>
-                    <Settings2 size={24} color={colors.primary[500]} />
-                </div>
-                <p style={{ fontSize: '13px', color: colors.text.secondary, marginBottom: '16px' }}>
-                    Initializing Floater settings...
-                </p>
-            </div>
-        );
-    }
+    if (!config) return null;
 
-    // Helper functions
-    const updateConfig = (key: string, value: any) => {
-        updateFloaterConfig({ [key]: value });
+    const updateConfig = (key: string, value: any) => updateFloaterConfig({ [key]: value });
+    const updateNested = (parent: string, key: string, value: any) => {
+        // @ts-ignore
+        const parentObj = config[parent] || {};
+        updateFloaterConfig({ [parent]: { ...parentObj, [key]: value } });
     };
 
-    const updateNestedConfig = (parent: string, key: string, value: any) => {
-        updateFloaterConfig({
-            [parent]: { ...((config as any)[parent] || {}), [key]: value }
-        });
-    };
-
-    const updateControlConfig = (control: string, key: string, value: any) => {
-        const currentControls = config.controls || {};
-        const currentControl = (currentControls as any)[control] || {};
+    // Helper for deeply nested controls (controls.closeButton.show)
+    const updateControl = (controlType: string, key: string, value: any) => {
+        const controls = config.controls || {};
+        // @ts-ignore
+        const specificControl = controls[controlType] || {};
         updateFloaterConfig({
             controls: {
-                ...currentControls,
-                [control]: { ...currentControl, [key]: value }
+                ...controls,
+                [controlType]: { ...specificControl, [key]: value }
             }
         });
     };
 
-    // Detect if media is video
-    const isVideoMedia = config.media?.type === 'video' || config.media?.type === 'youtube' ||
-        (config.media?.url && (
-            config.media.url.includes('youtube.com') ||
-            config.media.url.includes('youtu.be') ||
-            config.media.url.endsWith('.mp4') ||
-            config.media.url.endsWith('.webm')
-        ));
+    const isVideo = (config.media?.url && (
+        config.media.url.includes('youtube.com') ||
+        config.media.url.includes('youtu.be') ||
+        config.media.url.endsWith('.mp4') ||
+        config.media.url.endsWith('.webm')
+    )) || config.media?.type === 'video';
+
+    // Helper logic for "Type" toggle (Color vs Media)
+    // We treat "No URL" as Color mode if backgroundColor is set, or just use a synthetic toggle state if needed.
+    // However, existing config puts logic in 'media.url' and 'backgroundColor'.
+    // We will simulate a 'mode' switch.
+    // FIX: Don't rely solely on URL emptiness, as user might be typing/pasting. Use explicit 'type'.
+    const mode = (config.media?.type && config.media.type !== 'none') ? 'media' : 'color';
 
     return (
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '0' }}>
-
-            {/* ===== HEADER ===== */}
-            <div style={{ paddingBottom: '16px', borderBottom: `1px solid ${colors.gray[200]}`, marginBottom: '8px' }}>
-                <h4 style={{
-                    margin: 0,
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    color: colors.text.primary,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                }}>
-                    <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '8px',
-                        background: `linear-gradient(135deg, ${colors.primary[500]}, ${colors.primary[600]})`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <LayoutGrid size={14} color="white" />
-                    </div>
-                    Floater Settings
-                </h4>
-                <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: colors.text.secondary }}>
-                    Configure your floating widget appearance and behavior
-                </p>
+        <div className="p-1 pb-20 space-y-4 font-sans text-gray-900">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 bg-indigo-50 rounded-md">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h3 className="text-sm font-semibold">Floater Setup</h3>
             </div>
 
-            {/* ===== POSITION SECTION ===== */}
-            <div style={styles.section}>
-                <SectionHeader icon={Move} title="Position" />
+            <Tabs defaultValue="general" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="general"><Layout className="w-3.5 h-3.5 mr-1.5" /> General</TabsTrigger>
+                    <TabsTrigger value="media"><ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Background</TabsTrigger>
+                    <TabsTrigger value="controls"><MousePointer2 className="w-3.5 h-3.5 mr-1.5" /> Controls</TabsTrigger>
+                </TabsList>
 
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-                    {/* Position Grid */}
-                    <div>
-                        <label style={{ ...styles.label, marginBottom: '10px' }}>Corner</label>
-                        <PositionGrid
-                            value={config.position || 'bottom-right'}
-                            onChange={(v) => updateConfig('position', v)}
-                        />
-                    </div>
+                {/* --- GENERAL TAB --- */}
+                <TabsContent value="general" className="space-y-5 animate-in fade-in-50">
 
-                    {/* Offset Inputs */}
-                    <div style={{ flex: 1 }}>
-                        <label style={{ ...styles.label, marginBottom: '10px' }}>Offset</label>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <NumberInput
-                                label="X"
-                                value={config.offsetX || 20}
-                                onChange={(v) => updateConfig('offsetX', v)}
-                            />
-                            <NumberInput
-                                label="Y"
-                                value={config.offsetY || 20}
-                                onChange={(v) => updateConfig('offsetY', v)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    {/* Size & Position */}
+                    <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+                        <Label className="text-xs font-semibold text-gray-700">Dimensions & Position</Label>
 
-            {/* ===== SIZE & SHAPE SECTION ===== */}
-            <div style={styles.section}>
-                <SectionHeader icon={Maximize2} title="Size & Shape" />
-
-
-
-                {/* Width */}
-                <div style={{ marginBottom: '12px' }}>
-                    <label style={styles.label}>Width</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                            type="text"
-                            value={config.width || '280'}
-                            onChange={(e) => updateConfig('width', e.target.value)}
-                            placeholder="e.g. 280 or 80%"
-                            style={{ ...styles.input, flex: 1 }}
-                        />
-                    </div>
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {['160', '280', '360', '60%', '80%'].map(val => (
-                            <button
-                                key={val}
-                                onClick={() => updateConfig('width', val)}
-                                style={styles.chipButton(String(config.width) === val)}
-                            >
-                                {val.includes('%') ? val : `${val}px`}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Height */}
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={styles.label}>Height</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                            type="text"
-                            value={config.height || '180'}
-                            onChange={(e) => updateConfig('height', e.target.value)}
-                            placeholder="e.g. 180 or 60%"
-                            style={{ ...styles.input, flex: 1 }}
-                        />
-                    </div>
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {['120', '180', '280', '50%', '80%'].map(val => (
-                            <button
-                                key={val}
-                                onClick={() => updateConfig('height', val)}
-                                style={styles.chipButton(String(config.height) === val)}
-                            >
-                                {val.includes('%') ? val : `${val}px`}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Aspect Ratio Presets */}
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={styles.label}>Aspect Ratio</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {[
-                            { label: '16:9', w: 280, h: 158 },
-                            { label: '4:3', w: 240, h: 180 },
-                            { label: '1:1', w: 180, h: 180 },
-                            { label: '9:16', w: 160, h: 284 }
-                        ].map(({ label, w, h }) => (
-                            <button
-                                key={label}
-                                onClick={() => {
-                                    updateConfig('width', w);
-                                    updateConfig('height', h);
-                                }}
-                                style={styles.chipButton(config.width === w && config.height === h)}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Border Radius */}
-                {/* Border Radius */}
-                <div style={{ marginTop: '12px' }}>
-                    <NumberInput
-                        label="Corner Radius"
-                        value={config.borderRadius || 0}
-                        onChange={(v) => updateConfig('borderRadius', v)}
-                        min={0}
-                        max={1000}
-                    />
-                </div>
-            </div>
-
-            {/* ===== MEDIA SECTION ===== */}
-            <div style={styles.section}>
-                <SectionHeader icon={ImageIcon} title="Media" />
-
-                {/* Media URL Input */}
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={styles.label}>Media URL (image, video, or YouTube)</label>
-                    <input
-                        type="text"
-                        value={config.media?.url || ''}
-                        onChange={(e) => {
-                            const url = e.target.value;
-                            let type: 'image' | 'video' | 'youtube' = 'image';
-                            if (url.includes('youtube.com') || url.includes('youtu.be')) type = 'youtube';
-                            else if (url.endsWith('.mp4') || url.endsWith('.webm')) type = 'video';
-                            // FIX: Update both url and type in single call to avoid race condition
-                            updateFloaterConfig({
-                                media: { ...(config.media || {}), url, type }
-                            });
-                        }}
-                        placeholder="https://example.com/image.jpg or YouTube URL"
-                        style={styles.input}
-                    />
-                </div>
-
-                {/* Video-specific options */}
-                {isVideoMedia && (
-                    <div style={styles.card}>
-                        <label style={{ ...styles.label, marginBottom: '12px', color: colors.primary[600] }}>
-                            <Video size={12} style={{ marginRight: '6px' }} />
-                            Video Playback
-                        </label>
-                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={config.media?.autoPlay ?? true}
-                                    onChange={(e) => updateNestedConfig('media', 'autoPlay', e.target.checked)}
-                                />
-                                <span style={{ fontSize: '12px', color: colors.text.primary }}>Autoplay</span>
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={config.media?.muted ?? true}
-                                    onChange={(e) => updateNestedConfig('media', 'muted', e.target.checked)}
-                                />
-                                <span style={{ fontSize: '12px', color: colors.text.primary }}>Muted</span>
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={config.media?.loop ?? false}
-                                    onChange={(e) => updateNestedConfig('media', 'loop', e.target.checked)}
-                                />
-                                <span style={{ fontSize: '12px', color: colors.text.primary }}>Loop</span>
-                            </label>
-                        </div>
-                    </div>
-                )}
-
-                {/* Image-specific options */}
-                {config.media?.url && !isVideoMedia && (
-                    <div style={styles.card}>
-                        <label style={{ ...styles.label, marginBottom: '12px', color: colors.primary[600] }}>
-                            <ImageIcon size={12} style={{ marginRight: '6px' }} />
-                            Image Display
-                        </label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            {['cover', 'contain', 'fill'].map((fit) => (
-                                <button
-                                    key={fit}
-                                    onClick={() => updateNestedConfig('media', 'fit', fit)}
-                                    style={styles.chipButton(config.media?.fit === fit)}
-                                >
-                                    {fit.charAt(0).toUpperCase() + fit.slice(1)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ===== CONTROLS SECTION ===== */}
-            <div style={styles.section}>
-                <SectionHeader icon={MousePointer2} title="Controls" />
-
-                {/* Close Button */}
-                <ControlCard
-                    icon={X}
-                    title="Close Button"
-                    enabled={config.controls?.closeButton?.show ?? true}
-                    onToggle={(v) => updateControlConfig('closeButton', 'show', v)}
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos) => (
-                                <button
-                                    key={pos}
-                                    onClick={() => updateControlConfig('closeButton', 'position', pos)}
-                                    style={styles.chipButton(config.controls?.closeButton?.position === pos)}
-                                >
-                                    {pos.replace('-', ' ')}
-                                </button>
-                            ))}
-                        </div>
-                        <div>
-                            <label style={{ fontSize: '11px', color: '#6B7280', marginBottom: '4px', display: 'block' }}>Icon Size (px)</label>
-                            <input
-                                type="number"
-                                value={config.controls?.closeButton?.size ?? 14}
-                                onChange={(e) => updateControlConfig('closeButton', 'size', parseFloat(e.target.value) || 14)}
-                                style={styles.input}
-                            />
-                        </div>
-                    </div>
-                </ControlCard>
-
-                {/* Double Tap to Dismiss */}
-                <div style={styles.card}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={config.doubleTapToDismiss ?? false}
-                            onChange={(e) => updateFloaterConfig({ ...config, doubleTapToDismiss: e.target.checked })}
-                            style={{ width: '16px', height: '16px', accentColor: colors.primary[600] }}
-                        />
-                        <span style={{ fontSize: '13px', fontWeight: 500, color: colors.text.primary }}>
-                            Double-tap to dismiss
-                        </span>
-                    </label>
-                    <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', marginLeft: '24px' }}>
-                        User can double-tap floater to close it
-                    </p>
-                </div>
-
-                {/* Video Controls - only show if video media */}
-                {isVideoMedia && (
-                    <>
-                        <ControlCard
-                            icon={Expand}
-                            title="Expand Button"
-                            enabled={config.controls?.expandButton?.show ?? false}
-                            onToggle={(v) => updateControlConfig('expandButton', 'show', v)}
-                        >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                    {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos) => (
-                                        <button
-                                            key={pos}
-                                            onClick={() => updateControlConfig('expandButton', 'position', pos)}
-                                            style={styles.chipButton(config.controls?.expandButton?.position === pos)}
-                                        >
-                                            {pos.replace('-', ' ')}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '11px', color: '#6B7280', marginBottom: '4px', display: 'block' }}>Icon Size (px)</label>
-                                    <input
-                                        type="number"
-                                        value={config.controls?.expandButton?.size ?? 14}
-                                        onChange={(e) => updateControlConfig('expandButton', 'size', parseFloat(e.target.value) || 14)}
-                                        style={styles.input}
-                                    />
-                                </div>
-                            </div>
-                        </ControlCard>
-
-                        <ControlCard
-                            icon={config.controls?.muteButton?.show ? Volume2 : VolumeX}
-                            title="Mute Toggle"
-                            enabled={config.controls?.muteButton?.show ?? true}
-                            onToggle={(v) => updateControlConfig('muteButton', 'show', v)}
-                        >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                    {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos) => (
-                                        <button
-                                            key={pos}
-                                            onClick={() => updateControlConfig('muteButton', 'position', pos)}
-                                            style={styles.chipButton(config.controls?.muteButton?.position === pos)}
-                                        >
-                                            {pos.replace('-', ' ')}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '11px', color: '#6B7280', marginBottom: '4px', display: 'block' }}>Icon Size (px)</label>
-                                    <input
-                                        type="number"
-                                        value={config.controls?.muteButton?.size ?? 14}
-                                        onChange={(e) => updateControlConfig('muteButton', 'size', parseFloat(e.target.value) || 14)}
-                                        style={styles.input}
-                                    />
-                                </div>
-                            </div>
-                        </ControlCard>
-
-                        <ControlCard
-                            icon={Play}
-                            title="Progress Bar"
-                            enabled={config.controls?.progressBar?.show ?? false}
-                            onToggle={(v) => updateControlConfig('progressBar', 'show', v)}
-                        >
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                {['bottom', 'top'].map((pos) => (
+                        {/* Width & Height */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Width</Label>
+                                <div className="flex gap-1">
+                                    <div className="relative flex-1">
+                                        <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400" />
+                                        <Input
+                                            type="number"
+                                            className="pl-7 h-8 text-xs w-full"
+                                            value={String(config.width).replace(/[^\d.]/g, '')}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const isPercent = String(config.width).includes('%');
+                                                updateConfig('width', isPercent ? `${val}%` : parseInt(val || '0'));
+                                            }}
+                                        />
+                                    </div>
                                     <button
-                                        key={pos}
-                                        onClick={() => updateControlConfig('progressBar', 'position', pos)}
-                                        style={styles.chipButton(config.controls?.progressBar?.position === pos)}
+                                        onClick={() => {
+                                            const isPercent = String(config.width).includes('%');
+                                            const val = parseInt(String(config.width).replace(/[^\d.]/g, '') || '0');
+                                            updateConfig('width', isPercent ? val : `${Math.min(val, 100)}%`);
+                                        }}
+                                        className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
                                     >
-                                        {pos}
+                                        {String(config.width).includes('%') ? '%' : 'px'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Height</Label>
+                                <div className="flex gap-1">
+                                    <div className="relative flex-1">
+                                        <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400 rotate-90" />
+                                        <Input
+                                            type="number"
+                                            className="pl-7 h-8 text-xs w-full"
+                                            value={String(config.height).replace(/[^\d.]/g, '')}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const isPercent = String(config.height).includes('%');
+                                                updateConfig('height', isPercent ? `${val}%` : parseInt(val || '0'));
+                                            }}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const isPercent = String(config.height).includes('%');
+                                            const val = parseInt(String(config.height).replace(/[^\d.]/g, '') || '0');
+                                            updateConfig('height', isPercent ? val : `${Math.min(val, 100)}%`);
+                                        }}
+                                        className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
+                                    >
+                                        {String(config.height).includes('%') ? '%' : 'px'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Aspect Ratio Presets */}
+                        <div className="flex items-center gap-2 mt-2 bg-white/50 p-1.5 rounded border border-gray-100">
+                            <Label className="text-[10px] text-gray-500 shrink-0">Ratio:</Label>
+                            <div className="flex gap-1.5">
+                                {['16:9', '4:3', '1:1', '9:16'].map(ratio => (
+                                    <button
+                                        key={ratio}
+                                        onClick={() => {
+                                            const widthVal = parseInt(String(config.width).replace(/[^\d.]/g, '') || '280');
+                                            const isPercent = String(config.width).includes('%');
+
+                                            // If width is percent, we can't easily calculate height pixels implies aspect ratio unless we use aspect-ratio CSS which isn't fully supported in our schema yet.
+                                            // Fallback: Assume PX if calculating.
+                                            if (isPercent) return; // Disable for percentage for now
+
+                                            let newHeight = widthVal;
+                                            const [w, h] = ratio.split(':').map(Number);
+                                            newHeight = Math.round(widthVal * (h / w));
+
+                                            updateConfig('height', newHeight);
+                                        }}
+                                        className="text-[10px] px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-200 transition-colors"
+                                        title={`Apply ${ratio} ratio based on Width`}
+                                    >
+                                        {ratio}
                                     </button>
                                 ))}
                             </div>
-                        </ControlCard>
-                    </>
-                )}
-            </div>
+                        </div>
 
-            {/* ===== APPEARANCE SECTION ===== */}
-            <div style={styles.section}>
-                <SectionHeader icon={Palette} title="Appearance" />
+                        {/* Position Corner */}
+                        <div>
+                            <Label className="text-[10px] text-gray-500 mb-1.5 block">Anchor Corner</Label>
+                            <Select value={config.position || 'bottom-right'} onValueChange={(val) => updateConfig('position', val)}>
+                                <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Position" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="top-left">Top Left</SelectItem>
+                                    <SelectItem value="top-right">Top Right</SelectItem>
+                                    <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                    <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                    <SelectItem value="center">Center</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                {/* Background Color with Transparent Option */}
-                <div>
-                    <label style={styles.label}>Background Color (fallback behind media)</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <input
-                            type="color"
-                            value={(config.backgroundColor === 'transparent' || config.backgroundColor === '#00000000') ? '#000000' : (config.backgroundColor?.startsWith('#') ? config.backgroundColor.slice(0, 7) : '#000000')}
-                            onChange={(e) => updateConfig('backgroundColor', e.target.value)}
-                            disabled={config.backgroundColor === 'transparent' || config.backgroundColor === '#00000000'}
-                            style={{
-                                width: '40px',
-                                height: '40px',
-                                padding: 0,
-                                border: `2px solid ${colors.gray[200]}`,
-                                borderRadius: '8px',
-                                cursor: (config.backgroundColor === 'transparent' || config.backgroundColor === '#00000000') ? 'not-allowed' : 'pointer',
-                                opacity: (config.backgroundColor === 'transparent' || config.backgroundColor === '#00000000') ? 0.5 : 1
-                            }}
-                        />
-                        <input
-                            type="text"
-                            value={config.backgroundColor || '#000000'}
-                            onChange={(e) => updateConfig('backgroundColor', e.target.value)}
-                            placeholder="#000000"
-                            style={{ ...styles.input, flex: 1 }}
-                        />
-                    </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={config.backgroundColor === 'transparent' || config.backgroundColor === '#00000000'}
-                            onChange={(e) => updateConfig('backgroundColor', e.target.checked ? 'transparent' : '#000000')}
-                        />
-                        <span style={{ fontSize: '12px', color: colors.text.secondary }}>Transparent (no background)</span>
-                    </label>
-                </div>
-
-                {/* Shadow */}
-                <div style={{ ...styles.card, marginTop: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <label style={{ ...styles.label, marginBottom: 0 }}>
-                            <Sun size={12} style={{ marginRight: '6px' }} />
-                            Shadow
-                        </label>
-                        <Toggle
-                            checked={config.shadow?.enabled ?? true}
-                            onChange={(v) => updateNestedConfig('shadow', 'enabled', v)}
-                        />
-                    </div>
-                    {config.shadow?.enabled !== false && (
-                        <>
-                            <Slider
-                                label="Blur"
-                                value={config.shadow?.blur || 24}
-                                onChange={(v) => updateNestedConfig('shadow', 'blur', v)}
-                                min={0}
-                                max={50}
-                                unit="px"
-                            />
-                            <div style={{ marginTop: '12px' }}>
-                                <Slider
-                                    label="Spread"
-                                    value={config.shadow?.spread || 4}
-                                    onChange={(v) => updateNestedConfig('shadow', 'spread', v)}
-                                    min={0}
-                                    max={20}
-                                    unit="px"
-                                />
+                        {/* Offsets */}
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1">X Offset</Label>
+                                <Input type="number" className="h-8 text-xs" value={config.offsetX || 0} onChange={e => updateConfig('offsetX', parseInt(e.target.value))} />
                             </div>
-                        </>
-                    )}
-                </div>
-            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1">Y Offset</Label>
+                                <Input type="number" className="h-8 text-xs" value={config.offsetY || 0} onChange={e => updateConfig('offsetY', parseInt(e.target.value))} />
+                            </div>
+                        </div>
+                    </div>
 
-            {/* ===== ANIMATION SECTION ===== */}
-            <div style={styles.section}>
-                <SectionHeader icon={Zap} title="Animation" />
+                    <Separator />
 
-                {/* Animation Type */}
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={styles.label}>Entrance Effect</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {[
-                            { id: 'scale', label: 'Scale', icon: '📐' },
-                            { id: 'slide', label: 'Slide', icon: '➡️' },
-                            { id: 'fade', label: 'Fade', icon: '🌫️' },
-                            { id: 'bounce', label: 'Bounce', icon: '🔄' }
-                        ].map(({ id, label, icon }) => (
+                    {/* Styling */}
+                    <div className="space-y-4">
+                        <Label className="text-xs font-semibold text-gray-700">Appearance</Label>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Corner Radius</Label>
+                                <Input type="number" className="h-8 text-xs" value={config.borderRadius ?? 12} onChange={e => updateConfig('borderRadius', parseInt(e.target.value))} />
+                            </div>
+                            {/* BG Color REMOVED from here */}
+                        </div>
+
+                        {/* Border Properties */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Border W</Label>
+                                <Input type="number" className="h-8 text-xs" value={config.borderWidth ?? 0} onChange={e => updateConfig('borderWidth', parseInt(e.target.value))} />
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Style</Label>
+                                <Select value={config.borderStyle || 'solid'} onValueChange={(val) => updateConfig('borderStyle', val)}>
+                                    <SelectTrigger className="h-8 text-[10px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="solid">Solid</SelectItem>
+                                        <SelectItem value="dashed">Dashed</SelectItem>
+                                        <SelectItem value="dotted">Dotted</SelectItem>
+                                        <SelectItem value="none">None</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Color</Label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="color"
+                                        className="w-full h-8 rounded cursor-pointer border-0 p-0"
+                                        value={config.borderColor || '#000000'}
+                                        onChange={e => updateConfig('borderColor', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Shadow */}
+                        <div className="pt-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <Label className="text-xs text-gray-600">Drop Shadow</Label>
+                                <Switch checked={config.shadow?.enabled} onCheckedChange={(c) => updateNested('shadow', 'enabled', c)} />
+                            </div>
+                            {config.shadow?.enabled && (
+                                <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded border text-xs">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-gray-500">Blur</Label>
+                                        <Input type="number" className="h-7 text-xs" value={config.shadow?.blur ?? 10} onChange={e => updateNested('shadow', 'blur', parseInt(e.target.value))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-gray-500">Spread</Label>
+                                        <Input type="number" className="h-7 text-xs" value={config.shadow?.spread ?? 0} onChange={e => updateNested('shadow', 'spread', parseInt(e.target.value))} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </TabsContent>
+
+                {/* --- MEDIA TAB (Now "Background") --- */}
+                <TabsContent value="media" className="space-y-5 animate-in fade-in-50">
+                    <div className="space-y-4">
+                        <Label className="text-xs font-semibold text-gray-700">Background Content</Label>
+
+                        {/* Toggle Type */}
+                        <div className="flex p-1 bg-gray-100 rounded-md">
                             <button
-                                key={id}
-                                onClick={() => updateNestedConfig('animation', 'type', id)}
-                                style={{
-                                    ...styles.chipButton(config.animation?.type === id),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                }}
+                                onClick={() => updateFloaterConfig({ media: { ...config.media, url: '', type: 'none' }, backgroundColor: config.backgroundColor || '#000000' })}
+                                className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-all ${mode === 'color' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
                             >
-                                <span>{icon}</span>
-                                {label}
+                                Solid Color
                             </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Animation Duration */}
-                <Slider
-                    label="Duration"
-                    value={config.animation?.duration || 300}
-                    onChange={(v) => updateNestedConfig('animation', 'duration', v)}
-                    min={100}
-                    max={1000}
-                    unit="ms"
-                />
-
-                {/* Easing Preview */}
-                <div style={{ ...styles.card, marginTop: '12px' }}>
-                    <label style={styles.label}>Easing</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {['ease-out', 'ease-in-out', 'spring', 'linear'].map((easing) => (
                             <button
-                                key={easing}
-                                onClick={() => updateNestedConfig('animation', 'easing', easing)}
-                                style={styles.chipButton(config.animation?.easing === easing)}
+                                onClick={() => updateFloaterConfig({ media: { ...config.media, url: 'https://placehold.co/600x400', type: 'image' } })} // Placeholder to switch
+                                className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-all ${mode === 'media' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
                             >
-                                {easing}
+                                Image / Video
                             </button>
-                        ))}
+                        </div>
+
+                        {/* Content Based on Toggle */}
+                        {mode === 'color' && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-[10px] text-gray-500">Surface Color</Label>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-gray-400">Transparent</span>
+                                        <Switch
+                                            checked={config.backgroundColor === '#00000000'}
+                                            onCheckedChange={(c) => updateConfig('backgroundColor', c ? '#00000000' : '#000000')}
+                                            className="scale-75 origin-right"
+                                        />
+                                    </div>
+                                </div>
+                                <div className={`flex flex-wrap gap-2 ${config.backgroundColor === '#00000000' ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {PALETTE.map(c => (
+                                        <button
+                                            key={c}
+                                            onClick={() => updateConfig('backgroundColor', c)}
+                                            className={`w-6 h-6 rounded-full border border-gray-200 shadow-sm transition-transform hover:scale-110 ${config.backgroundColor === c ? 'ring-2 ring-offset-1 ring-indigo-500' : ''}`}
+                                            style={{ backgroundColor: c }}
+                                        />
+                                    ))}
+                                    <input
+                                        type="color"
+                                        className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer opacity-50 hover:opacity-100"
+                                        value={config.backgroundColor === '#00000000' ? '#000000' : (config.backgroundColor || '#000000')}
+                                        onChange={e => updateConfig('backgroundColor', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {mode === 'media' && (
+                            <>
+                                <div>
+                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Media URL</Label>
+                                    <Input
+                                        placeholder="https://..."
+                                        className="text-xs mb-1"
+                                        value={config.media?.url || ''}
+                                        onChange={(e) => {
+                                            const url = e.target.value;
+                                            let type = 'image';
+                                            if (url.includes('youtube') || url.includes('youtu.be')) type = 'youtube';
+                                            else if (url.endsWith('.mp4')) type = 'video';
+                                            updateFloaterConfig({ media: { ...config.media, url, type } });
+                                        }}
+                                    />
+                                    <p className="text-[10px] text-gray-500 mt-1">Supports Images, MP4 Video, and YouTube</p>
+                                </div>
+
+                                {!isVideo && (
+                                    <div>
+                                        <Label className="text-[10px] text-gray-500 mb-1.5 block">Image Fit</Label>
+                                        <Select value={config.media?.fit || 'cover'} onValueChange={(val) => updateNested('media', 'fit', val)}>
+                                            <SelectTrigger className="h-8 text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="cover">Cover (Crop)</SelectItem>
+                                                <SelectItem value="contain">Contain (Full)</SelectItem>
+                                                <SelectItem value="fill">Fill (Stretch)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                {isVideo && (
+                                    <div className="space-y-3 bg-gray-50 p-3 rounded-lg border">
+                                        <Label className="text-xs font-semibold text-gray-700 flex items-center gap-2">
+                                            <Video className="w-3 h-3" /> Video Options
+                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs text-gray-600">Autoplay</Label>
+                                            <Switch checked={config.media?.autoPlay} onCheckedChange={c => updateNested('media', 'autoPlay', c)} />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs text-gray-600">Muted</Label>
+                                            <Switch checked={config.media?.muted} onCheckedChange={c => updateNested('media', 'muted', c)} />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs text-gray-600">Loop</Label>
+                                            <Switch checked={config.media?.loop} onCheckedChange={c => updateNested('media', 'loop', c)} />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
-                </div>
-            </div>
+                </TabsContent>
 
-            {/* ===== BEHAVIOR SECTION ===== */}
-            <div style={{ ...styles.section, borderBottom: 'none' }}>
-                <SectionHeader icon={Grip} title="Behavior" />
+                {/* --- CONTROLS TAB --- */}
+                <TabsContent value="controls" className="space-y-5 animate-in fade-in-50">
 
-                <ControlCard
-                    icon={Move}
-                    title="Allow Drag to Move"
-                    enabled={config.draggable ?? true}
-                    onToggle={(v) => updateConfig('draggable', v)}
-                />
+                    {/* UI Controls Section */}
+                    <div className="space-y-4">
+                        <Label className="text-xs font-semibold text-gray-700">UI Controls</Label>
 
-                <ControlCard
-                    icon={LayoutGrid}
-                    title="Snap to Corner"
-                    enabled={config.snapToCorner ?? true}
-                    onToggle={(v) => updateConfig('snapToCorner', v)}
-                />
+                        {/* Close Button */}
+                        <div className="border rounded-lg p-3 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-medium flex items-center gap-2">
+                                    <X className="w-3.5 h-3.5" /> Close Button
+                                </Label>
+                                <Switch checked={config.controls?.closeButton?.show ?? true} onCheckedChange={c => updateControl('closeButton', 'show', c)} />
+                            </div>
+                            {config.controls?.closeButton?.show && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <Select value={config.controls?.closeButton?.position || 'top-right'} onValueChange={(val) => updateControl('closeButton', 'position', val)}>
+                                            <SelectTrigger className="h-7 text-[10px]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="top-right">Top Right</SelectItem>
+                                                <SelectItem value="top-left">Top Left</SelectItem>
+                                                <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                                <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input type="number" placeholder="Size" className="h-7 text-xs" value={config.controls?.closeButton?.size || 14} onChange={e => updateControl('closeButton', 'size', parseInt(e.target.value))} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-[10px] text-gray-400 w-4">X</Label>
+                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.closeButton?.offsetX || 0} onChange={e => updateControl('closeButton', 'offsetX', parseInt(e.target.value))} />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-[10px] text-gray-400 w-4">Y</Label>
+                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.closeButton?.offsetY || 0} onChange={e => updateControl('closeButton', 'offsetY', parseInt(e.target.value))} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
+                                        <Label className="text-[10px] text-gray-500 block">Colors (Icon / Bg)</Label>
+                                        <div className="flex gap-2">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Label className="text-[9px] text-gray-400">Icon</Label>
+                                                <input
+                                                    type="color"
+                                                    className="w-8 h-6 rounded cursor-pointer border border-gray-200"
+                                                    value={config.controls?.closeButton?.color || '#FFFFFF'}
+                                                    onChange={e => updateControl('closeButton', 'color', e.target.value)}
+                                                    title="Icon Color"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1 relative">
+                                                <Label className="text-[9px] text-gray-400">Bg</Label>
+                                                <input
+                                                    type="color"
+                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${config.controls?.closeButton?.backgroundColor === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
+                                                    value={config.controls?.closeButton?.backgroundColor === '#00000000' ? '#000000' : (config.controls?.closeButton?.backgroundColor || '#000000')}
+                                                    onChange={e => updateControl('closeButton', 'backgroundColor', e.target.value)}
+                                                    title="Background Color"
+                                                />
+                                                {config.controls?.closeButton?.backgroundColor === '#00000000' && (
+                                                    <div className="absolute top-[18px] left-[2px] right-[2px] h-[2px] bg-red-400 rotate-45" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1 ml-1">
+                                                <Label className="text-[9px] text-gray-400">Transp.</Label>
+                                                <Switch
+                                                    className="scale-75"
+                                                    checked={config.controls?.closeButton?.backgroundColor === '#00000000'}
+                                                    onCheckedChange={(checked) => updateControl('closeButton', 'backgroundColor', checked ? '#00000000' : '#000000')}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
 
-                {/* Backdrop */}
-                <ControlCard
-                    icon={Layers}
-                    title="Show Backdrop"
-                    enabled={config.backdrop?.show ?? false}
-                    onToggle={(v) => updateNestedConfig('backdrop', 'show', v)}
-                >
-                    <div style={{ marginBottom: '12px' }}>
-                        <ColorInput
-                            label="Color"
-                            value={config.backdrop?.color || '#000000'}
-                            onChange={(v) => updateNestedConfig('backdrop', 'color', v)}
-                        />
+                        {/* Expand Button */}
+                        <div className="border rounded-lg p-3 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-medium flex items-center gap-2">
+                                    <Maximize2 className="w-3.5 h-3.5" /> Expand Button
+                                </Label>
+                                <Switch checked={config.controls?.expandButton?.show ?? false} onCheckedChange={c => updateControl('expandButton', 'show', c)} />
+                            </div>
+                            {config.controls?.expandButton?.show && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <Select value={config.controls?.expandButton?.position || 'top-left'} onValueChange={(val) => updateControl('expandButton', 'position', val)}>
+                                            <SelectTrigger className="h-7 text-[10px]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="top-right">Top Right</SelectItem>
+                                                <SelectItem value="top-left">Top Left</SelectItem>
+                                                <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                                <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input type="number" placeholder="Size" className="h-7 text-xs" value={config.controls?.expandButton?.size || 14} onChange={e => updateControl('expandButton', 'size', parseInt(e.target.value))} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-[10px] text-gray-400 w-4">X</Label>
+                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.expandButton?.offsetX || 0} onChange={e => updateControl('expandButton', 'offsetX', parseInt(e.target.value))} />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-[10px] text-gray-400 w-4">Y</Label>
+                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.expandButton?.offsetY || 0} onChange={e => updateControl('expandButton', 'offsetY', parseInt(e.target.value))} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
+                                        <Label className="text-[10px] text-gray-500 block">Colors (Icon / Bg)</Label>
+                                        <div className="flex gap-2">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Label className="text-[9px] text-gray-400">Icon</Label>
+                                                <input
+                                                    type="color"
+                                                    className="w-8 h-6 rounded cursor-pointer border border-gray-200"
+                                                    value={config.controls?.expandButton?.color || '#FFFFFF'}
+                                                    onChange={e => updateControl('expandButton', 'color', e.target.value)}
+                                                    title="Icon Color"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1 relative">
+                                                <Label className="text-[9px] text-gray-400">Bg</Label>
+                                                <input
+                                                    type="color"
+                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${config.controls?.expandButton?.backgroundColor === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
+                                                    value={config.controls?.expandButton?.backgroundColor === '#00000000' ? '#000000' : (config.controls?.expandButton?.backgroundColor || '#000000')}
+                                                    onChange={e => updateControl('expandButton', 'backgroundColor', e.target.value)}
+                                                    title="Background Color"
+                                                />
+                                                {config.controls?.expandButton?.backgroundColor === '#00000000' && (
+                                                    <div className="absolute top-[18px] left-[2px] right-[2px] h-[2px] bg-red-400 rotate-45" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1 ml-1">
+                                                <Label className="text-[9px] text-gray-400">Transp.</Label>
+                                                <Switch
+                                                    className="scale-75"
+                                                    checked={config.controls?.expandButton?.backgroundColor === '#00000000'}
+                                                    onCheckedChange={(checked) => updateControl('expandButton', 'backgroundColor', checked ? '#00000000' : '#000000')}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Mute Button (Video Only) */}
+                        {isVideo && (
+                            <div className="border rounded-lg p-3 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-medium flex items-center gap-2">
+                                        <VolumeX className="w-3.5 h-3.5" /> Mute Toggle
+                                    </Label>
+                                    <Switch checked={config.controls?.muteButton?.show ?? true} onCheckedChange={c => updateControl('muteButton', 'show', c)} />
+                                </div>
+                                {config.controls?.muteButton?.show && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <Select value={config.controls?.muteButton?.position || 'top-left'} onValueChange={(val) => updateControl('muteButton', 'position', val)}>
+                                                <SelectTrigger className="h-7 text-[10px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="top-right">Top Right</SelectItem>
+                                                    <SelectItem value="top-left">Top Left</SelectItem>
+                                                    <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                                    <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Input type="number" placeholder="Size" className="h-7 text-xs" value={config.controls?.muteButton?.size || 14} onChange={e => updateControl('muteButton', 'size', parseInt(e.target.value))} />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-[10px] text-gray-400 w-4">X</Label>
+                                                <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.muteButton?.offsetX || 0} onChange={e => updateControl('muteButton', 'offsetX', parseInt(e.target.value))} />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-[10px] text-gray-400 w-4">Y</Label>
+                                                <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.muteButton?.offsetY || 0} onChange={e => updateControl('muteButton', 'offsetY', parseInt(e.target.value))} />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
+                                            <Label className="text-[10px] text-gray-500 block">Colors (Icon / Bg)</Label>
+                                            <div className="flex gap-2">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <Label className="text-[9px] text-gray-400">Icon</Label>
+                                                    <input
+                                                        type="color"
+                                                        className="w-8 h-6 rounded cursor-pointer border border-gray-200"
+                                                        value={config.controls?.muteButton?.color || '#FFFFFF'}
+                                                        onChange={e => updateControl('muteButton', 'color', e.target.value)}
+                                                        title="Icon Color"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col items-center gap-1 relative">
+                                                    <Label className="text-[9px] text-gray-400">Bg</Label>
+                                                    <input
+                                                        type="color"
+                                                        className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${config.controls?.muteButton?.backgroundColor === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
+                                                        value={config.controls?.muteButton?.backgroundColor === '#00000000' ? '#000000' : (config.controls?.muteButton?.backgroundColor || '#000000')}
+                                                        onChange={e => updateControl('muteButton', 'backgroundColor', e.target.value)}
+                                                        title="Background Color"
+                                                    />
+                                                    {config.controls?.muteButton?.backgroundColor === '#00000000' && (
+                                                        <div className="absolute top-[18px] left-[2px] right-[2px] h-[2px] bg-red-400 rotate-45" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col items-center gap-1 ml-1">
+                                                    <Label className="text-[9px] text-gray-400">Transp.</Label>
+                                                    <Switch
+                                                        className="scale-75"
+                                                        checked={config.controls?.muteButton?.backgroundColor === '#00000000'}
+                                                        onCheckedChange={(checked) => updateControl('muteButton', 'backgroundColor', checked ? '#00000000' : '#000000')}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
-                    <Slider
-                        label="Opacity"
-                        value={Math.round((config.backdrop?.opacity || 0.3) * 100)}
-                        onChange={(v) => updateNestedConfig('backdrop', 'opacity', v / 100)}
-                        min={0}
-                        max={100}
-                        unit="%"
-                    />
-                    <div style={{ marginTop: '12px' }}>
-                        <Slider
-                            label="Blur"
-                            value={config.backdrop?.blur || 0}
-                            onChange={(v) => updateNestedConfig('backdrop', 'blur', v)}
-                            min={0}
-                            max={20}
-                            unit="px"
-                        />
-                    </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '12px' }}>
-                        <input
-                            type="checkbox"
-                            checked={config.backdrop?.dismissOnTap ?? false}
-                            onChange={(e) => updateNestedConfig('backdrop', 'dismissOnTap', e.target.checked)}
-                        />
-                        <span style={{ fontSize: '12px', color: colors.text.primary }}>Tap backdrop to dismiss</span>
-                    </label>
-                </ControlCard>
-            </div>
 
+                    <Separator />
+
+                    {/* Logic / Behavior Section */}
+                    <div className="space-y-3 mt-4">
+                        <Label className="text-xs font-semibold text-gray-700">Behavior & Logic</Label>
+
+                        <div className="border rounded-lg p-3 space-y-3 bg-gray-50/50">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-gray-600">Draggable</Label>
+                                <Switch checked={config.behavior?.draggable ?? true} onCheckedChange={c => updateNested('behavior', 'draggable', c)} />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-gray-600">Snap to Corner</Label>
+                                <Switch checked={config.behavior?.snapToCorner ?? true} onCheckedChange={c => updateNested('behavior', 'snapToCorner', c)} />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-gray-600">Double Tap to Close</Label>
+                                <Switch checked={config.behavior?.doubleTapToDismiss ?? false} onCheckedChange={c => updateNested('behavior', 'doubleTapToDismiss', c)} />
+                            </div>
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };

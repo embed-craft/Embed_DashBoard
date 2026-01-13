@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { DraggableCore, DraggableData, DraggableEvent } from 'react-draggable';
 import { Layer } from '@/store/useEditorStore';
 
@@ -43,6 +43,7 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
     style
 }) => {
     const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
+    const nodeRef = useRef<HTMLDivElement>(null);
 
     const handleDrag = (e: DraggableEvent, data: DraggableData) => {
         if (!onLayerUpdate) return;
@@ -91,6 +92,7 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
 
     const content = (
         <div
+            ref={nodeRef}
             key={layer.id}
             className={className || `layer-item ${layer.type}-layer`}
             style={wrapperStyle}
@@ -104,6 +106,7 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
         return (
             <DraggableCore
                 key={layer.id}
+                nodeRef={nodeRef}
                 disabled={!isSelected || isInteractive}
                 scale={scale}
                 onStart={(e) => e.stopPropagation()}

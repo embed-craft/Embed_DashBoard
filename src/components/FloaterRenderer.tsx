@@ -992,6 +992,50 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         );
     };
 
+    // Helper to calculate base style based on position config
+    const getPositionStyle = useCallback(() => {
+        const style: React.CSSProperties = {
+            position: 'absolute',
+            zIndex: 50,
+        };
+
+        const pos = config?.position || 'bottom-right';
+        const offsetX = (config?.offsetX ?? 20) * scale;
+        const offsetY = (config?.offsetY ?? 20) * scaleY;
+
+        switch (pos) {
+            case 'top-left':
+                style.top = offsetY;
+                style.left = offsetX;
+                break;
+            case 'top-right':
+                style.top = offsetY;
+                style.right = offsetX;
+                break;
+            case 'bottom-left':
+                style.bottom = offsetY;
+                style.left = offsetX;
+                break;
+            case 'center-left':
+                style.top = '50%';
+                style.left = offsetX;
+                style.transform = 'translateY(-50%)';
+                break;
+            case 'center-right':
+                style.top = '50%';
+                style.right = offsetX;
+                style.transform = 'translateY(-50%)';
+                break;
+            case 'bottom-right':
+            default:
+                style.bottom = offsetY;
+                style.right = offsetX;
+                break;
+        }
+
+        return style;
+    }, [config?.position, config?.offsetX, config?.offsetY, scale, scaleY]);
+
     // Drag Implementation
     // Transform-based dragging to avoid layout jumps and coordinate issues
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });

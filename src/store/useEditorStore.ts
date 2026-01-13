@@ -745,6 +745,7 @@ export interface CampaignEditor {
   status?: 'active' | 'paused' | 'draft';
   tags?: string[]; // ✅ FIX: Add tags property
   schedule?: CampaignSchedule; // ✅ FIX: Add schedule property
+  priority?: number; // ✅ FIX: Add priority property
 
   layers: Layer[];
   interfaces: CampaignInterface[]; // Sub-campaigns/interfaces
@@ -825,6 +826,7 @@ interface EditorStore {
 
 
   updateCampaign: (updates: Partial<CampaignEditor>) => void; // ✅ FIX: Add generic updateCampaign
+  updateCurrentCampaign: (updates: Partial<CampaignEditor>) => void; // ✅ FIX: Alias for TargetingStep compatibility
   validateAndFixCampaign: () => void;
   resetCurrentCampaign: () => void;
 
@@ -1543,6 +1545,34 @@ export const useEditorStore = create<EditorStore>()(
           currentCampaign: {
             ...currentCampaign,
             goal: { ...currentCampaign.goal, ...goal },
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
+      },
+
+      updateCampaign: (updates) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            ...updates,
+            updatedAt: new Date().toISOString(),
+            isDirty: true,
+          },
+        });
+      },
+
+      updateCurrentCampaign: (updates) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            ...updates,
             updatedAt: new Date().toISOString(),
             isDirty: true,
           },

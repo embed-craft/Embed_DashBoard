@@ -14,6 +14,8 @@ interface ConflictCampaign {
     status: string;
 }
 
+import { apiClient } from '@/lib/api';
+
 export function ConflictWarning({ triggerEvent, currentCampaignId, currentPriority }: ConflictWarningProps) {
     const [conflicts, setConflicts] = useState<ConflictCampaign[]>([]);
     const [loading, setLoading] = useState(false);
@@ -28,17 +30,9 @@ export function ConflictWarning({ triggerEvent, currentCampaignId, currentPriori
         async function checkConflicts() {
             setLoading(true);
             try {
-                const params = new URLSearchParams({
-                    event: triggerEvent,
-                    ...(currentCampaignId && { exclude: currentCampaignId })
-                });
-
-                const response = await fetch(`/api/v1/admin/campaigns/check-conflicts?${params}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setConflicts(data.campaigns || []);
-                    setMaxPriority(data.maxPriority || 0);
-                }
+                const data = await apiClient.checkConflicts(triggerEvent, currentCampaignId);
+                setConflicts(data.campaigns || []);
+                setMaxPriority(data.maxPriority || 0);
             } catch (error) {
                 console.error('Failed to check conflicts:', error);
             } finally {

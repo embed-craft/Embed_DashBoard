@@ -7,6 +7,7 @@ import { DisplayRules } from './DisplayRules';
 import { PrioritySelector } from '@/components/PrioritySelector';
 import { ConflictWarning } from '@/components/ConflictWarning';
 import { Separator } from '@/components/ui/separator';
+import { apiClient } from '@/lib/api';
 
 export const TargetingStep: React.FC = () => {
     const { currentCampaign, fetchMetadata, updateCurrentCampaign } = useEditorStore();
@@ -31,16 +32,8 @@ export const TargetingStep: React.FC = () => {
             }
 
             try {
-                const params = new URLSearchParams({
-                    event: firstEventName,
-                    ...(currentCampaign._id && { exclude: currentCampaign._id })
-                });
-
-                const response = await fetch(`/api/v1/admin/campaigns/check-conflicts?${params}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setHasConflicts(data.count > 0);
-                }
+                const response = await apiClient.checkConflicts(firstEventName, currentCampaign._id);
+                setHasConflicts(response.count > 0);
             } catch (error) {
                 console.error('Failed to check conflicts:', error);
                 setHasConflicts(false);

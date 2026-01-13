@@ -167,6 +167,12 @@ class ApiClient {
     });
   }
 
+  public async checkConflicts(event: string, excludeId?: string): Promise<{ campaigns: any[]; count: number; maxPriority: number }> {
+    const params = new URLSearchParams({ event });
+    if (excludeId) params.append('exclude', excludeId);
+    return this.request(`/v1/admin/campaigns/check-conflicts?${params.toString()}`);
+  }
+
   public async deleteCampaign(id: string): Promise<{ ok: boolean }> {
     return this.request(`/v1/admin/campaigns/${encodeURIComponent(id)}`, {
       method: 'DELETE',

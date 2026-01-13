@@ -1618,7 +1618,19 @@ export const useEditorStore = create<EditorStore>()(
           // Import API dynamically to avoid circular dependencies
           const api = await import('@/lib/api');
           console.log('saveCampaign: Calling API...');
-          const savedCampaign = await api.saveCampaign(currentCampaign);
+
+          // FIX: Sanitizing payload to remove history and local state
+          // history can be massive (Layer[][]) and causes payload too large / connection reset errors
+          const {
+            history,
+            historyIndex,
+            selectedLayerId,
+            isDirty,
+            lastSaved,
+            ...payload
+          } = currentCampaign;
+
+          const savedCampaign = await api.saveCampaign(payload);
           console.log('saveCampaign: Success, received:', savedCampaign);
 
           const updatedCampaign = {
@@ -1866,19 +1878,7 @@ export const useEditorStore = create<EditorStore>()(
         }
       },
 
-      updateCampaign: (updates) => {
-        const { currentCampaign } = get();
-        if (!currentCampaign) return;
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            ...updates,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
-      },
 
       // Add layer
       addLayer: (type, parentId) => {
@@ -2173,6 +2173,39 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return '';
 
+        // Helper to clone and offset style
+        const cloneAndOffsetStyle = (style: LayerStyle): LayerStyle => {
+          const newStyle = { ...style };
+          if (newStyle.position === 'absolute' || newStyle.position === 'fixed') {
+            // Add 20px offset to show it's a copy
+            const parseVal = (val: string | number | undefined) => {
+              if (typeof val === 'number') return val;
+              if (typeof val === 'string' && val.endsWith('px')) return parseFloat(val);
+              return 0; // Don't touch % or auto
+            };
+
+            const left = parseVal(newStyle.left);
+            const top = parseVal(newStyle.top);
+
+            // Only offset if we successfully parsed a number (px or raw)
+            if (typeof newStyle.left === 'string' && newStyle.left.endsWith('%')) {
+              // Optional: offset % slightly? 
+              // let val = parseFloat(newStyle.left);
+              // newStyle.left = `${val + 2}%`;
+            } else {
+              newStyle.left = `${left + 20}px`;
+            }
+
+            if (typeof newStyle.top === 'string' && newStyle.top.endsWith('%')) {
+              // let val = parseFloat(newStyle.top);
+              // newStyle.top = `${val + 2}%`;
+            } else {
+              newStyle.top = `${top + 20}px`;
+            }
+          }
+          return newStyle;
+        };
+
         // 1. Try Main Campaign
         const layerInMain = currentCampaign.layers.find(l => l.id === id);
         if (layerInMain) {
@@ -2181,6 +2214,10 @@ export const useEditorStore = create<EditorStore>()(
             id: `layer_${Date.now()}`,
             name: `${layerInMain.name} Copy`,
             children: [],
+            content: { ...layerInMain.content },
+            style: cloneAndOffsetStyle(layerInMain.style),
+            position: { ...layerInMain.position },
+            size: { ...layerInMain.size },
           };
           const updatedLayers = [...currentCampaign.layers, newLayer];
           if (layerInMain.parent) {
@@ -2217,6 +2254,10 @@ export const useEditorStore = create<EditorStore>()(
                 id: `layer_${Date.now()}_iface`,
                 name: `${layerInInterface.name} Copy`,
                 children: [],
+                content: { ...layerInInterface.content },
+                style: cloneAndOffsetStyle(layerInInterface.style),
+                position: { ...layerInInterface.position },
+                size: { ...layerInInterface.size },
               };
               newLayerId = newLayer.id;
 
@@ -3844,6 +3885,9 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
     padding: { top: 0, right: 0, bottom: 0, left: 0 },
     margin: { top: 0, right: 0, bottom: 0, left: 0 },
     opacity: 1,
+    position: 'absolute', // FIX: Ensure new layers are draggable by default
+    top: '20px',
+    left: '20px',
   };
 
   switch (type) {

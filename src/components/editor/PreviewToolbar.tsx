@@ -13,6 +13,7 @@ interface PreviewToolbarProps {
     onInteractToggle: () => void;
     isPreview?: boolean;
     onPreviewToggle?: () => void;
+    onResetZoom?: () => void;
 }
 
 export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
@@ -26,7 +27,8 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
     isInteractive,
     onInteractToggle,
     isPreview = false,
-    onPreviewToggle
+    onPreviewToggle,
+    onResetZoom
 }) => {
     const currentDevice = DEVICE_PRESETS.find(d => d.id === selectedDevice);
     console.log('[PreviewToolbar] Rendering. isInteractive:', isInteractive);
@@ -76,7 +78,7 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
             {/* Center: Zoom Controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
-                    onClick={() => onZoomChange(Math.max(0.5, zoom - 0.1))}
+                    onClick={() => onZoomChange(Math.max(0.1, zoom - 0.1))}
                     style={{
                         padding: '6px 8px',
                         borderRadius: '6px',
@@ -113,7 +115,7 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
                     <ZoomIn size={14} color="#6B7280" />
                 </button>
                 <button
-                    onClick={() => onZoomChange(1.0)}
+                    onClick={() => onResetZoom ? onResetZoom() : onZoomChange(1.0)}
                     style={{
                         padding: '6px 12px',
                         borderRadius: '6px',

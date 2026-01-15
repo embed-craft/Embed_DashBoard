@@ -28,9 +28,13 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
     pageContext,
     onElementSelect
 }) => {
-    // Scale dimensions based on zoom
-    const width = device.width * zoom;
-    const height = device.height * zoom;
+    // Scale dimensions based on zoom (with NaN safety checks)
+    const safeZoom = Number.isFinite(zoom) && zoom > 0 ? zoom : 0.7;
+    const safeDeviceWidth = Number.isFinite(device.width) && device.width > 0 ? device.width : 393;
+    const safeDeviceHeight = Number.isFinite(device.height) && device.height > 0 ? device.height : 852;
+
+    const width = safeDeviceWidth * safeZoom;
+    const height = safeDeviceHeight * safeZoom;
 
     // Frame Style (Simple CSS Frame mimicking an iPhone)
     const frameBorderWidth = 14 * zoom;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import { ModalRenderer } from '@/components/ModalRenderer';
 import { BannerRenderer } from '@/components/BannerRenderer';
 import { PipRenderer } from '@/components/PipRenderer';
 import { FloaterRenderer } from '@/components/FloaterRenderer';
+import { FullScreenRenderer } from '@/components/FullScreenRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { ShapeEditor } from '@/components/editor/style/ShapeEditor';
 import { DESIGN_TYPES, TEMPLATES, DESIGN_CATEGORIES } from '@/lib/designTypes';
@@ -28,6 +29,8 @@ import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSh
 import { ModalMinimalEditor } from '@/components/campaign/editors/ModalMinimalEditor';
 import { BannerMinimalEditor } from '@/components/campaign/editors/BannerMinimalEditor';
 import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinimalEditor';
+import { TooltipMinimalEditor } from '@/components/campaign/editors/TooltipMinimalEditor';
+import { FullScreenMinimalEditor } from '@/components/campaign/editors/FullScreenMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
@@ -85,12 +88,13 @@ const nudgeTypes = [
   { id: 'scratchcard', label: 'Scratch Card', Icon: CreditCard, bg: '#FCE7F3', iconBg: '#F9A8D4', iconColor: '#EC4899' },
   { id: 'carousel', label: 'Story Carousel', Icon: PlayCircle, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
   { id: 'inline', label: 'Inline Widget', Icon: Grid3x3, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
+  { id: 'fullscreen', label: 'Full Screen', Icon: LayoutTemplate, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
 ];
 
 
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip'],
-  'messages': ['modal', 'floater', 'bottomsheet', 'banner', 'scratchcard'], // PIP removed - Floater handles it
+  'messages': ['modal', 'floater', 'bottomsheet', 'banner', 'scratchcard', 'fullscreen'], // PIP removed - Floater handles it
   'stories': ['carousel'],
   // Default fallbacks for others or future types
   'challenges': [],
@@ -153,7 +157,17 @@ export const DesignStep: React.FC<any> = () => {
     // Saved Callbacks
     customCallbackIds,
     addCustomCallbackId,
+    fetchMetadata,
+    availablePages,
   } = useEditorStore();
+
+  // Fetch metadata on mount if missing
+  useEffect(() => {
+    if (availablePages.length === 0) {
+      console.log('DesignStep: Fetching metadata (pages/events)...');
+      fetchMetadata();
+    }
+  }, []);
 
   // Local UI state
 
@@ -167,6 +181,24 @@ export const DesignStep: React.FC<any> = () => {
   const [previewZoom, setPreviewZoom] = useState<number>(0.7); // Preview zoom level
   const [showGrid, setShowGrid] = useState<boolean>(false); // Grid overlay toggle
   const [showInterfaceSelector, setShowInterfaceSelector] = useState<boolean>(false); // Interface type selector modal
+
+  // Auto-Scale Zoom when Device Changes
+  useEffect(() => {
+    const device = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+    if (device) {
+      // Target height for preview area is roughly 650px to 700px
+      const targetHeight = 650;
+      const idealScale = targetHeight / device.height;
+
+      // Clamp scale between 0.2 and 1.0
+      const clampedScale = Math.min(Math.max(idealScale, 0.2), 1.0);
+
+      // Round to 2 decimals
+      const rounded = Math.round(clampedScale * 100) / 100;
+
+      setPreviewZoom((!Number.isNaN(rounded) && rounded > 0) ? rounded : 0.7);
+    }
+  }, [selectedDevice]);
 
 
   const lastAddRef = useRef(0);
@@ -290,8 +322,12 @@ export const DesignStep: React.FC<any> = () => {
 
   // Close previewed interface (go back to main campaign)
   const closePreviewInterface = () => {
-    setPreviewInterfaceId(null);
-    toast.info('Back to main campaign');
+    if (isInteractive) {
+      setIsPreviewDismissed(true);
+    } else {
+      setPreviewInterfaceId(null);
+      toast.info('Back to main campaign');
+    }
   };
 
   const [layerAddMenuId, setLayerAddMenuId] = useState<string | null>(null);
@@ -369,6 +405,14 @@ export const DesignStep: React.FC<any> = () => {
     fetchPages();
   }, []);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [isPreviewDismissed, setIsPreviewDismissed] = useState(false); // Track if preview is dismissed
+
+  // Fix: Reset dismissed state when interactive mode or preview mode ends
+  useEffect(() => {
+    if (!isInteractive && !isPreview) {
+      setIsPreviewDismissed(false);
+    }
+  }, [isInteractive, isPreview]);
 
   // Derive selected page object
   const activePageId = selectedPageId
@@ -1026,33 +1070,23 @@ export const DesignStep: React.FC<any> = () => {
         let overlayConfig = {};
         switch (iface.nudgeType) {
           case 'modal':
-            overlayConfig = iface.modalConfig?.overlay;
-            break;
+            return 'transparent'
           case 'bottomsheet':
-            overlayConfig = iface.bottomSheetConfig?.overlay;
-            break;
+            return 'transparent'
           case 'banner':
-            overlayConfig = iface.bannerConfig?.overlay;
-            break;
+           return 'transparent'
           case 'tooltip':
-            // Tooltip usually handles its own overlay, but if we wrap it, we respect it.
-            // Note: TooltipRenderer typically renders its own spotlight overlay.
-            // If we are wrapping it here, we might want to check overlayEnabled too.
-            overlayConfig = iface.tooltipConfig?.overlay || {};
-            // For tooltip, if overlayEnabled is explicit false, we might want transparent.
-            // But for now, let's just grab the config if it exists.
-            break;
+            // Fix: Tooltip handles its own overlay via TooltipRenderer.renderOverlay()
+            // Don't add a wrapper overlay here to avoid double-dimming
+            return 'transparent';
           case 'scratchcard':
-            overlayConfig = iface.scratchCardConfig?.overlay;
-            break;
+            return 'transparent'
           case 'floater':
-            overlayConfig = iface.floaterConfig?.overlay;
-            break;
+           return 'transparent'
           case 'pip':
-            overlayConfig = iface.pipConfig?.overlay;
-            break;
+            return 'transparent'
           default:
-            overlayConfig = iface.config?.overlay;
+            return 'transparent'
         }
 
         const config = overlayConfig || {};
@@ -1220,6 +1254,43 @@ export const DesignStep: React.FC<any> = () => {
     // Use displayLayers for context switching (interface or main campaign)
     const campaignLayers = displayLayers;
 
+    if (isPreviewDismissed) {
+      return (
+        <div style={{
+          position: 'absolute', inset: 0,
+          pointerEvents: 'none', // Allow clicks to pass through to the 'app' (PhonePreview background)
+        }}>
+          {/** Minimal Restart Button */}
+          <button
+            onClick={() => setIsPreviewDismissed(false)}
+            style={{
+              position: 'absolute',
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              padding: '8px 16px',
+              backgroundColor: 'white',
+              border: `1px solid ${colors.gray[200]}`,
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: colors.text.secondary,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              pointerEvents: 'auto', // Re-enable pointer events for the button
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              zIndex: 100
+            }}
+          >
+            <RefreshCw size={12} />
+            Restart Preview
+          </button>
+        </div>
+      );
+    }
+
     if (!nudgeTypeToRender) {
       return (
         <div style={{ padding: '60px 20px 20px', textAlign: 'center', color: colors.text.secondary, fontSize: '13px' }}>
@@ -1261,8 +1332,12 @@ export const DesignStep: React.FC<any> = () => {
             colors={colors}
             config={activeInterface?.bottomSheetConfig || currentCampaign?.bottomSheetConfig}
             onDismiss={() => {
-              if (isInteractive) setIsInteractive(false);
-              else toast.success('Dismiss action triggered');
+              if (isInteractive) {
+                toast.success('Dismiss action triggered');
+                setIsPreviewDismissed(true);
+              } else {
+                toast.success('Dismiss action triggered');
+              }
             }}
             isInteractive={isInteractive}
             onNavigate={handlePreviewNavigate}
@@ -1310,8 +1385,12 @@ export const DesignStep: React.FC<any> = () => {
               onConfigChange={(config) => updateModalConfig(config)}
               onLayerUpdate={updateLayer}
               onDismiss={() => {
-                if (isInteractive) setIsInteractive(false);
-                else toast.success('Dismiss action triggered');
+                if (isInteractive) {
+                  toast.success('Dismiss action triggered');
+                  setIsPreviewDismissed(true);
+                } else {
+                  toast.success('Dismiss action triggered');
+                }
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
@@ -1339,8 +1418,12 @@ export const DesignStep: React.FC<any> = () => {
               onConfigChange={(newConfig) => updateBannerConfig(newConfig)}
               onLayerUpdate={updateLayer}
               onDismiss={() => {
-                if (isInteractive) setIsInteractive(false);
-                else toast.success('Dismiss action triggered');
+                if (isInteractive) {
+                  toast.success('Dismiss action triggered');
+                  setIsPreviewDismissed(true);
+                } else {
+                  toast.success('Dismiss action triggered');
+                }
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
@@ -1381,8 +1464,12 @@ export const DesignStep: React.FC<any> = () => {
               config={activeInterface?.floaterConfig || currentCampaign?.floaterConfig || defaultFloaterConfig}
               onLayerUpdate={updateLayer}
               onDismiss={() => {
-                if (isInteractive) setIsInteractive(false);
-                else toast.success('Dismiss action triggered');
+                if (isInteractive) {
+                  toast.success('Dismiss action triggered');
+                  setIsPreviewDismissed(true);
+                } else {
+                  toast.success('Dismiss action triggered');
+                }
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
@@ -1393,6 +1480,39 @@ export const DesignStep: React.FC<any> = () => {
           </ErrorBoundary>
         );
 
+      case 'fullscreen':
+        const currentDeviceConfigFs = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        // Scaling logic same as Modal (Design Baseline 393x852)
+        const pureDeviceScaleXFs = (currentDeviceConfigFs?.width || 393) / 393;
+        const pureDeviceScaleYFs = (currentDeviceConfigFs?.height || 852) / 852;
+        const scaleFactorFs = pureDeviceScaleXFs * previewZoom;
+        const scaleYFactorFs = pureDeviceScaleYFs * previewZoom;
+
+        return (
+          <ErrorBoundary>
+            <FullScreenRenderer
+              layers={campaignLayers}
+              selectedLayerId={selectedLayerId}
+              onLayerSelect={selectLayer}
+              colors={colors}
+              config={activeInterface?.fullscreenConfig || currentCampaign?.fullscreenConfig}
+              onLayerUpdate={updateLayer}
+              onDismiss={() => {
+                if (isInteractive) {
+                  toast.success('Dismiss action triggered');
+                  setIsPreviewDismissed(true);
+                } else {
+                  toast.success('Dismiss action triggered');
+                }
+              }}
+              isInteractive={isInteractive}
+              onNavigate={handlePreviewNavigate}
+              onInterfaceAction={handleInterfaceAction}
+              scale={scaleFactorFs}
+              scaleY={scaleYFactorFs}
+            />
+          </ErrorBoundary>
+        );
 
       case 'tooltip':
         const device = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
@@ -1436,6 +1556,35 @@ export const DesignStep: React.FC<any> = () => {
         const normalizeY = 852 / (deviceMeta.height * density);  // Factor to convert physical Y to design Y
 
         let targetElement: { rect: { x: number; y: number; width: number; height: number } } | undefined;
+        if (isPreviewDismissed) {
+          return (
+            <div style={{
+              width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', color: colors.text.secondary
+            }}>
+              <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(255,255,255,0.8)', borderRadius: '50%' }}>
+                <check size={24} color={colors.green[500]} />
+              </div>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 500 }}>Interface Dismissed</p>
+              <button
+                onClick={() => setIsPreviewDismissed(false)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'white',
+                  border: `1px solid ${colors.gray[300]}`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+              >
+                Restart Preview
+              </button>
+            </div>
+          );
+        }
+
         if (realTargetElement?.rect) {
           // Normalize physical coords to design coords
           targetElement = {
@@ -1461,8 +1610,16 @@ export const DesignStep: React.FC<any> = () => {
             targetElement={targetElement}
             scale={scaleX}
             scaleY={scaleY}
+            onLayerUpdate={updateLayer} // FIX: enable dragging in canvas preview
             isInteractive={isInteractive}
-            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onDismiss={() => {
+              if (isInteractive) {
+                toast.success('Dismiss action triggered');
+                setIsPreviewDismissed(true);
+              } else {
+                toast.info('Enable "Interact" mode to test dismiss');
+              }
+            }}
             onInterfaceAction={handleInterfaceAction}
           />
         );
@@ -1484,7 +1641,14 @@ export const DesignStep: React.FC<any> = () => {
             config={activeInterface?.pipConfig || currentCampaign?.pipConfig}
             onConfigChange={(config) => updatePipConfig(config)}
             isInteractive={isInteractive}
-            onDismiss={() => toast.success('Dismiss action triggered (Preview)')}
+            onDismiss={() => {
+              if (isInteractive) {
+                toast.success('Dismiss action triggered');
+                setIsPreviewDismissed(true);
+              } else {
+                toast.success('Dismiss action triggerd (Preview)');
+              }
+            }}
             onNavigate={handleNavigate}
             onInterfaceAction={handleInterfaceAction}
             scale={scaleFactorPip}
@@ -1517,7 +1681,10 @@ export const DesignStep: React.FC<any> = () => {
               scaleY={scaleYFactorScratch}
               onLayerUpdate={updateLayer} // Propagate updateLayer for drag/drop
               onDismiss={() => {
-                if (isInteractive) setIsInteractive(false);
+                if (isInteractive) {
+                  setIsInteractive(false);
+                  setIsPreviewDismissed(true);
+                }
                 else toast.success('Dismiss action triggered');
               }}
               isInteractive={isInteractive}
@@ -1866,387 +2033,7 @@ export const DesignStep: React.FC<any> = () => {
     );
   };
 
-  // ========================
-  // NEW TOOLTIP CONFIGURATION
-  // Following Modal Construction Logic
-  // ========================
-  const renderTooltipConfig = () => {
-    if (selectedNudgeType !== 'tooltip') return null;
 
-    // Resolve config from active interface OR main campaign
-    const config: Partial<TooltipConfig> = activeInterface ? (activeInterface.tooltipConfig || {}) : (currentCampaign?.tooltipConfig || {});
-    const selectedPage = pages.find(p => p._id === config.targetPageId);
-
-    const handleTooltipUpdate = (field: string, value: any) => {
-      useEditorStore.getState().updateTooltipConfig({ [field]: value });
-    };
-
-    const sectionStyle: React.CSSProperties = {
-      marginBottom: '20px',
-      paddingBottom: '16px',
-      borderBottom: `1px solid ${colors.gray[200]}`
-    };
-
-    const labelStyle: React.CSSProperties = {
-      display: 'block',
-      fontSize: '12px',
-      color: colors.text.secondary,
-      marginBottom: '6px'
-    };
-
-    const inputStyle: React.CSSProperties = {
-      width: '100%',
-      padding: '8px 12px',
-      border: `1px solid ${colors.gray[200]}`,
-      borderRadius: '6px',
-      fontSize: '13px',
-      outline: 'none'
-    };
-
-    return (
-      <>
-        {/* 1. TARGET SELECTION */}
-        <div style={sectionStyle}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🎯 Target Selection</h5>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Target Page</label>
-            <select value={config.targetPageId || ''} onChange={(e) => handleTooltipUpdate('targetPageId', e.target.value)} style={inputStyle}>
-              <option value="">Select a page...</option>
-              {pages.map(page => (<option key={page._id} value={page._id}>{page.name}</option>))}
-            </select>
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Target Element</label>
-            {selectedPage && selectedPage.elements?.length > 0 ? (
-              <select value={config.targetElementId || ''} onChange={(e) => handleTooltipUpdate('targetElementId', e.target.value)} style={inputStyle}>
-                <option value="">Select an element...</option>
-                {selectedPage.elements.map((el: any) => (<option key={el.id} value={el.id}>{el.id} {el.tagName ? `(${el.tagName})` : ''}</option>))}
-              </select>
-            ) : (
-              <div style={{ padding: '12px', border: `1px dashed ${colors.gray[300]}`, borderRadius: '6px', fontSize: '13px', color: colors.text.secondary, background: colors.gray[50], textAlign: 'center' }}>
-                {selectedPage ? 'No elements found' : 'Select a page first'}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 2. TARGET HIGHLIGHT */}
-        <div style={sectionStyle}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>✨ Target Highlight</h5>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Border Radius</label>
-              <input type="number" min="0" max="50" value={config.targetBorderRadius ?? 8} onChange={(e) => handleTooltipUpdate('targetBorderRadius', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
-            </div>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Border Width</label>
-              <input type="number" min="0" max="10" value={config.targetBorderWidth ?? 2} onChange={(e) => handleTooltipUpdate('targetBorderWidth', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
-            </div>
-          </div>
-          <div>
-            <label style={{ ...labelStyle, fontSize: '11px' }}>Border Color</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input type="color" value={config.targetBorderColor || '#6366F1'} onChange={(e) => handleTooltipUpdate('targetBorderColor', e.target.value)} style={{ width: '40px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '4px' }} />
-              <input type="text" value={config.targetBorderColor || '#6366F1'} onChange={(e) => handleTooltipUpdate('targetBorderColor', e.target.value)} style={{ ...inputStyle, padding: '6px', flex: 1 }} />
-            </div>
-          </div>
-        </div>
-
-        {/* 3. POSITION */}
-        <div style={sectionStyle}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>📍 Position</h5>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Placement</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-              {['top', 'right', 'bottom', 'left'].map((pos) => (
-                <button key={pos} onClick={() => handleTooltipUpdate('position', pos)} style={{ padding: '10px', border: `2px solid ${config.position === pos ? colors.primary[500] : colors.gray[200]}`, borderRadius: '8px', background: config.position === pos ? colors.primary[50] : 'white', color: config.position === pos ? colors.primary[600] : colors.text.secondary, fontSize: '12px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '12px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: colors.text.secondary }}>Timeline Mode</label>
-              <div
-                onClick={() => handleTooltipUpdate('timelineMode', !config.timelineMode)}
-                style={{
-                  width: '36px', height: '20px', backgroundColor: config.timelineMode ? colors.primary[500] : colors.gray[300],
-                  borderRadius: '10px', position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s'
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: '2px', left: config.timelineMode ? '18px' : '2px',
-                  width: '16px', height: '16px', backgroundColor: 'white', borderRadius: '50%',
-                  transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
-                }} />
-              </div>
-            </div>
-            {config.timelineMode && (
-              <div style={{ fontSize: '11px', color: colors.orange[600], marginTop: '-8px', marginBottom: '12px', backgroundColor: colors.orange[50], padding: '8px', borderRadius: '6px' }}>
-                Taking click action on tooltip body to proceed.
-              </div>
-            )}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div><label style={{ ...labelStyle, fontSize: '11px' }}>Offset X</label><input type="number" value={config.offsetX ?? 0} onChange={(e) => handleTooltipUpdate('offsetX', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} /></div>
-            <div><label style={{ ...labelStyle, fontSize: '11px' }}>Offset Y</label><input type="number" value={config.offsetY ?? 0} onChange={(e) => handleTooltipUpdate('offsetY', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} /></div>
-          </div>
-        </div>
-
-        {/* 4. TOOLTIP BODY */}
-        <div style={sectionStyle}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>📦 Tooltip Body</h5>
-
-          {/* Dimensions - Width */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ ...labelStyle, fontSize: '11px' }}>Width</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <select
-                value={config.widthMode || 'custom'}
-                onChange={(e) => handleTooltipUpdate('widthMode', e.target.value)}
-                style={{ padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px' }}
-              >
-                <option value="auto">Auto</option>
-                <option value="custom">Custom</option>
-                <option value="fitContent">Fit Content</option>
-              </select>
-              {(config.widthMode === 'custom' || !config.widthMode) && (
-                <>
-                  <input
-                    type="number"
-                    min="50"
-                    value={typeof config.width === 'number' ? config.width : parseInt(String(config.width)) || 280}
-                    onChange={(e) => handleTooltipUpdate('width', Number(e.target.value))}
-                    style={{ ...inputStyle, padding: '6px', flex: 1 }}
-                  />
-                  <span style={{ padding: '6px', fontSize: '12px', color: colors.text.secondary }}>px</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Dimensions - Height */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ ...labelStyle, fontSize: '11px' }}>Height</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <select
-                value={config.heightMode || 'auto'}
-                onChange={(e) => handleTooltipUpdate('heightMode', e.target.value)}
-                style={{ padding: '6px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '12px' }}
-              >
-                <option value="auto">Auto</option>
-                <option value="custom">Custom</option>
-                <option value="fitContent">Fit Content</option>
-              </select>
-              {config.heightMode === 'custom' && (
-                <>
-                  <input
-                    type="number"
-                    min="50"
-                    value={typeof config.height === 'number' ? config.height : parseInt(String(config.height)) || 150}
-                    onChange={(e) => handleTooltipUpdate('height', Number(e.target.value))}
-                    style={{ ...inputStyle, padding: '6px', flex: 1 }}
-                  />
-                  <span style={{ padding: '6px', fontSize: '12px', color: colors.text.secondary }}>px</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Background Color + Opacity */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Background</label>
-              <input type="color" value={config.backgroundColor || '#1F2937'} onChange={(e) => handleTooltipUpdate('backgroundColor', e.target.value)} style={{ width: '100%', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '4px' }} />
-            </div>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Opacity: {Math.round((config.backgroundOpacity ?? 1) * 100)}%</label>
-              <input type="range" min="0" max="1" step="0.05" value={config.backgroundOpacity ?? 1} onChange={(e) => handleTooltipUpdate('backgroundOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
-            </div>
-          </div>
-
-          {/* Background Image */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ ...labelStyle, fontSize: '11px' }}>Background Image URL</label>
-            <input
-              type="text"
-              value={config.backgroundImageUrl || ''}
-              onChange={(e) => handleTooltipUpdate('backgroundImageUrl', e.target.value)}
-              placeholder="https://example.com/image.png"
-              style={{ ...inputStyle, padding: '8px', marginBottom: '8px' }}
-            />
-            <label
-              htmlFor="bg-image-upload-tooltip"
-              style={{
-                display: 'block', padding: '8px', background: colors.gray[100], color: colors.text.secondary,
-                borderRadius: '6px', fontSize: '11px', fontWeight: 500, textAlign: 'center', cursor: 'pointer'
-              }}
-            >
-              📤 Upload Image
-            </label>
-            <input
-              id="bg-image-upload-tooltip"
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
-                const reader = new FileReader();
-                reader.onload = (event) => handleTooltipUpdate('backgroundImageUrl', event.target?.result as string);
-                reader.readAsDataURL(file);
-              }}
-            />
-          </div>
-
-          {/* Background Size (when image is set) */}
-          {config.backgroundImageUrl && (
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Background Size</label>
-              <select
-                value={config.backgroundSize || 'cover'}
-                onChange={(e) => handleTooltipUpdate('backgroundSize', e.target.value)}
-                style={{ ...inputStyle, padding: '8px' }}
-              >
-                <option value="cover">Cover (fill area)</option>
-                <option value="contain">Contain (fit inside)</option>
-                <option value="fill">Fill (stretch)</option>
-              </select>
-            </div>
-          )}
-
-          {/* Border Radius + Padding */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Border Radius</label>
-              <input type="number" min="0" max="50" value={config.borderRadius ?? 12} onChange={(e) => handleTooltipUpdate('borderRadius', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
-            </div>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Padding</label>
-              <input type="number" min="0" max="60" value={config.padding ?? 16} onChange={(e) => handleTooltipUpdate('padding', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} />
-            </div>
-          </div>
-
-          {/* Shadow Controls */}
-          <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '8px' }}>
-              <input type="checkbox" checked={config.shadowEnabled !== false} onChange={(e) => handleTooltipUpdate('shadowEnabled', e.target.checked)} style={{ accentColor: colors.primary[500] }} />
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Enable Shadow</span>
-            </label>
-            {config.shadowEnabled !== false && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ ...labelStyle, fontSize: '11px' }}>Blur: {config.shadowBlur ?? 25}px</label>
-                  <input type="range" min="0" max="50" value={config.shadowBlur ?? 25} onChange={(e) => handleTooltipUpdate('shadowBlur', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
-                </div>
-                <div>
-                  <label style={{ ...labelStyle, fontSize: '11px' }}>Opacity: {Math.round((config.shadowOpacity ?? 0.2) * 100)}%</label>
-                  <input type="range" min="0" max="1" step="0.05" value={config.shadowOpacity ?? 0.2} onChange={(e) => handleTooltipUpdate('shadowOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 5. ARROW */}
-        <div style={sectionStyle}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>➤ Arrow</h5>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={config.arrowEnabled !== false} onChange={(e) => handleTooltipUpdate('arrowEnabled', e.target.checked)} style={{ accentColor: colors.primary[500] }} />
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>Show Arrow</span>
-            </label>
-            <div>
-              <label style={{ ...labelStyle, fontSize: '11px' }}>Size</label>
-              <input type="number" min="6" max="20" value={config.arrowSize ?? 10} onChange={(e) => handleTooltipUpdate('arrowSize', Number(e.target.value))} style={{ ...inputStyle, padding: '6px' }} disabled={config.arrowEnabled === false} />
-            </div>
-          </div>
-
-          {/* NEW: Arrow Position & Roundness Sliders */}
-          {config.arrowEnabled !== false && (
-            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Arrow Position Slider */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '11px', color: colors.text.secondary }}>Arrow Position</label>
-                  <span style={{ fontSize: '11px', color: colors.text.primary }}>{config.arrowPositionPercent ?? 50}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="95"
-                  step="1"
-                  value={config.arrowPositionPercent ?? 50}
-                  onChange={(e) => handleTooltipUpdate('arrowPositionPercent', Number(e.target.value))}
-                  style={{ width: '100%', accentColor: colors.primary[500] }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.text.secondary, marginTop: '2px' }}>
-                  <span>Start</span>
-                  <span>Center</span>
-                  <span>End</span>
-                </div>
-              </div>
-
-              {/* Arrow Roundness Slider */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '11px', color: colors.text.secondary }}>Arrow Roundness</label>
-                  <span style={{ fontSize: '11px', color: colors.text.primary }}>{config.arrowRoundness ?? 0}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={config.arrowRoundness ?? 0}
-                  onChange={(e) => handleTooltipUpdate('arrowRoundness', Number(e.target.value))}
-                  style={{ width: '100%', accentColor: colors.primary[500] }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.text.tertiary, marginTop: '2px' }}>
-                  <span>Sharp ▲</span>
-                  <span>Rounded ⌒</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 6. OVERLAY */}
-        <div style={sectionStyle}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>🎭 Overlay (Spotlight)</h5>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '12px' }}>
-            <input type="checkbox" checked={config.overlayEnabled !== false} onChange={(e) => handleTooltipUpdate('overlayEnabled', e.target.checked)} style={{ accentColor: colors.primary[500] }} />
-            <span style={{ fontSize: '12px', color: colors.text.secondary }}>Enable Overlay</span>
-          </label>
-          {config.overlayEnabled !== false && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ ...labelStyle, fontSize: '11px' }}>Color</label>
-                <input type="color" value={config.overlayColor || '#000000'} onChange={(e) => handleTooltipUpdate('overlayColor', e.target.value)} style={{ width: '100%', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '4px' }} />
-              </div>
-              <div>
-                <label style={{ ...labelStyle, fontSize: '11px' }}>Opacity: {Math.round((config.overlayOpacity ?? 0.5) * 100)}%</label>
-                <input type="range" min="0" max="1" step="0.05" value={config.overlayOpacity ?? 0.5} onChange={(e) => handleTooltipUpdate('overlayOpacity', Number(e.target.value))} style={{ width: '100%', accentColor: colors.primary[500] }} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 7. BEHAVIOR */}
-        <div style={{ marginBottom: '20px' }}>
-          <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>⚙️ Behavior</h5>
-          {[
-            { key: 'closeOnOutsideClick', label: 'Close on Outside Click' },
-            { key: 'closeOnTargetClick', label: 'Close on Target Click' },
-            { key: 'autoScrollToTarget', label: 'Auto-scroll to Target' }
-          ].map(item => (
-            <label key={item.key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', background: colors.gray[50] }}>
-              <span style={{ fontSize: '12px', color: colors.text.secondary }}>{item.label}</span>
-              <input type="checkbox" checked={!!(config as any)[item.key]} onChange={(e) => handleTooltipUpdate(item.key, e.target.checked)} style={{ accentColor: colors.primary[500] }} />
-            </label>
-          ))}
-        </div>
-      </>
-    );
-  };
 
 
   // Render properties based on layer type
@@ -2260,7 +2047,7 @@ export const DesignStep: React.FC<any> = () => {
 
     if (!selectedLayerObj) {
       // Show global config for specific nudge types when no layer is selected
-      if (selectedNudgeType === 'tooltip') return renderTooltipConfig();
+      if (selectedNudgeType === 'tooltip') return <TooltipMinimalEditor />;
       if (selectedNudgeType === 'pip') return renderPipConfig();
       if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       if (selectedNudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
@@ -2268,11 +2055,16 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // SPECIAL CASE: When Tooltip Container is selected, show tooltip config instead of layer properties
+    // REMOVED: This block prevented editing of child containers in tooltip mode.
+    // The logic at line 3029+ correctly handles the Root Tooltip Container,
+    // while allowing child containers to fall through to the standard ContainerEditor.
+    /*
     if (selectedNudgeType === 'tooltip' &&
       (selectedLayerObj.type === 'container' ||
         selectedLayerObj.name?.toLowerCase().includes('tooltip container'))) {
-      return renderTooltipConfig();
+      return <TooltipMinimalEditor />;
     }
+    */
 
     if (selectedLayerObj.type === 'custom_html') {
       return <CustomHtmlEditor />;
@@ -3342,8 +3134,9 @@ export const DesignStep: React.FC<any> = () => {
         if (nudgeType === 'modal') return <ModalMinimalEditor />;
         if (nudgeType === 'banner') return <BannerMinimalEditor />;
         if (nudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
+        if (nudgeType === 'fullscreen') return <FullScreenMinimalEditor />;
         if (nudgeType === 'floater') return renderFloaterConfig();
-        if (nudgeType === 'tooltip') return renderTooltipConfig();
+        if (nudgeType === 'tooltip') return <TooltipMinimalEditor />;
         if (nudgeType === 'pip') return renderPipConfig();
       }
 
@@ -3354,7 +3147,7 @@ export const DesignStep: React.FC<any> = () => {
       return (
         <>
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
-          {selectedLayerObj.name === 'Tooltip Container' && renderTooltipConfig()}
+          {selectedLayerObj.name === 'Tooltip Container' && <TooltipMinimalEditor />}
           <ContainerEditor
             layer={selectedLayerObj}
             selectedLayerId={selectedLayerId!}
@@ -4319,6 +4112,18 @@ export const DesignStep: React.FC<any> = () => {
                       onDeviceChange={setSelectedDevice}
                       zoom={previewZoom}
                       onZoomChange={setPreviewZoom}
+                      onResetZoom={() => {
+                        // Recalculate optimal
+                        const device = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+                        if (device) {
+                          const targetHeight = 650;
+                          const idealScale = targetHeight / device.height;
+                          const clampedScale = Math.min(Math.max(idealScale, 0.2), 1.0);
+                          setPreviewZoom(Math.round(clampedScale * 100) / 100);
+                        } else {
+                          setPreviewZoom(0.7);
+                        }
+                      }}
                       showGrid={showGrid}
                       onGridToggle={() => setShowGrid(!showGrid)}
                       onScreenshot={() => {
@@ -4342,7 +4147,7 @@ export const DesignStep: React.FC<any> = () => {
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflow: 'auto' }}>
                       <PhonePreview
                         device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
-                        zoom={previewZoom}
+                        zoom={Number.isFinite(previewZoom) ? previewZoom : 0.7}
                         showGrid={showGrid}
                         backgroundUrl={selectedPage?.imageUrl}
                         pageContext={selectedPage}

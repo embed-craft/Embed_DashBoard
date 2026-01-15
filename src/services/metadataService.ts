@@ -48,11 +48,30 @@ export interface PropertyDefinition {
     updatedAt: string;
 }
 
+export interface PageMetadataElement {
+    id: string;
+    tagName: string;
+    text?: string;
+    rect: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    };
+    attributes?: Record<string, string>;
+}
+
 export interface PageDefinition {
     _id: string;
     name: string;
     pageTag: string;
     imageUrl?: string;
+    elements?: PageMetadataElement[];
+    deviceMetadata?: {
+        width: number;
+        height: number;
+        pixelRatio: number;
+    };
 }
 
 
@@ -120,6 +139,13 @@ export const metadataService = {
     // Pages
     getPages: async (): Promise<PageDefinition[]> => {
         const response = await axios.get(`${API_URL}/pages`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        return response.data;
+    },
+
+    getPage: async (id: string): Promise<PageDefinition> => {
+        const response = await axios.get(`${API_URL}/pages/${id}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         return response.data;

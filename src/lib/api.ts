@@ -225,6 +225,10 @@ class ApiClient {
     return this.request('/api/pages');
   }
 
+  public async getPage(id: string): Promise<any> {
+    return this.request(`/api/pages/${encodeURIComponent(id)}`);
+  }
+
   public async createPageSession(): Promise<{ token: string; deepLink: string }> {
     return this.request('/api/pages/session', {
       method: 'POST',
@@ -415,9 +419,17 @@ export const loadCampaign = async (id: string): Promise<CampaignEditor> => {
 // Adapter for saveCampaign
 export const saveCampaign = async (campaign: CampaignEditor): Promise<BackendCampaign> => {
   const backend = editorToBackend(campaign);
-  if (campaign.lastSaved && campaign.id) {
-    return apiClient.updateCampaign(campaign.id, backend);
+
+  // Determine if this is an existing campaign (has valid MongoDB ObjectId)
+  // MongoDB ObjectIds are 24 hexadecimal characters
+  const id = campaign.id || (campaign as any)._id;
+  const isValidMongoId = id && /^[a-f\d]{24}$/i.test(id);
+
+  if (isValidMongoId) {
+    // Existing campaign - UPDATE
+    return apiClient.updateCampaign(id, backend);
   } else {
+    // New campaign - CREATE
     return apiClient.createCampaign(backend);
   }
 };

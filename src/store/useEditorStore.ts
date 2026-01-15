@@ -559,6 +559,33 @@ export interface FloaterConfig {
   };
 }
 
+// Full Screen Configuration (New Type)
+export interface FullScreenConfig {
+  showSystemColor: boolean; // Match status bar color
+  overlay: {
+    enabled: boolean;
+    color: string;
+    opacity: number;
+    dismissOnClick: boolean;
+  };
+  timing: {
+    delay: number; // Seconds
+    duration: number; // Seconds (0 = infinite)
+  };
+  parameters?: Record<string, string>; // Custom params
+  cannotClash: boolean; // Collision protection
+  backgroundColor: string; // Base background
+  backgroundImageUrl?: string;
+  backgroundSize?: 'cover' | 'contain' | 'fill';
+  media?: {
+    url: string;
+    type: 'image' | 'video' | 'youtube' | 'none';
+    autoPlay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+    fit?: 'cover' | 'contain' | 'fill';
+  };
+}
 
 export interface CampaignSchedule {
   startDate?: string;
@@ -604,6 +631,7 @@ export interface TooltipConfig {
   backgroundOpacity?: number; // 0-1
   backgroundImageUrl?: string; // NEW: Background image URL
   backgroundSize?: 'cover' | 'contain' | 'fill'; // NEW: How to fit background image
+  backgroundPosition?: string; // NEW: Background position (e.g., 'center', 'top left')
 
   // Dimension controls (like Modal)
   widthMode?: 'auto' | 'custom' | 'fitContent'; // NEW: Width mode
@@ -612,6 +640,7 @@ export interface TooltipConfig {
   heightUnit?: 'px' | '%'; // NEW: Height unit
 
   arrowPosition?: 'left' | 'right' | 'center' | 'auto';
+  arrowColor?: string; // NEW: Explicit arrow color
   arrowStyle?: 'sharp' | 'bubble'; // Added
   orientation?: 'vertical' | 'horizontal';
   shadow?: string;
@@ -619,6 +648,10 @@ export interface TooltipConfig {
   shadowEnabled?: boolean; // NEW: Toggle shadow on/off
   shadowBlur?: number; // NEW: Shadow blur radius (0-50)
   shadowOpacity?: number; // NEW: Shadow opacity (0-1)
+  shadowOffsetX?: number; // NEW: Shadow X offset
+  shadowOffsetY?: number; // NEW: Shadow Y offset
+  shadowSpread?: number; // NEW: Shadow spread radius
+  shadowColor?: string; // NEW: Shadow color
   animation?: { type: string; duration: number }; // Added to resolve lint error
   overlayOpacity?: number; // Added
   gradient?: string; // Added generic gradient support if needed
@@ -629,30 +662,73 @@ export interface TooltipConfig {
   // Content
   htmlContent?: string; // Added
 
-  // Target Highlight
-  targetRoundness?: number; // Added
-  targetHighlightPadding?: number; // Added
-  targetHighlightColor?: string; // Added
-  targetBorderRadius?: number; // NEW: Border radius for target highlight
-  targetBorderWidth?: number; // NEW: Border width for target highlight
-  targetBorderColor?: string; // NEW: Border color for target highlight
+  // Target Highlight (Element Style)
+  targetRoundness?: number;
+  targetHighlightPadding?: number;
+  targetHighlightColor?: string;
+  targetBorderEnabled?: boolean; // NEW: Explicit toggle
+  targetBorderRadius?: number;
+  targetBorderWidth?: number;
+  targetBorderColor?: string;
+  targetBorderStyle?: 'solid' | 'dashed' | 'dotted'; // NEW
+  targetStyleEnabled?: boolean; // NEW
+  targetFillColor?: string; // NEW
+  targetShadowEnabled?: boolean;
+  targetShadowColor?: string;
+  targetShadowBlur?: number;
+  targetShadowSpread?: number;
+  targetShadowOpacity?: number;
+  targetOffsetX?: number; // NEW: Fine-tune X position
+  targetOffsetY?: number; // NEW: Fine-tune Y position
+  targetWidthAdjustment?: number; // NEW: Manual width adjust
+  targetHeightAdjustment?: number; // NEW: Manual height adjust
 
   // Appearance - new additions
-  overlayColor?: string; // Added/Alias for backgroundColor?
-  borderRadius?: number; // Added (redundant with roundness but requested)
-  gradientAngle?: number; // Added
+  overlayColor?: string;
+  borderRadius?: number;
+  gradientAngle?: number;
 
   // Overlay/Spotlight
-  overlayEnabled?: boolean; // NEW: Enable/disable overlay
+  overlayEnabled?: boolean;
 
   // Arrow
-  arrowEnabled?: boolean; // NEW: Enable/disable arrow
+  arrowEnabled?: boolean;
 
   // Behaviors
   closeOnOutsideClick?: boolean;
   keepTargetClickable?: boolean;
   closeOnTargetClick?: boolean;
-  autoScrollToTarget?: boolean; // NEW: Auto-scroll to target element
+  autoScrollToTarget?: boolean;
+
+  // Coachmark
+  coachmarkEnabled?: boolean;
+  coachmarkShape?: 'rectangle' | 'wave';  // Default: rectangle
+  // Wave settings (when shape='wave')
+  waveOrigin?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  waveCoverage?: number;   // 0-100 percent
+  waveCurvature?: number;  // curve intensity
+
+  // Spotlight
+  spotlightWidth?: number;     // Default: auto (px) - override target width
+  spotlightHeight?: number;    // Default: auto (px) - override target height
+  spotlightPadding?: number;   // Default: 12 (px)
+  spotlightRadius?: number;    // Default: 8 (px) - high value = circle
+  spotlightBlur?: number;      // Default: 0 (0-15px)
+  spotlightEffect?: 'pulse' | 'ripple' | boolean;   // Default: false
+  spotlightEffectColor?: string; // Color for the effect
+  // Ring
+  ringEnabled?: boolean;       // Default: false
+  ringColor?: string;          // Default: #ffffff
+  ringCount?: number;          // Default: 2 (1-3 rings) - for rectangle mode
+  ringWidth?: number;          // Default: 2 (px) - stroke thickness
+  ringGap?: number;            // Default: 6 (px) - for rectangle mode
+  // Ring Shape Options (New)
+  ringShape?: 'circle' | 'rectangle';  // Default: 'rectangle'
+  ringRadius?: number;         // Circle mode: radius from spotlight center (px)
+  ringArcPercent?: number;     // Circle mode: 0-100 (100=full circle, 50=half, 25=quarter)
+  ringArcStartAngle?: number;  // Circle mode: start angle in degrees (0=top, 90=right)
+  dismissEnabled?: boolean;    // Default: true
+  showTooltipBody?: boolean;   // Default: true - toggle visibility of tooltip bubble
 
   // Legacy/Existing
   position?: 'top' | 'bottom' | 'left' | 'right';
@@ -728,6 +804,7 @@ export interface CampaignInterface {
   scratchCardConfig?: ScratchCardConfig;
   floaterConfig?: any;
   spotlightConfig?: SpotlightConfig;
+  fullscreenConfig?: FullScreenConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -737,7 +814,7 @@ export interface CampaignEditor {
   _id?: string; // Support for backend ID
   name: string;
   experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey';
-  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight' | 'coachmark';
+  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight' | 'coachmark' | 'fullscreen';
 
   // Trigger configuration (industry-standard events)
   trigger?: string; // e.g., 'screen_viewed', 'button_clicked', 'product_viewed'
@@ -762,6 +839,7 @@ export interface CampaignEditor {
   pipConfig?: any;
   floaterConfig?: any;
   spotlightConfig?: SpotlightConfig;
+  fullscreenConfig?: FullScreenConfig;
 
   // Editor state
   selectedLayerId: string | null;
@@ -838,6 +916,7 @@ interface EditorStore {
   updateTooltipConfig: (config: any) => void;
   updatePipConfig: (config: any) => void;
   updateFloaterConfig: (config: any) => void;
+  updateFullScreenConfig: (config: Partial<FullScreenConfig>) => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
 
@@ -858,6 +937,7 @@ interface EditorStore {
   availablePages: PageDefinition[]; // Add availablePages
   isLoadingMetadata: boolean;
   fetchMetadata: () => Promise<void>;
+  fetchPageDetails: (pageId: string) => Promise<PageDefinition>;
 
   createEvent: (event: Partial<EventDefinition>) => Promise<EventDefinition>;
   createProperty: (property: Partial<PropertyDefinition>) => Promise<PropertyDefinition>;
@@ -968,15 +1048,45 @@ export const useEditorStore = create<EditorStore>()(
             // FIX: Inject default properties if missing
             availableProperties: [
               ...properties,
-              ...(!properties.some(p => p.name === 'email') ? [{ id: 'email', name: 'email', displayName: 'Email', type: 'string', description: 'User Email' }] : []),
-              ...(!properties.some(p => p.name === 'referralCode') ? [{ id: 'referralCode', name: 'referralCode', displayName: 'Referral Code', type: 'string', description: 'User Referral Code' }] : [])
-            ] as PropertyDefinition[],
-            availablePages: pages,
-            isLoadingMetadata: false
+              { _id: 'email', name: 'email', type: 'string', isPrivate: true, isPII: true, organization_id: '', createdAt: '', updatedAt: '' },
+              { _id: 'userId', name: 'userId', type: 'string', isPrivate: true, isPII: true, organization_id: '', createdAt: '', updatedAt: '' }
+            ],
+            availablePages: pages, // Store pages
           });
         } catch (error) {
-          console.error('Failed to fetch metadata:', error);
+          console.error('Failed to fetch metadata', error);
+        } finally {
           set({ isLoadingMetadata: false });
+        }
+      },
+
+      fetchPageDetails: async (pageId: string) => {
+        try {
+          // FIX: Use apiClient for full page details including elements
+          const api = await import('@/lib/api');
+          const pageDetails = await api.apiClient.getPage(pageId);
+
+          set((state) => ({
+            availablePages: state.availablePages.map(p =>
+              p._id === pageId ? { ...p, ...pageDetails } : p
+            )
+          }));
+          return pageDetails;
+        } catch (error) {
+          console.error('Failed to fetch page details via API', error);
+          // Fallback to metadata service? verify if needed
+          try {
+            const pageDetails = await metadataService.getPage(pageId);
+            set((state) => ({
+              availablePages: state.availablePages.map(p =>
+                p._id === pageId ? { ...p, ...pageDetails } : p
+              )
+            }));
+            return pageDetails;
+          } catch (e) {
+            console.error('Failed to fetch page details fallback', e);
+            throw e;
+          }
         }
       },
 
@@ -1316,7 +1426,7 @@ export const useEditorStore = create<EditorStore>()(
           }
 
           // FIX: Migration for legacy campaigns - Convert root layer type 'text' -> 'container' AND Fix missing root layers
-          if (['bottomsheet', 'modal', 'scratchcard', 'banner', 'tooltip', 'pip', 'floater'].includes(campaignData.nudgeType)) {
+          if (['bottomsheet', 'modal', 'scratchcard', 'banner', 'tooltip', 'pip', 'floater', 'fullscreen'].includes(campaignData.nudgeType)) {
             let rootLayerName = 'Modal Container'; // default
             if (campaignData.nudgeType === 'bottomsheet') rootLayerName = 'Bottom Sheet';
             if (campaignData.nudgeType === 'scratchcard') rootLayerName = 'Scratch Card Container';
@@ -1324,6 +1434,7 @@ export const useEditorStore = create<EditorStore>()(
             if (campaignData.nudgeType === 'tooltip') rootLayerName = 'Tooltip Container';
             if (campaignData.nudgeType === 'pip') rootLayerName = 'PIP Container';
             if (campaignData.nudgeType === 'floater') rootLayerName = 'Floater Container';
+            if (campaignData.nudgeType === 'fullscreen') rootLayerName = 'Fullscreen Layout';
 
             let rootLayer = campaignData.layers.find(l => l.name === rootLayerName);
 
@@ -1522,6 +1633,8 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       // Update status
+      // NOTE: Does NOT set isDirty to prevent double-save race condition.
+      // Status updates are always followed by immediate saveCampaign() calls.
       updateStatus: (status) => {
         const { currentCampaign } = get();
         if (!currentCampaign) return;
@@ -1531,7 +1644,7 @@ export const useEditorStore = create<EditorStore>()(
             ...currentCampaign,
             status,
             updatedAt: new Date().toISOString(),
-            isDirty: true,
+            // isDirty intentionally NOT set to prevent auto-save race
           },
         });
       },
@@ -2923,6 +3036,63 @@ export const useEditorStore = create<EditorStore>()(
         }
       },
 
+      // Update FullScreen config
+      updateFullScreenConfig: (config: Partial<FullScreenConfig>) => {
+        const { currentCampaign, activeInterfaceId } = get();
+        if (!currentCampaign) return;
+
+        const defaults: FullScreenConfig = {
+          showSystemColor: false,
+          overlay: { enabled: true, color: '#000000', opacity: 1, dismissOnClick: false },
+          timing: { delay: 0, duration: 0 },
+          parameters: {},
+          cannotClash: false,
+          backgroundColor: '#FFFFFF'
+        };
+
+        const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
+        // @ts-ignore
+        const currentConfig = (activeInterface ? activeInterface.fullscreenConfig : currentCampaign.fullscreenConfig) || defaults;
+
+        // Deep merge logic
+        const updatedConfig = { ...currentConfig };
+        Object.keys(config).forEach(key => {
+          // @ts-ignore
+          if (config[key] && typeof config[key] === 'object' && !Array.isArray(config[key])) {
+            // @ts-ignore
+            updatedConfig[key] = { ...(currentConfig[key] || {}), ...config[key] };
+          } else {
+            // @ts-ignore
+            updatedConfig[key] = config[key];
+          }
+        });
+
+        if (activeInterface) {
+          const updatedInterfaces = currentCampaign.interfaces.map(iface =>
+            iface.id === activeInterfaceId
+              ? { ...iface, fullscreenConfig: updatedConfig, updatedAt: new Date().toISOString() }
+              : iface
+          );
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        } else {
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              fullscreenConfig: updatedConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          });
+        }
+      },
+
       // Update Tooltip config
       updateTooltipConfig: (config: any) => {
         const { currentCampaign, activeInterfaceId } = get();
@@ -3719,6 +3889,28 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       ];
 
 
+    case 'fullscreen':
+      return [
+        {
+          id: `layer_${baseId}`,
+          type: 'container',
+          name: 'Fullscreen Layout',
+          parent: null,
+          children: [],
+          visible: true,
+          locked: false,
+          zIndex: 0,
+          position: { x: 0, y: 0, type: 'absolute' },
+          size: { width: '100%', height: '100%' },
+          content: {},
+          style: {
+            backgroundColor: '#FFFFFF',
+            width: '100%',
+            height: '100%',
+          },
+        }
+      ];
+
     case 'tooltip':
       return [
         {
@@ -4061,6 +4253,24 @@ function getDefaultConfigForNudgeType(nudgeType: CampaignInterface['nudgeType'])
           glassmorphism: { enabled: false, blur: 10, opacity: 0.2 },
           gradient: { enabled: false, startColor: '#000000', endColor: '#333333', angle: 45 },
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+        }
+      };
+    case 'fullscreen':
+      return {
+        fullscreenConfig: {
+          backgroundColor: '#FFFFFF',
+          showSystemColor: true,
+          overlay: {
+            enabled: false,
+            color: '#000000',
+            opacity: 0.5,
+            dismissOnClick: false,
+          },
+          timing: {
+            delay: 0,
+            duration: 0,
+          },
+          cannotClash: true,
         }
       };
     default:

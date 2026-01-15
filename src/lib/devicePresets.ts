@@ -60,6 +60,18 @@ export const DEVICE_PRESETS: DevicePreset[] = [
         frameColor: '#000000',
         statusBarHeight: 24,
     },
+    {
+        id: 'custom-1080p',
+        name: 'Custom (1080x2400)',
+        category: 'android',
+        width: 1080,
+        height: 2400,
+        notchType: 'punch-hole',
+        borderRadius: 40,
+        bezelSize: 4,
+        frameColor: '#000000',
+        statusBarHeight: 60,
+    },
 ];
 
-export const DEFAULT_DEVICE_ID = 'iphone14pro';
+export const DEFAULT_DEVICE_ID = 'custom-1080p';

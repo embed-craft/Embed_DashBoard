@@ -42,7 +42,9 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
     className,
     style
 }) => {
-    const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
+    // Check both layer.style.position AND the passed style prop for position: absolute
+    const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed' ||
+        style?.position === 'absolute' || style?.position === 'fixed';
     const nodeRef = useRef<HTMLDivElement>(null);
 
     const handleDrag = (e: DraggableEvent, data: DraggableData) => {

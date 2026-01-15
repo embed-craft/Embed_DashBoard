@@ -59,6 +59,17 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const interactModeEntryTimeRef = useRef<number>(0);
 
+    // DEBUG: Log render events
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[Dashboard] 🛠️ Rendering Tooltip`, {
+                mode: isInteractive ? 'Interactive' : 'Preview',
+                layers: layers.length,
+                config
+            });
+        }
+    }, [config, layers.length, isInteractive]);
+
     useEffect(() => {
         if (isInteractive) {
             interactModeEntryTimeRef.current = Date.now();
@@ -253,7 +264,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             ? config.spotlightHeight * scale
             : targetH;
         const radius = (config.spotlightRadius ?? 8) * scale;
-        const blur = config.spotlightBlur ?? 0;
+        const blur = (config.spotlightBlur ?? 0) * scale;
 
         const spotW = baseWidth + padding * 2;
         const spotH = baseHeight + padding * 2;
@@ -273,11 +284,28 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             const coverage = (config.waveCoverage ?? 60) / 100;
             const curve = (config.waveCurvature ?? 80) * scale;
 
+            // PARITY FIX: Use Design Height (852 adjusted by scale) for wave depth calculations.
+            // This ensures the wave shape matches the content (which scales by width) 
+            // regardless of the actual container aspect ratio.
+            // NEW: If waveFitToHeight is true, use scaleY to calculate designHeight.
+            // This makes the wave depth responsive to screen height.
+            const designHeight = 852 * (config.waveFitToHeight ? scaleY : scale);
+
             if (origin === 'bottom') {
-                const waveY = screenH * (1 - coverage);
-                return `M 0 ${screenH} V ${waveY} Q ${screenW / 2} ${waveY - curve} ${screenW} ${waveY} V ${screenH} Z`;
+                // PARITY FIX 2.0: Anchor to DESIGN TOP vs REAL BOTTOM
+                // Previous fix anchored to bottom with fixed depth. This caused drift relative to top-anchored content.
+                // NEW: Anchor the "Cut" (waveY) to the Design Height's relative position from the TOP.
+                // This ensures the wave always cuts text/images at the exact same point, regardless of screen height.
+                // We still fill down to 'screenH' to cover the physical bottom.
+
+                const waveY = designHeight * (1 - coverage);
+                // PARITY FIX 3.0: Extend fill to cover tall screens (e.g. 20:9 aspect ratio)
+                // If we stop at screenH (852*scale), tall phones (2400h) will show a gap.
+                const anchorBottom = Math.max(screenH, 4000);
+                return `M 0 ${anchorBottom} V ${waveY} Q ${screenW / 2} ${waveY - curve} ${screenW} ${waveY} V ${anchorBottom} Z`;
             } else if (origin === 'top') {
-                const waveY = screenH * coverage;
+                // Align to top (0). Depth = designHeight * coverage.
+                const waveY = designHeight * coverage;
                 return `M 0 0 V ${waveY} Q ${screenW / 2} ${waveY + curve} ${screenW} ${waveY} V 0 Z`;
             } else if (origin === 'left') {
                 const waveX = screenW * coverage;
@@ -287,26 +315,30 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 return `M ${screenW} 0 H ${waveX} Q ${waveX - curve} ${screenH / 2} ${waveX} ${screenH} H ${screenW} Z`;
             } else if (origin === 'top-left') {
                 const w = screenW * coverage;
-                const h = screenH * coverage;
+                const h = designHeight * coverage;
                 // Curve control point roughly follows the corner direction
                 // If curve > 0, it pushes OUT (convex). If < 0, pushes IN (concave).
                 // Base control is (w, h) for a standard round. Adjusted by curve.
                 return `M 0 0 H ${w} Q ${w + curve} ${h + curve} 0 ${h} Z`;
             } else if (origin === 'top-right') {
                 const w = screenW * (1 - coverage);
-                const h = screenH * coverage;
+                const h = designHeight * coverage;
                 // Top-Right corner is (screenW, 0)
                 return `M ${screenW} 0 V ${h} Q ${w - curve} ${h + curve} ${w} 0 Z`;
             } else if (origin === 'bottom-left') {
                 const w = screenW * coverage;
-                const h = screenH * (1 - coverage);
+                // PARITY FIX: Top-Anchor for Corner Waves too.
+                const h = designHeight * (1 - coverage);
                 // Bottom-Left corner is (0, screenH)
-                return `M 0 ${screenH} V ${h} Q ${w + curve} ${h - curve} ${w} ${screenH} Z`;
+                const anchorBottom = Math.max(screenH, 4000);
+                return `M 0 ${anchorBottom} V ${h} Q ${w + curve} ${h - curve} ${w} ${anchorBottom} Z`;
             } else if (origin === 'bottom-right') {
                 const w = screenW * (1 - coverage);
-                const h = screenH * (1 - coverage);
+                // PARITY FIX: Top-Anchor for Corner Waves too.
+                const h = designHeight * (1 - coverage);
                 // Bottom-Right corner is (screenW, screenH)
-                return `M ${screenW} ${screenH} H ${w} Q ${w - curve} ${h - curve} ${screenW} ${h} Z`;
+                const anchorBottom = Math.max(screenH, 4000);
+                return `M ${screenW} ${anchorBottom} H ${w} Q ${w - curve} ${h - curve} ${screenW} ${h} Z`;
             } else {
                 return null;
             }
@@ -458,7 +490,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         const { drawX, drawY, drawWidth, drawHeight, radius } = targetGeo;
 
         const borderColor = config.targetBorderColor || colors.primary[500];
-        const borderWidth = (config.targetBorderEnabled !== false) ? (config.targetBorderWidth || 0) : 0;
+        const borderWidth = (config.targetBorderEnabled !== false) ? ((config.targetBorderWidth || 0) * scale) : 0;
         const borderStyle = config.targetBorderStyle || 'solid';
         const fillColor = config.targetFillColor || 'transparent'; // New
 
@@ -489,23 +521,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 {config.targetShadowEnabled && (
                     <div style={{
                         position: 'absolute', inset: 0, borderRadius: radius,
-                        boxShadow: `0 0 ${config.targetShadowBlur ?? 8}px ${config.targetShadowSpread ?? 0}px ${config.targetShadowColor || borderColor}`,
+                        boxShadow: `0 0 ${(config.targetShadowBlur ?? 8) * scale}px ${(config.targetShadowSpread ?? 0) * scale}px ${config.targetShadowColor || borderColor}`,
                     }} />
                 )}
 
-                {/* Spotlight Effects */}
-                {config.spotlightEffect === 'pulse' && (
-                    <div className="animate-ping absolute inset-0 rounded-full opacity-75"
-                        style={{ backgroundColor: config.spotlightEffectColor || '#FFFFFF', borderRadius: radius }}></div>
-                )}
-                {config.spotlightEffect === 'ripple' && (
-                    <>
-                        <div className="absolute inset-[-10px] border-4 rounded-full animate-ripple opacity-0"
-                            style={{ borderColor: config.spotlightEffectColor || '#FFFFFF', borderRadius: '50%', animationDelay: '0s' }} />
-                        <div className="absolute inset-[-20px] border-4 rounded-full animate-ripple opacity-0"
-                            style={{ borderColor: config.spotlightEffectColor || '#FFFFFF', borderRadius: '50%', animationDelay: '0.5s' }} />
-                    </>
-                )}
+
             </div>
         );
     };

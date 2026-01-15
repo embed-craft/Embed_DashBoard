@@ -707,6 +707,7 @@ export interface TooltipConfig {
   waveOrigin?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   waveCoverage?: number;   // 0-100 percent
   waveCurvature?: number;  // curve intensity
+  waveFitToHeight?: boolean; // NEW: If true, scales wave depth with screen height (responsive). Default: false
 
   // Spotlight
   spotlightWidth?: number;     // Default: auto (px) - override target width

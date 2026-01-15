@@ -822,6 +822,21 @@ export const TooltipMinimalEditor = () => {
                                             </div>
                                         )}
 
+                                        {/* Wave Fit Switch */}
+                                        {config.coachmarkShape === 'wave' && (
+                                            <div className="flex items-center justify-between pt-2 border-t border-slate-200 mt-2">
+                                                <div className="flex flex-col">
+                                                    <Label className="text-[10px] font-medium text-slate-700">Fit to Screen Height</Label>
+                                                    <span className="text-[8px] text-slate-400">Scale depth with height</span>
+                                                </div>
+                                                <Switch
+                                                    className="scale-75 origin-right"
+                                                    checked={config.waveFitToHeight || false}
+                                                    onCheckedChange={(c) => updateConfig('waveFitToHeight', c)}
+                                                />
+                                            </div>
+                                        )}
+
                                         {/* Color + Opacity */}
                                         <div className="flex items-center gap-3">
                                             <div className="relative w-9 h-9 rounded-lg border border-slate-200 overflow-hidden cursor-pointer">

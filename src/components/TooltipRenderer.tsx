@@ -141,6 +141,14 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             pointerEvents: 'auto', // Ensure layer is interactive even if container is not
         };
 
+        // DEBUG: Log exact CSS values for comparison with SDK
+        console.log(`[Dashboard] renderLayer: ${layer.type} id=${layer.id} parent=${layer.parent}`);
+        console.log(`  style.left=${layer.style?.left}, style.top=${layer.style?.top}`);
+        console.log(`  style.width=${layer.style?.width}, style.height=${layer.style?.height}`);
+        console.log(`  CSS left=${baseStyle.left}, top=${baseStyle.top}`);
+        console.log(`  CSS width=${baseStyle.width}, height=${baseStyle.height}`);
+        console.log(`  scale=${scale}, scaleY=${scaleY}`);
+
         let content = null;
         switch (layer.type) {
             case 'text': content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;

@@ -8,20 +8,46 @@ import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 
-const getTransformString = (transform?: LayerStyle['transform']) => {
+// Helper to scale any string containing "Npx" values (e.g. "1px solid red", "0 4px 10px black")
+// This ensures decorations match the mobile scaling factor
+const scalePixelString = (str: string | undefined, scale: number): string | undefined => {
+    if (!str || typeof str !== 'string') return undefined;
+    if (scale === 1) return str;
+
+    // Regex to find numbers followed by 'px'. Handles negative numbers and decimals.
+    return str.replace(/(-?\d*\.?\d+)px/g, (match, numStr) => {
+        const val = parseFloat(numStr);
+        if (isNaN(val)) return match;
+        return `${Number((val * scale).toFixed(2))}px`;
+    });
+};
+
+const getTransformString = (transform?: LayerStyle['transform'], scale: number = 1) => {
     if (!transform || typeof transform !== 'object') return undefined;
     const parts = [];
     if (transform.rotate) parts.push(`rotate(${transform.rotate}deg)`);
     if (transform.scale) parts.push(`scale(${transform.scale})`);
     if (transform.translateX !== undefined) {
         const val = transform.translateX;
-        const valStr = typeof val === 'number' ? `${val}px` : val;
-        parts.push(`translateX(${valStr})`);
+        // Scale explicit pixel numbers
+        if (typeof val === 'number') {
+            parts.push(`translateX(${val * scale}px)`);
+        } else {
+            // Try to scale string px values if any
+            parts.push(`translateX(${scalePixelString(val, scale) || val})`);
+        }
     }
     if (transform.translateY !== undefined) {
         const val = transform.translateY;
-        const valStr = typeof val === 'number' ? `${val}px` : val;
-        parts.push(`translateY(${valStr})`);
+        if (typeof val === 'number') {
+            parts.push(`translateY(${val * scale}px)`); // Typically translateY is Y-axis? Tooltip scaleY?
+            // Actually, for parity with "Global Scale" usually uniform scaling is preferred for design elements,
+            // but if layout is stretched (scaleY), maybe Y should use scaleY?
+            // User said "multiply... by scale". Let's stick to uniform 'scale' for consistency unless 'scaleY' is explicitly required.
+            // Wait, safeScale uses scaleY for height. Let's use scaleY for Y translation to be safe.
+        } else {
+            parts.push(`translateY(${scalePixelString(val, scale) || val})`);
+        }
     }
     return parts.join(' ');
 };
@@ -78,21 +104,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     // Auto scroll to target element when enabled
     useEffect(() => {
-        // Only apply when enabled and in interactive mode (not dashboard preview)
         if (!config.autoScrollToTarget || !isInteractive || !targetElement?.rect) return;
-
-        // Calculate target position in scaled coordinates
         const targetCenterY = (targetElement.rect.y * scaleY) + (targetElement.rect.height * scaleY / 2);
         const viewportHeight = window.innerHeight || 852;
-
-        // Scroll target to center of viewport
         const scrollTarget = Math.max(0, targetCenterY - (viewportHeight / 2));
-
-        // Smooth scroll
-        window.scrollTo({
-            top: scrollTarget,
-            behavior: 'smooth'
-        });
+        window.scrollTo({ top: scrollTarget, behavior: 'smooth' });
     }, [config.autoScrollToTarget, targetElement, isInteractive, scaleY]);
 
     const safeScale = (val: any, factor: number) => {
@@ -104,7 +120,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         return `${num * factor}px`;
     };
 
-    const toPercentX = (val: any) => { /* ... simplified ... */ if (val == null) return undefined; const str = val.toString().trim(); if (str.endsWith('%')) return str; const num = parseFloat(str); if (isNaN(num)) return undefined; return `${(num / 393) * 100}%`; };
+    const toPercentX = (val: any) => { if (val == null) return undefined; const str = val.toString().trim(); if (str.endsWith('%')) return str; const num = parseFloat(str); if (isNaN(num)) return undefined; return `${(num / 393) * 100}%`; };
     const toPercentY = (val: any) => { if (val == null) return undefined; const str = val.toString().trim(); if (str.endsWith('%')) return str; const num = parseFloat(str); if (isNaN(num)) return undefined; return `${(num / 852) * 100}%`; };
 
     const handleAction = (action: any) => {
@@ -134,11 +150,14 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             backgroundSize: layer.style?.backgroundSize || 'cover',
             backgroundPosition: layer.style?.backgroundPosition || 'center',
             backgroundRepeat: layer.style?.backgroundRepeat || 'no-repeat',
-            border: layer.style?.border,
-            boxShadow: layer.style?.boxShadow,
+            // FIX: Apply scaling to Border and Shadow
+            border: scalePixelString(layer.style?.border, scale),
+            boxShadow: scalePixelString(layer.style?.boxShadow, scale),
             // Fix: Allow overflow for buttons so shadows aren't clipped
             overflow: layer.type === 'button' ? 'visible' : (layer.style?.overflow || 'hidden'),
             pointerEvents: 'auto', // Ensure layer is interactive even if container is not
+            // FIX: Apply scaling to Transform
+            transform: getTransformString(layer.style?.transform, scale),
         };
 
         // DEBUG: Log exact CSS values for comparison with SDK

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { toast } from 'sonner';
-import { Copy } from 'lucide-react';
+import { Copy, Layout, FileText, Link as LinkIcon, Check } from 'lucide-react';
 
 interface CopyButtonRendererProps {
     layer: Layer;
@@ -70,20 +70,20 @@ export const CopyButtonRenderer: React.FC<CopyButtonRendererProps> = ({
                 borderStyle: style.borderStyle || 'solid',
                 // Apply shadow if any
                 boxShadow: style.shadowEnabled
-                    ? `${safeScale(0, scale)} ${safeScale(style.shadowOffsetY || 4, scale)} ${safeScale(style.shadowBlur || 0, scale)} ${safeScale(style.shadowSpread || 0, scale)} ${style.shadowColor || '#000000'}`
+                    ? `${safeScale(0, scale)} ${safeScale(style.shadowOffsetY ?? 4, scale)} ${safeScale(style.shadowBlur || 0, scale)} ${safeScale(style.shadowSpread || 0, scale)} ${style.shadowColor || '#000000'}`
                     : style.boxShadow,
                 color: content.textColor || colors?.text?.primary || '#000000', // Ensure text color
-                fontFamily: style.fontFamily,
-                fontSize: safeScale(style.fontSize, scale),
+                fontFamily: content.fontFamily || style.fontFamily || 'inherit',
+                fontSize: safeScale(style.fontSize || 14, scale),
                 fontWeight: style.fontWeight,
                 boxSizing: 'border-box', // Ensure padding doesn't overflow
                 // Apply spacing
                 // Apply spacing (granular support)
                 padding: (() => {
                     const pTop = style.paddingTop ?? style.paddingVertical ?? (style.padding !== undefined ? style.padding : 0);
-                    const pRight = style.paddingRight ?? style.paddingHorizontal ?? (style.padding !== undefined ? style.padding : 12);
+                    const pRight = style.paddingRight ?? style.paddingHorizontal ?? (style.padding !== undefined ? style.padding : 0);
                     const pBottom = style.paddingBottom ?? style.paddingVertical ?? (style.padding !== undefined ? style.padding : 0);
-                    const pLeft = style.paddingLeft ?? style.paddingHorizontal ?? (style.padding !== undefined ? style.padding : 12);
+                    const pLeft = style.paddingLeft ?? style.paddingHorizontal ?? (style.padding !== undefined ? style.padding : 0);
 
                     return `${safeScale(pTop, scaleY)} ${safeScale(pRight, scale)} ${safeScale(pBottom, scaleY)} ${safeScale(pLeft, scale)}`;
                 })(),
@@ -119,17 +119,18 @@ export const CopyButtonRenderer: React.FC<CopyButtonRendererProps> = ({
                 }}>
                 {(() => {
                     const iconName = content.copyIcon || 'Copy';
-                    const IconProps = { size: safeScale(16, scale), strokeWidth: 2 };
+                    const size = safeScale(16, scale); // Common size
+                    const IconProps = { size, strokeWidth: 2 };
 
                     switch (iconName) {
-                        case 'Clipboard': return <svg {...IconProps} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
-                        case 'FileText': return <svg {...IconProps} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
-                        case 'Link': return <svg {...IconProps} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
-                        case 'Share': return <svg {...IconProps} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>;
-                        case 'Check': return <svg {...IconProps} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+                        case 'Clipboard': return <Layout {...IconProps} />; // FIX: Use Layout icon to match Editor
+                        case 'FileText': return <FileText {...IconProps} />;
+                        case 'Link': return <LinkIcon {...IconProps} />;
+                        // case 'Share': return <Share {...IconProps} />; // Share not imported, keep generic if needed or add
+                        case 'Check': return <Check {...IconProps} />;
                         case 'Copy':
                         default:
-                            return <Copy size={safeScale(16, scale)} />;
+                            return <Copy size={size} />;
                     }
                 })()}
             </div>

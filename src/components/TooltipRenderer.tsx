@@ -684,6 +684,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             {/* TOOLTIP MODE: Render layers inside positioned container near target */}
             {(!config.coachmarkEnabled && isBodyVisible) && (
                 <div ref={containerRef} style={{ position: 'absolute', ...getPosStyle(), zIndex: 50, pointerEvents: 'auto' }}>
+                    {config.showArrow !== false && <Arrow />}
                     <div style={{
                         position: 'relative',
                         // Apply visual styles ONLY if body is visible
@@ -740,7 +741,6 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                             : undefined,
                         overflow: 'hidden', // Ensure content stays inside
                     }}>
-                        {config.showArrow !== false && <Arrow />}
                         <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'visible' }}>
                             {layersToRender.map(renderLayer)}
                         </div>

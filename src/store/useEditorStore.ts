@@ -9,7 +9,7 @@ export type { ScratchCardConfig };
 // Layer Types - Extended for Phase 2 & 3.5
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
-  | 'progress-bar' | 'progress-circle' | 'countdown' | 'list' | 'input' | 'statistic'
+  | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
   | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image';
 
 export interface LayerContent {
@@ -80,13 +80,9 @@ export interface LayerContent {
   progressVariant?: 'simple' | 'semicircle' | 'thick' | 'dashed';
   progressBarVariant?: 'simple' | 'rounded' | 'striped' | 'animated' | 'gradient' | 'segmented' | 'glow';
   milestones?: { value: number; label: string; color: string }[];
+  showIndicators?: boolean; // Carousel indicators
 
-  // Countdown content (Phase 2)
-  endTime?: string;
-  format?: 'HH:MM:SS' | 'MM:SS' | 'auto';
-  timerVariant?: 'text' | 'card' | 'circular' | 'flip' | 'digital' | 'bubble' | 'minimal' | 'neon';
-  urgencyThreshold?: number;
-  autoHide?: boolean;
+
 
   // List content (Phase 2)
   items?: string[];
@@ -302,6 +298,7 @@ export interface LayerStyle {
   };
   backdropFilter?: string; // blur for glassmorphism
   mixBlendMode?: string;
+  indicatorColor?: string; // Carousel indicators
 
   // Transform (Phase 1)
   transform?: {
@@ -472,6 +469,23 @@ export interface ModalConfig {
     color: string;
     dismissOnClick: boolean;
   };
+
+  closeButton?: {
+    enabled: boolean;
+    position: 'top-right' | 'top-left' | 'outside-right';
+    color: string;
+    backgroundColor: string;
+  };
+  boxShadow?: {
+    enabled: boolean;
+    blur: number;
+    spread?: number; // Added Spread
+    color: string;
+  };
+  // Position props (optional)
+  position?: 'center' | 'bottom' | 'custom';
+  x?: number;
+  y?: number;
 
   animation: {
     type: 'pop' | 'fade' | 'slide' | 'scale';
@@ -1744,7 +1758,7 @@ export const useEditorStore = create<EditorStore>()(
             ...payload
           } = currentCampaign;
 
-          const savedCampaign = await api.saveCampaign(payload);
+          const savedCampaign = await api.saveCampaign(payload as any);
           console.log('saveCampaign: Success, received:', savedCampaign);
 
           const updatedCampaign = {
@@ -3999,17 +4013,7 @@ function getDefaultContentForType(type: LayerType): LayerContent {
         fontSize: 14,
         textColor: '#374151',
       };
-    case 'countdown':
-      return {
-        endTime: new Date(Date.now() + 86400000).toISOString(), // 24 hours from now
-        format: 'HH:MM:SS',
-        timerVariant: 'card', // Default to card style for better UX
-        urgencyThreshold: 3600, // 1 hour
-        autoHide: false,
-        fontSize: 24,
-        fontWeight: 'bold',
-        textColor: '#111827',
-      };
+
     case 'gradient-overlay':
       return {
         gradientType: 'linear',

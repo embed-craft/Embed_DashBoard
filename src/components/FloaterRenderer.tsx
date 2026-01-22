@@ -98,319 +98,7 @@ const adjustColorBrightness = (color: string, percent: number) => {
     return '#' + (0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (B < 255 ? (B < 1 ? 0 : B) : 255) * 0x100 + (G < 255 ? (G < 1 ? 0 : G) : 255)).toString(16).slice(1);
 };
 
-// Extracted Component: Countdown Layer
-const CountdownLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
-    const [timeLeft, setTimeLeft] = useState<{ hours: number, minutes: number, seconds: number, totalSeconds: number }>({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
-    const endTimeMs = useMemo(() =>
-        layer.content.endTime ? new Date(layer.content.endTime).getTime() : Date.now() + 3600000,
-        [layer.content.endTime]
-    );
 
-    useEffect(() => {
-        let mounted = true;
-
-        const updateTimer = () => {
-            if (!mounted) return;
-
-            const now = Date.now();
-            const diff = endTimeMs - now;
-
-            if (diff <= 0) {
-                setTimeLeft({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
-            } else {
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                setTimeLeft({ hours, minutes, seconds, totalSeconds: Math.floor(diff / 1000) });
-            }
-        };
-
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-
-        return () => {
-            mounted = false;
-            clearInterval(interval);
-        };
-    }, [endTimeMs]);
-
-    const isUrgent = layer.content.urgencyThreshold && timeLeft.totalSeconds < (layer.content.urgencyThreshold || 0);
-    const variant = layer.content.timerVariant || 'text';
-    const textColor = isUrgent ? '#EF4444' : (layer.content.textColor || '#111827');
-    const fontSize = layer.content.fontSize || 24;
-    const fontWeight = layer.content.fontWeight || 'bold';
-    const fontFamily = layer.style?.fontFamily || 'monospace';
-
-    // Helper to render a single time unit block
-    const renderBlock = (value: number, label: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{
-                backgroundColor: variant === 'card' ? (layer.style?.backgroundColor || '#F3F4F6') : 'transparent',
-                borderRadius: variant === 'card' ? '8px' : '0',
-                padding: variant === 'card' ? '8px 12px' : '0',
-                minWidth: variant === 'card' ? '48px' : 'auto',
-                textAlign: 'center',
-                border: variant === 'card' ? `1px solid ${layer.style?.borderColor || '#E5E7EB'}` : 'none',
-                boxShadow: variant === 'card' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-            }}>
-                <span style={{ fontSize: `${fontSize}px`, fontWeight, color: textColor, fontFamily }}>
-                    {String(value).padStart(2, '0')}
-                </span>
-            </div>
-            {variant !== 'text' && (
-                <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 500 }}>
-                    {label}
-                </span>
-            )}
-        </div>
-    );
-
-    // Helper to render flip clock style
-    const renderFlip = (value: number, label: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <div style={{
-                backgroundColor: layer.style?.backgroundColor || '#1F2937',
-                borderRadius: '6px',
-                padding: '10px 8px',
-                minWidth: '44px',
-                textAlign: 'center',
-                position: 'relative',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                overflow: 'hidden'
-            }}>
-                {/* Top half shine/gradient */}
-                <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
-                    background: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
-                    borderBottom: '1px solid rgba(0,0,0,0.3)'
-                }} />
-                <span style={{
-                    fontSize: `${fontSize}px`, fontWeight: 'bold', color: layer.content.textColor || '#FFFFFF',
-                    fontFamily: 'Courier New, monospace', position: 'relative', zIndex: 1, display: 'block', lineHeight: 1
-                }}>
-                    {String(value).padStart(2, '0')}
-                </span>
-            </div>
-            <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>
-                {label}
-            </span>
-        </div>
-    );
-
-    // Helper to render digital/LED style
-    const renderDigital = (value: number, label: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{
-                backgroundColor: '#000000',
-                borderRadius: '4px',
-                padding: '8px 10px',
-                minWidth: '50px',
-                textAlign: 'center',
-                border: `2px solid ${layer.style?.borderColor || '#333'}`,
-                boxShadow: `0 0 10px ${isUrgent ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.2)'}`
-            }}>
-                <span style={{
-                    fontSize: `${fontSize}px`, fontWeight: 'normal',
-                    color: isUrgent ? '#EF4444' : '#10B981', // Red or Green LED
-                    fontFamily: "'Courier New', Courier, monospace",
-                    textShadow: `0 0 5px ${isUrgent ? '#EF4444' : '#10B981'}`
-                }}>
-                    {String(value).padStart(2, '0')}
-                </span>
-            </div>
-            <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 600 }}>
-                {label}
-            </span>
-        </div>
-    );
-
-    // Helper to render circular progress
-    const renderCircle = (value: number, max: number, label: string) => {
-        const size = 60;
-        const strokeWidth = 4;
-        const radius = (size - strokeWidth) / 2;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (value / max) * circumference;
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                <div style={{ position: 'relative', width: size, height: size }}>
-                    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx={size / 2} cy={size / 2} r={radius} stroke="#E5E7EB" strokeWidth={strokeWidth} fill="none" />
-                        <circle
-                            cx={size / 2} cy={size / 2} r={radius}
-                            stroke={isUrgent ? '#EF4444' : (layer.style?.backgroundColor || '#6366F1')}
-                            strokeWidth={strokeWidth} fill="none"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={offset}
-                            strokeLinecap="round"
-                            style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                        />
-                    </svg>
-                    <div style={{
-                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                        fontSize: `${Math.max(14, fontSize * 0.6)}px`, fontWeight, color: textColor, fontFamily
-                    }}>
-                        {String(value).padStart(2, '0')}
-                    </div>
-                </div>
-                <span style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 500 }}>
-                    {label}
-                </span>
-            </div>
-        );
-    };
-
-    // Helper for Bubble style
-    const renderBubble = (value: number, label: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{
-                backgroundColor: layer.style?.backgroundColor || '#EEF2FF',
-                borderRadius: '50%',
-                width: '56px',
-                height: '56px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                border: `2px solid ${layer.style?.borderColor || 'transparent'}`
-            }}>
-                <span style={{ fontSize: `${Math.max(16, fontSize * 0.8)}px`, fontWeight: 'bold', color: textColor, fontFamily }}>
-                    {String(value).padStart(2, '0')}
-                </span>
-            </div>
-            <span style={{ fontSize: '10px', color: '#6B7280', fontWeight: 600 }}>
-                {label}
-            </span>
-        </div>
-    );
-
-    // Helper for Minimal style
-    const renderMinimal = (value: number, label: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{ fontSize: `${fontSize * 1.2}px`, fontWeight: 300, color: textColor, fontFamily: 'Helvetica Neue, sans-serif', lineHeight: 1 }}>
-                {String(value).padStart(2, '0')}
-            </span>
-            <span style={{ fontSize: '9px', color: '#9CA3AF', letterSpacing: '1px', marginTop: '2px' }}>
-                {label}
-            </span>
-        </div>
-    );
-
-    // Helper for Neon style
-    const renderNeon = (value: number, label: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{
-                padding: '4px 12px',
-                border: `2px solid ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}`,
-                borderRadius: '8px',
-                boxShadow: `0 0 8px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}, inset 0 0 8px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}`,
-                backgroundColor: 'rgba(0,0,0,0.8)'
-            }}>
-                <span style={{
-                    fontSize: `${fontSize}px`, fontWeight: 'bold', color: '#FFFFFF',
-                    textShadow: `0 0 10px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}`,
-                    fontFamily: 'sans-serif'
-                }}>
-                    {String(value).padStart(2, '0')}
-                </span>
-            </div>
-            <span style={{ fontSize: '10px', color: isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1'), fontWeight: 600, textShadow: `0 0 5px ${isUrgent ? '#EF4444' : (layer.style?.borderColor || '#6366F1')}` }}>
-                {label}
-            </span>
-        </div>
-    );
-
-    if (variant === 'circular') {
-        return (
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                {renderCircle(timeLeft.hours, 24, 'Hrs')}
-                {renderCircle(timeLeft.minutes, 60, 'Mins')}
-                {renderCircle(timeLeft.seconds, 60, 'Secs')}
-            </div>
-        );
-    }
-
-    if (variant === 'bubble') {
-        return (
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                {renderBubble(timeLeft.hours, 'Hrs')}
-                {renderBubble(timeLeft.minutes, 'Mins')}
-                {renderBubble(timeLeft.seconds, 'Secs')}
-            </div>
-        );
-    }
-
-    if (variant === 'minimal') {
-        return (
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
-                {renderMinimal(timeLeft.hours, 'HOURS')}
-                <span style={{ fontSize: `${fontSize}px`, fontWeight: 300, color: '#E5E7EB', marginBottom: '12px' }}>|</span>
-                {renderMinimal(timeLeft.minutes, 'MINS')}
-                <span style={{ fontSize: `${fontSize}px`, fontWeight: 300, color: '#E5E7EB', marginBottom: '12px' }}>|</span>
-                {renderMinimal(timeLeft.seconds, 'SECS')}
-            </div>
-        );
-    }
-
-    if (variant === 'neon') {
-        return (
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                {renderNeon(timeLeft.hours, 'HRS')}
-                {renderNeon(timeLeft.minutes, 'MIN')}
-                {renderNeon(timeLeft.seconds, 'SEC')}
-            </div>
-        );
-    }
-
-    if (variant === 'flip') {
-        return (
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'flex-start' }}>
-                {renderFlip(timeLeft.hours, 'Hours')}
-                {renderFlip(timeLeft.minutes, 'Mins')}
-                {renderFlip(timeLeft.seconds, 'Secs')}
-            </div>
-        );
-    }
-
-    if (variant === 'digital') {
-        return (
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'flex-start' }}>
-                {renderDigital(timeLeft.hours, 'Hours')}
-                <span style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', color: isUrgent ? '#EF4444' : '#10B981', marginTop: '8px', textShadow: `0 0 5px ${isUrgent ? '#EF4444' : '#10B981'}` }}>:</span>
-                {renderDigital(timeLeft.minutes, 'Mins')}
-                <span style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', color: isUrgent ? '#EF4444' : '#10B981', marginTop: '8px', textShadow: `0 0 5px ${isUrgent ? '#EF4444' : '#10B981'}` }}>:</span>
-                {renderDigital(timeLeft.seconds, 'Secs')}
-            </div>
-        );
-    }
-
-    if (variant === 'card') {
-        return (
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'flex-start' }}>
-                {renderBlock(timeLeft.hours, 'Hours')}
-                <span style={{ fontSize: `${fontSize}px`, fontWeight, color: textColor, marginTop: '8px' }}>:</span>
-                {renderBlock(timeLeft.minutes, 'Mins')}
-                <span style={{ fontSize: `${fontSize}px`, fontWeight, color: textColor, marginTop: '8px' }}>:</span>
-                {renderBlock(timeLeft.seconds, 'Secs')}
-            </div>
-        );
-    }
-
-    // Default text variant
-    return (
-        <div style={{
-            fontSize: `${fontSize}px`,
-            fontWeight,
-            color: textColor,
-            textAlign: 'center',
-            fontFamily,
-            letterSpacing: '2px'
-        }}>
-            {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-        </div>
-    );
-};
 
 // Extracted Component: Statistic Layer
 const StatisticLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
@@ -745,7 +433,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         };
 
         // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
-        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
+        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'text') {
             delete scaledStyle.backgroundColor;
             delete scaledStyle.border;
             delete scaledStyle.borderWidth;
@@ -921,9 +609,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             case 'statistic':
                 content = <StatisticLayer layer={layer} />;
                 break;
-            case 'countdown':
-                content = <CountdownLayer layer={layer} />;
-                break;
+
             case 'gradient-overlay':
                 content = (
                     <div style={{
@@ -1125,7 +811,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
 
             // SNAP TO CORNER LOGIC
             // Support root or nested config
-            const isSnapEnabled = (config as any)?.snapToCorner ?? config?.behavior?.snapToCorner ?? false;
+            const isSnapEnabled = config?.behavior?.snapToCorner ?? (config as any)?.snapToCorner ?? true;
 
             console.log('[FloaterRenderer] PointerUp - Checking Snap', {
                 enabled: isSnapEnabled,
@@ -1243,6 +929,42 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         return config?.media?.type === 'video' || config?.media?.type === 'youtube';
     }, [config?.media?.type]);
 
+    // Helper to render scaled control buttons
+    const renderControlBtn = (
+        btnConfig: any,
+        icon: React.ReactNode,
+        onClick: (e: React.MouseEvent) => void,
+        defaultSize: number = 14
+    ) => {
+        if (!btnConfig) return null;
+
+        // Scale values
+        const size = safeScale(btnConfig.size || defaultSize, scale);
+        // Ensure offsets are strings with units
+        const offsetX = safeScale(btnConfig.offsetX || 0, scale) || '0px';
+        const offsetY = safeScale(btnConfig.offsetY || 0, scaleY) || '0px';
+        const padding = safeScale(6, scale); // Scale padding 6px default
+
+        return (
+            <div
+                onClick={(e) => { e.stopPropagation(); onClick(e); }}
+                style={{
+                    transform: `translate(${offsetX}, ${offsetY})`,
+                    cursor: 'pointer',
+                    padding: padding,
+                    borderRadius: '50%',
+                    backgroundColor: btnConfig.backgroundColor || 'rgba(0,0,0,0.4)',
+                    color: btnConfig.color || 'white',
+                    display: 'flex',
+                    transition: 'background-color 0.2s',
+                    backdropFilter: 'blur(4px)'
+                }}
+            >
+                {React.cloneElement(icon as React.ReactElement, { size: size })}
+            </div>
+        );
+    };
+
     return (
         <>
             {/* Overlay (Backdrop) */}
@@ -1324,7 +1046,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden',
+                    overflow: 'hidden', // Ensure content is clipped (User Request)
 
                     // Background - ✅ FIX: config?.backgroundColor takes precedence over layer style
                     backgroundColor: config?.backgroundColor === 'transparent'
@@ -1334,7 +1056,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     backgroundImage: (config?.media?.url ? `url(${config.media.url})` : undefined) ||
                         (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
                         (floaterLayer.style?.backgroundImage && floaterLayer.style?.backgroundImage !== 'none' ? floaterLayer.style?.backgroundImage : undefined),
-                    backgroundSize: config?.media?.fit === 'contain' ? 'contain' : (config?.media?.fit === 'cover' ? 'cover' : '100% 100%'),
+                    backgroundSize: isExpanded ? 'contain' : (config?.media?.fit === 'contain' ? 'contain' : (config?.media?.fit === 'cover' ? 'cover' : '100% 100%')),
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
 
@@ -1354,9 +1076,9 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     boxShadow: isExpanded ? 'none' : (
                         config?.shadow?.enabled === false
                             ? 'none'
-                            : (config?.shadow?.blur !== undefined || config?.shadow?.spread !== undefined)
-                                ? `0 8px ${config?.shadow?.blur || 24}px ${config?.shadow?.spread || 4}px rgba(0, 0, 0, 0.25)`
-                                : (config?.boxShadow || '0 8px 32px rgba(0, 0, 0, 0.15)')
+                            : (config?.shadow?.blur !== undefined || config?.shadow?.spread !== undefined || config?.shadow?.x !== undefined || config?.shadow?.y !== undefined)
+                                ? `${safeScale(config?.shadow?.x || 0, scale)} ${safeScale(config?.shadow?.y || 8, scale)} ${safeScale(config?.shadow?.blur || 24, scale)} ${safeScale(config?.shadow?.spread || 4, scale)} ${config?.shadow?.color || 'rgba(0, 0, 0, 0.25)'}`
+                                : (config?.boxShadow || `0 ${safeScale(8, scale)} ${safeScale(32, scale)} rgba(0, 0, 0, 0.15)`)
                     ),
 
                     // Animation entrance effect (Applied to Inner Box to avoid breaking Outer Box transform)
@@ -1463,46 +1185,52 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         }}>
                             {/* Top Left */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && (config?.controls?.expandButton?.position === 'top-left' || !config?.controls?.expandButton?.position) && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'top-left' && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'top-left' && (
-                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        <X size={config?.controls?.closeButton?.size || 14} />
-                                    </div>
-                                )}
+                                {config?.controls?.expandButton?.show && (config?.controls?.expandButton?.position === 'top-left' || !config?.controls?.expandButton?.position) &&
+                                    renderControlBtn(
+                                        config.controls.expandButton,
+                                        isExpanded ? <Minimize /> : <Expand />,
+                                        () => setIsExpanded(!isExpanded)
+                                    )
+                                }
+                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'top-left' &&
+                                    renderControlBtn(
+                                        config.controls.muteButton,
+                                        isMuted ? <VolumeX /> : <Volume2 />,
+                                        () => setIsMuted(!isMuted)
+                                    )
+                                }
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'top-left' &&
+                                    renderControlBtn(
+                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 }, // Fallback for bare showCloseButton=true
+                                        <X />,
+                                        () => { if (isInteractive && onDismiss) onDismiss(); }
+                                    )
+                                }
                             </div>
 
                             {/* Top Right */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'top-right' && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {config?.controls?.muteButton?.show && isVideo && (config?.controls?.muteButton?.position === 'top-right' || !config?.controls?.muteButton?.position) && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && (config?.controls?.closeButton?.position === 'top-right' || !config?.controls?.closeButton?.position) && (
-                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        <X size={config?.controls?.closeButton?.size || 14} />
-                                    </div>
-                                )}
+                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'top-right' &&
+                                    renderControlBtn(
+                                        config.controls.expandButton,
+                                        isExpanded ? <Minimize /> : <Expand />,
+                                        () => setIsExpanded(!isExpanded)
+                                    )
+                                }
+                                {config?.controls?.muteButton?.show && isVideo && (config?.controls?.muteButton?.position === 'top-right' || !config?.controls?.muteButton?.position) &&
+                                    renderControlBtn(
+                                        config.controls.muteButton,
+                                        isMuted ? <VolumeX /> : <Volume2 />,
+                                        () => setIsMuted(!isMuted)
+                                    )
+                                }
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && (config?.controls?.closeButton?.position === 'top-right' || !config?.controls?.closeButton?.position) &&
+                                    renderControlBtn(
+                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
+                                        <X />,
+                                        () => { if (isInteractive && onDismiss) onDismiss(); }
+                                    )
+                                }
                             </div>
                         </div>
 
@@ -1513,46 +1241,52 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         }}>
                             {/* Bottom Left */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-left' && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-left' && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-left' && (
-                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        <X size={config?.controls?.closeButton?.size || 14} />
-                                    </div>
-                                )}
+                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-left' &&
+                                    renderControlBtn(
+                                        config.controls.expandButton,
+                                        isExpanded ? <Minimize /> : <Expand />,
+                                        () => setIsExpanded(!isExpanded)
+                                    )
+                                }
+                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-left' &&
+                                    renderControlBtn(
+                                        config.controls.muteButton,
+                                        isMuted ? <VolumeX /> : <Volume2 />,
+                                        () => setIsMuted(!isMuted)
+                                    )
+                                }
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-left' &&
+                                    renderControlBtn(
+                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
+                                        <X />,
+                                        () => { if (isInteractive && onDismiss) onDismiss(); }
+                                    )
+                                }
                             </div>
 
                             {/* Bottom Right */}
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
-                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-right' && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                        style={{ transform: `translate(${config?.controls?.expandButton?.offsetX || 0}px, ${config?.controls?.expandButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.expandButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.expandButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isExpanded ? <Minimize size={config?.controls?.expandButton?.size || 14} /> : <Expand size={config?.controls?.expandButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-right' && (
-                                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                                        style={{ transform: `translate(${config?.controls?.muteButton?.offsetX || 0}px, ${config?.controls?.muteButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.muteButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.muteButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        {isMuted ? <VolumeX size={config?.controls?.muteButton?.size || 14} /> : <Volume2 size={config?.controls?.muteButton?.size || 14} />}
-                                    </div>
-                                )}
-                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-right' && (
-                                    <div onClick={(e) => { e.stopPropagation(); if (isInteractive && onDismiss) onDismiss(); }}
-                                        style={{ transform: `translate(${config?.controls?.closeButton?.offsetX || 0}px, ${config?.controls?.closeButton?.offsetY || 0}px)`, cursor: 'pointer', padding: '6px', borderRadius: '50%', backgroundColor: config?.controls?.closeButton?.backgroundColor || 'rgba(0,0,0,0.4)', color: config?.controls?.closeButton?.color || 'white', display: 'flex', transition: 'background-color 0.2s', backdropFilter: 'blur(4px)' }}>
-                                        <X size={config?.controls?.closeButton?.size || 14} />
-                                    </div>
-                                )}
+                                {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-right' &&
+                                    renderControlBtn(
+                                        config.controls.expandButton,
+                                        isExpanded ? <Minimize /> : <Expand />,
+                                        () => setIsExpanded(!isExpanded)
+                                    )
+                                }
+                                {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-right' &&
+                                    renderControlBtn(
+                                        config.controls.muteButton,
+                                        isMuted ? <VolumeX /> : <Volume2 />,
+                                        () => setIsMuted(!isMuted)
+                                    )
+                                }
+                                {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-right' &&
+                                    renderControlBtn(
+                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
+                                        <X />,
+                                        () => { if (isInteractive && onDismiss) onDismiss(); }
+                                    )
+                                }
                             </div>
                         </div>
 

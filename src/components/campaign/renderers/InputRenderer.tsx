@@ -157,7 +157,7 @@ export const InputRenderer: React.FC<InputRendererProps> = ({ layer, scale = 1, 
                 borderStyle,
                 borderColor,
                 boxShadow: layer.style?.shadowEnabled
-                    ? `${safeScale(0, scale)} ${safeScale(layer.style.shadowOffsetY || 4, scale)} ${safeScale(layer.style.shadowBlur || 0, scale)} ${safeScale(layer.style.shadowSpread || 0, scale)} ${layer.style.shadowColor || '#000000'}`
+                    ? `${safeScale(0, scale)} ${safeScale((layer.style.shadowOffsetY === 0) ? 4 : (layer.style.shadowOffsetY || 4), scale)} ${safeScale(layer.style.shadowBlur || 0, scale)} ${safeScale(layer.style.shadowSpread || 0, scale)} ${layer.style.shadowColor || '#000000'}`
                     : boxShadow,
                 boxSizing: 'border-box',
                 transition: 'all 0.2s ease-in-out',

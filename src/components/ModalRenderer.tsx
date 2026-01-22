@@ -6,7 +6,9 @@ import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
-import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
+import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Pause, Search, Home, X, Download, Upload, User, Settings, ChevronDown, Volume2, VolumeX, Maximize } from 'lucide-react';
+import useEmblaCarousel from 'embla-carousel-react';
+import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
@@ -460,6 +462,325 @@ const StatisticLayer: React.FC<{ layer: Layer }> = ({ layer }) => {
     );
 };
 
+// --- NEW COMPONENTS FOR PARITY ---
+
+// Helper for safe scaling outside main component
+const safeScaleVal = (val: any, factor: number) => {
+    if (val == null) return undefined;
+    const strVal = val.toString().trim();
+    if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return strVal;
+    const num = parseFloat(strVal);
+    if (isNaN(num)) return val;
+    return `${num * factor}px`;
+};
+
+const CarouselLayer: React.FC<{ layer: Layer, renderChild: (l: Layer) => React.ReactNode, scale: number }> = ({ layer, renderChild, scale }) => {
+    const [emblaRef, emblaApi] = useEmblaCarousel({ loop: layer.content?.loop ?? true });
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+
+    const slides = (layer.content?.slides || []) as Layer[];
+    const height = safeScaleVal(layer.style?.height || 200, scale);
+    const showIndicators = layer.content?.showIndicators !== false;
+    const indicatorColor = layer.style?.indicatorColor || '#3B82F6';
+
+    const onSelect = useCallback((api: any) => {
+        setSelectedIndex(api.selectedScrollSnap());
+    }, []);
+
+    useEffect(() => {
+        if (!emblaApi) return;
+
+        onSelect(emblaApi);
+        setScrollSnaps(emblaApi.scrollSnapList());
+        emblaApi.on('select', onSelect);
+        emblaApi.on('reInit', onSelect);
+    }, [emblaApi, onSelect]);
+
+    if (slides.length === 0) return null;
+
+    return (
+        <div className="embla" style={{ position: 'relative', height, borderRadius: safeScaleVal(layer.style?.borderRadius, scale) }}>
+            <div ref={emblaRef} style={{ overflow: 'hidden', height: '100%', borderRadius: 'inherit' }}>
+                <div className="embla__container" style={{ display: 'flex', height: '100%' }}>
+                    {slides.map((slide, index) => (
+                        <div className="embla__slide" key={index} style={{ flex: '0 0 100%', minWidth: 0, position: 'relative' }}>
+                            {renderChild({ ...slide, parent: layer.id })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            {showIndicators && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: '8px',
+                    left: 0,
+                    right: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    zIndex: 10
+                }}>
+                    {scrollSnaps.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => emblaApi?.scrollTo(index)}
+                            style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                padding: 0,
+                                backgroundColor: index === selectedIndex ? indicatorColor : `${indicatorColor}4D`,
+                                cursor: 'pointer'
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const AccordionLayer: React.FC<{ layer: Layer, scale: number }> = ({ layer, scale }) => {
+    return (
+        <AccordionPrimitive.Root type="multiple" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: safeScaleVal(layer.style?.gap || 8, scale) }}>
+            {(layer.content?.items || []).map((item: any, index: number) => (
+                <AccordionPrimitive.Item key={index} value={`item-${index}`} style={{
+                    backgroundColor: layer.style?.itemBackgroundColor || 'transparent',
+                    borderRadius: safeScaleVal(layer.style?.borderRadius || 4, scale),
+                    overflow: 'hidden'
+                }}>
+                    <AccordionPrimitive.Header style={{ margin: 0 }}>
+                        <AccordionPrimitive.Trigger style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            width: '100%',
+                            padding: '12px 16px',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: safeScaleVal(layer.style?.titleFontSize || 16, scale),
+                            color: layer.style?.titleColor || '#000000',
+                            fontWeight: 'bold'
+                        }}>
+                            {item.title}
+                            <ChevronDown size={16} color={layer.style?.iconColor || '#000000'} />
+                        </AccordionPrimitive.Trigger>
+                    </AccordionPrimitive.Header>
+                    <AccordionPrimitive.Content style={{
+                        padding: '0 16px 12px',
+                        fontSize: safeScaleVal(layer.style?.contentFontSize || 14, scale),
+                        color: layer.style?.contentColor || '#4B5563',
+                        textAlign: 'left'
+                    }}>
+                        {item.content}
+                    </AccordionPrimitive.Content>
+                </AccordionPrimitive.Item>
+            ))}
+        </AccordionPrimitive.Root>
+    );
+};
+
+const StepperLayer: React.FC<{ layer: Layer, scale: number }> = ({ layer, scale }) => {
+    const steps = layer.content?.steps || [];
+    const currentStep = layer.content?.currentStep || 0;
+    const orientation = layer.style?.orientation || 'horizontal';
+    const circleSize = 32 * scale;
+    const fontSize = (layer.style?.fontSize || 12) * scale;
+    const activeColor = '#3B82F6';
+    const completedColor = '#22C55E';
+    const inactiveColor = '#D1D5DB';
+
+    if (orientation === 'vertical') {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {steps.map((step: any, index: number) => {
+                    const isCompleted = index < currentStep;
+                    const isCurrent = index === currentStep;
+                    const isLast = index === steps.length - 1;
+
+                    return (
+                        <div key={index} style={{ display: 'flex', minHeight: isLast ? 'auto' : '60px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '12px' }}>
+                                <div style={{
+                                    width: `${circleSize}px`,
+                                    height: `${circleSize}px`,
+                                    borderRadius: '50%',
+                                    backgroundColor: isCompleted ? completedColor : (isCurrent ? activeColor : inactiveColor),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: `${fontSize}px`
+                                }}>
+                                    {isCompleted ? <Check size={circleSize * 0.6} /> : (layer.content?.showNumbers !== false ? index + 1 : '')}
+                                </div>
+                                {!isLast && (
+                                    <div style={{ width: '2px', flex: 1, backgroundColor: isCompleted ? completedColor : inactiveColor, margin: '4px 0' }} />
+                                )}
+                            </div>
+                            <div style={{ paddingBottom: '16px' }}>
+                                <div style={{ fontWeight: isCurrent ? 'bold' : 'normal', color: isCurrent ? activeColor : '#000000', fontSize: `${fontSize + 2}px` }}>
+                                    {step.label}
+                                </div>
+                                {step.description && (
+                                    <div style={{ fontSize: `${fontSize}px`, color: '#6B7280', marginTop: '4px' }}>
+                                        {step.description}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    // Horizontal
+    return (
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%' }}>
+            {steps.map((step: any, index: number) => {
+                const isCompleted = index < currentStep;
+                const isCurrent = index === currentStep;
+
+                return (
+                    <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                        {/* Connecting Line */}
+                        {index !== 0 && (
+                            <div style={{
+                                position: 'absolute',
+                                top: `${circleSize / 2 - 1}px`,
+                                left: '-50%',
+                                width: '100%',
+                                height: '2px',
+                                backgroundColor: index <= currentStep ? (index === currentStep ? activeColor : completedColor) : inactiveColor,
+                                zIndex: 0
+                            }} />
+                        )}
+
+                        <div style={{
+                            width: `${circleSize}px`,
+                            height: `${circleSize}px`,
+                            borderRadius: '50%',
+                            backgroundColor: isCompleted ? completedColor : (isCurrent ? activeColor : inactiveColor),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: `${fontSize}px`,
+                            zIndex: 1,
+                            marginBottom: '8px'
+                        }}>
+                            {isCompleted ? <Check size={circleSize * 0.6} /> : (layer.content?.showNumbers !== false ? index + 1 : '')}
+                        </div>
+                        <div style={{
+                            textAlign: 'center',
+                            fontSize: `${fontSize}px`,
+                            fontWeight: isCurrent ? 'bold' : 'normal',
+                            color: isCurrent ? activeColor : '#4B5563'
+                        }}>
+                            {step.label}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+const VideoLayer: React.FC<{ layer: Layer, scale: number }> = ({ layer, scale }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+    const autoPlay = layer.content?.autoPlay ?? false;
+    const loop = layer.content?.loop ?? false;
+    const showControls = layer.content?.showControls !== false;
+
+    useEffect(() => {
+        if (autoPlay && videoRef.current) {
+            videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
+            setIsPlaying(true);
+        }
+    }, [autoPlay]);
+
+    const togglePlay = () => {
+        if (videoRef.current) {
+            if (isPlaying) videoRef.current.pause();
+            else videoRef.current.play();
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const toggleMute = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = !isMuted;
+            setIsMuted(!isMuted);
+        }
+    };
+
+    return (
+        <div style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            borderRadius: safeScaleVal(layer.style?.borderRadius || 0, scale),
+            overflow: 'hidden',
+            backgroundColor: 'black',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            {layer.content?.thumbnail && !isPlaying && (
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${layer.content.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 10 }} />
+            )}
+
+            <video
+                ref={videoRef}
+                src={layer.content?.url}
+                loop={loop}
+                muted={isMuted} /* Always start muted for autoplay policy */
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onEnded={() => setIsPlaying(false)}
+            />
+
+            {/* Custom Controls Overlay */}
+            {showControls && (
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    padding: '10px',
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    zIndex: 20
+                }}>
+                    <button onClick={togglePlay} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                        {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </button>
+                    <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.3)', borderRadius: '2px' }}>
+                        <div style={{ width: '30%', height: '100%', background: 'red', borderRadius: '2px' }} /> {/* Mock progress */}
+                    </div>
+                    <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
+                </div>
+            )}
+
+            {/* Big Play Button if paused */}
+            {!isPlaying && (
+                <div style={{ position: 'absolute', zIndex: 20, cursor: 'pointer' }} onClick={togglePlay}>
+                    <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: '16px' }}>
+                        <Play fill="white" color="white" size={32} />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 
 interface ModalRendererProps {
@@ -909,6 +1230,37 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
             case 'countdown':
                 content = <CountdownLayer layer={layer} />;
                 break;
+            case 'carousel':
+                content = (
+                    <CarouselLayer
+                        layer={layer}
+                        renderChild={renderLayer}
+                        scale={scale}
+                    />
+                );
+                break;
+            case 'accordion':
+                content = <AccordionLayer layer={layer} scale={scale} />;
+                break;
+            case 'stepper':
+                content = <StepperLayer layer={layer} scale={scale} />;
+                break;
+            case 'video':
+                content = <VideoLayer layer={layer} scale={scale} />;
+                break;
+            case 'divider':
+                content = (
+                    <div style={{
+                        width: '100%',
+                        height: `${layer.style?.thickness || 1}px`,
+                        backgroundColor: layer.style?.color || '#E5E7EB',
+                        margin: `${safeScaleVal(layer.style?.marginVertical || 8, scale)} 0`
+                    }} />
+                );
+                break;
+            case 'spacer':
+                content = <div style={{ height: safeScaleVal(layer.style?.height || 16, scale), width: '100%' }} />;
+                break;
             case 'gradient-overlay':
                 content = (
                     <div style={{
@@ -997,28 +1349,15 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                 }}
             />
 
-            {/* Modal Container */}
+            {/* Modal Wrapper (Positioning & Layout) */}
             <div
-                ref={containerRef}
-                onClick={(e) => {
-                    // Handle container-level action in interact mode
-                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
-                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
-                    if (isInteractive && modalLayer?.content?.action && timeSinceInteractEnabled > 200) {
-                        handleAction(modalLayer.content.action);
-                    } else if (!isInteractive) {
-                        onLayerSelect(modalLayer.id);
-                    }
-                }}
                 style={{
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
-                    // Removed scale() - it was shrinking the modal after percentage dimensions were applied
                     transform: `translate(-50%, -50%) ${getTransformString(modalLayer.style?.transform) || ''}`,
 
-                    // SCALING FIX: Apply safeScale to Width & Height
-                    // PRIORITY FIX: Config (!auto) > Explicit Layer (if modal) > Default/Config(Auto)
+                    // Sizing (moved from inner container)
                     width: safeScale(
                         resolveDimension(
                             configWidth, // UNIT-AWARE
@@ -1027,40 +1366,11 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                         ),
                         scale
                     ),
-                    maxWidth: config?.mode === 'image-only' ? '100%' : safeScale('400px', scale), // Scale max width too? Usually 400px is a desktop constraint. On mobile it handles itself via 90%.
+                    maxWidth: config?.mode === 'image-only' ? '100%' : safeScale('400px', scale),
 
-                    backgroundColor: config?.mode === 'image-only' ? 'transparent' : (modalLayer.style?.backgroundColor || config?.backgroundColor || '#FFFFFF'),
-                    // FIX: Priority Config > Layer. Also handle 'none' explicitly.
-                    backgroundImage: (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
-                        (modalLayer.style?.backgroundImage && modalLayer.style?.backgroundImage !== 'none' ? modalLayer.style?.backgroundImage : undefined),
-                    // FIX: Changed default from 'cover' to '100% 100%' to stretch-fit and match scaled overlay positions
-                    // FINAL FIX: Changed to 'cover' + 'center' to match SDK behavior (fills container, crops edges equally)
-                    // ALIGNMENT FIX: Changed back to '100% 100%' + 'top left' to ensure layer positions align with background
-                    // FORCE OVERRIDE: Always use '100% 100%' regardless of config to ensure layer-background alignment
-                    // User's 'cover' setting in sidebar causes cropping - we force stretch mode for dashboard preview
-                    backgroundSize: '100% 100%', // FORCED - ignore modalLayer.style and config.backgroundSize
-                    backgroundPosition: 'top left', // FORCED - origin must match layer positioning origin
-                    backgroundRepeat: 'no-repeat',
-
-                    // SCALING FIX: Apply safeScale to Borders/Radius
-                    borderRadius: config?.mode === 'image-only' ? '0' : safeScale(config?.borderRadius || modalLayer.style?.borderRadius || 16, scale),
-                    borderWidth: safeScale(modalLayer.style?.borderWidth || config?.borderWidth || 0, scale),
-                    borderColor: modalLayer.style?.borderColor || config?.borderColor || 'transparent',
-                    borderStyle: modalLayer.style?.borderStyle || config?.borderStyle || 'solid',
-
-                    // Visuals
-                    opacity: modalLayer.style?.opacity ?? 1,
-                    filter: getFilterString(modalLayer.style?.filter),
-                    clipPath: modalLayer.style?.clipPath,
-                    boxShadow: config?.mode === 'image-only' ? 'none' : (
-                        config?.elevation ? `0px ${safeScale(config.elevation * 4, scaleY)} ${safeScale(config.elevation * 8, scaleY)} rgba(0,0,0,0.15)` : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)')
-                    ),
-
-                    // Dimensions
-                    // PRIORITY FIX: Config (!auto) > Explicit Layer (if modal) > Default/Config(Auto)
                     minHeight: safeScale(
                         resolveDimension(
-                            ((config as any)?.minHeight && (config as any)?.minHeight !== 'auto' ? (config as any)?.minHeight : undefined), // Keep minHeight simple for now or adding unit support? Assume px if number.
+                            ((config as any)?.minHeight && (config as any)?.minHeight !== 'auto' ? (config as any)?.minHeight : undefined),
                             (modalLayer.type === 'modal' ? modalLayer.style?.minHeight : undefined),
                             '100px'
                         ),
@@ -1074,84 +1384,129 @@ export const ModalRenderer: React.FC<ModalRendererProps> = ({
                         ),
                         scaleY
                     ),
-                    // CROP FIX: Removed default '85vh' - it was clipping content on short devices
-                    // User's explicit height % setting should be the constraint, not an additional maxHeight
                     maxHeight: safeScale(
                         (config as any)?.maxHeight ||
                         (modalLayer.type === 'modal' ? modalLayer.style?.maxHeight : undefined) ||
-                        'none', // Changed from '85vh' to 'none'
+                        'none',
                         scaleY
                     ),
 
-                    // FIX: Changed back to 'hidden' to clip content that goes outside modal bounds (negative positions)
-                    overflow: modalLayer.style?.overflow || 'hidden',
                     zIndex: 1,
-                    display: 'block',
-                    padding: 0,
+                    display: 'flex', // Ensure resizing works
+                    flexDirection: 'column',
                     animation: config?.animation ? `${config.animation.type} ${config.animation.duration}ms ${config.animation.easing}` : 'modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}
             >
-                {/* Content Area - Relative/Scrollable Layers */}
-                <div style={{
-                    flex: 1,
-                    position: 'relative',
-                    // FIX: Changed to 'auto' to allow scrolling if content exceeds container height
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                    width: '100%',
-                    height: '100%',
-                    display: modalLayer.style?.display || 'flex',
-                    flexDirection: modalLayer.style?.flexDirection || 'column',
-                    alignItems: modalLayer.style?.alignItems || 'stretch',
-                    justifyContent: modalLayer.style?.justifyContent || 'flex-start',
-                    gap: safeScale(modalLayer.style?.gap || 0, scale),
+                {/* Visual Container (Background, Border, Overflow) */}
+                <div
+                    ref={containerRef}
+                    onClick={(e) => {
+                        const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
+                        if (isInteractive && modalLayer?.content?.action && timeSinceInteractEnabled > 200) {
+                            handleAction(modalLayer.content.action);
+                        } else if (!isInteractive) {
+                            onLayerSelect(modalLayer.id);
+                        }
+                    }}
+                    style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
 
-                    // REMOVED: CSS transform was causing double-scaling with safeScale
-                    // Instead, positions should be calculated as percentages of container
+                        backgroundColor: config?.mode === 'image-only' ? 'transparent' : (config?.backgroundColor || modalLayer.style?.backgroundColor || '#FFFFFF'),
+                        backgroundImage: (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
+                            (modalLayer.style?.backgroundImage && modalLayer.style?.backgroundImage !== 'none' ? modalLayer.style?.backgroundImage : undefined),
+                        backgroundSize: '100% 100%',
+                        backgroundPosition: 'top left',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundClip: 'padding-box', // Fix "Bleeding" Effect on Dashed Borders
 
-                    // SCALING FIX: Apply safeScale to Padding (Content Wrapper)
-                    paddingTop: safeScale(modalLayer.style?.padding?.top || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scaleY),
-                    paddingBottom: safeScale(modalLayer.style?.padding?.bottom || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scaleY),
-                    paddingLeft: safeScale(modalLayer.style?.padding?.left || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scale),
-                    paddingRight: safeScale(modalLayer.style?.padding?.right || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scale),
-                }}>
+                        // Parity with ScratchCardRenderer Border Logic (Fixed String vs Number Comparison)
+                        borderRadius: config?.mode === 'image-only' ? '0' : safeScale(config?.borderRadius || modalLayer.style?.borderRadius || 16, scale),
+                        borderWidth: safeScale(config?.borderWidth || modalLayer.style?.borderWidth || 0, scale),
+                        borderColor: config?.borderColor || modalLayer.style?.borderColor || '#000000',
+                        borderStyle: config?.borderStyle || (parseInt(String(safeScale(config?.borderWidth || modalLayer.style?.borderWidth || 0, scale))) > 0 ? 'solid' : 'none'),
+
+                        opacity: modalLayer.style?.opacity ?? 1,
+                        filter: getFilterString(modalLayer.style?.filter),
+                        clipPath: modalLayer.style?.clipPath,
+                        boxShadow: config?.mode === 'image-only' ? 'none' : (
+                            config?.boxShadow?.enabled
+                                ? `${safeScale(0, scale)} ${safeScale(10, scale)} ${safeScale(config.boxShadow.blur, scale)} ${safeScale(config.boxShadow.spread || 0, scale)} ${config.boxShadow.color}`
+                                : (config?.elevation
+                                    ? `0px ${safeScale(config.elevation * 4, scaleY)} ${safeScale(config.elevation * 8, scaleY)} rgba(0,0,0,0.15)`
+                                    : (modalLayer.style?.boxShadow || '0 10px 25px rgba(0,0,0,0.2)'))
+                        ),
+
+                        overflow: modalLayer.style?.overflow || 'hidden', // Clips content but NOT the close button (since it's outside this div)
+                        display: 'block',
+                        padding: 0,
+                    }}
+                >
+                    {/* Content Area - Relative/Scrollable Layers */}
+                    <div style={{
+                        flex: 1,
+                        position: 'relative',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        width: '100%',
+                        height: '100%',
+                        display: modalLayer.style?.display || 'flex',
+                        flexDirection: modalLayer.style?.flexDirection || 'column',
+                        alignItems: modalLayer.style?.alignItems || 'stretch',
+                        justifyContent: modalLayer.style?.justifyContent || 'flex-start',
+                        gap: safeScale(modalLayer.style?.gap || 0, scale),
+
+                        paddingTop: safeScale(modalLayer.style?.padding?.top || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scaleY),
+                        paddingBottom: safeScale(modalLayer.style?.padding?.bottom || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scaleY),
+                        paddingLeft: safeScale(modalLayer.style?.padding?.left || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scale),
+                        paddingRight: safeScale(modalLayer.style?.padding?.right || (typeof modalLayer.style?.padding === 'number' ? modalLayer.style.padding : 0), scale),
+                    }}>
+                        {childLayers
+                            .filter(l => {
+                                const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
+                                return !isAbs;
+                            })
+                            .map(renderLayer)}
+                    </div>
+
+                    {/* Overlay Area - Absolute Layers (Fixed to Modal) */}
                     {childLayers
                         .filter(l => {
                             const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
-                            return !isAbs;
+                            return isAbs;
                         })
                         .map(renderLayer)}
                 </div>
 
-                {/* Overlay Area - Absolute Layers (Fixed to Modal) */}
-                {childLayers
-                    .filter(l => {
-                        const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
-                        return isAbs;
-                    })
-                    .map(renderLayer)}
-
-                {/* Close Button (Optional, if configured) */}
-                {config?.showCloseButton === true && (
+                {/* Close Button (Floating Outside supported) */}
+                {(config?.showCloseButton || config?.closeButton?.enabled) && (
                     <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onDismiss) onDismiss();
+                        }}
                         style={{
                             position: 'absolute',
-                            top: '12px',
-                            right: '12px',
-                            cursor: 'pointer',
                             zIndex: 50,
-                            padding: '4px',
+                            cursor: 'pointer',
+                            padding: '6px',
                             borderRadius: '50%',
-                            backgroundColor: 'rgba(0,0,0,0.05)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            backgroundColor: config?.closeButton?.backgroundColor || '#FFFFFF',
+                            boxShadow: config?.closeButton?.position?.includes('outside') ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            // Position Logic
+                            ...(config?.closeButton?.position === 'top-left' ? { top: '12px', left: '12px', right: 'auto' } :
+                                config?.closeButton?.position === 'outside-right' ? { top: '-40px', right: '0', left: 'auto' } :
+                                    { top: '12px', right: '12px', left: 'auto' })
                         }}
                     >
-                        <X size={20} color="#6B7280" />
+                        <X size={20} color={config?.closeButton?.color || '#000000'} />
                     </div>
                 )}
-            </div >
+            </div>
 
             <style>{`
             @keyframes modal-pop {

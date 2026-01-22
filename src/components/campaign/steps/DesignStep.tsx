@@ -48,7 +48,7 @@ import { ListEditor } from '@/components/campaign/editors/layers/ListEditor';
 import { StatisticEditor } from '@/components/campaign/editors/layers/StatisticEditor';
 import { BadgeEditor } from '@/components/campaign/editors/layers/BadgeEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
-import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownEditor';
+
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 import { ScratchCardMinimalEditor } from '@/components/campaign/editors/ScratchCardMinimalEditor';
 import { ScratchCardRenderer } from '@/components/campaign/renderers/ScratchCardRenderer';
@@ -3346,19 +3346,7 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Countdown properties
-    if (selectedLayerObj.type === 'countdown') {
-      return (
-        <CountdownEditor
-          layer={selectedLayerObj}
-          selectedLayerId={selectedLayerId!}
-          updateLayer={updateLayer}
-          handleContentUpdate={handleContentUpdate}
-          onStyleUpdate={handleStyleUpdate}
-          handleTooltipUpdate={handleTooltipUpdate}
-          colors={colors}
-        />
-      );
-    }
+    
 
 
 
@@ -4260,5 +4248,3 @@ export const DesignStep: React.FC<any> = () => {
     </div>
   );
 };
-
-

@@ -692,6 +692,9 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
 
             // Border & Shape
             borderRadius: fc.borderRadius,
+            borderWidth: fc.borderWidth,
+            borderColor: fc.borderColor,
+            borderStyle: fc.borderStyle,
             shape: fc.shape || (fc.borderRadius >= Math.min(fc.width || 60, fc.height || 60) / 2 ? 'circle' : 'rectangle'),
 
             // Position

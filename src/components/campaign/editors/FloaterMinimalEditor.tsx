@@ -54,6 +54,11 @@ export const FloaterMinimalEditor = () => {
                 behavior: { draggable: true, snapToCorner: true, doubleTapToDismiss: false },
                 backdrop: { show: false, color: '#000000', opacity: 0.3 }
             });
+        } else {
+            // ROBUST FIX: If config exists but behavior.snapToCorner is undefined, set it to true default
+            if (config.behavior?.snapToCorner === undefined) {
+                updateNested('behavior', 'snapToCorner', true);
+            }
         }
     }, [config, updateFloaterConfig]);
 

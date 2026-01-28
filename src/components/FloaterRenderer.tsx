@@ -1151,7 +1151,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                             <div style={{
                                 flex: 1,
                                 position: 'relative',
-                                overflowY: 'auto',
+                                overflowY: config?.overflow === 'scroll' ? 'auto' : 'hidden',
                                 overflowX: 'hidden',
                                 width: '100%',
                                 height: '100%',

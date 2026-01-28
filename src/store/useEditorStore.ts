@@ -445,6 +445,7 @@ export interface BottomSheetConfig {
     top: boolean;
     bottom: boolean;
   };
+  overflow?: 'hide' | 'scroll';
 }
 
 export interface ModalConfig {

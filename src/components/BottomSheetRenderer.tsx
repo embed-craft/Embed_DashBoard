@@ -1,14 +1,15 @@
-import React, { useRef, useEffect } from 'react';
-import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
-import { Layer, BottomSheetConfig, LayerStyle } from '@/store/useEditorStore';
-import { Settings2, X, Code } from 'lucide-react';
-import { ShadowDomWrapper } from '@/components/ShadowDomWrapper';
-import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
-import { TextRenderer } from './campaign/renderers/TextRenderer';
-import { InputRenderer } from './campaign/renderers/InputRenderer';
-import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
-import { MediaRenderer } from './campaign/renderers/MediaRenderer';
-import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import React from 'react';
+import { FloaterRenderer } from './FloaterRenderer';
+
+/**
+ * BottomSheet Renderer - Thin wrapper around FloaterRenderer
+ * 
+ * Uses FloaterRenderer as the core renderer with these overrides:
+ * - Position: Always bottom-center (no drag positioning)
+ * - Draggable: Disabled → Replaced with swipe-to-dismiss (if needed)
+ * - Expanded: Disabled (no expand feature)
+ * - Border Radius: Bottom corners forced to 0
+ */
 
 interface BottomSheetRendererProps {
     layers: any[];
@@ -21,7 +22,7 @@ interface BottomSheetRendererProps {
     isInteractive?: boolean;
     onNavigate?: (screenName: string) => void;
     scale?: number;
-    scaleY?: number; // Fix 16: Hybrid Scaling
+    scaleY?: number;
     onInterfaceAction?: (interfaceId: string) => void;
 }
 
@@ -36,533 +37,176 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     isInteractive = false,
     onNavigate,
     onInterfaceAction,
-    scale = 1, // Default to 1
-    scaleY = 1 // Fix 16: Vertical scale default
+    scale = 1,
+    scaleY = 1
 }) => {
-    // MODAL PARITY: Design Device Dimensions (iPhone 14 Pro)
-    const designWidth = 393;
-    const designHeight = 852;
+    // Create modified config for BottomSheet
+    // Override Floater-specific properties and add defaults FloaterRenderer expects
+    const bottomSheetConfig = React.useMemo(() => {
+        const modifiedConfig = { ...config };
 
-    // SDK Parity: Safe Scale Helper (for SIZES only)
-    const safeScale = (val: any, factor: number) => {
-        if (val == null) return undefined;
-        const strVal = val.toString().trim();
-        if (strVal.endsWith('%') || strVal.endsWith('vh') || strVal.endsWith('vw')) return strVal;
-        const num = parseFloat(strVal);
-        if (isNaN(num)) return val;
-        return `${num * factor}px`;
-    };
+        // Force BottomSheet-specific values
+        modifiedConfig.position = 'bottom-center';
+        modifiedConfig.offsetX = 0;
+        modifiedConfig.offsetY = 0;
+        modifiedConfig.draggable = false;
+        modifiedConfig.expanded = false;
 
-    // Guard: Track when interact mode was enabled to prevent auto-triggering
-    const interactModeEntryTimeRef = useRef<number>(0);
-    useEffect(() => {
-        if (isInteractive) {
-            interactModeEntryTimeRef.current = Date.now();
-        }
-    }, [isInteractive]);
+        // Set default width to 100% for BottomSheet
+        modifiedConfig.width = modifiedConfig.width || '100%';
 
-    // MODAL PARITY: Convert X position to percentage of design width
-    const toPercentX = (val: any): string | undefined => {
-        if (val == null) return undefined;
-        const str = val.toString().trim();
-        if (str.endsWith('%')) return str; // Already percentage
-        const num = parseFloat(str);
-        if (isNaN(num)) return undefined;
-        return `${(num / designWidth) * 100}%`;
-    };
+        // FIX: FloaterRenderer's safeScale breaks on objects and applies radius/border to all 4 corners.
+        // We move these to our wrapper div and disable them on the inner box.
+        modifiedConfig.borderRadius = 0;
+        modifiedConfig.backgroundColor = 'transparent';
+        modifiedConfig.backgroundImageUrl = ''; // FIX: Prevent double background rendering (handled by wrapper)
+        modifiedConfig.borderWidth = 0;
+        modifiedConfig.shadow = { enabled: false };
 
-    // MODAL PARITY: Convert Y position to percentage of design height
-    const toPercentY = (val: any): string | undefined => {
-        if (val == null) return undefined;
-        const str = val.toString().trim();
-        if (str.endsWith('%')) return str; // Already percentage
-        const num = parseFloat(str);
-        if (isNaN(num)) return undefined;
-        return `${(num / designHeight) * 100}%`;
-    };
-    const handleAction = (action: any) => {
-        if (!isInteractive || !action) return;
+        // Ensure behavior exists with disabled Floater features
+        modifiedConfig.behavior = {
+            ...(modifiedConfig.behavior || {}),
+            draggable: false,
+            snapToCorner: false,
+            doubleTapToDismiss: false,
+        };
 
-        console.log('Action triggered:', action);
+        // Ensure controls exists with BottomSheet defaults
+        modifiedConfig.controls = {
+            ...(modifiedConfig.controls || {}),
+            closeButton: { show: modifiedConfig.showCloseButton ?? false, position: 'top-right', size: 14 },
+            expandButton: { show: false },
+            muteButton: { show: false },
+            progressBar: { show: false },
+        };
 
-        switch (action.type) {
-            case 'close':
-            case 'dismiss': // Handle both temporarily
-                if (onDismiss) onDismiss();
-                else console.log('Dismiss action (no handler)');
-                break;
-            case 'deeplink':
-                if (action.url) {
-                    window.open(action.url, '_blank');
-                    // notification handled by browser opening new tab, but redundant toast doesn't hurt
-                }
-                break;
-            case 'link':
-                if (action.url) {
-                    window.open(action.url, '_blank');
-                }
-                break;
-            case 'navigate':
-                if (action.screenName && onNavigate) {
-                    onNavigate(action.screenName);
-                } else {
-                    console.log('Navigation action triggered:', action.screenName);
-                }
-                break;
-            case 'custom':
-                console.log(`Custom Event: ${action.eventName}`);
-                break;
-            case 'interface':
-                if (action.interfaceId && onInterfaceAction) {
-                    onInterfaceAction(action.interfaceId);
-                }
-                break;
-        }
-    };
+        // Ensure media exists (empty default)
+        modifiedConfig.media = modifiedConfig.media || { url: '', type: 'none' };
 
-    const containerRef = useRef<HTMLDivElement>(null);
+        // Pass overflow setting
+        modifiedConfig.overflow = config?.overflow || 'hidden'; // Default to hide per user request
 
-    // Find the generic 'container' layer if it exists, otherwise use config
-    // In "Minimal Solid", we might just rely on config for the container style 
-    // and treat 'layers' as children of that container.
-    // However, the legacy structure often had a "Container" layer. 
-    // We will iterate all layers. If a layer is a child of another, we skip it (handled by recursion if we did that, but ModalRenderer does flat map).
-    // ModalRenderer defines 'childLayers' as layers where parent === modalLayer.id.
+        // FIX: Disable overlay in FloaterRenderer as we render it externally in BottomSheetRenderer
+        // preventing "Double Background" / Scrim-inside-sheet issue
+        modifiedConfig.overlay = { enabled: false };
 
-    // Let's assume a simplified Model:
-    // The BottomSheet ITSELF is the container.
-    // All top-level layers (parent === null) are children of the sheet?
-    // Or if there is a 'container' layer, we use that?
-    // Let's try to find a root container layer.
-    const rootLayer = layers.find(l => l.type === 'container' && l.name === 'Bottom Sheet')
-        || layers.find(l => l.type === 'container')
-        || null;
+        return modifiedConfig;
+    }, [config]);
 
-    // If we have a root layer, we render its children.
-    // If no root layer, we render all layers (fallback).
-    // If we have a root layer, we render its children.
-    // If no root layer, we render all layers (fallback).
-    let children = rootLayer
-        ? layers.filter(l => l.parent === rootLayer.id)
-        : layers.filter(l => !l.parent); // Fallback: Only render top-level layers
-
-    // Detect Full Page Mode: Only if explicitly flagged
-    const fullPageLayer = layers.find(l =>
-        l.type === 'custom_html' &&
-        l.content?.fullPageMode === true
-    );
-    const isFullPageModeRef = !!fullPageLayer;
-
-    console.log('BottomSheetRenderer Debug:', {
-        totalLayers: layers.length,
-        isFullPageMode: isFullPageModeRef,
-        customLayer: fullPageLayer
-    });
-
-    if (isFullPageModeRef) {
-        // EXCLUSIVE MODE: Filter to show ONLY the Custom HTML layer(s) that are flagged as full page
-        children = layers.filter(l => l.type === 'custom_html' && l.content?.fullPageMode === true);
-    } else {
-        // Sort by zIndex to ensure correct stacking context
-        children = children.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    // Calculate top border radius
+    const radiusValue = config?.borderRadius;
+    let topRadius = 16;
+    if (typeof radiusValue === 'number') {
+        topRadius = radiusValue;
+    } else if (typeof radiusValue === 'object' && radiusValue !== null) {
+        topRadius = radiusValue.topLeft ?? radiusValue.topRight ?? 16;
     }
 
-    // MODAL PARITY: Check for absolute positioned layers to skip padding
-    const hasAbsolutePositionedLayers = children.some(l =>
-        l.style?.position === 'absolute' || l.style?.position === 'fixed'
-    );
+    // Extract border properties
+    const borderWidth = config?.borderWidth || 0;
+    const borderColor = config?.borderColor || '#000000';
+    const borderStyle = config?.borderStyle || 'solid';
 
-    const renderLayer = (layer: Layer) => {
-        if (!layer.visible) return null;
-        const isSelected = selectedLayerId === layer.id;
-        const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
-
-        // MODAL PARITY: Use percentage-based positioning for absolute layers
-        // Positions convert to percentages, sizes still use safeScale
-        const scaledStyle: any = {
-            ...layer.style,
-            // POSITIONS: Convert to percentages (Modal Engine)
-            top: toPercentY(layer.style?.top),
-            bottom: toPercentY(layer.style?.bottom),
-            left: toPercentX(layer.style?.left),
-            right: toPercentX(layer.style?.right),
-            // SIZES: Still use safeScale for width/height
-            width: safeScale(layer.style?.width || layer.size?.width, scale),
-            height: safeScale(layer.style?.height || layer.size?.height, scaleY),
-            // Margins
-            marginTop: safeScale(layer.style?.marginTop, scaleY),
-            marginBottom: safeScale(layer.style?.marginBottom, scaleY),
-            marginLeft: safeScale(layer.style?.marginLeft, scale),
-            marginRight: safeScale(layer.style?.marginRight, scale),
-            // Paddings
-            paddingTop: safeScale(layer.style?.paddingTop, scaleY),
-            paddingBottom: safeScale(layer.style?.paddingBottom, scaleY),
-            paddingLeft: safeScale(layer.style?.paddingLeft, scale),
-            paddingRight: safeScale(layer.style?.paddingRight, scale),
-            // Border Radius
-            borderRadius: typeof layer.style?.borderRadius === 'object'
-                ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
-                : safeScale(layer.style?.borderRadius, scale),
-            fontSize: safeScale(layer.style?.fontSize, scale),
-        };
-
-        // FIX: For Input, Copy Button, Button, and Countdown layers, strip visual styles from wrapper (applied to inner element instead)
-        if (layer.type === 'input' || layer.type === 'copy_button' || layer.type === 'button' || layer.type === 'countdown' || layer.type === 'text') {
-            delete scaledStyle.backgroundColor;
-            delete scaledStyle.border;
-            delete scaledStyle.borderWidth;
-            delete scaledStyle.borderColor;
-            delete scaledStyle.borderStyle;
-            delete scaledStyle.borderRadius;
-            delete scaledStyle.paddingTop;
-            delete scaledStyle.paddingBottom;
-            delete scaledStyle.paddingLeft;
-            delete scaledStyle.paddingRight;
-            delete scaledStyle.padding;
-            delete scaledStyle.margin; // Ensure margin is handled by wrapper mostly, but if we strip it, wrapper handles positioning?
-            // Actually, wrapper SHOULD handle margin (positioning). 
-            // Input/CopyButton internal margin is usually 0.
-            // Let's stick to visual styles: bg, border, padding.
-        }
-
-        // SDK PARITY: Margin Precedence Logic
-        // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
-
-        let finalMarginTop = safeScale(layer.style?.marginTop, scaleY);
-        let finalMarginBottom = safeScale(layer.style?.marginBottom, scaleY);
-        let finalMarginLeft = safeScale(layer.style?.marginLeft, scale);
-        let finalMarginRight = safeScale(layer.style?.marginRight, scale);
-        let finalMargin = undefined;
-
-        // Handle generic margin shorthand
-        if (layer.style?.margin) {
-            if (typeof layer.style.margin === 'string' && layer.style.margin.includes(' ')) {
-                // Complex string (e.g. "10px 20px") - pass through
-                finalMargin = layer.style.margin;
-            } else {
-                // Simple number/string - scale it
-                finalMargin = safeScale(layer.style.margin, scale);
-            }
-        }
-
-        // Apply defaults if NO margin is set
-        // SDK PARITY: Strip margin/padding for absolute elements
-        if (isAbsolute) {
-            finalMarginTop = undefined;
-            finalMarginBottom = undefined;
-            finalMarginLeft = undefined;
-            finalMarginRight = undefined;
-            finalMargin = undefined;
-            // Also strip padding from scaledStyle for absolute elements
-            scaledStyle.paddingTop = undefined;
-            scaledStyle.paddingBottom = undefined;
-            scaledStyle.paddingLeft = undefined;
-            scaledStyle.paddingRight = undefined;
-        } else if (layer.type !== 'custom_html') {
-            // If no explicit marginBottom AND no shorthand margin, apply default
-            if (finalMarginBottom === undefined && finalMargin === undefined) {
-                finalMarginBottom = safeScale(10, scale);
-            }
-        }
-
-        const baseStyle: React.CSSProperties = {
-            position: 'relative',
-            margin: finalMargin, // Shorthand first
-            marginTop: finalMarginTop, // Specific overrides second (wins)
-            marginBottom: finalMarginBottom,
-            marginLeft: finalMarginLeft,
-            marginRight: finalMarginRight,
-            ...scaledStyle
-        };
-
-        // FORCE overrides for Full Page Mode Custom HTML
-        // This ensures even if layer.style is missing width/height, the wrapper fills the screen
-        if (isFullPageModeRef && layer.type === 'custom_html') {
-            baseStyle.width = '100%';
-            baseStyle.height = '100%';
-            baseStyle.position = 'absolute';
-            baseStyle.top = 0;
-            baseStyle.left = 0;
-            baseStyle.right = 0;
-            baseStyle.bottom = 0;
-            baseStyle.marginBottom = 0;
-        }
-
-        let content = null;
-
-        switch (layer.type) {
-            case 'text':
-                content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />;
-                break;
-            case 'media': // Handle 'media' as alias for 'image'
-            case 'image':
-                content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
-                break;
-            case 'handle':
-                content = (
-                    <div style={{
-                        width: layer.size?.width || 40,
-                        height: layer.size?.height || 4,
-                        backgroundColor: layer.style?.backgroundColor || '#e5e7eb',
-                        borderRadius: typeof layer.style?.borderRadius === 'object'
-                            ? `${layer.style.borderRadius.topLeft}px ${layer.style.borderRadius.topRight}px ${layer.style.borderRadius.bottomRight}px ${layer.style.borderRadius.bottomLeft}px`
-                            : (layer.style?.borderRadius || 2),
-                        margin: '0 auto'
-                    }} />
-                );
-                break;
-            case 'button':
-                content = (
-                    <ButtonRenderer
-                        layer={layer}
-                        scale={scale}
-                        scaleY={scaleY}
-                    // onClick handled by wrapper
-                    />
-                );
-                break;
-            case 'input':
-                content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
-                break;
-            case 'copy_button':
-                content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />;
-                break;
-            case 'custom_html':
-                content = (
-                    <ShadowDomWrapper
-                        html={layer.content?.html || '<div style="padding:10px; border:1px dashed #ccc; color:#999">Empty HTML Layer</div>'}
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                );
-                break;
-            case 'container':
-                content = (
-                    <ContainerRenderer
-                        layer={layer}
-                        layers={layers}
-                        renderChild={renderLayer}
-                    />
-                );
-                break;
-            default:
-                content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown Layer: {layer.type}</div>;
-        }
-
-        // Calculate Clip Path
-        let clipPath = layer.style?.clipPath;
-        const shape = layer.style?.clipPathShape;
-
-        if (shape === 'circle') {
-            clipPath = 'circle(50% at 50% 50%)';
-        } else if (shape === 'pill') {
-            const r = layer.style?.borderRadius || 9999;
-            // For pill, high border radius usually does the trick, but clip-path is safer for images
-            // Actually, border-radius is often better for simple pills, but let's support explicit clip
-            // if user selected 'pill', we might want to force border radius?
-            // Let's rely on standard border-radius for 'pill' shape usually, but here we can enforce it.
-            // If valid clip-path string provided (custom), use it.
-        }
-
-        // Apply clip-path if it exists (for custom or circle)
-        // Note: For 'rectangle' and 'pill', we usually rely on borderRadius, so we don't strictly need clip-path
-        // unless provided.
-        if (clipPath) {
-            // @ts-ignore
-            scaledStyle.clipPath = clipPath;
-            // @ts-ignore
-            scaledStyle.WebkitClipPath = clipPath;
-        } else if (shape === 'pill') {
-            // Enforce pill via border radius if not using clip-path
-            scaledStyle.borderRadius = 9999;
-        }
-
-        return (
-            <DraggableLayerWrapper
-                key={layer.id}
-                layer={layer}
-                isSelected={isSelected}
-                isInteractive={isInteractive}
-                scale={scale}
-                onLayerUpdate={onLayerUpdate}
-                onLayerSelect={onLayerSelect}
-                onLayerAction={(layer) => handleAction(layer.content?.action)}
-                style={{
-                    ...baseStyle,
-                    outline: isSelected ? `2px solid ${colors.primary[500] || '#6366F1'}` : 'none',
-                    outlineOffset: '2px',
-                }}
-            >
-                {content}
-            </DraggableLayerWrapper>
-        );
-    };
-
-    const overlayOpacity = config?.overlay?.enabled ? (config.overlay.opacity ?? 0.5) : 0;
-    // SDK Fallback: Black 50%
-    const overlayColor = config?.overlay?.color || '#000000';
-
-    const sheetStyle: React.CSSProperties = isFullPageModeRef ? {
-        // FULL PAGE OVERRIDE: Transparent Canvas
+    // BottomSheet wrapper style - always at bottom, full height for percentage support
+    const outerWrapperStyle: React.CSSProperties = {
         position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
         top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: '100%',
-        width: '100%',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderRadius: 0,
-        padding: 0,
-        zIndex: 100,
         display: 'flex',
         flexDirection: 'column',
-        boxSizing: 'border-box',
-        overflow: 'hidden', // SDK Parity: Clipping
-        lineHeight: 1.5, // SDK Global Reset
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-    } : {
-        // STANDARD MODE
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: config?.height || 'auto',
-        minHeight: '100px',
-        // SDK Parity: Transparent Background Support
-        // If config.backgroundColor is 'transparent' or '#00000000', treat as transparent.
-        backgroundColor: (config?.backgroundColor === 'transparent' || config?.backgroundColor === '#00000000')
-            ? 'transparent'
-            : (config?.backgroundColor || 'white'),
-        backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
-        // SDK PARITY: Force 'stretch' (fill) to match Flutter's BoxFit.fill
-        backgroundSize: '100% 100%',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        borderTopLeftRadius: safeScale(config?.borderRadius?.topLeft || 16, scale),
-        borderTopRightRadius: safeScale(config?.borderRadius?.topRight || 16, scale),
-        boxShadow: config?.boxShadow || 'none',
-        overflow: 'hidden', // SDK Parity: Enforce clipping (matches ClipRRect in SDK)
-        // MODAL PARITY: Skip padding when absolute layers are present
-        paddingTop: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.top || 0, scale),
-        paddingRight: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.right || 0, scale),
-        paddingBottom: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.bottom || 0, scale),
-        paddingLeft: hasAbsolutePositionedLayers ? 0 : safeScale(config?.padding?.left || 0, scale),
-
-        zIndex: 100, // SDK Parity: Sheet (100) > Overlay (99)
-        display: 'flex',
-        flexDirection: 'column',
-        maxHeight: '90vh',
-        boxSizing: 'border-box',
-        lineHeight: 1.5, // SDK Global Reset
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        color: '#111827',
-        ...config?.style
+        justifyContent: 'flex-end',
+        pointerEvents: 'none',
     };
-
-
-    const showHandle = config?.dragHandle && !isFullPageModeRef;
-    const showClose = config?.showCloseButton && !isFullPageModeRef;
-
-    console.log('🖼️ Dashboard Background Debug:', {
-        backgroundImageUrl: config?.backgroundImageUrl,
-        backgroundSize: config?.backgroundSize,
-        height: config?.height,
-        sheetStyleBgImage: sheetStyle.backgroundImage,
-        sheetStyleBgSize: sheetStyle.backgroundSize,
-        sheetStyleBgPosition: sheetStyle.backgroundPosition
-    });
 
     return (
-        <>
-            {/* Overlay */}
+        <div style={outerWrapperStyle}>
+            {/* External Overlay (Scrim) - Rendered here to be behind the sheet but cover screen */}
             {config?.overlay?.enabled && (
                 <div
-                    onClick={() => { if (config.overlay.dismissOnClick && onDismiss) onDismiss(); }}
                     style={{
                         position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: overlayColor,
-                        opacity: overlayOpacity,
-                        zIndex: 99
+                        inset: 0,
+                        backgroundColor: config.overlay.color || '#000000',
+                        opacity: config.overlay.opacity ?? 0.5,
+                        backdropFilter: config.overlay.blur ? `blur(${config.overlay.blur}px)` : undefined,
+                        pointerEvents: 'auto', // Allow clicking scrim to dismiss
+                        zIndex: 0
+                    }}
+                    onClick={() => {
+                        if (config.overlay.dismissOnClick && onDismiss) onDismiss();
                     }}
                 />
             )}
 
-            {/* Sheet */}
-            <div
-                ref={containerRef}
-                onClick={(e) => {
-                    // Handle container-level action in interact mode
-                    // Guard: Ignore clicks within 200ms of entering interact mode to prevent auto-trigger
-                    const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
-                    if (isInteractive && rootLayer?.content?.action && timeSinceInteractEnabled > 200) {
-                        handleAction(rootLayer.content.action);
-                    } else if (!isInteractive && rootLayer) {
-                        onLayerSelect(rootLayer.id);
-                    }
-                }}
-                style={sheetStyle}
-            >
-                {/* Handle bar (cosmetic) - Controlled by config */}
-                {showHandle && (
+            <div style={{
+                pointerEvents: 'auto',
+                width: '100%',
+                height: config?.height || 'auto', // Apply height here
+                maxHeight: '100%',
+                position: 'relative', // FIX: Position context for absolute content
+                backgroundColor: (config?.backgroundColor === 'transparent' || config?.backgroundColor === '#00000000')
+                    ? 'transparent'
+                    : (config?.backgroundColor || '#FFFFFF'),
+                backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
+                backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+                // Radius (Top only)
+                borderTopLeftRadius: `${topRadius}px`,
+                borderTopRightRadius: `${topRadius}px`,
+                // Border (Top and Sides)
+                borderTop: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+                borderLeft: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+                borderRight: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                boxSizing: 'border-box',
+                paddingTop: config?.dragHandle ? '12px' : '0px',
+            }}>
+                {/* Visual Drag Handle */}
+                {config?.dragHandle && (
                     <div style={{
-                        width: '40px',
-                        height: '4px',
-                        backgroundColor: '#e5e7eb',
-                        borderRadius: '2px',
-                        margin: '0 auto 16px auto',
-                        flexShrink: 0
-                    }} />
+                        position: 'absolute',
+                        top: 8,
+                        left: 0,
+                        right: 0,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        zIndex: 100,
+                    }}>
+                        <div style={{
+                            width: '40px',
+                            height: '4px',
+                            backgroundColor: 'rgba(0,0,0,0.15)',
+                            borderRadius: '2px'
+                        }} />
+                    </div>
                 )}
 
-                {/* Close Button - Controlled by config */}
-                {config?.showCloseButton && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onDismiss) onDismiss();
+                <div style={{ position: 'relative', width: '100%', flex: 1, minHeight: 0 }}>
+                    <FloaterRenderer
+                        layers={layers}
+                        selectedLayerId={selectedLayerId}
+                        onLayerSelect={onLayerSelect}
+                        onLayerUpdate={onLayerUpdate}
+                        colors={colors}
+                        config={{
+                            ...bottomSheetConfig,
+                            height: '100%', // Fill the container
+                            overflow: config?.overflow || 'hide'
                         }}
-                        style={{
-                            position: 'absolute',
-                            top: '16px',
-                            right: '16px',
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '50%',
-                            backgroundColor: 'rgba(0,0,0,0.05)',
-                            border: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 10
-                        }}
-                    >
-                        <span style={{ fontSize: '20px', lineHeight: 1 }}>×</span>
-                    </button>
-                )}
-
-                {/* SDK Parity: SPLIT LAYERS */}
-                {/* 1. Relative Layers -> Scrollable Content Area */}
-                <div style={{ flex: 1, overflowY: 'auto', width: '100%' }}>
-                    {children
-                        .filter(l => {
-                            const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
-                            return !isAbs;
-                        })
-                        .map(renderLayer)}
+                        isInteractive={isInteractive}
+                        onDismiss={onDismiss}
+                        onNavigate={onNavigate}
+                        onInterfaceAction={onInterfaceAction}
+                        scale={scale}
+                        scaleY={scaleY}
+                    />
                 </div>
-
-                {/* 2. Absolute Layers -> Direct Overlay (Fixed to Sheet) */}
-                {children
-                    .filter(l => {
-                        const isAbs = l.style?.position === 'absolute' || l.style?.position === 'fixed';
-                        return isAbs;
-                    })
-                    .map(renderLayer)}
-
             </div>
-        </>
+        </div>
     );
 };

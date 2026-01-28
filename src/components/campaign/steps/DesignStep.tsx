@@ -10,7 +10,6 @@ import { BOTTOM_SHEET_TEMPLATES } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 
 import { TooltipRenderer } from '@/components/TooltipRenderer';
-import { ModalRenderer } from '@/components/ModalRenderer';
 import { BannerRenderer } from '@/components/BannerRenderer';
 import { PipRenderer } from '@/components/PipRenderer';
 import { FloaterRenderer } from '@/components/FloaterRenderer';
@@ -26,7 +25,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
-import { ModalMinimalEditor } from '@/components/campaign/editors/ModalMinimalEditor';
 import { BannerMinimalEditor } from '@/components/campaign/editors/BannerMinimalEditor';
 import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinimalEditor';
 import { TooltipMinimalEditor } from '@/components/campaign/editors/TooltipMinimalEditor';
@@ -79,7 +77,6 @@ const experienceTypes = [
 ];
 
 const nudgeTypes = [
-  { id: 'modal', label: 'Modal', Icon: Maximize2, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
   { id: 'banner', label: 'Banner', Icon: Layout, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
   { id: 'bottomsheet', label: 'Bottom Sheet', Icon: Square, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'tooltip', label: 'Tooltip', Icon: MessageCircle, bg: '#FEF3C7', iconBg: '#FDE68A', iconColor: '#F59E0B' },
@@ -94,7 +91,7 @@ const nudgeTypes = [
 
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip'],
-  'messages': ['modal', 'floater', 'bottomsheet', 'banner', 'scratchcard', 'fullscreen'], // PIP removed - Floater handles it
+  'messages': ['floater', 'bottomsheet', 'banner', 'scratchcard', 'fullscreen'], // PIP removed - Floater handles it
   'stories': ['carousel'],
   // Default fallbacks for others or future types
   'challenges': [],
@@ -133,7 +130,6 @@ export const DesignStep: React.FC<any> = () => {
     deleteLayer,
     updateLayer,
     updateBottomSheetConfig,
-    updateModalConfig,
     updateBannerConfig,
     updateTooltipConfig,
     updatePipConfig,
@@ -1074,7 +1070,7 @@ export const DesignStep: React.FC<any> = () => {
           case 'bottomsheet':
             return 'transparent'
           case 'banner':
-           return 'transparent'
+            return 'transparent'
           case 'tooltip':
             // Fix: Tooltip handles its own overlay via TooltipRenderer.renderOverlay()
             // Don't add a wrapper overlay here to avoid double-dimming
@@ -1082,7 +1078,7 @@ export const DesignStep: React.FC<any> = () => {
           case 'scratchcard':
             return 'transparent'
           case 'floater':
-           return 'transparent'
+            return 'transparent'
           case 'pip':
             return 'transparent'
           default:
@@ -2050,6 +2046,7 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedNudgeType === 'tooltip') return <TooltipMinimalEditor />;
       if (selectedNudgeType === 'pip') return renderPipConfig();
       if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
+      if (selectedNudgeType === 'banner') return <BannerMinimalEditor />;
       if (selectedNudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
       return null;
     }
@@ -3346,7 +3343,7 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Countdown properties
-    
+
 
 
 
@@ -4029,7 +4026,6 @@ export const DesignStep: React.FC<any> = () => {
                       const getRootContainerId = () => {
                         const containerNames: Record<string, string> = {
                           'bottomsheet': 'Bottom Sheet',
-                          'modal': 'Modal Container',
                           'banner': 'Banner Container',
                           'tooltip': 'Tooltip Container',
                           'pip': 'PIP Container',

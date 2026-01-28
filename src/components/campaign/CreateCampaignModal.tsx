@@ -32,7 +32,7 @@ const EXPERIENCE_TYPES = [
         icon: MessageSquare,
         gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
         shadowColor: 'rgba(59, 130, 246, 0.4)',
-        description: 'Modals, tooltips, and banners'
+        description: 'Tooltips, banners, and floaters'
     },
     {
         id: 'messages',

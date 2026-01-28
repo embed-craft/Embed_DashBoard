@@ -144,17 +144,6 @@ export const DESIGN_TYPES: DesignType[] = [
         iconColor: '#4F46E5'
     },
     {
-        id: 'modal',
-        label: 'Modal',
-        description: 'Centered popup dialog',
-        icon: Square,
-        category: 'modal',
-        color: '#EC4899',
-        bg: '#FDF2F8',
-        iconBg: '#FCE7F3',
-        iconColor: '#DB2777'
-    },
-    {
         id: 'banner',
         label: 'Banner',
         description: 'Top or bottom notification bar',
@@ -203,7 +192,6 @@ export const DESIGN_TYPES: DesignType[] = [
 export const DESIGN_CATEGORIES = [
     { id: 'all', label: 'All' },
     { id: 'bottom-sheet', label: 'Bottom sheet' },
-    { id: 'modal', label: 'Modal' },
     { id: 'banner', label: 'Banner' },
     { id: 'full-page', label: 'Full page' },
     { id: 'floater', label: 'Floater' },
@@ -211,10 +199,8 @@ export const DESIGN_CATEGORIES = [
 ];
 
 export const TEMPLATES: Template[] = [
-    { id: 't1', label: 'Welcome Modal', description: 'Standard welcome message', typeId: 'modal' },
     { id: 't2', label: 'Feature Announcement', description: 'Bottom sheet for new features', typeId: 'bottomsheet' },
     { id: 't3', label: 'Discount Banner', description: 'Top banner for sales', typeId: 'banner' },
     { id: 't4', label: 'Feedback Form', description: 'Full page survey', typeId: 'fullpage' },
     { id: 't5', label: 'Support Chat', description: 'Floating chat button', typeId: 'floater' },
-    { id: 't6', label: 'Newsletter Signup', description: 'Modal for email collection', typeId: 'modal' },
 ];

@@ -25,39 +25,55 @@ const PALETTE = [
 ];
 
 export const BottomSheetMinimalEditor = () => {
-    const { currentCampaign, activeInterfaceId, updateBottomSheetConfig } = useEditorStore();
+    const { currentCampaign, activeInterfaceId, updateBottomSheetConfig, updateBannerConfig } = useEditorStore();
 
-    // Resolve config from active interface OR main campaign
+    // Determine context (Bottom Sheet vs Banner)
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
-    const config = activeInterface ? activeInterface.bottomSheetConfig : currentCampaign?.bottomSheetConfig;
+    const nudgeType = activeInterface ? activeInterface.nudgeType : (currentCampaign?.nudgeType || 'bottomsheet');
+    const isBannerLayer = nudgeType === 'banner';
+
+    // Select appropriate config and updater
+    const config = activeInterface
+        ? (isBannerLayer ? activeInterface.bannerConfig : activeInterface.bottomSheetConfig)
+        : (isBannerLayer ? currentCampaign?.bannerConfig : currentCampaign?.bottomSheetConfig);
+
+    const updateUnifiedConfig = (updates: any) => {
+        if (isBannerLayer) {
+            updateBannerConfig(updates);
+        } else {
+            updateBottomSheetConfig(updates);
+        }
+    };
 
     // Auto-initialize defaults
     useEffect(() => {
         if (!config) {
-            updateBottomSheetConfig({
+            updateUnifiedConfig({
                 height: 'auto',
                 backgroundColor: '#FFFFFF',
-                borderRadius: { topLeft: 16, topRight: 16 },
+                borderRadius: isBannerLayer ? { bottomLeft: 16, bottomRight: 16 } : { topLeft: 16, topRight: 16 },
                 overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
                 animation: { type: 'slide', duration: 300, easing: 'ease-out' },
                 dragHandle: false,
                 showCloseButton: false,
-                swipeToDismiss: false
+                swipeToDismiss: true,
+                position: isBannerLayer ? 'top' : 'bottom'
             });
         }
-    }, [config, updateBottomSheetConfig]);
+    }, [config, isBannerLayer]);
 
     if (!config) {
         return (
             <div className="p-5 text-center text-gray-500">
                 <p className="text-sm mb-3">Configuration missing</p>
                 <button
-                    onClick={() => updateBottomSheetConfig({
+                    onClick={() => updateUnifiedConfig({
                         height: 'auto',
                         backgroundColor: '#FFFFFF',
-                        borderRadius: { topLeft: 16, topRight: 16 },
+                        borderRadius: isBannerLayer ? { bottomLeft: 16, bottomRight: 16 } : { topLeft: 16, topRight: 16 },
                         overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
-                        animation: { type: 'slide', duration: 300, easing: 'ease-out' }
+                        animation: { type: 'slide', duration: 300, easing: 'ease-out' },
+                        position: isBannerLayer ? 'top' : 'bottom' // Force expected default
                     } as any)}
                     className="px-4 py-2 bg-indigo-500 text-white rounded-md text-sm font-medium hover:bg-indigo-600 transition-colors"
                 >
@@ -68,11 +84,12 @@ export const BottomSheetMinimalEditor = () => {
     }
 
     const updateConfig = (key: string, value: any) => {
-        updateBottomSheetConfig({ [key]: value });
+        updateUnifiedConfig({ [key]: value });
 
         // Sync background color to root layer
         if (key === 'backgroundColor') {
-            const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === 'Bottom Sheet');
+            const rootLayerName = isBannerLayer ? 'Banner Container' : 'Bottom Sheet';
+            const rootLayer = currentCampaign?.layers?.find(l => l.type === 'container' && l.name === rootLayerName);
             if (rootLayer) {
                 const styleValue = (value === 'transparent' || value === '#00000000') ? '#00000000' : value;
                 const { updateLayerStyle } = useEditorStore.getState();
@@ -82,7 +99,7 @@ export const BottomSheetMinimalEditor = () => {
     };
 
     const updateNestedConfig = (parent: string, key: string, value: any) => {
-        updateBottomSheetConfig({
+        updateUnifiedConfig({
             [parent]: { ...((config as any)[parent] || {}), [key]: value }
         });
     };
@@ -92,9 +109,9 @@ export const BottomSheetMinimalEditor = () => {
             {/* Header */}
             <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 bg-indigo-50 rounded-md">
-                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                    {isBannerLayer ? <Layout className="w-4 h-4 text-indigo-600" /> : <Sparkles className="w-4 h-4 text-indigo-600" />}
                 </div>
-                <h3 className="text-sm font-semibold">Bottom Sheet Setup</h3>
+                <h3 className="text-sm font-semibold">{isBannerLayer ? 'Banner Setup' : 'Bottom Sheet Setup'}</h3>
             </div>
 
             <Tabs defaultValue="general" className="w-full">
@@ -145,10 +162,28 @@ export const BottomSheetMinimalEditor = () => {
                             </div>
                         </div>
 
-                        {/* Border Radius - Single value for top corners */}
+
+                        {/* Position */}
+                        <div className="pt-2 border-t border-gray-200">
+                            <Label className="text-[10px] text-gray-500 mb-1.5 block">Position</Label>
+                            <Tabs
+                                value={config.position || 'bottom'}
+                                onValueChange={(val) => updateConfig('position', val)}
+                                className="w-full"
+                            >
+                                <TabsList className="grid w-full grid-cols-2 h-7 bg-gray-100 p-0.5">
+                                    <TabsTrigger value="top" className="text-[10px] h-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">Top (Banner)</TabsTrigger>
+                                    <TabsTrigger value="bottom" className="text-[10px] h-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">Bottom</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+
+                        {/* Border Radius */}
                         <div className="pt-2 border-t border-gray-200 grid grid-cols-2 gap-3">
                             <div>
-                                <Label className="text-[10px] text-gray-500 mb-1 block">Corner Radius (Top)</Label>
+                                <Label className="text-[10px] text-gray-500 mb-1 block">
+                                    Corner Radius ({config.position === 'top' ? 'Bottom' : 'Top'})
+                                </Label>
                                 <Input
                                     type="number"
                                     className="h-8 text-xs"
@@ -288,6 +323,36 @@ export const BottomSheetMinimalEditor = () => {
 
                 {/* --- BEHAVIOR TAB --- */}
                 <TabsContent value="behavior" className="space-y-5 animate-in fade-in-50">
+
+                    {/* Timing */}
+                    <div className="space-y-4">
+                        <Label className="text-xs font-semibold text-gray-700">Timing</Label>
+                        <div className="grid grid-cols-2 gap-3 border rounded-lg p-3 bg-gray-50/50">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Delay (Seconds)</Label>
+                                <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={config.timing?.delay ?? 0}
+                                    onChange={(e) => updateNestedConfig('timing', 'delay', parseFloat(e.target.value) || 0)}
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Duration (Seconds)</Label>
+                                <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={config.timing?.duration ?? 0}
+                                    onChange={(e) => updateNestedConfig('timing', 'duration', parseFloat(e.target.value) || 0)}
+                                    placeholder="0 = Infinite"
+                                />
+                                <p className="text-[9px] text-gray-400 mt-1">0 = Infinite</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator />
 
                     {/* Overlay/Scrim */}
                     <div className="space-y-4">
@@ -435,6 +500,6 @@ export const BottomSheetMinimalEditor = () => {
                     </div>
                 </TabsContent>
             </Tabs>
-        </div>
+        </div >
     );
 };

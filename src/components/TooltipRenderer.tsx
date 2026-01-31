@@ -7,6 +7,7 @@ import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
+import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
 
 // Helper to scale any string containing "Npx" values (e.g. "1px solid red", "0 4px 10px black")
 // This ensures decorations match the mobile scaling factor
@@ -175,6 +176,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             case 'button': content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'input': content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />; break;
             case 'copy_button': content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
+            case 'scratch_foil':
+                content = (
+                    <ScratchFoilLayerRenderer
+                        layer={layer}
+                        scale={scale}
+                        isInteractive={isInteractive}
+                    />
+                );
+                break;
             case 'container': content = <ContainerRenderer layer={layer} layers={layers} renderChild={renderLayer} />; break;
             default: content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown</div>;
         }
@@ -712,6 +722,13 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         backgroundRepeat: 'no-repeat',
                         borderRadius: isBodyVisible ? ((config.borderRadius || 12) * scale) : 0,
                         padding: isBodyVisible ? ((config.padding || 16) * scale) : 0,
+                        // Glassmorphism Support
+                        backdropFilter: (isBodyVisible && config.backdropFilter?.enabled)
+                            ? `blur(${(config.backdropFilter.blur || 10) * scale}px)`
+                            : undefined,
+                        WebkitBackdropFilter: (isBodyVisible && config.backdropFilter?.enabled)
+                            ? `blur(${(config.backdropFilter.blur || 10) * scale}px)`
+                            : undefined,
                         boxShadow: isBodyVisible && config.shadowEnabled !== false ?
                             `${(config.shadowOffsetX || 0) * scale}px ${(config.shadowOffsetY || 10) * scaleY}px ${(config.shadowBlur || 25) * scale}px ${(config.shadowSpread || 0) * scale}px ${config.shadowColor ? (() => {
                                 const hex = config.shadowColor;

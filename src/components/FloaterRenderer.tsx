@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, isValidElement } from 'react';
 import { DraggableLayerWrapper } from './campaign/renderers/DraggableLayerWrapper';
 import { Layer, LayerStyle } from '@/store/useEditorStore';
 import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
@@ -7,6 +7,8 @@ import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
+import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
+import { CarouselLayerRenderer } from './campaign/renderers/CarouselLayerRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -244,6 +246,24 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         return configVal || defaultVal;
     };
 
+    // Auto Dismiss Logic (Timing)
+    useEffect(() => {
+        if (!isInteractive) return;
+
+        // Support both nested timing object and legacy flat property
+        const timing = (config as any)?.timing;
+        const duration = timing?.duration ?? (config as any)?.duration; // Seconds
+
+        if (duration && typeof duration === 'number' && duration > 0) {
+            console.log(`[FloaterRenderer] Auto-dismiss timer set for ${duration}s`);
+            const timer = setTimeout(() => {
+                console.log('[FloaterRenderer] Auto-dismiss triggering');
+                if (onDismiss) onDismiss();
+            }, duration * 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [isInteractive, (config as any)?.timing?.duration, (config as any)?.duration, onDismiss]);
+
     // Action Handler
     const handleAction = (action: any) => {
         if (!isInteractive || !action) return;
@@ -414,6 +434,10 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             width: safeScale(layer.style?.width || layer.size?.width, scale),
             height: safeScale(layer.style?.height || layer.size?.height, scaleY),
 
+            // BACKGROUND DEFAULTS: Fix Image Initial Render
+            backgroundSize: layer.style?.backgroundImage && !layer.style?.backgroundSize ? 'cover' : (layer.style?.backgroundSize),
+            backgroundPosition: layer.style?.backgroundImage && !layer.style?.backgroundPosition ? 'center' : (layer.style?.backgroundPosition),
+
             marginTop: safeScale(layer.style?.marginTop, scaleY),
             marginBottom: safeScale(layer.style?.marginBottom, scaleY),
             marginLeft: safeScale(layer.style?.marginLeft, scale),
@@ -495,7 +519,14 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             marginBottom: finalMarginBottom,
             marginLeft: finalMarginLeft,
             marginRight: finalMarginRight,
-            ...scaledStyle
+            ...scaledStyle,
+            // Glassmorphism Support
+            backdropFilter: (layer.style as any)?.backdropFilter?.enabled
+                ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)`
+                : undefined,
+            WebkitBackdropFilter: (layer.style as any)?.backdropFilter?.enabled
+                ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)`
+                : undefined,
         };
 
         let content = null;
@@ -623,6 +654,26 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     }} />
                 );
                 break;
+            case 'scratch_foil':
+                content = (
+                    <ScratchFoilLayerRenderer
+                        layer={layer}
+                        scale={scale}
+                        isInteractive={isInteractive}
+                    />
+                );
+                break;
+            case 'carousel':
+                content = (
+                    <CarouselLayerRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
+                        isInteractive={isInteractive}
+                        renderChild={(childLayer) => renderLayer(childLayer)}
+                    />
+                );
+                break;
             case 'container':
                 content = (
                     <ContainerRenderer
@@ -673,7 +724,12 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     outlineOffset: '2px',
                 }}
             >
-                {content}
+                {/* Safety Sanitize Content */}
+                {isValidElement(content) || content === null ? content : (
+                    <div className="bg-red-50 text-red-500 text-[10px] p-1 border border-red-200">
+                        Invalid Content
+                    </div>
+                )}
             </DraggableLayerWrapper>
         );
     };
@@ -705,12 +761,28 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             case 'center-left':
                 style.top = '50%';
                 style.left = offsetX;
-                style.transform = 'translateY(-50%)';
+                style.transform = `translateY(calc(-50% + ${offsetY}px))`;
                 break;
             case 'center-right':
                 style.top = '50%';
                 style.right = offsetX;
-                style.transform = 'translateY(-50%)';
+                style.transform = `translateY(calc(-50% + ${offsetY}px))`;
+                break;
+            case 'top-center':
+                style.top = offsetY;
+                style.left = '50%';
+                style.transform = `translateX(calc(-50% + ${offsetX}px))`;
+                break;
+            case 'bottom-center':
+                style.bottom = offsetY;
+                style.left = '50%';
+                style.transform = `translateX(calc(-50% + ${offsetX}px))`;
+                break;
+            case 'center':
+            case 'middle-center':
+                style.top = '50%';
+                style.left = '50%';
+                style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
                 break;
             case 'bottom-right':
             default:
@@ -721,6 +793,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
 
         return style;
     }, [config?.position, config?.offsetX, config?.offsetY, scale, scaleY]);
+
 
     // Drag Implementation
     // Transform-based dragging to avoid layout jumps and coordinate issues
@@ -1006,13 +1079,18 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     const timeSinceInteractEnabled = Date.now() - interactModeEntryTimeRef.current;
                     if (isInteractive && floaterLayer?.content?.action && timeSinceInteractEnabled > 200) {
                         handleAction(floaterLayer.content.action);
+                    } else if (isInteractive && (config?.behavior?.tapToDismiss ?? false)) {
+                        // New: Tap to Dismiss (if no action)
+                        e.stopPropagation();
+                        if (onDismiss) onDismiss();
                     } else if (!isInteractive) {
                         onLayerSelect(floaterLayer.id);
                     }
                 }}
                 onDoubleClick={(e) => {
                     // Double-tap to dismiss feature
-                    if (isInteractive && config?.doubleTapToDismiss && onDismiss) {
+                    const doubleTapEnabled = config?.behavior?.doubleTapToDismiss ?? config?.doubleTapToDismiss ?? false;
+                    if (isInteractive && doubleTapEnabled && onDismiss) {
                         e.stopPropagation();
                         onDismiss();
                     }
@@ -1073,6 +1151,12 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     // Visuals
                     opacity: floaterLayer.style?.opacity ?? 1,
                     filter: getFilterString(floaterLayer.style?.filter),
+                    backdropFilter: (config?.backdropFilter?.enabled && !isExpanded)
+                        ? `blur(${safeScale(config.backdropFilter.blur || 10, scale)})`
+                        : undefined,
+                    WebkitBackdropFilter: (config?.backdropFilter?.enabled && !isExpanded)
+                        ? `blur(${safeScale(config.backdropFilter.blur || 10, scale)})`
+                        : undefined,
                     boxShadow: isExpanded ? 'none' : (
                         config?.shadow?.enabled === false
                             ? 'none'

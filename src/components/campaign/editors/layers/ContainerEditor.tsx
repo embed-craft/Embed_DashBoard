@@ -115,49 +115,8 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                 />
             </div>
 
-            <hr className="border-gray-100 my-2" />
 
-            {/* 4. Spacing Section */}
-            <div className="py-2">
-                <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
-                    <Layout size={14} className="text-gray-500" />
-                    Inside Spacing
-                </h5>
-                <PaddingEditor
-                    style={layer.style || {}}
-                    onChange={(updates) => updateLayer(selectedLayerId, { style: { ...layer.style, ...updates } })}
-                    colors={colors}
-                />
-            </div>
 
-            <hr className="border-gray-100 my-2" />
-
-            {/* 5. Interaction Section */}
-            <div className="py-2">
-                <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
-                    <MousePointer2 size={14} className="text-gray-500" />
-                    Interaction
-                </h5>
-
-                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition-colors">
-                    <div className="flex flex-col">
-                        <span className="text-xs font-medium text-gray-900">Clickable Container</span>
-                        <span className="text-[10px] text-gray-500">Enable click actions on this box</span>
-                    </div>
-                    <input
-                        type="checkbox"
-                        checked={layer.content?.isInteractive || false}
-                        onChange={(e) => handleContentUpdate('isInteractive', e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                    />
-                </label>
-                {layer.content?.isInteractive && (
-                    <div className="mt-3 flex gap-2 items-start text-xs text-yellow-700 bg-yellow-50 p-2.5 rounded-md border border-yellow-100">
-                        <span>⚠</span>
-                        <span>Configure the specific action (Link/Navigate) in the <strong>Actions</strong> tab.</span>
-                    </div>
-                )}
-            </div>
 
         </div>
     );

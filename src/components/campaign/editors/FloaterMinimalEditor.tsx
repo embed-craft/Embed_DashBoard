@@ -59,8 +59,23 @@ export const FloaterMinimalEditor = () => {
             if (config.behavior?.snapToCorner === undefined) {
                 updateNested('behavior', 'snapToCorner', true);
             }
+
+            // SANITIZATION: Fix "auto" height issue
+            // If height is literally "auto", default to 180px to ensure SDK renders something.
+            if (config.height === 'auto') {
+                updateFloaterConfig({ height: 180, sizeUnit: 'px' });
+            }
+
+            // SANITIZATION: Ensure sizeUnit exists
+            if (!config.sizeUnit && config.height) {
+                const isPercent = String(config.height).includes('%');
+                updateFloaterConfig({ sizeUnit: isPercent ? '%' : 'px' });
+            }
         }
-    }, [config, updateFloaterConfig]);
+    }, [config/*, updateFloaterConfig*/]); // Remove dependency on config to avoid infinite loop if we update properly? 
+    // Actually, if we update, config changes, effect runs again.
+    // If we update to '180', then 'auto' check fails, so it stops. Stable.
+    // We should keep config dependency to catch initial load.
 
     if (!config) return null;
 
@@ -135,8 +150,10 @@ export const FloaterMinimalEditor = () => {
                                             value={String(config.width).replace(/[^\d.]/g, '')}
                                             onChange={(e) => {
                                                 const val = e.target.value;
-                                                const isPercent = String(config.width).includes('%');
-                                                updateConfig('width', isPercent ? `${val}%` : parseInt(val || '0'));
+                                                const isPercent = String(config.width).includes('%') || config.sizeUnit === '%';
+
+                                                const cleanVal = val === '' ? 0 : Number(val);
+                                                updateConfig('width', isPercent ? `${cleanVal}%` : cleanVal);
                                             }}
                                         />
                                     </div>
@@ -144,7 +161,13 @@ export const FloaterMinimalEditor = () => {
                                         onClick={() => {
                                             const isPercent = String(config.width).includes('%');
                                             const val = parseInt(String(config.width).replace(/[^\d.]/g, '') || '0');
-                                            updateConfig('width', isPercent ? val : `${Math.min(val, 100)}%`);
+
+                                            // Toggle Unit
+                                            if (isPercent) {
+                                                updateConfig('width', val); // Convert to PX
+                                            } else {
+                                                updateConfig('width', `${Math.min(val, 100)}%`); // Convert to %
+                                            }
                                         }}
                                         className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
                                     >
@@ -163,8 +186,12 @@ export const FloaterMinimalEditor = () => {
                                             value={String(config.height).replace(/[^\d.]/g, '')}
                                             onChange={(e) => {
                                                 const val = e.target.value;
-                                                const isPercent = String(config.height).includes('%');
-                                                updateConfig('height', isPercent ? `${val}%` : parseInt(val || '0'));
+                                                const isPercent = String(config.height).includes('%') || config.sizeUnit === '%';
+
+                                                const cleanVal = val === '' ? 0 : Number(val);
+                                                updateConfig('height', isPercent ? `${cleanVal}%` : cleanVal);
+                                                if (isPercent) updateConfig('sizeUnit', '%');
+                                                else updateConfig('sizeUnit', 'px');
                                             }}
                                         />
                                     </div>
@@ -172,7 +199,15 @@ export const FloaterMinimalEditor = () => {
                                         onClick={() => {
                                             const isPercent = String(config.height).includes('%');
                                             const val = parseInt(String(config.height).replace(/[^\d.]/g, '') || '0');
-                                            updateConfig('height', isPercent ? val : `${Math.min(val, 100)}%`);
+
+                                            // Toggle Unit
+                                            if (isPercent) {
+                                                updateConfig('height', val); // Convert to PX
+                                                updateConfig('sizeUnit', 'px');
+                                            } else {
+                                                updateConfig('height', `${Math.min(val, 100)}%`); // Convert to %
+                                                updateConfig('sizeUnit', '%');
+                                            }
                                         }}
                                         className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
                                     >
@@ -296,14 +331,27 @@ export const FloaterMinimalEditor = () => {
                                 <Switch checked={config.shadow?.enabled} onCheckedChange={(c) => updateNested('shadow', 'enabled', c)} />
                             </div>
                             {config.shadow?.enabled && (
-                                <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded border text-xs">
-                                    <div className="space-y-1">
-                                        <Label className="text-[10px] text-gray-500">Blur</Label>
-                                        <Input type="number" className="h-7 text-xs" value={config.shadow?.blur ?? 10} onChange={e => updateNested('shadow', 'blur', parseInt(e.target.value))} />
+                                <div className="space-y-2 p-2 bg-gray-50 rounded border text-xs">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Blur</Label>
+                                            <Input type="number" className="h-7 text-xs" value={config.shadow?.blur ?? 10} onChange={e => updateNested('shadow', 'blur', parseInt(e.target.value))} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Spread</Label>
+                                            <Input type="number" className="h-7 text-xs" value={config.shadow?.spread ?? 0} onChange={e => updateNested('shadow', 'spread', parseInt(e.target.value))} />
+                                        </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] text-gray-500">Spread</Label>
-                                        <Input type="number" className="h-7 text-xs" value={config.shadow?.spread ?? 0} onChange={e => updateNested('shadow', 'spread', parseInt(e.target.value))} />
+                                        <Label className="text-[10px] text-gray-500">Color</Label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="color"
+                                                className="w-full h-7 rounded cursor-pointer border border-gray-200 p-0"
+                                                value={config.shadow?.color || '#000000'} // Default visually
+                                                onChange={e => updateNested('shadow', 'color', e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -361,6 +409,68 @@ export const FloaterMinimalEditor = () => {
                                         value={config.backgroundColor === '#00000000' ? '#000000' : (config.backgroundColor || '#000000')}
                                         onChange={e => updateConfig('backgroundColor', e.target.value)}
                                     />
+                                </div>
+
+                                {/* Glassmorphism Section */}
+                                <div className="pt-2 border-t border-gray-100 mt-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Label className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50 backdrop-blur-sm" />
+                                            Glassmorphism
+                                        </Label>
+                                        <Switch
+                                            checked={config.backdropFilter?.enabled ?? false}
+                                            onCheckedChange={(c) => {
+                                                updateNested('backdropFilter', 'enabled', c);
+                                                // Auto-set opacity if turning on and currently opaque
+                                                if (c && (!config.backgroundColor || config.backgroundColor.length === 7)) {
+                                                    const base = config.backgroundColor || '#000000';
+                                                    updateConfig('backgroundColor', `${base}80`); // 50% opacity
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    {config.backdropFilter?.enabled && (
+                                        <div className="space-y-3 p-2 bg-indigo-50/50 rounded border border-indigo-100/50">
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between">
+                                                    <Label className="text-[10px] text-gray-500">Blur Intensity</Label>
+                                                    <span className="text-[10px] text-gray-400">{config.backdropFilter?.blur ?? 10}px</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="40"
+                                                    step="1"
+                                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                    value={config.backdropFilter?.blur ?? 10}
+                                                    onChange={(e) => updateNested('backdropFilter', 'blur', parseInt(e.target.value))}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between">
+                                                    <Label className="text-[10px] text-gray-500">Opacity Helper</Label>
+                                                    <span className="text-[10px] text-gray-400">
+                                                        {Math.round(((parseInt((config.backgroundColor || '#000000FF').slice(7, 9), 16) || 255) / 255) * 100)}%
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="255"
+                                                    step="5"
+                                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                    value={parseInt((config.backgroundColor || '#000000FF').slice(7, 9), 16) || 255}
+                                                    onChange={(e) => {
+                                                        const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
+                                                        const base = (config.backgroundColor || '#000000').slice(0, 7);
+                                                        updateConfig('backgroundColor', `${base}${alpha}`);
+                                                    }}
+                                                />
+                                                <p className="text-[9px] text-gray-400">Lower opacity to see the blur effect efficiently.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -654,6 +764,36 @@ export const FloaterMinimalEditor = () => {
                                 )}
                             </div>
                         )}
+                    </div>
+
+                    <Separator />
+
+                    {/* Timing Section */}
+                    <div className="space-y-3 mt-4">
+                        <Label className="text-xs font-semibold text-gray-700">Timing</Label>
+                        <div className="grid grid-cols-2 gap-3 border rounded-lg p-3 bg-gray-50/50">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Delay (Seconds)</Label>
+                                <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={config.timing?.delay ?? 0}
+                                    onChange={(e) => updateNested('timing', 'delay', parseFloat(e.target.value) || 0)}
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Duration (Seconds)</Label>
+                                <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={config.timing?.duration ?? 0}
+                                    onChange={(e) => updateNested('timing', 'duration', parseFloat(e.target.value) || 0)}
+                                    placeholder="0 = Infinite"
+                                />
+                                <p className="text-[9px] text-gray-400 mt-1">0 = Infinite</p>
+                            </div>
+                        </div>
                     </div>
 
                     <Separator />

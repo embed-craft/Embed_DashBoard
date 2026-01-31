@@ -106,6 +106,7 @@ export const FullScreenMinimalEditor = () => {
                 <TabsList className="grid w-full grid-cols-3 mb-4">
                     <TabsTrigger value="general"><Settings2 className="w-3.5 h-3.5 mr-1.5" /> General</TabsTrigger>
                     <TabsTrigger value="media"><ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Background</TabsTrigger>
+                    <TabsTrigger value="controls"><Settings2 className="w-3.5 h-3.5 mr-1.5" /> Controls</TabsTrigger>
                     <TabsTrigger value="timing"><Clock className="w-3.5 h-3.5 mr-1.5" /> Timing</TabsTrigger>
                 </TabsList>
 
@@ -262,6 +263,120 @@ export const FullScreenMinimalEditor = () => {
                             </>
                         )}
                     </div>
+                </TabsContent>
+
+                {/* --- CONTROLS TAB --- */}
+                <TabsContent value="controls" className="space-y-5 animate-in fade-in-50">
+                    <div className="space-y-4">
+                        <Label className="text-xs font-semibold text-gray-700">Close Button</Label>
+                        <div className="border rounded-lg p-3 bg-gray-50/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-gray-600">Show Close Button</Label>
+                                <Switch
+                                    checked={config.controls?.closeButton?.show ?? true}
+                                    onCheckedChange={c => updateNested('controls', 'closeButton', { ...(config.controls?.closeButton || {}), show: c })}
+                                />
+                            </div>
+
+                            {(config.controls?.closeButton?.show ?? true) && (
+                                <>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-gray-500">Icon Image URL (Optional)</Label>
+                                        <Input
+                                            className="h-8 text-xs"
+                                            placeholder="https://... (Default: 'X' icon)"
+                                            value={config.controls?.closeButton?.iconUrl || ''}
+                                            onChange={e => updateNested('controls', 'closeButton', { ...(config.controls?.closeButton || {}), iconUrl: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Position</Label>
+                                            <Select
+                                                value={config.controls?.closeButton?.position || 'top-right'}
+                                                onValueChange={val => updateNested('controls', 'closeButton', { ...(config.controls?.closeButton || {}), position: val })}
+                                            >
+                                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="top-right">Top Right</SelectItem>
+                                                    <SelectItem value="top-left">Top Left</SelectItem>
+                                                    <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Size (px)</Label>
+                                            <Input
+                                                type="number"
+                                                className="h-8 text-xs"
+                                                value={config.controls?.closeButton?.size || 24}
+                                                onChange={e => updateNested('controls', 'closeButton', { ...(config.controls?.closeButton || {}), size: parseInt(e.target.value) || 24 })}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                        <Label className="text-xs font-semibold text-gray-700">Interaction</Label>
+                        <div className="border rounded-lg p-3 bg-gray-50/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-gray-600">Tap to Dismiss</Label>
+                                <Switch
+                                    checked={config.behavior?.tapToDismiss ?? false}
+                                    onCheckedChange={c => updateNested('behavior', 'tapToDismiss', c)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-gray-600">Double Tap to Dismiss</Label>
+                                <Switch
+                                    checked={config.behavior?.doubleTapToDismiss ?? false}
+                                    onCheckedChange={c => updateNested('behavior', 'doubleTapToDismiss', c)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {isVideo && (
+                        <>
+                            <Separator />
+                            <div className="space-y-4">
+                                <Label className="text-xs font-semibold text-gray-700">Video Controls</Label>
+                                <div className="border rounded-lg p-3 bg-gray-50/50 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs text-gray-600">Show Progress Bar</Label>
+                                        <Switch
+                                            checked={config.controls?.progressBar?.show ?? false}
+                                            onCheckedChange={c => updateNested('controls', 'progressBar', { ...(config.controls?.progressBar || {}), show: c })}
+                                        />
+                                    </div>
+                                    {(config.controls?.progressBar?.show ?? false) && (
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Progress Color</Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="color"
+                                                    className="w-10 h-8 p-0 border-0"
+                                                    value={config.controls?.progressBar?.color || '#FFFFFF'}
+                                                    onChange={e => updateNested('controls', 'progressBar', { ...(config.controls?.progressBar || {}), color: e.target.value })}
+                                                />
+                                                <Input
+                                                    className="h-8 text-xs flex-1"
+                                                    value={config.controls?.progressBar?.color || '#FFFFFF'}
+                                                    onChange={e => updateNested('controls', 'progressBar', { ...(config.controls?.progressBar || {}), color: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
                 </TabsContent>
 
                 {/* --- TIMING TAB --- */}

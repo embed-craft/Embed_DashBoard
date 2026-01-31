@@ -33,19 +33,13 @@ const INTERFACE_TYPES: Array<{
     gradient: string;
     description: string;
 }> = [
-        {
-            id: 'modal',
-            label: 'Modal',
-            icon: <Maximize2 size={24} />,
-            gradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-            description: 'Centered popup dialog',
-        },
+
         {
             id: 'bottomsheet',
-            label: 'Bottom Sheet',
+            label: 'Bottom Sheet / Banner',
             icon: <PanelBottom size={24} />,
             gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            description: 'Slides up from bottom',
+            description: 'Slides up (Sheet) or down (Banner)',
         },
         {
             id: 'tooltip',
@@ -54,27 +48,7 @@ const INTERFACE_TYPES: Array<{
             gradient: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
             description: 'Contextual pointer tip',
         },
-        {
-            id: 'banner',
-            label: 'Banner',
-            icon: <LayoutPanelTop size={24} />,
-            gradient: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-            description: 'Top or bottom bar',
-        },
-        {
-            id: 'pip',
-            label: 'PIP',
-            icon: <PictureInPicture2 size={24} />,
-            gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-            description: 'Picture-in-picture video',
-        },
-        {
-            id: 'scratchcard',
-            label: 'Scratch Card',
-            icon: <Gift size={24} />,
-            gradient: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-            description: 'Interactive reveal card',
-        },
+
         {
             id: 'floater',
             label: 'Floater',

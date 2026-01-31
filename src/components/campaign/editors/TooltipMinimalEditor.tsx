@@ -640,6 +640,32 @@ export const TooltipMinimalEditor = () => {
 
                                     <Separator />
 
+                                    {/* GLASSMORPHISM */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Waves className="w-3.5 h-3.5" /> Glassmorphism</Label>
+                                            <Switch
+                                                checked={config.backdropFilter?.enabled === true}
+                                                onCheckedChange={(c) => updateConfig('backdropFilter', { ...config.backdropFilter, enabled: c, blur: config.backdropFilter?.blur || 10 })}
+                                            />
+                                        </div>
+
+                                        {config.backdropFilter?.enabled && (
+                                            <div className="space-y-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 animate-in fade-in">
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between"><Label className="text-[10px] text-gray-500">Blur Amount</Label><span className="text-[10px] text-gray-400">{config.backdropFilter?.blur || 10}px</span></div>
+                                                    <Slider
+                                                        value={[config.backdropFilter?.blur || 10]}
+                                                        max={40} step={1}
+                                                        onValueChange={(val) => updateConfig('backdropFilter', { ...config.backdropFilter, blur: val[0] })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Separator />
+
                                     {/* 4. ARROW */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
@@ -1132,6 +1158,36 @@ export const TooltipMinimalEditor = () => {
                 {/* --- BEHAVIOR TAB --- */}
                 <TabsContent value="behavior" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="space-y-4 p-1">
+                        {/* Timing */}
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold text-gray-600">Timing</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] text-gray-500">Delay (Seconds)</Label>
+                                    <Input
+                                        type="number"
+                                        value={(config.timing?.delay ?? 0)}
+                                        onChange={(e) => updateConfig('timing', { ...(config.timing || {}), delay: parseFloat(e.target.value) || 0 })}
+                                        className="h-8 text-xs"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] text-gray-500">Duration (Seconds)</Label>
+                                    <Input
+                                        type="number"
+                                        value={(config.timing?.duration ?? 0)}
+                                        onChange={(e) => updateConfig('timing', { ...(config.timing || {}), duration: parseFloat(e.target.value) || 0 })}
+                                        className="h-8 text-xs"
+                                        placeholder="0 = Infinite"
+                                    />
+                                    <p className="text-[9px] text-gray-400">0 = Infinite</p>
+                                </div>
+                            </div>
+                        </div>
+                        <Separator />
+
+
                         {/* Timeline Mode */}
                         <div className="flex items-start justify-between p-3 bg-orange-50 border border-orange-100 rounded-lg">
                             <div className="space-y-1">

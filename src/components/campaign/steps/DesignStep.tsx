@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import { useEditorStore, getDefaultLayersForNudgeType, TooltipConfig } from '@/store/useEditorStore';
 
-import { BOTTOM_SHEET_TEMPLATES } from '@/lib/bottomSheetTemplates';
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 
 import { TooltipRenderer } from '@/components/TooltipRenderer';
-import { BannerRenderer } from '@/components/BannerRenderer';
-import { PipRenderer } from '@/components/PipRenderer';
 import { FloaterRenderer } from '@/components/FloaterRenderer';
 import { FullScreenRenderer } from '@/components/FullScreenRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
@@ -24,8 +21,6 @@ import { DEVICE_PRESETS, DEFAULT_DEVICE_ID } from '@/lib/devicePresets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
-import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
-import { BannerMinimalEditor } from '@/components/campaign/editors/BannerMinimalEditor';
 import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinimalEditor';
 import { TooltipMinimalEditor } from '@/components/campaign/editors/TooltipMinimalEditor';
 import { FullScreenMinimalEditor } from '@/components/campaign/editors/FullScreenMinimalEditor';
@@ -46,10 +41,9 @@ import { ListEditor } from '@/components/campaign/editors/layers/ListEditor';
 import { StatisticEditor } from '@/components/campaign/editors/layers/StatisticEditor';
 import { BadgeEditor } from '@/components/campaign/editors/layers/BadgeEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
+import { ScratchFoilEditor } from '@/components/campaign/editors/layers/ScratchFoilEditor';
+import { CarouselLayerEditor } from '@/components/campaign/editors/layers/CarouselLayerEditor';
 
-import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
-import { ScratchCardMinimalEditor } from '@/components/campaign/editors/ScratchCardMinimalEditor';
-import { ScratchCardRenderer } from '@/components/campaign/renderers/ScratchCardRenderer';
 import { InterfacesList } from '@/components/campaign/InterfacesList';
 import { InterfaceTypeSelector } from '@/components/campaign/InterfaceTypeSelector';
 
@@ -77,22 +71,18 @@ const experienceTypes = [
 ];
 
 const nudgeTypes = [
-  { id: 'banner', label: 'Banner', Icon: Layout, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
   { id: 'bottomsheet', label: 'Bottom Sheet', Icon: Square, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'tooltip', label: 'Tooltip', Icon: MessageCircle, bg: '#FEF3C7', iconBg: '#FDE68A', iconColor: '#F59E0B' },
   // PIP removed - Floater now handles PIP functionality
   { id: 'floater', label: 'Floater', Icon: Film, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
-  { id: 'scratchcard', label: 'Scratch Card', Icon: CreditCard, bg: '#FCE7F3', iconBg: '#F9A8D4', iconColor: '#EC4899' },
-  { id: 'carousel', label: 'Story Carousel', Icon: PlayCircle, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
-  { id: 'inline', label: 'Inline Widget', Icon: Grid3x3, bg: '#DBEAFE', iconBg: '#BFDBFE', iconColor: '#3B82F6' },
   { id: 'fullscreen', label: 'Full Screen', Icon: LayoutTemplate, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
 ];
 
 
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip'],
-  'messages': ['floater', 'bottomsheet', 'banner', 'scratchcard', 'fullscreen'], // PIP removed - Floater handles it
-  'stories': ['carousel'],
+  'messages': ['floater', 'bottomsheet', 'fullscreen'], // Restricted as per user request
+  'stories': [],
   // Default fallbacks for others or future types
   'challenges': [],
   'streaks': [],
@@ -175,6 +165,7 @@ export const DesignStep: React.FC<any> = () => {
   const [selectedExperienceType, setSelectedExperienceType] = useState<string | null>(null); // Track selected experience
   const [selectedDevice, setSelectedDevice] = useState<string>(DEFAULT_DEVICE_ID); // Device selection for preview
   const [previewZoom, setPreviewZoom] = useState<number>(0.7); // Preview zoom level
+  const [previewBackgroundUrl, setPreviewBackgroundUrl] = useState<string | null>(null); // NEW: Preview Background State
   const [showGrid, setShowGrid] = useState<boolean>(false); // Grid overlay toggle
   const [showInterfaceSelector, setShowInterfaceSelector] = useState<boolean>(false); // Interface type selector modal
 
@@ -2488,7 +2479,7 @@ export const DesignStep: React.FC<any> = () => {
 
 
 
-    function renderTooltipConfig_LEGACY() {
+    const renderTooltipConfig = () => {
       if (selectedNudgeType !== 'tooltip') return null;
 
       const config = currentCampaign?.tooltipConfig || {} as Partial<TooltipConfig>;
@@ -3127,10 +3118,6 @@ export const DesignStep: React.FC<any> = () => {
       const isRootLayer = !selectedLayerObj.parent;
 
       if (isRootLayer) {
-        if (nudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
-        if (nudgeType === 'modal') return <ModalMinimalEditor />;
-        if (nudgeType === 'banner') return <BannerMinimalEditor />;
-        if (nudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
         if (nudgeType === 'fullscreen') return <FullScreenMinimalEditor />;
         if (nudgeType === 'floater') return renderFloaterConfig();
         if (nudgeType === 'tooltip') return <TooltipMinimalEditor />;
@@ -3138,9 +3125,7 @@ export const DesignStep: React.FC<any> = () => {
       }
 
       // Fallback for non-root containers or if nudgeType match failed (generic handling)
-      if (nudgeType === 'bottomsheet' && (selectedLayerObj.name === 'Bottom Sheet' || selectedLayerObj.name === 'Modal Container')) {
-        return <BottomSheetMinimalEditor />;
-      }
+
       return (
         <>
           {selectedLayerObj.name === 'PIP Container' && renderPipConfig()}
@@ -3331,6 +3316,36 @@ export const DesignStep: React.FC<any> = () => {
     if (selectedLayerObj.type === 'gradient-overlay') {
       return (
         <GradientEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          handleContentUpdate={handleContentUpdate}
+          onStyleUpdate={handleStyleUpdate}
+          handleTooltipUpdate={handleTooltipUpdate}
+          colors={colors}
+        />
+      );
+    }
+
+    // Scratch Foil properties
+    if (selectedLayerObj.type === 'scratch_foil') {
+      return (
+        <ScratchFoilEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          handleContentUpdate={handleContentUpdate}
+          onStyleUpdate={handleStyleUpdate}
+          handleTooltipUpdate={handleTooltipUpdate}
+          colors={colors}
+        />
+      );
+    }
+
+    // Carousel properties
+    if (selectedLayerObj.type === 'carousel') {
+      return (
+        <CarouselLayerEditor
           layer={selectedLayerObj}
           selectedLayerId={selectedLayerId!}
           updateLayer={updateLayer}
@@ -4125,6 +4140,10 @@ export const DesignStep: React.FC<any> = () => {
                       }}
                       isPreview={isPreview}
                       onPreviewToggle={togglePreview}
+                      // New Background Props
+                      backgrounds={pages.map(p => ({ id: p._id, name: p.name, url: p.imageUrl || '' }))}
+                      selectedBackground={previewBackgroundUrl}
+                      onBackgroundChange={setPreviewBackgroundUrl}
                     />
 
                     {/* Phone Preview */}
@@ -4133,7 +4152,7 @@ export const DesignStep: React.FC<any> = () => {
                         device={DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0]}
                         zoom={Number.isFinite(previewZoom) ? previewZoom : 0.7}
                         showGrid={showGrid}
-                        backgroundUrl={selectedPage?.imageUrl}
+                        backgroundUrl={previewBackgroundUrl || selectedPage?.imageUrl}
                         pageContext={selectedPage}
                       >
                         {renderCanvasPreview()}
@@ -4214,7 +4233,17 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'button', label: 'Button', icon: Square },
             { id: 'copy_button', label: 'Copy Button', icon: Copy },
             { id: 'custom_html', label: 'Custom HTML', icon: Code },
-          ].map(item => (
+            { id: 'scratch_foil', label: 'Scratch Foil', icon: Eraser },
+            { id: 'carousel', label: 'Carousel', icon: GalleryHorizontal },
+          ].filter(item => {
+            // Find parent layer
+            const parentLayer = campaignLayers.find(l => l.id === layerAddMenuId);
+            // If parent is carousel, ONLY show container (as Slide)
+            if (parentLayer?.type === 'carousel') {
+              return item.id === 'container';
+            }
+            return true;
+          }).map(item => (
             <button
               key={item.id}
               type="button"

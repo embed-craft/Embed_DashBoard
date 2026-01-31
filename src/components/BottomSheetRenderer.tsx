@@ -40,13 +40,17 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     scale = 1,
     scaleY = 1
 }) => {
+    // Determine Position
+    const position = config?.position || 'bottom';
+    const isTop = position === 'top';
+
     // Create modified config for BottomSheet
     // Override Floater-specific properties and add defaults FloaterRenderer expects
     const bottomSheetConfig = React.useMemo(() => {
         const modifiedConfig = { ...config };
 
         // Force BottomSheet-specific values
-        modifiedConfig.position = 'bottom-center';
+        modifiedConfig.position = isTop ? 'top-center' : 'bottom-center';
         modifiedConfig.offsetX = 0;
         modifiedConfig.offsetY = 0;
         modifiedConfig.draggable = false;
@@ -61,6 +65,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         modifiedConfig.backgroundColor = 'transparent';
         modifiedConfig.backgroundImageUrl = ''; // FIX: Prevent double background rendering (handled by wrapper)
         modifiedConfig.borderWidth = 0;
+        // Logic: Pass shadow config but disable simple boxShadow string to avoid duplicates if wrapper handles it.
+        // Actually wrapper handles shadow? User asked for Shadow on Banner.
+        // Implementation Plan said: Shadow logic differs.
+        // Top: Offset Y positive. Bottom: Offset Y negative.
+        // Let's rely on wrapper for shadow to ensure it's outside clipping.
         modifiedConfig.shadow = { enabled: false };
 
         // Ensure behavior exists with disabled Floater features
@@ -91,15 +100,21 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         modifiedConfig.overlay = { enabled: false };
 
         return modifiedConfig;
-    }, [config]);
+    }, [config, isTop]);
 
-    // Calculate top border radius
+    // Calculate border radius
     const radiusValue = config?.borderRadius;
-    let topRadius = 16;
+    let radiusPx = 16;
     if (typeof radiusValue === 'number') {
-        topRadius = radiusValue;
+        radiusPx = radiusValue;
     } else if (typeof radiusValue === 'object' && radiusValue !== null) {
-        topRadius = radiusValue.topLeft ?? radiusValue.topRight ?? 16;
+        // If top: use bottom corners. If bottom: use top corners.
+        // Editor saves to "borderRadius" object or number.
+        // Usually editor saves: { topLeft: x, topRight: x } for BottomSheet.
+        // For Banner legacy, it might be { bottomLeft: x, bottomRight: x }.
+        // We'll just take the max value or first available.
+        const values = Object.values(radiusValue).filter(v => typeof v === 'number') as number[];
+        if (values.length > 0) radiusPx = Math.max(...values);
     }
 
     // Extract border properties
@@ -107,7 +122,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     const borderColor = config?.borderColor || '#000000';
     const borderStyle = config?.borderStyle || 'solid';
 
-    // BottomSheet wrapper style - always at bottom, full height for percentage support
+    // BottomSheet wrapper style - always full width
     const outerWrapperStyle: React.CSSProperties = {
         position: 'absolute',
         left: 0,
@@ -116,9 +131,15 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         top: 0,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-end',
+        justifyContent: isTop ? 'flex-start' : 'flex-end', // Top vs Bottom alignment
         pointerEvents: 'none',
     };
+
+    // Shadow Logic
+    const shadow = config?.shadow;
+    const boxShadow = (shadow?.enabled)
+        ? `0px ${isTop ? '4px' : '-4px'} ${shadow.blur || 12}px ${shadow.spread || 0}px ${shadow.color || 'rgba(0,0,0,0.2)'}`
+        : undefined;
 
     return (
         <div style={outerWrapperStyle}>
@@ -153,24 +174,44 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center',
-                // Radius (Top only)
-                borderTopLeftRadius: `${topRadius}px`,
-                borderTopRightRadius: `${topRadius}px`,
-                // Border (Top and Sides)
-                borderTop: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+
+                // Radius (Top has Bottom Radius, Bottom has Top Radius)
+                borderTopLeftRadius: !isTop ? `${radiusPx}px` : undefined,
+                borderTopRightRadius: !isTop ? `${radiusPx}px` : undefined,
+                borderBottomLeftRadius: isTop ? `${radiusPx}px` : undefined,
+                borderBottomRightRadius: isTop ? `${radiusPx}px` : undefined,
+
+                // Border (Skip the edge connected to screen edge)
+                // Bottom Mode: Border Top, Left, Right
+                // Top Mode: Border Bottom, Left, Right
+                borderTop: (!isTop && borderWidth > 0) ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+                borderBottom: (isTop && borderWidth > 0) ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
                 borderLeft: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
                 borderRight: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+
+                boxShadow: boxShadow,
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
-                paddingTop: config?.dragHandle ? '12px' : '0px',
+                // Padding for Drag Handle
+                paddingTop: (!isTop && config?.dragHandle) ? '12px' : '0px',
+                paddingBottom: (isTop && config?.dragHandle) ? '12px' : '0px',
+
+                // Glassmorphism Support
+                backdropFilter: (config?.backdropFilter?.enabled)
+                    ? `blur(${config.backdropFilter.blur || 10}px)`
+                    : undefined,
+                WebkitBackdropFilter: (config?.backdropFilter?.enabled)
+                    ? `blur(${config.backdropFilter.blur || 10}px)`
+                    : undefined,
             }}>
                 {/* Visual Drag Handle */}
                 {config?.dragHandle && (
                     <div style={{
                         position: 'absolute',
-                        top: 8,
+                        top: !isTop ? 8 : undefined,
+                        bottom: isTop ? 8 : undefined,
                         left: 0,
                         right: 0,
                         display: 'flex',

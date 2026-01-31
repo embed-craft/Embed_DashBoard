@@ -1,4 +1,4 @@
-import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand, Play } from 'lucide-react';
+import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand, Play, Image } from 'lucide-react';
 import { DEVICE_PRESETS, DevicePreset } from '@/lib/devicePresets';
 
 interface PreviewToolbarProps {
@@ -14,6 +14,11 @@ interface PreviewToolbarProps {
     isPreview?: boolean;
     onPreviewToggle?: () => void;
     onResetZoom?: () => void;
+
+    // Background Selector
+    backgrounds?: { id: string; name: string; url: string }[];
+    selectedBackground?: string | null;
+    onBackgroundChange?: (url: string | null) => void;
 }
 
 export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
@@ -28,10 +33,26 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
     onInteractToggle,
     isPreview = false,
     onPreviewToggle,
-    onResetZoom
+    onResetZoom,
+    backgrounds = [],
+    selectedBackground,
+    onBackgroundChange
 }) => {
     const currentDevice = DEVICE_PRESETS.find(d => d.id === selectedDevice);
     console.log('[PreviewToolbar] Rendering. isInteractive:', isInteractive);
+
+    const selectStyle = {
+        padding: '6px 12px',
+        borderRadius: '6px',
+        border: '1px solid #E5E7EB',
+        fontSize: '13px',
+        fontWeight: 500,
+        color: '#111827',
+        backgroundColor: '#FFFFFF',
+        cursor: 'pointer',
+        outline: 'none',
+        minWidth: '150px'
+    };
 
     return (
         <div style={{
@@ -43,35 +64,39 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
             borderBottom: '1px solid #E5E7EB',
             gap: '16px'
         }}>
-            {/* Left: Device Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Smartphone size={16} color="#6B7280" />
-                <select
-                    value={selectedDevice}
-                    onChange={(e) => onDeviceChange(e.target.value)}
-                    style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #E5E7EB',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#111827',
-                        backgroundColor: '#FFFFFF',
-                        cursor: 'pointer',
-                        outline: 'none',
-                        minWidth: '150px'
-                    }}
-                >
-                    {DEVICE_PRESETS.map(device => (
-                        <option key={device.id} value={device.id}>
-                            {device.name}
-                        </option>
-                    ))}
-                </select>
-                {currentDevice && (
-                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
-                        {currentDevice.width} × {currentDevice.height}
-                    </span>
+            {/* Left: Device & Background Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Smartphone size={16} color="#6B7280" />
+                    <select
+                        value={selectedDevice}
+                        onChange={(e) => onDeviceChange(e.target.value)}
+                        style={selectStyle}
+                    >
+                        {DEVICE_PRESETS.map(device => (
+                            <option key={device.id} value={device.id}>
+                                {device.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {onBackgroundChange && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #E5E7EB', paddingLeft: '16px' }}>
+                        <Image size={16} color="#6B7280" />
+                        <select
+                            value={selectedBackground || ''}
+                            onChange={(e) => onBackgroundChange(e.target.value || null)}
+                            style={{ ...selectStyle, minWidth: '180px' }}
+                        >
+                            <option value="">No Background</option>
+                            {backgrounds.map(bg => (
+                                <option key={bg.id} value={bg.url}>
+                                    {bg.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 )}
             </div>
 

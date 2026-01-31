@@ -10,9 +10,19 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel';
 
-export interface LayerContent {
+
+// Scratch Foil Props
+interface ScratchFoilProps {
+  coverColor?: string;
+  coverImage?: string;
+  scratchSize?: number;
+  revealThreshold?: number;
+  borderRadius?: number;
+}
+
+export interface LayerContent extends ScratchFoilProps {
   // Copy Button content
   copyText?: string;
   showToast?: boolean;
@@ -88,6 +98,33 @@ export interface LayerContent {
   items?: string[];
   listStyle?: 'bullet' | 'numbered' | 'checkmark' | 'icon';
 
+  // Carousel Content (Phase 4)
+  slideEffect?: 'slide' | 'fade';
+  autoPlay?: boolean;
+  interval?: number;
+
+  // Carousel Arrows
+  showArrows?: boolean;
+  arrowColor?: string;
+  arrowBackgroundColor?: string;
+  arrowSize?: number; // Button size
+  arrowIconSize?: number; // Icon size
+  arrowBorderRadius?: number;
+  arrowPosition?: 'center' | 'top' | 'bottom' | 'custom';
+  arrowOffsetX?: number;
+  arrowOffsetY?: number;
+  prevIconUrl?: string;
+  nextIconUrl?: string;
+
+  // Carousel Dots
+  showDots?: boolean;
+  dotColor?: string;
+  activeDotColor?: string;
+  dotSize?: number;
+  dotSpacing?: number;
+  dotPosition?: 'bottom-center' | 'bottom-left' | 'bottom-right' | 'top-center';
+  dotOffsetY?: number;
+
   // Input content (Phase 2)
   inputType?: 'text' | 'email' | 'number' | 'phone' | 'password' | 'date' | 'multiline';
   errorMessage?: string;
@@ -144,6 +181,13 @@ export interface LayerContent {
   // Custom HTML (Phase 2)
   html?: string;
   fullPageMode?: boolean; // Explicit flag for "Full Page" exclusive mode
+
+  // Scratch Foil content
+  scratchSize?: number;
+  revealThreshold?: number;
+  coverColor?: string;
+  coverImage?: string;
+  cursorImage?: string;
 
   // Heirarchy
   children?: Layer[];
@@ -296,7 +340,7 @@ export interface LayerStyle {
     contrast?: number;
     grayscale?: number;
   };
-  backdropFilter?: string; // blur for glassmorphism
+  backdropFilter?: string | { enabled: boolean; blur: number; opacity?: number; }; // blur for glassmorphism
   mixBlendMode?: string;
   indicatorColor?: string; // Carousel indicators
 
@@ -446,6 +490,10 @@ export interface BottomSheetConfig {
     bottom: boolean;
   };
   overflow?: 'hide' | 'scroll';
+  timing?: {
+    delay?: number;
+    duration?: number;
+  };
 }
 
 export interface ModalConfig {
@@ -572,6 +620,10 @@ export interface FloaterConfig {
     type: 'scale' | 'slide' | 'fade' | 'bounce';
     duration: number;
   };
+  timing?: {
+    delay?: number;
+    duration?: number;
+  };
 }
 
 // Full Screen Configuration (New Type)
@@ -599,6 +651,22 @@ export interface FullScreenConfig {
     muted?: boolean;
     loop?: boolean;
     fit?: 'cover' | 'contain' | 'fill';
+  };
+  controls?: {
+    closeButton?: {
+      show?: boolean;
+      position?: 'top-right' | 'top-left' | 'bottom-right';
+      size?: number;
+      iconUrl?: string;
+    };
+    progressBar?: {
+      show?: boolean;
+      color?: string;
+    };
+  };
+  behavior?: {
+    tapToDismiss?: boolean;
+    doubleTapToDismiss?: boolean;
   };
 }
 
@@ -647,6 +715,11 @@ export interface TooltipConfig {
   backgroundImageUrl?: string; // NEW: Background image URL
   backgroundSize?: 'cover' | 'contain' | 'fill'; // NEW: How to fit background image
   backgroundPosition?: string; // NEW: Background position (e.g., 'center', 'top left')
+  backdropFilter?: {
+    enabled: boolean;
+    blur: number;
+    opacity?: number;
+  };
 
   // Dimension controls (like Modal)
   widthMode?: 'auto' | 'custom' | 'fitContent'; // NEW: Width mode
@@ -755,6 +828,11 @@ export interface TooltipConfig {
   textColor?: string;
   rotate?: number;
   scale?: number;
+
+  timing?: {
+    delay?: number;
+    duration?: number;
+  };
 }
 
 // Spotlight Config - Reuses TooltipConfig structure with overlay always enabled
@@ -3542,7 +3620,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
           type: 'container',
           name: 'Bottom Sheet',
           parent: null,
-          children: [`layer_${baseId + 1}`, `layer_${baseId + 2}`, `layer_${baseId + 3}`, `layer_${baseId + 4}`],
+          children: [],
           visible: true,
           locked: false,
           zIndex: 0,
@@ -3554,93 +3632,6 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
             borderRadius: 24,
             padding: { top: 20, right: 20, bottom: 20, left: 20 },
             margin: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-        {
-          id: `layer_${baseId + 1}`,
-          type: 'handle',
-          name: 'Drag Handle',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 1,
-          position: { x: 0, y: 0 },
-          size: { width: 40, height: 4 },
-          content: {},
-          style: {
-            backgroundColor: '#D1D5DB',
-            borderRadius: 2,
-            margin: { top: 0, right: 0, bottom: 16, left: 0 },
-            padding: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-        {
-          id: `layer_${baseId + 2}`,
-          type: 'media',
-          name: 'Image',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 2,
-          position: { x: 0, y: 0 },
-          size: { width: '100%' as any, height: 200 },
-          content: {
-            imageUrl: 'https://www.bbassets.com/media/uploads/blinkitUX/ecofriendlycoverimage.webp',
-            imageSize: { width: 720, height: 640 },
-          },
-          style: {
-            borderRadius: 12,
-            margin: { top: 0, right: 0, bottom: 16, left: 0 },
-            padding: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-        {
-          id: `layer_${baseId + 3}`,
-          type: 'text',
-          name: 'Title',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 3,
-          position: { x: 0, y: 0 },
-          size: { width: '100%' as any, height: 'auto' },
-          content: {
-            text: 'Skip a bag & go green!',
-            fontSize: 20,
-            fontWeight: 'bold',
-            textColor: '#111827',
-            textAlign: 'left',
-          },
-          style: {
-            margin: { top: 0, right: 0, bottom: 8, left: 0 },
-            padding: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-        {
-          id: `layer_${baseId + 4}`,
-          type: 'button',
-          name: 'Action Button',
-          parent: `layer_${baseId}`,
-          children: [],
-          visible: true,
-          locked: false,
-          zIndex: 4,
-          position: { x: 0, y: 0 },
-          size: { width: '100%' as any, height: 48 },
-          content: {
-            text: 'Get Started',
-          },
-          style: {
-            backgroundColor: '#6366F1',
-            textColor: '#FFFFFF',
-            borderRadius: 8,
-            fontSize: 16,
-            fontWeight: 600,
-            textAlign: 'center',
-            padding: { top: 12, right: 24, bottom: 12, left: 24 },
           },
         },
       ];
@@ -4073,6 +4064,12 @@ function getDefaultContentForType(type: LayerType): LayerContent {
         fontSize: 14,
         textColor: '#374151',
       };
+    case 'scratch_foil':
+      return {
+        coverColor: '#CCCCCC',
+        scratchSize: 50,
+        revealThreshold: 50,
+      };
     default:
       return {};
   }
@@ -4135,6 +4132,33 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
         backgroundColor: '#22C55E', // Progress color
         borderRadius: 4,
         height: 8,
+      };
+    case 'scratch_foil':
+      return {
+        ...baseStyle,
+        width: '100%',
+        height: '100%',
+        top: '0px',
+        left: '0px',
+        zIndex: 50,
+        position: 'absolute'
+      };
+    case 'container':
+      return {
+        ...baseStyle,
+        width: 200,
+        height: 120,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#9CA3AF',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 8,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        padding: { top: 10, right: 10, bottom: 10, left: 10 }
       };
     default:
       return baseStyle;

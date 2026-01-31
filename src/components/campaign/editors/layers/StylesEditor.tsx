@@ -302,6 +302,54 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
 
             </div>
 
+            <hr className="border-gray-100" />
+
+            {/* 4. Glassmorphism Section */}
+            <div>
+                <div className="flex items-center justify-between mb-3">
+                    <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
+                        <div className="w-3.5 h-3.5 rounded-full bg-indigo-500/50 backdrop-blur-sm flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60" />
+                        </div>
+                        Glassmorphism
+                    </h5>
+                    {/* Toggle */}
+                    <button
+                        onClick={() => {
+                            const current = layer.style?.backdropFilter || {};
+                            const enabled = !current.enabled;
+                            onStyleUpdate('backdropFilter', { ...current, enabled });
+                            // Auto-adjust opacity for better UX if enabling
+                            if (enabled && (!layer.style?.backgroundColor || layer.style.backgroundColor.length === 7)) {
+                                onStyleUpdate('backgroundColor', `${layer.style?.backgroundColor || '#ffffff'}80`); // 50% opacity
+                            }
+                        }}
+                        className={`w-11 h-6 rounded-full relative transition-colors ${(layer.style?.backdropFilter?.enabled) ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                    >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${(layer.style?.backdropFilter?.enabled) ? 'left-6' : 'left-1'}`} />
+                    </button>
+                </div>
+
+                {layer.style?.backdropFilter?.enabled && (
+                    <div className="space-y-4 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
+                        {/* Blur Slider */}
+                        <div>
+                            <div className="flex justify-between mb-1">
+                                <label className="text-[10px] text-gray-500 uppercase font-semibold">Blur Intensity</label>
+                                <span className="text-[10px] text-indigo-600 font-medium">{layer.style.backdropFilter?.blur ?? 10}px</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0" max="40" step="1"
+                                value={layer.style.backdropFilter?.blur ?? 10}
+                                onChange={(e) => onStyleUpdate('backdropFilter', { ...layer.style.backdropFilter, blur: parseInt(e.target.value) })}
+                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
         </div>
     );
 };

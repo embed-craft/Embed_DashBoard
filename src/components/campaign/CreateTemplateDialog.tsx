@@ -26,11 +26,11 @@ const CATEGORIES = [
 
 const NUDGE_TYPES = [
     { id: 'modal', label: 'Modal' },
-    { id: 'banner', label: 'Banner' },
+
     { id: 'tooltip', label: 'Tooltip' },
     { id: 'floater', label: 'Floater' },
     { id: 'pip', label: 'PiP Video' },
-    { id: 'bottomsheet', label: 'Bottom Sheet' }
+    { id: 'bottomsheet', label: 'Bottom Sheet / Banner' }
 ];
 
 export const CreateTemplateDialog: React.FC<CreateTemplateDialogProps> = ({

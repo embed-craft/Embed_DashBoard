@@ -11,6 +11,7 @@ import { validateNumericInput, validatePercentage, validateOpacity, validateDime
 import { TooltipRenderer } from '@/components/TooltipRenderer';
 import { FloaterRenderer } from '@/components/FloaterRenderer';
 import { FullScreenRenderer } from '@/components/FullScreenRenderer';
+import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { ShapeEditor } from '@/components/editor/style/ShapeEditor';
 import { DESIGN_TYPES, TEMPLATES, DESIGN_CATEGORIES } from '@/lib/designTypes';
@@ -23,6 +24,7 @@ import TemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinimalEditor';
 import { TooltipMinimalEditor } from '@/components/campaign/editors/TooltipMinimalEditor';
+import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
 import { FullScreenMinimalEditor } from '@/components/campaign/editors/FullScreenMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';

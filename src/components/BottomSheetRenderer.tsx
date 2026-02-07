@@ -182,8 +182,6 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 borderBottomRightRadius: isTop ? `${radiusPx}px` : undefined,
 
                 // Border (Skip the edge connected to screen edge)
-                // Bottom Mode: Border Top, Left, Right
-                // Top Mode: Border Bottom, Left, Right
                 borderTop: (!isTop && borderWidth > 0) ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
                 borderBottom: (isTop && borderWidth > 0) ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
                 borderLeft: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
@@ -194,29 +192,24 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
+
                 // Padding for Drag Handle
                 paddingTop: (!isTop && config?.dragHandle) ? '12px' : '0px',
                 paddingBottom: (isTop && config?.dragHandle) ? '12px' : '0px',
-
-                // Glassmorphism Support
-                backdropFilter: (config?.backdropFilter?.enabled)
-                    ? `blur(${config.backdropFilter.blur || 10}px)`
-                    : undefined,
-                WebkitBackdropFilter: (config?.backdropFilter?.enabled)
-                    ? `blur(${config.backdropFilter.blur || 10}px)`
-                    : undefined,
             }}>
+
+
                 {/* Visual Drag Handle */}
                 {config?.dragHandle && (
                     <div style={{
                         position: 'absolute',
+                        zIndex: 1,
                         top: !isTop ? 8 : undefined,
                         bottom: isTop ? 8 : undefined,
                         left: 0,
                         right: 0,
                         display: 'flex',
                         justifyContent: 'center',
-                        zIndex: 100,
                     }}>
                         <div style={{
                             width: '40px',

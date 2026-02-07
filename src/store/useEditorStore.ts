@@ -605,10 +605,9 @@ export interface FloaterConfig {
   autoPlay?: boolean;
   muted?: boolean;
   loop?: boolean;
-  glassmorphism?: {
+  backdropFilter?: {
     enabled: boolean;
     blur: number;
-    opacity: number;
   };
   gradient?: {
     enabled: boolean;

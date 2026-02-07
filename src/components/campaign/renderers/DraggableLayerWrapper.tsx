@@ -15,6 +15,7 @@ interface DraggableLayerWrapperProps {
     designHeight?: number;
     className?: string; // Optional: Additional classes
     style?: React.CSSProperties; // Optional: Base styles
+    isDraggable?: boolean; // FIX: Control draggable behavior
 }
 
 // Helper: Parse value to pixels
@@ -40,7 +41,8 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
     designWidth = 393,
     designHeight = 852,
     className,
-    style
+    style,
+    isDraggable = true // FIX: Default to true for backward compatibility
 }) => {
     // Check both layer.style.position AND the passed style prop for position: absolute
     const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed' ||
@@ -109,7 +111,7 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
             <DraggableCore
                 key={layer.id}
                 nodeRef={nodeRef}
-                disabled={!isSelected || isInteractive}
+                disabled={!isSelected || isInteractive || !isDraggable}
                 scale={scale}
                 onStart={(e) => e.stopPropagation()}
                 onDrag={handleDrag}

@@ -436,8 +436,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
 
             // Position
             position: backendCampaign.config?.position || 'bottom-right',
-            offsetX: backendCampaign.config?.offsetX || 20,
-            offsetY: backendCampaign.config?.offsetY || 20,
+            offsetX: backendCampaign.config?.offsetX ?? 20,
+            offsetY: backendCampaign.config?.offsetY ?? 20,
 
             // Controls (close button, expand, mute, etc.)
             showCloseButton: backendCampaign.config?.showCloseButton ?? false,
@@ -460,7 +460,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             overlay: backendCampaign.config?.overlay,
 
             // Shadow
-            shadow: backendCampaign.config?.shadow,
+            backdropFilter: backendCampaign.config?.backdropFilter, glassmorphism: backendCampaign.config?.glassmorphism, shadow: backendCampaign.config?.shadow,
         })
         : undefined;
 
@@ -731,7 +731,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             } : fc.overlay, // Fallback to existing overlay if no backdrop
 
             // Shadow (NEW)
-            shadow: fc.shadow, // { enabled, blur, spread }
+            backdropFilter: fc.backdropFilter, glassmorphism: fc.glassmorphism, shadow: fc.shadow, // { enabled, blur, spread }
         });
     }
 

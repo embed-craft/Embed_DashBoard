@@ -520,11 +520,23 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             marginLeft: finalMarginLeft,
             marginRight: finalMarginRight,
             ...scaledStyle,
-            // Glassmorphism Support
-            backdropFilter: (layer.style as any)?.backdropFilter?.enabled
-                ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)`
-                : undefined,
-            WebkitBackdropFilter: (layer.style as any)?.backdropFilter?.enabled
+            // Glassmorphism Support (Layer-level)
+            // CRITICAL FIX: Skip Floater Container layer - config.backdropFilter is source of truth
+            backdropFilter: (() => {
+                const isFloaterContainer = layer.type === 'container' && layer.name === 'Floater Container';
+                const enabled = !isFloaterContainer && (layer.style as any)?.backdropFilter?.enabled;
+                const blur = enabled ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)` : undefined;
+                if (layer.type === 'container') {
+                    console.log('[FloaterRenderer] Layer backdropFilter:', {
+                        name: layer.name,
+                        isFloaterContainer,
+                        styleEnabled: (layer.style as any)?.backdropFilter?.enabled,
+                        result: blur
+                    });
+                }
+                return blur;
+            })(),
+            WebkitBackdropFilter: (layer.type !== 'container' || layer.name !== 'Floater Container') && (layer.style as any)?.backdropFilter?.enabled
                 ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)`
                 : undefined,
         };
@@ -742,8 +754,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         };
 
         const pos = config?.position || 'bottom-right';
-        const offsetX = (config?.offsetX ?? 20) * scale;
-        const offsetY = (config?.offsetY ?? 20) * scaleY;
+
+        // Fix: Default offset should be 0 for centered axes, 20 for edge axes
+        let defaultX = 20;
+        let defaultY = 20;
+
+        if (pos === 'center' || pos === 'middle-center') {
+            defaultX = 0; defaultY = 0;
+        } else if (pos.includes('top-center') || pos.includes('bottom-center')) {
+            defaultX = 0; defaultY = 20;
+        } else if (pos.includes('center-left') || pos.includes('center-right')) {
+            defaultX = 20; defaultY = 0;
+        }
+
+        const offsetX = (config?.offsetX ?? defaultX) * scale;
+        const offsetY = (config?.offsetY ?? defaultY) * scaleY;
 
         switch (pos) {
             case 'top-left':
@@ -804,9 +829,35 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
     const handlePointerDown = (e: React.PointerEvent) => {
         // Check interactive mode AND draggable config (support root or nested)
         // Default to true if neither is explicitly false
-        const isDraggable = (config as any)?.draggable ?? config?.behavior?.draggable ?? true;
+        const rawRoot = (config as any)?.draggable;
+        const rawBehavior = config?.behavior?.draggable;
 
-        if (!isInteractive || isDraggable === false) return;
+        console.log('[FloaterRenderer] Drag Check:', { rawRoot, rawBehavior, isInteractive });
+
+        // Fix: Robust boolean parsing to catch ANY falsy representation
+        const parseBool = (val: any, fallback: boolean) => {
+            if (val === undefined || val === null) return fallback;
+            const s = String(val).toLowerCase();
+            if (s === 'false' || s === '0' || s === 'off' || s === 'no' || s === '') return false;
+            return true;
+        };
+
+        // Fix: Check behavior FIRST (Specific) then Root (Legacy/Default)
+        // This resolves issues where root 'draggable' might be defaulted to true by the editor, hiding the user's 'behavior' choice.
+        const isDraggable = rawBehavior !== undefined && rawBehavior !== null
+            ? parseBool(rawBehavior, true)
+            : (rawRoot !== undefined && rawRoot !== null ? parseBool(rawRoot, true) : true);
+
+        // CASE 1: Edit Mode - We don't handle drag here, we let it bubble to the Editor Wrapper (for selection/move)
+        if (!isInteractive) return;
+
+        // CASE 2: Interact Mode (Preview) - If Drag is Disabled, we MUST Stop Propagation
+        // Otherwise, background Editor wrappers might pick it up and move the floater anyway.
+        if (isDraggable === false) {
+            console.log('[FloaterRenderer] Drag Blocked & Propagation Stopped');
+            e.stopPropagation();
+            return;
+        }
 
         e.preventDefault();
         e.stopPropagation();
@@ -1151,9 +1202,12 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     // Visuals
                     opacity: floaterLayer.style?.opacity ?? 1,
                     filter: getFilterString(floaterLayer.style?.filter),
-                    backdropFilter: (config?.backdropFilter?.enabled && !isExpanded)
-                        ? `blur(${safeScale(config.backdropFilter.blur || 10, scale)})`
-                        : undefined,
+                    backdropFilter: (() => {
+                        const enabled = config?.backdropFilter?.enabled && !isExpanded;
+                        const blur = enabled ? `blur(${safeScale(config.backdropFilter.blur || 10, scale)})` : undefined;
+                        console.log('[FloaterRenderer] Config backdropFilter:', { enabled: config?.backdropFilter?.enabled, isExpanded, result: blur });
+                        return blur;
+                    })(),
                     WebkitBackdropFilter: (config?.backdropFilter?.enabled && !isExpanded)
                         ? `blur(${safeScale(config.backdropFilter.blur || 10, scale)})`
                         : undefined,

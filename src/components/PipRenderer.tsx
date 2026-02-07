@@ -95,6 +95,20 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
     const showCloseButton = config.showCloseButton !== false;
     const cornerRadius = config.cornerRadius || 12;
 
+    // FIX: Robust boolean parsing for draggable (matches Floater logic)
+    const parseBool = (val: any, fallback: boolean) => {
+        if (val === undefined || val === null) return fallback;
+        const s = String(val).toLowerCase();
+        if (s === 'false' || s === '0' || s === 'off' || s === 'no' || s === '') return false;
+        return true;
+    };
+
+    // Check behavior.draggable FIRST, then root draggable
+    // Default PIP to true if not specified
+    const isDraggableConfig = config.behavior?.draggable !== undefined
+        ? parseBool(config.behavior?.draggable, true)
+        : (config.draggable !== undefined ? parseBool(config.draggable, true) : true);
+
     // Helper to get embed URL
     const getEmbedUrl = (url: string) => {
         if (!url) return '';
@@ -471,7 +485,7 @@ export const PipRenderer: React.FC<PipRendererProps> = ({
     };
 
     return (
-        <Draggable nodeRef={nodeRef} disabled={!isInteractive || isMaximized} bounds="parent">
+        <Draggable nodeRef={nodeRef} disabled={!isInteractive || isMaximized || !isDraggableConfig} bounds="parent">
             <div ref={nodeRef} style={{
                 position: 'absolute',
                 ...getPositionStyles(),

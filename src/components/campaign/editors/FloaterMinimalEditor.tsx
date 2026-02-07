@@ -39,7 +39,7 @@ export const FloaterMinimalEditor = () => {
         if (!config) {
             updateFloaterConfig({
                 position: 'bottom-right',
-                offsetX: 20, offsetY: 20,
+
                 width: 280, height: 180, borderRadius: 12,
                 backgroundColor: '#000000',
                 borderWidth: 0, borderStyle: 'solid', borderColor: '#000000',
@@ -52,7 +52,8 @@ export const FloaterMinimalEditor = () => {
                     progressBar: { show: false },
                 },
                 behavior: { draggable: true, snapToCorner: true, doubleTapToDismiss: false },
-                backdrop: { show: false, color: '#000000', opacity: 0.3 }
+                backdrop: { show: false, color: '#000000', opacity: 0.3 },
+                backdropFilter: { enabled: false, blur: 10 } // Add default for glassmorphism
             });
         } else {
             // ROBUST FIX: If config exists but behavior.snapToCorner is undefined, set it to true default
@@ -71,13 +72,25 @@ export const FloaterMinimalEditor = () => {
                 const isPercent = String(config.height).includes('%');
                 updateFloaterConfig({ sizeUnit: isPercent ? '%' : 'px' });
             }
+
+            // ROBUST FIX: Initialize backdropFilter if missing (for existing campaigns)
+            if (config.backdropFilter === undefined) {
+                updateFloaterConfig({ backdropFilter: { enabled: false, blur: 10 } });
+            }
         }
     }, [config/*, updateFloaterConfig*/]); // Remove dependency on config to avoid infinite loop if we update properly? 
     // Actually, if we update, config changes, effect runs again.
     // If we update to '180', then 'auto' check fails, so it stops. Stable.
     // We should keep config dependency to catch initial load.
 
-    if (!config) return null;
+    // DEBUG: Log backdropFilter config
+    useEffect(() => {
+        if (config) {
+            console.log('[FloaterEditor] Config loaded, backdropFilter:', config.backdropFilter);
+        }
+    }, [config]);
+
+    // AUTO-CORRECT: If position is 'center' and offsets are default 20, reset to 0.\n    useEffect(() => {\n        if (config && config.position === 'center') {\n            const isDefaultX = config.offsetX === 20;\n            const isDefaultY = config.offsetY === 20;\n            if (isDefaultX && isDefaultY) {\n                updateFloaterConfig({ offsetX: 0, offsetY: 0 });\n            }\n        }\n    }, [config?.position, config?.offsetX, config?.offsetY]);\n\n    if (!config) return null;
 
     const updateConfig = (key: string, value: any) => updateFloaterConfig({ [key]: value });
     const updateNested = (parent: string, key: string, value: any) => {
@@ -268,11 +281,11 @@ export const FloaterMinimalEditor = () => {
                         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
                             <div>
                                 <Label className="text-[10px] text-gray-500 mb-1">X Offset</Label>
-                                <Input type="number" className="h-8 text-xs" value={config.offsetX || 0} onChange={e => updateConfig('offsetX', parseInt(e.target.value))} />
+                                <Input type="number" className="h-8 text-xs" value={config.offsetX ?? (config.position === 'center' ? 0 : 20)} onChange={e => updateConfig('offsetX', e.target.value === '' ? 0 : Number(e.target.value))} />
                             </div>
                             <div>
                                 <Label className="text-[10px] text-gray-500 mb-1">Y Offset</Label>
-                                <Input type="number" className="h-8 text-xs" value={config.offsetY || 0} onChange={e => updateConfig('offsetY', parseInt(e.target.value))} />
+                                <Input type="number" className="h-8 text-xs" value={config.offsetY ?? (config.position === 'center' ? 0 : 20)} onChange={e => updateConfig('offsetY', e.target.value === '' ? 0 : Number(e.target.value))} />
                             </div>
                         </div>
                     </div>
@@ -421,11 +434,22 @@ export const FloaterMinimalEditor = () => {
                                         <Switch
                                             checked={config.backdropFilter?.enabled ?? false}
                                             onCheckedChange={(c) => {
+                                                console.log('[FloaterEditor] Glassmorphism toggled:', c);
                                                 updateNested('backdropFilter', 'enabled', c);
-                                                // Auto-set opacity if turning on and currently opaque
-                                                if (c && (!config.backgroundColor || config.backgroundColor.length === 7)) {
-                                                    const base = config.backgroundColor || '#000000';
-                                                    updateConfig('backgroundColor', `${base}80`); // 50% opacity
+
+                                                if (c) {
+                                                    // ENABLING: Auto-set opacity if currently opaque
+                                                    if (!config.backgroundColor || config.backgroundColor.length === 7) {
+                                                        const base = config.backgroundColor || '#000000';
+                                                        updateConfig('backgroundColor', `${base}80`); // 50% opacity
+                                                    }
+                                                } else {
+                                                    // DISABLING: Remove transparency if it was auto-added
+                                                    if (config.backgroundColor && config.backgroundColor.length === 9) {
+                                                        // Remove alpha channel (last 2 chars)
+                                                        const baseColor = config.backgroundColor.substring(0, 7);
+                                                        updateConfig('backgroundColor', baseColor);
+                                                    }
                                                 }
                                             }}
                                         />

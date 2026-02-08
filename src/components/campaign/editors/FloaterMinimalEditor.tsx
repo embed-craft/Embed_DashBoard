@@ -96,7 +96,15 @@ export const FloaterMinimalEditor = () => {
     const updateNested = (parent: string, key: string, value: any) => {
         // @ts-ignore
         const parentObj = config[parent] || {};
-        updateFloaterConfig({ [parent]: { ...parentObj, [key]: value } });
+        const updates: any = { [parent]: { ...parentObj, [key]: value } };
+
+        // CRITICAL FIX: Backend stores behavior fields at ROOT level, not nested
+        // Write to BOTH locations for compatibility
+        if (parent === 'behavior') {
+            updates[key] = value; // Also write to root level
+        }
+
+        updateFloaterConfig(updates);
     };
 
     // Helper for deeply nested controls (controls.closeButton.show)

@@ -3101,8 +3101,23 @@ export const useEditorStore = create<EditorStore>()(
 
         const activeInterface = activeInterfaceId ? currentCampaign.interfaces?.find(i => i.id === activeInterfaceId) : null;
 
+        // Helper: Deep merge for known nested objects
+        const deepMerge = (existing: any, updates: any) => {
+          const merged = { ...existing, ...updates };
+
+          // Deep merge nested objects to preserve all fields
+          const nestedKeys = ['behavior', 'controls', 'media', 'backdrop', 'backdropFilter', 'animation', 'timing', 'shadow'];
+          nestedKeys.forEach(key => {
+            if (updates[key] && typeof updates[key] === 'object' && !Array.isArray(updates[key])) {
+              merged[key] = { ...existing?.[key], ...updates[key] };
+            }
+          });
+
+          return merged;
+        };
+
         if (activeInterface) {
-          const updatedFloaterConfig = { ...activeInterface.floaterConfig, ...config };
+          const updatedFloaterConfig = deepMerge(activeInterface.floaterConfig, config);
           const updatedInterfaces = currentCampaign.interfaces.map(iface =>
             iface.id === activeInterfaceId
               ? { ...iface, floaterConfig: updatedFloaterConfig, updatedAt: new Date().toISOString() }
@@ -3117,7 +3132,7 @@ export const useEditorStore = create<EditorStore>()(
             }
           });
         } else {
-          const updatedFloaterConfig = { ...currentCampaign.floaterConfig, ...config };
+          const updatedFloaterConfig = deepMerge(currentCampaign.floaterConfig, config);
           set({
             currentCampaign: {
               ...currentCampaign,

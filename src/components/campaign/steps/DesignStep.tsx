@@ -3123,7 +3123,8 @@ export const DesignStep: React.FC<any> = () => {
         if (nudgeType === 'fullscreen') return <FullScreenMinimalEditor />;
         if (nudgeType === 'floater') return renderFloaterConfig();
         if (nudgeType === 'tooltip') return <TooltipMinimalEditor />;
-        if (nudgeType === 'pip') return renderPipConfig();
+        
+        if (nudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       }
 
       // Fallback for non-root containers or if nudgeType match failed (generic handling)

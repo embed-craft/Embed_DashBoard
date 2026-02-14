@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -13,22 +13,33 @@ import {
   LayoutTemplate,
   Settings,
   HelpCircle,
-  ChevronRight,
   ChevronDown,
-  ChevronLeft,
-  PanelLeftClose,
-  PanelLeftOpen,
   LogOut
 } from 'lucide-react';
 import { theme } from '../../styles/design-tokens';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Monitor width to determine collapsed state (Icon Mode)
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        // Toggle collapsed state if width is below threshold (e.g. 160px)
+        setIsCollapsed(entry.contentRect.width < 160);
+      }
+    });
+
+    observer.observe(sidebarRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -49,13 +60,9 @@ const Sidebar = () => {
 
   return (
     <div
-      className={cn(
-        "flex flex-col h-screen bg-white border-r transition-all duration-300 ease-in-out z-50",
-        isCollapsed ? "w-[80px]" : "w-[260px]"
-      )}
-      style={{
-        borderRight: `1px solid ${theme.colors.border.default}`,
-      }}
+      ref={sidebarRef}
+      className="flex flex-col h-full bg-white w-full transition-all duration-300 ease-in-out z-50 overflow-hidden"
+    // Removed border-right to prevent double border with resize handle
     >
       {/* Logo Area */}
       <div style={{
@@ -66,7 +73,7 @@ const Sidebar = () => {
         padding: isCollapsed ? '0' : '0 24px',
         borderBottom: `1px solid ${theme.colors.border.default}`
       }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           <img
             src="/logo.png"
             alt="EmbedCraft Logo"
@@ -216,36 +223,7 @@ const Sidebar = () => {
             </button>
           </li>
         </ul>
-
-        <div style={{ marginTop: '8px', borderTop: `1px solid ${theme.colors.border.default}`, paddingTop: '8px' }}>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: theme.colors.text.secondary,
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            className="hover:bg-gray-100"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen size={20} />
-            ) : (
-              <>
-                <PanelLeftClose size={20} style={{ marginRight: '12px' }} />
-                <span>Collapse</span>
-              </>
-            )}
-          </button>
-        </div>
+        {/* Removed redundant Collapse button; allow Resizing to control state. */}
       </div>
     </div>
   );

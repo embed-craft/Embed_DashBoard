@@ -71,7 +71,7 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
         <div className="space-y-6">
 
             {/* 1. Background Section */}
-            <div>
+            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
                 <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
                     <Paintbrush size={14} className="text-gray-500" />
                     Appearance
@@ -143,10 +143,8 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
                 </div>
             </div>
 
-            <hr className="border-gray-100" />
-
             {/* 2. Border Section */}
-            <div>
+            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
                 <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
                     <BoxSelect size={14} className="text-gray-500" />
                     Border
@@ -206,10 +204,8 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
                 </div>
             </div>
 
-            <hr className="border-gray-100" />
-
             {/* 3. Effects Section - REFACTORED TO MATCH FLOATER EDITOR */}
-            <div>
+            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
                 <div className="flex items-center justify-between mb-3">
                     <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
                         <Sun size={14} className="text-gray-500" />
@@ -302,10 +298,8 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
 
             </div>
 
-            <hr className="border-gray-100" />
-
             {/* 4. Glassmorphism Section */}
-            <div>
+            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
                 <div className="flex items-center justify-between mb-3">
                     <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
                         <div className="w-3.5 h-3.5 rounded-full bg-indigo-500/50 backdrop-blur-sm flex items-center justify-center">
@@ -316,7 +310,7 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
                     {/* Toggle */}
                     <button
                         onClick={() => {
-                            const current = layer.style?.backdropFilter || {};
+                            const current = layer.style?.backdropFilter || { enabled: false, blur: 10 };
                             const enabled = !current.enabled;
                             onStyleUpdate('backdropFilter', { ...current, enabled });
                             // Auto-adjust opacity for better UX if enabling
@@ -345,6 +339,30 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
                                 onChange={(e) => onStyleUpdate('backdropFilter', { ...layer.style.backdropFilter, blur: parseInt(e.target.value) })}
                                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                             />
+                        </div>
+
+                        {/* Opacity Helper - ADDED */}
+                        <div className="space-y-1">
+                            <div className="flex justify-between">
+                                <label className="text-[10px] text-gray-500 uppercase font-semibold">Opacity Helper</label>
+                                <span className="text-[10px] text-gray-400">
+                                    {Math.round(((parseInt((layer.style?.backgroundColor || '#ffffffFF').slice(7, 9), 16) || 255) / 255) * 100)}%
+                                </span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="255"
+                                step="5"
+                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                value={parseInt((layer.style?.backgroundColor || '#ffffffFF').slice(7, 9), 16) || 255}
+                                onChange={(e) => {
+                                    const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
+                                    const base = (layer.style?.backgroundColor || '#ffffff').slice(0, 7);
+                                    onStyleUpdate('backgroundColor', `${base}${alpha}`);
+                                }}
+                            />
+                            <p className="text-[9px] text-gray-400">Lower opacity to see the blur effect efficiently.</p>
                         </div>
                     </div>
                 )}

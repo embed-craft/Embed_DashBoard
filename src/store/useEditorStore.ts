@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { validateCampaignConfig, validateLayer } from '@/lib/configValidator';
 import { metadataService, EventDefinition, PropertyDefinition, PageDefinition } from '@/services/metadataService';
 import { ScratchCardConfig } from '@/lib/designTypes';
+import { toast } from 'sonner';
 export type { ScratchCardConfig };
 
 
@@ -10,7 +11,7 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown';
 
 
 // Scratch Foil Props
@@ -189,6 +190,51 @@ export interface LayerContent extends ScratchFoilProps {
   coverImage?: string;
   cursorImage?: string;
 
+  // Countdown content
+  targetDate?: string;
+  showDays?: boolean;
+  showHours?: boolean;
+  showMinutes?: boolean;
+  showSeconds?: boolean;
+  preset?: 'box' | 'ring';
+  useLocalTime?: boolean;
+  onExpiry?: 'none' | 'hide' | 'message' | 'redirect';
+  showLabels?: boolean;
+  showSeparator?: boolean; // Show/hide dots/colons between units
+  separatorColor?: string; // Color of separator
+  separatorFontSize?: number; // Font size of separator
+  separatorOffsetY?: number; // Vertical offset for separator alignment
+  labels?: { days?: string; hours?: string; minutes?: string; seconds?: string };
+  labelFontSize?: number; // Font size of labels
+  expiryMessage?: string;
+  expiryUrl?: string;
+  digitColor?: string;
+  tileColor?: string;
+  ringColor?: string;
+  shadowEnabled?: boolean;
+  shadowX?: number;
+  shadowY?: number;
+  shadowBlur?: number;
+
+  // Countdown Unit Styling (Phase 6)
+  unitBackgroundColor?: string;
+  unitBorderWidth?: number;
+  unitBorderRadius?: number;
+  unitBorderColor?: string;
+  labelColor?: string;
+
+  // Unit Shadow (Phase 13.5)
+  unitShadowEnabled?: boolean;
+  unitShadowX?: number;
+  unitShadowY?: number;
+  unitShadowBlur?: number;
+  unitShadowSpread?: number;
+  unitShadowOpacity?: number;
+  unitShadowColor?: string;
+
+  // Rating content
+  maxRating?: number;
+
   // Heirarchy
   children?: Layer[];
 }
@@ -215,6 +261,7 @@ export interface LayerStyle {
   paddingHorizontal?: number | string;
 
   // Common style properties
+  color?: string;
   width?: number | string;
   height?: number | string;
 
@@ -318,7 +365,9 @@ export interface LayerStyle {
   shadowColor?: string;
   shadowBlur?: number;
   shadowSpread?: number;
+  shadowOffsetX?: number;
   shadowOffsetY?: number;
+  shadowOpacity?: number;
 
   // Rating Specific (Phase 3.5)
   starColor?: string;
@@ -340,7 +389,7 @@ export interface LayerStyle {
     contrast?: number;
     grayscale?: number;
   };
-  backdropFilter?: string | { enabled: boolean; blur: number; opacity?: number; }; // blur for glassmorphism
+  backdropFilter?: { enabled: boolean; blur: number; opacity?: number; }; // blur for glassmorphism
   mixBlendMode?: string;
   indicatorColor?: string; // Carousel indicators
 
@@ -1058,6 +1107,8 @@ interface EditorStore {
   updateInterfaceLayer: (interfaceId: string, layerId: string, updates: Partial<Layer>) => void;
   addInterfaceLayer: (interfaceId: string, type: LayerType) => void;
   deleteInterfaceLayer: (interfaceId: string, layerId: string) => void;
+  reorderInterfaces: (startIndex: number, endIndex: number) => void;
+  duplicateInterface: (interfaceId: string) => void;
 }
 
 // Debounced history tracker to prevent race conditions
@@ -2631,39 +2682,82 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
+        // 1. Try Main Campaign
         const oldIndex = currentCampaign.layers.findIndex(l => l.id === id);
-        if (oldIndex === -1) return;
+        if (oldIndex !== -1) {
+          const updatedLayers = [...currentCampaign.layers];
+          const [removed] = updatedLayers.splice(oldIndex, 1);
+          updatedLayers.splice(newIndex, 0, removed);
 
-        const updatedLayers = [...currentCampaign.layers];
-        const [removed] = updatedLayers.splice(oldIndex, 1);
-        updatedLayers.splice(newIndex, 0, removed);
+          // Sync parent's children array to match the new order
+          if (removed.parent) {
+            const parentIndex = updatedLayers.findIndex(l => l.id === removed.parent);
+            if (parentIndex !== -1) {
+              const siblingIds = updatedLayers
+                .filter(l => l.parent === removed.parent)
+                .map(l => l.id);
 
-        // FIX: Sync parent's children array to match the new order
-        // The SDK relies on the 'children' array, while Dashboard relies on flat list.
-        // We must ensure they stay in sync.
-        if (removed.parent) {
-          const parentIndex = updatedLayers.findIndex(l => l.id === removed.parent);
-          if (parentIndex !== -1) {
-            // Get all children of this parent in the Correct Order (from updatedLayers flat list)
-            const siblingIds = updatedLayers
-              .filter(l => l.parent === removed.parent)
-              .map(l => l.id);
-
-            updatedLayers[parentIndex] = {
-              ...updatedLayers[parentIndex],
-              children: siblingIds
-            };
+              updatedLayers[parentIndex] = {
+                ...updatedLayers[parentIndex],
+                children: siblingIds
+              };
+            }
           }
+
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          return;
         }
 
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            const ifaceOldIndex = iface.layers.findIndex(l => l.id === id);
+
+            if (ifaceOldIndex !== -1) {
+              foundInInterface = true;
+              const updatedLayers = [...iface.layers];
+              const [removed] = updatedLayers.splice(ifaceOldIndex, 1);
+              updatedLayers.splice(newIndex, 0, removed);
+
+              // Sync parent's children
+              if (removed.parent) {
+                const parentIndex = updatedLayers.findIndex(l => l.id === removed.parent);
+                if (parentIndex !== -1) {
+                  const siblingIds = updatedLayers
+                    .filter(l => l.parent === removed.parent)
+                    .map(l => l.id);
+
+                  updatedLayers[parentIndex] = {
+                    ...updatedLayers[parentIndex],
+                    children: siblingIds
+                  };
+                }
+              }
+              return { ...iface, layers: updatedLayers };
+            }
+            return iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+          }
+        }
       },
 
       // Move layer to new parent
@@ -2671,48 +2765,76 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign } = get();
         if (!currentCampaign) return;
 
-        const layer = currentCampaign.layers.find(l => l.id === layerId);
-        if (!layer) return;
+        // 1. Try Main Campaign
+        const layerInMain = currentCampaign.layers.find(l => l.id === layerId);
+        if (layerInMain) {
+          const updatedLayers = currentCampaign.layers.map(l => {
+            // Remove from old parent
+            if (l.id === layerInMain.parent && l.children) {
+              return { ...l, children: l.children.filter(childId => childId !== layerId) };
+            }
+            // Add to new parent
+            if (l.id === newParentId) {
+              return { ...l, children: [...(l.children || []), layerId] };
+            }
+            // Update layer itself
+            if (l.id === layerId) {
+              return { ...l, parent: newParentId };
+            }
+            return l;
+          });
 
-        const oldParentId = layer.parent;
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedLayers,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+          return;
+        }
 
-        // Update layers
-        const updatedLayers = currentCampaign.layers.map(l => {
-          // Remove from old parent's children
-          if (l.id === oldParentId && l.children) {
-            return {
-              ...l,
-              children: l.children.filter(childId => childId !== layerId)
-            };
+        // 2. Try Interfaces
+        if (currentCampaign.interfaces) {
+          let foundInInterface = false;
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (!iface.layers) return iface;
+            const layerInInterface = iface.layers.find(l => l.id === layerId);
+
+            if (layerInInterface) {
+              foundInInterface = true;
+              const updatedLayers = iface.layers.map(l => {
+                // Remove from old parent
+                if (l.id === layerInInterface.parent && l.children) {
+                  return { ...l, children: l.children.filter(childId => childId !== layerId) };
+                }
+                // Add to new parent
+                if (l.id === newParentId) {
+                  return { ...l, children: [...(l.children || []), layerId] };
+                }
+                // Update layer itself
+                if (l.id === layerId) {
+                  return { ...l, parent: newParentId };
+                }
+                return l;
+              });
+              return { ...iface, layers: updatedLayers };
+            }
+            return iface;
+          });
+
+          if (foundInInterface) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                interfaces: updatedInterfaces,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
           }
-
-          // Add to new parent's children
-          if (l.id === newParentId) {
-            return {
-              ...l,
-              children: [...(l.children || []), layerId]
-            };
-          }
-
-          // Update the moved layer's parent
-          if (l.id === layerId) {
-            return {
-              ...l,
-              parent: newParentId
-            };
-          }
-
-          return l;
-        });
-
-        set({
-          currentCampaign: {
-            ...currentCampaign,
-            layers: updatedLayers,
-            updatedAt: new Date().toISOString(),
-            isDirty: true,
-          },
-        });
+        }
       },
 
       // Update layer content
@@ -3603,6 +3725,81 @@ export const useEditorStore = create<EditorStore>()(
             isDirty: true,
           },
         });
+      },
+
+      reorderInterfaces: (startIndex, endIndex) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign || !currentCampaign.interfaces) return;
+
+        const result = Array.from(currentCampaign.interfaces);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: result,
+            isDirty: true,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      },
+
+      duplicateInterface: (interfaceId) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign || !currentCampaign.interfaces) return;
+
+        const interfaceToDuplicate = currentCampaign.interfaces.find(i => i.id === interfaceId);
+        if (!interfaceToDuplicate) return;
+
+        // 1. Create a map of Old ID -> New ID
+        const idMap = new Map<string, string>();
+        interfaceToDuplicate.layers.forEach(l => {
+          idMap.set(l.id, `layer_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`);
+        });
+
+        // 2. Clone layers and update references (id, parent, children)
+        const newLayers = interfaceToDuplicate.layers.map(layer => {
+          const newId = idMap.get(layer.id);
+          if (!newId) return layer; // Should not happen
+
+          // Update parent reference if the parent is also being duplicated
+          // If parent is not in the map (e.g. it was null or external), keep it as is (likely null)
+          const newParent = (layer.parent && idMap.has(layer.parent))
+            ? idMap.get(layer.parent)!
+            : layer.parent;
+
+          // Update children references
+          const newChildren = (layer.children || [])
+            .map((childId: string) => idMap.get(childId))
+            .filter((id): id is string => !!id);
+
+          return {
+            ...layer,
+            id: newId,
+            parent: newParent,
+            children: newChildren
+          };
+        });
+
+        const newInterface = {
+          ...interfaceToDuplicate,
+          id: `interface_${Date.now()}`,
+          name: `${interfaceToDuplicate.name} (Copy)`,
+          updatedAt: new Date().toISOString(),
+          layers: newLayers
+        };
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            interfaces: [...currentCampaign.interfaces, newInterface],
+            isDirty: true,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+
+        toast.success('Interface duplicated');
       },
     }),
     {

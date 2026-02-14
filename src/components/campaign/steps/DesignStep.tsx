@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { apiClient } from '@/lib/api';
 import { useEditorStore, getDefaultLayersForNudgeType, TooltipConfig } from '@/store/useEditorStore';
+import { theme } from '@/styles/design-tokens';
 
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
 
@@ -45,6 +47,7 @@ import { BadgeEditor } from '@/components/campaign/editors/layers/BadgeEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
 import { ScratchFoilEditor } from '@/components/campaign/editors/layers/ScratchFoilEditor';
 import { CarouselLayerEditor } from '@/components/campaign/editors/layers/CarouselLayerEditor';
+import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownEditor';
 
 import { InterfacesList } from '@/components/campaign/InterfacesList';
 import { InterfaceTypeSelector } from '@/components/campaign/InterfaceTypeSelector';
@@ -325,6 +328,62 @@ export const DesignStep: React.FC<any> = () => {
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null); // Fix 3
   const [collapsedLayers, setCollapsedLayers] = useState<Set<string>>(new Set()); // For layer hierarchy
+
+  // Renaming State
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+
+  // Context Menu State
+  const [layerContextMenuId, setLayerContextMenuId] = useState<string | null>(null);
+  const [layerContextMenuPosition, setLayerContextMenuPosition] = useState<{ top: number; left: number } | null>(null);
+
+  const handleRenameStart = (layer: any) => {
+    setEditingLayerId(layer.id);
+    setEditingName(layer.name);
+    setLayerContextMenuId(null); // Close menu if open
+  };
+
+  const handleRenameSubmit = () => {
+    if (editingLayerId && editingName.trim()) {
+      updateLayerContent(editingLayerId, { name: editingName.trim() });
+      toast.success('Layer renamed');
+    }
+    setEditingLayerId(null);
+    setEditingName('');
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, layerId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setLayerContextMenuId(layerId);
+    setLayerContextMenuPosition({
+      top: e.clientY,
+      left: e.clientX
+    });
+    setLayerAddMenuId(null); // Close add menu if open
+  };
+
+  // Close context menu on outside click
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setLayerAddMenuId(null);
+      setLayerAddMenuPosition(null);
+      setLayerContextMenuId(null);
+      setLayerContextMenuPosition(null);
+      if (editingLayerId) {
+        handleRenameSubmit();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    // document.addEventListener('contextmenu', handleClickOutside); // Don't block system context menu everywhere, just ours
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      // document.removeEventListener('contextmenu', handleClickOutside);
+    };
+  }, [editingLayerId, editingName]);
+
 
   // Close layer menu on outside click
   useEffect(() => {
@@ -825,7 +884,11 @@ export const DesignStep: React.FC<any> = () => {
     const isSelected = currentCampaign?.selectedLayerId === layer.id;
     const isDraggedOver = dragOverLayerId === layer.id;
     const isDragging = draggedLayerId === layer.id; // Fix 3
-    const indentPx = depth * 20;
+    const isEditing = editingLayerId === layer.id;
+    const indentPx = depth * 16; // Slightly reduced indentation (was 20)
+
+    // Check if layer can have children (for + button)
+    const canHaveChildren = ['container', 'carousel', 'bottomsheet', 'modal', 'banner', 'floater', 'pip', 'scratchcard', 'fullscreen', 'tooltip'].includes(layer.type) || layer.name.toLowerCase().includes('container') || layer.name.toLowerCase().includes('group');
 
     return (
       <div key={layer.id} style={{ position: 'relative' }}>
@@ -845,48 +908,54 @@ export const DesignStep: React.FC<any> = () => {
         )}
 
         <div
-          draggable={!layer.locked}
+          draggable={!layer.locked && !isEditing}
           onDragStart={(e) => handleDragStart(e, layer.id)}
           onDragEnd={handleDragEnd}
           onDragOver={(e) => handleDragOver(e, layer.id)}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, layer.id)}
           onClick={() => selectLayer(layer.id)}
+          onContextMenu={(e) => handleContextMenu(e, layer.id)}
+          className="group" // Tailwind group for hover effects
           style={{
-            padding: '10px 12px',
-            marginBottom: '4px',
-            borderRadius: '6px',
-            cursor: layer.locked ? 'not-allowed' : 'grab',
-            backgroundColor: isSelected ? colors.purple[50] : 'transparent',
+            padding: '6px 8px 6px 4px', // Tighter padding
+            marginBottom: '2px',
+            borderRadius: '4px',
+            cursor: layer.locked ? 'not-allowed' : 'pointer',
+            backgroundColor: isSelected ? colors.primary[50] : 'transparent', // Lighter selection bg
             border: `1px solid ${isDraggedOver && dropPosition === 'inside'
               ? colors.primary[500]
               : isSelected
-                ? colors.purple[500]
+                ? colors.primary[200]
                 : 'transparent'
               }`,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            paddingLeft: `${12 + indentPx}px`,
-            opacity: isDragging ? 0.4 : (layer.visible ? 1 : 0.5), // Ghost effect when dragging
-            transition: 'all 0.15s ease',
-            transform: isDragging ? 'scale(0.98)' : 'scale(1)', // Subtle scale when dragging
+            paddingLeft: `${8 + indentPx}px`,
+            opacity: isDragging ? 0.4 : (layer.visible ? 1 : 0.5),
+            transition: 'all 0.1s ease',
+            transform: isDragging ? 'scale(0.99)' : 'scale(1)',
             position: 'relative',
-            zIndex: layerAddMenuId === layer.id ? 50 : 'auto'
+            zIndex: layerAddMenuId === layer.id || layerContextMenuId === layer.id ? 50 : 'auto'
           }}
         >
-          {/* Drag handle indicator */}
+          {/* Drag handle indicator - hidden by default, shown on hover */}
           {!layer.locked && (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '2px',
-              cursor: 'grab',
-              opacity: 0.4
-            }}>
-              <div style={{ width: '3px', height: '3px', backgroundColor: colors.gray[400], borderRadius: '50%' }} />
-              <div style={{ width: '3px', height: '3px', backgroundColor: colors.gray[400], borderRadius: '50%' }} />
-              <div style={{ width: '3px', height: '3px', backgroundColor: colors.gray[400], borderRadius: '50%' }} />
+            <div
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'grab',
+                padding: '2px'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ width: '2px', height: '2px', backgroundColor: colors.gray[400], borderRadius: '50%' }} />
+                <div style={{ width: '2px', height: '2px', backgroundColor: colors.gray[400], borderRadius: '50%' }} />
+                <div style={{ width: '2px', height: '2px', backgroundColor: colors.gray[400], borderRadius: '50%' }} />
+              </div>
             </div>
           )}
 
@@ -907,95 +976,137 @@ export const DesignStep: React.FC<any> = () => {
               )}
             </button>
           ) : (
-            <div style={{ width: '18px' }} /> // Spacer for alignment
+            <div style={{ width: '18px' }} /> // Spacer
           )}
 
-          <ImageIcon size={16} color={isSelected ? colors.purple[500] : colors.gray[500]} />
-          <span style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: isSelected ? colors.purple[600] : colors.text.primary }}>
-            {layer.name}
-          </span>
-
-          {/* Action buttons */}
-          {/* Add Child Layer Button */}
-          <div style={{ position: 'relative' }}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Toggle menu for this layer
-                if (layerAddMenuId === layer.id) {
-                  setLayerAddMenuId(null);
-                  setLayerAddMenuPosition(null);
-                } else {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setLayerAddMenuId(layer.id);
-                  setLayerAddMenuPosition({
-                    top: rect.bottom + window.scrollY,
-                    left: rect.left + window.scrollX
-                  });
-                }
-              }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', marginRight: '4px' }}
-              title="Add child layer"
-            >
-              <Plus size={14} color={colors.primary[500]} />
-            </button>
-
-            {/* Layer Type Dropdown Menu for Row - MOVED TO TOP LEVEL */}
+          {/* Layer Icon */}
+          <div style={{
+            color: isSelected ? colors.primary[600] : colors.gray[500]
+          }}>
+            {layer.type === 'container' ? <LayoutGrid size={15} /> :
+              layer.type === 'text' ? <Type size={15} /> :
+                layer.type === 'button' ? <Square size={15} /> :
+                  layer.type === 'image' || layer.type === 'media' ? <ImageIcon size={15} /> :
+                    layer.type === 'carousel' ? <GalleryHorizontal size={15} /> :
+                      layer.type === 'countdown' ? <Timer size={15} /> :
+                        <Layers size={15} />
+            }
           </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleLayerVisibility(layer.id);
-            }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
-            title={layer.visible ? 'Hide layer' : 'Show layer'}
-          >
-            {layer.visible ? <Eye size={14} color={colors.gray[400]} /> : <EyeOff size={14} color={colors.gray[400]} />}
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleLayerLock(layer.id);
-            }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
-            title={layer.locked ? 'Unlock layer' : 'Lock layer'}
-          >
-            {layer.locked ? <Lock size={14} color={colors.gray[400]} /> : <Unlock size={14} color={colors.gray[400]} />}
-          </button>
 
-          {/* Delete button - Allow deleting nested containers, but protect root 'Bottom Sheet' */}
-          {((layer.type !== 'container' || (layer.parent && layer.parent !== 'null')) && layer.name !== 'Bottom Sheet') && (
+          {/* Layer Name / Rename Input */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {isEditing ? (
+              <input
+                autoFocus
+                type="text"
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onBlur={handleRenameSubmit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameSubmit();
+                  if (e.key === 'Escape') {
+                    setEditingLayerId(null);
+                    setEditingName('');
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  padding: '2px 4px',
+                  fontSize: '13px',
+                  border: `1px solid ${colors.primary[500]}`,
+                  borderRadius: '2px',
+                  outline: 'none',
+                  background: 'white'
+                }}
+              />
+            ) : (
+              <span
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  handleRenameStart(layer);
+                }}
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: isSelected ? 500 : 400,
+                  color: isSelected ? colors.primary[700] : colors.text.primary,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  userSelect: 'none'
+                }}
+              >
+                {layer.name}
+              </span>
+            )}
+          </div>
+
+          {/* Action buttons - Hover only (unless active/locked) */}
+          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+
+            {/* Add Child Layer Button - Restricted */}
+            {canHaveChildren && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (layerAddMenuId === layer.id) {
+                    setLayerAddMenuId(null);
+                    setLayerAddMenuPosition(null);
+                  } else {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setLayerAddMenuId(layer.id);
+                    setLayerAddMenuPosition({
+                      top: rect.bottom + window.scrollY,
+                      left: rect.left + window.scrollX - 100 // Shift left
+                    });
+                  }
+                }}
+                className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Add child layer"
+              >
+                <Plus size={13} />
+              </button>
+            )}
+
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                if (window.confirm(`Delete "${layer.name}" layer?`)) {
-                  deleteLayer(layer.id);
-                  toast.success('Layer deleted');
-                }
+                toggleLayerVisibility(layer.id);
               }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
-              title="Delete layer"
+              style={{ opacity: !layer.visible ? 1 : undefined }} // Keep visible if hidden
+              className={`p-1 rounded hover:bg-gray-200 transition-colors ${!layer.visible ? 'text-gray-500' : 'text-gray-400 hover:text-gray-600'}`}
+              title={layer.visible ? 'Hide layer' : 'Show layer'}
             >
-              <Trash2 size={14} color={colors.gray[400]} />
+              {layer.visible ? <Eye size={13} /> : <EyeOff size={13} />}
             </button>
-          )}
 
-          {/* More options */}
-          <div style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                // Show context menu
+                toggleLayerLock(layer.id);
               }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
+              style={{ opacity: layer.locked ? 1 : undefined }} // Keep visible if locked
+              className={`p-1 rounded hover:bg-gray-200 transition-colors ${layer.locked ? 'text-gray-500' : 'text-gray-400 hover:text-gray-600'}`}
+              title={layer.locked ? 'Unlock layer' : 'Lock layer'}
+            >
+              {layer.locked ? <Lock size={13} /> : <Unlock size={13} />}
+            </button>
+
+            {/* Menu Button - Triggers Context Menu */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleContextMenu(e, layer.id);
+              }}
+              className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
               title="More options"
             >
-              <Menu size={14} color={colors.gray[400]} />
+              <Menu size={13} />
             </button>
           </div>
         </div>
@@ -1004,7 +1115,7 @@ export const DesignStep: React.FC<any> = () => {
         {isDraggedOver && dropPosition === 'after' && (
           <div style={{
             position: 'absolute',
-            bottom: '2px',
+            bottom: '0px',
             left: `${12 + indentPx}px`,
             right: '12px',
             height: '2px',
@@ -2039,7 +2150,7 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedNudgeType === 'tooltip') return <TooltipMinimalEditor />;
       if (selectedNudgeType === 'pip') return renderPipConfig();
       if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
-      if (selectedNudgeType === 'banner') return <BannerMinimalEditor />;
+      // if (selectedNudgeType === 'banner') return <BannerMinimalEditor />;
       if (selectedNudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
       return null;
     }
@@ -3123,7 +3234,7 @@ export const DesignStep: React.FC<any> = () => {
         if (nudgeType === 'fullscreen') return <FullScreenMinimalEditor />;
         if (nudgeType === 'floater') return renderFloaterConfig();
         if (nudgeType === 'tooltip') return <TooltipMinimalEditor />;
-        
+
         if (nudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       }
 
@@ -3361,6 +3472,19 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Countdown properties
+    if (selectedLayerObj.type === 'countdown') {
+      return (
+        <CountdownEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          handleContentUpdate={handleContentUpdate}
+          onStyleUpdate={handleStyleUpdate}
+          handleTooltipUpdate={handleTooltipUpdate}
+          colors={colors}
+        />
+      );
+    }
 
 
 
@@ -3709,7 +3833,7 @@ export const DesignStep: React.FC<any> = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
 
 
 
@@ -4032,9 +4156,9 @@ export const DesignStep: React.FC<any> = () => {
 
 
                 {/* Main Editor Area */}
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                <PanelGroup direction="horizontal" style={{ flex: 1, overflow: 'hidden' }}>
                   {/* Left Panel - Layers */}
-                  <div style={{ width: '280px', borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                  <Panel defaultSize={20} minSize={15} maxSize={30} order={1} style={{ borderRight: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
                     {/* Determine root container ID based on nudge type */}
                     {(() => {
                       // Use displayLayers for context switching (interface or main campaign)
@@ -4063,6 +4187,7 @@ export const DesignStep: React.FC<any> = () => {
                         return rootContainer?.id || null;
                       };
 
+                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
                       const rootContainerId = getRootContainerId();
 
                       return (
@@ -4082,21 +4207,42 @@ export const DesignStep: React.FC<any> = () => {
                                   toast.success('Interface deleted');
                                 }
                               }}
+                              onRenameInterface={(id, newName) => {
+                                updateInterface(id, { name: newName });
+                              }}
+                              onReorderInterface={(startIndex, endIndex) => {
+                                reorderInterfaces(startIndex, endIndex);
+                              }}
+                              onDuplicateInterface={(id) => {
+                                duplicateInterface(id);
+                              }}
                             />
                           </div>
 
-                          <div style={{ padding: '16px', borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: colors.text.primary }}>
+                          <div style={{
+                            padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+                            borderBottom: `1px solid ${theme.colors.border.default}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            position: 'relative'
+                          }}>
+                            <h4 style={{
+                              margin: 0,
+                              fontSize: theme.typography.fontSize.xs,
+                              fontWeight: theme.typography.fontWeight.semibold,
+                              color: theme.colors.text.secondary,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                            }}>
                               Layers ({campaignLayers.length})
-                              <span style={{ fontSize: '10px', color: 'red', marginLeft: '5px' }}>
-                                Roots: {campaignLayers.filter(l => !l.parent || l.parent === 'null').length}
-                              </span>
+                              {/* Debug info - hidden in prod or made subtle */}
                             </h4>
                             <div style={{ position: 'relative' }}>
                               {/* Removed Global Add Button */}
                             </div>
                           </div>
-                          <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                          <div style={{ flex: 1, overflowY: 'auto', padding: theme.spacing[1] }}>
                             {campaignLayers
                               .filter(layer => !layer.parent || layer.parent === 'null')
                               .map(layer => renderLayerTreeItem(layer, 0))}
@@ -4104,10 +4250,12 @@ export const DesignStep: React.FC<any> = () => {
                         </>
                       )
                     })()}
-                  </div >
+                  </Panel>
+
+                  <PanelResizeHandle className="w-1 focus:outline-none transition-colors hover:bg-indigo-500/50 bg-transparent flex items-center justify-center -ml-0.5 z-50" />
 
                   {/* Center Panel - Canvas (Enhanced with Device Selection) */}
-                  < div style={{ flex: 1, backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                  <Panel order={2} style={{ backgroundColor: colors.gray[100], display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
                     {/* Preview Toolbar */}
                     <PreviewToolbar
                       selectedDevice={selectedDevice}
@@ -4167,10 +4315,12 @@ export const DesignStep: React.FC<any> = () => {
                         {selectedLayerObj.name}
                       </div>
                     )}
-                  </div>
+                  </Panel>
+
+                  <PanelResizeHandle className="w-1 focus:outline-none transition-colors hover:bg-indigo-500/50 bg-transparent flex items-center justify-center -ml-0.5 z-50" />
 
                   {/* Right Panel - Properties */}
-                  <div style={{ width: '320px', borderLeft: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
+                  <Panel defaultSize={25} minSize={20} maxSize={40} order={3} collapsible={true} style={{ borderLeft: `1px solid ${colors.gray[200]}`, backgroundColor: colors.background.card, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ borderBottom: `1px solid ${colors.gray[200]}`, display: 'flex' }}>
                       <button onClick={() => setPropertyTab('style')} style={{ flex: 1, padding: '12px', border: 'none', background: 'transparent', borderBottom: propertyTab === 'style' ? `2px solid ${colors.primary[500]}` : '2px solid transparent', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: propertyTab === 'style' ? colors.primary[500] : colors.text.secondary, transition: 'all 0.2s' }}>
                         Style
@@ -4187,8 +4337,8 @@ export const DesignStep: React.FC<any> = () => {
                         </div>
                       )}
                     </div>
-                  </div>
-                </div >
+                  </Panel>
+                </PanelGroup>
               </div>
             )}
 
@@ -4233,11 +4383,13 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'container', label: 'Container', icon: Layout },
             { id: 'media', label: 'Image', icon: ImageIcon },
             { id: 'text', label: 'Text', icon: Type },
+            // ... other types
             { id: 'button', label: 'Button', icon: Square },
             { id: 'copy_button', label: 'Copy Button', icon: Copy },
             { id: 'custom_html', label: 'Custom HTML', icon: Code },
             { id: 'scratch_foil', label: 'Scratch Foil', icon: Eraser },
             { id: 'carousel', label: 'Carousel', icon: GalleryHorizontal },
+            { id: 'countdown', label: 'Countdown', icon: Timer },
           ].filter(item => {
             // Find parent layer
             const parentLayer = campaignLayers.find(l => l.id === layerAddMenuId);
@@ -4273,6 +4425,63 @@ export const DesignStep: React.FC<any> = () => {
           ))}
         </div>
       )}
-    </div>
+
+      {/* Global Context Menu (Renaming code etc) */}
+      {layerContextMenuId && layerContextMenuPosition && (
+        <div style={{
+          position: 'fixed',
+          top: `${layerContextMenuPosition.top}px`,
+          left: `${layerContextMenuPosition.left}px`,
+          backgroundColor: 'white',
+          border: `1px solid ${colors.gray[200]}`,
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          zIndex: 9999,
+          minWidth: '140px',
+          overflow: 'hidden'
+        }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              const layer = campaignLayers.find(l => l.id === layerContextMenuId);
+              if (layer) handleRenameStart(layer);
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <Type size={14} /> Rename
+          </button>
+          <button
+            onClick={() => {
+              const layer = campaignLayers.find(l => l.id === layerContextMenuId);
+              if (layer) {
+                // Call store to duplicate
+                const { duplicateLayer } = useEditorStore.getState();
+                duplicateLayer(layer.id);
+                toast.success('Layer duplicated');
+              }
+              setLayerContextMenuId(null);
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <Copy size={14} /> Duplicate
+          </button>
+          <div className="border-t border-gray-100 my-1"></div>
+          <button
+            onClick={() => {
+              if (window.confirm('Delete this layer?')) {
+                deleteLayer(layerContextMenuId);
+                toast.success('Layer deleted');
+              }
+              setLayerContextMenuId(null);
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
+      )
+      }
+    </div >
   );
 };

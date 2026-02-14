@@ -16,6 +16,7 @@ import {
   Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useEditorStore } from '@/store/useEditorStore';
 import { TargetingStep } from '@/components/campaign/targeting/TargetingStep';
 import { GoalsRolloutStep } from '@/components/campaign/steps/GoalsRolloutStep';
@@ -161,301 +162,304 @@ const CampaignBuilder: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="w-64 border-r bg-card flex flex-col">
-        <div className="p-4 border-b flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/campaigns')}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <span className="font-semibold">Campaign Builder</span>
-        </div>
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <PanelGroup direction="horizontal" style={{ flex: 1 }}>
+        {/* Sidebar */}
+        <Panel defaultSize={15} minSize={12} maxSize={25} order={1} collapsible={true} style={{ borderRight: '1px solid #e5e7eb', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+          <div className="p-4 border-b flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/campaigns')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <span className="font-semibold">Campaign Builder</span>
+          </div>
 
-        <div className="flex-1 py-4">
-          <nav className="space-y-1 px-2">
-            {steps.map((step) => {
-              const Icon = step.icon;
-              const isActive = activeStep === step.id;
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => setActiveStep(step.id as Step)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {step.label}
-                  {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="p-4 border-t text-xs text-muted-foreground">
-          <p>Campaign ID:</p>
-          <code className="bg-muted px-1 py-0.5 rounded">{currentCampaign?.id || 'New'}</code>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Unified Header */}
-        <header className="h-16 border-b bg-card px-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <Input
-              value={currentCampaign?.name || ''}
-              onChange={(e) => updateCampaignName(e.target.value)}
-              className="max-w-md font-semibold text-lg border-transparent hover:border-input focus:border-input transition-colors px-2"
-              placeholder="Untitled Campaign"
-            />
-
-            {/* Tags Section */}
-            <div className="flex items-center gap-2 overflow-hidden">
-              {currentCampaign?.tags?.map(tag => (
-                <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5 whitespace-nowrap">
-                  {tag}
-                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-destructive">
-                    <X size={12} />
+          <div className="flex-1 py-4">
+            <nav className="space-y-1 px-2">
+              {steps.map((step) => {
+                const Icon = step.icon;
+                const isActive = activeStep === step.id;
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => setActiveStep(step.id as Step)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {step.label}
+                    {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
                   </button>
-                </Badge>
-              ))}
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="p-4 border-t text-xs text-muted-foreground">
+            <p>Campaign ID:</p>
+            <code className="bg-muted px-1 py-0.5 rounded">{currentCampaign?.id || 'New'}</code>
+          </div>
+        </Panel>
+
+        <PanelResizeHandle className="w-1 focus:outline-none transition-colors hover:bg-indigo-500/50 bg-transparent flex items-center justify-center -ml-0.5 z-50" />
+
+        {/* Main Content */}
+        <Panel order={2} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Unified Header */}
+          <header className="h-16 border-b bg-card px-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <Input
+                value={currentCampaign?.name || ''}
+                onChange={(e) => updateCampaignName(e.target.value)}
+                className="max-w-md font-semibold text-lg border-transparent hover:border-input focus:border-input transition-colors px-2"
+                placeholder="Untitled Campaign"
+              />
+
+              {/* Tags Section */}
+              <div className="flex items-center gap-2 overflow-hidden">
+                {currentCampaign?.tags?.map(tag => (
+                  <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5 whitespace-nowrap">
+                    {tag}
+                    <button onClick={() => removeTag(tag)} className="ml-1 hover:text-destructive">
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                      <Plus size={14} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" align="start">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add tag..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                      />
+                      <Button size="sm" onClick={handleAddTag}>Add</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Templates Button */}
+              <Button variant="outline" size="sm" onClick={() => setTemplateModalOpen(true)}>
+                <Palette className="w-4 h-4 mr-2" />
+                Templates
+              </Button>
+
+              {/* Save as Template */}
+              <Button variant="outline" size="sm" onClick={() => setSaveTemplateModalOpen(true)}>
+                <Copy className="w-4 h-4 mr-2" />
+                Save as Template
+              </Button>
+
+              {/* Schedule Button */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                    <Plus size={14} />
+                  <Button variant={currentCampaign?.schedule?.startDate ? "secondary" : "outline"} size="sm">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    {currentCampaign?.schedule?.startDate ? 'Scheduled' : 'Schedule'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-64 p-3" align="start">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add tag..."
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                    />
-                    <Button size="sm" onClick={handleAddTag}>Add</Button>
+                <PopoverContent className="w-80 p-4" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-medium leading-none">Campaign Schedule</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Set when this campaign should be active.
+                    </p>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Start Date</label>
+                      <Input
+                        type="datetime-local"
+                        min={new Date().toISOString().slice(0, 16)}
+                        value={currentCampaign?.schedule?.startDate || ''}
+                        onChange={(e) => {
+                          const newStartDate = e.target.value;
+                          const endDate = currentCampaign?.schedule?.endDate;
+
+                          // If end date exists and is before new start date, clear it
+                          if (endDate && newStartDate && new Date(endDate) < new Date(newStartDate)) {
+                            updateSchedule({
+                              ...currentCampaign?.schedule,
+                              startDate: newStartDate,
+                              endDate: '' // Clear invalid end date
+                            });
+                            toast.warning('End date was cleared because it was before the new start date');
+                          } else {
+                            updateSchedule({
+                              ...currentCampaign?.schedule,
+                              startDate: newStartDate
+                            });
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">Campaign starts at this date/time</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">End Date</label>
+                      <Input
+                        type="datetime-local"
+                        min={currentCampaign?.schedule?.startDate || new Date().toISOString().slice(0, 16)}
+                        value={currentCampaign?.schedule?.endDate || ''}
+                        onChange={(e) => {
+                          const newEndDate = e.target.value;
+                          const startDate = currentCampaign?.schedule?.startDate;
+
+                          // Validate end date is after start date
+                          if (startDate && newEndDate && new Date(newEndDate) <= new Date(startDate)) {
+                            toast.error('End date must be after the start date');
+                            return;
+                          }
+
+                          updateSchedule({
+                            ...currentCampaign?.schedule,
+                            endDate: newEndDate
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">Campaign ends at this date/time (optional)</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Time Zone</label>
+                        <button
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => {
+                            const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                            updateSchedule({
+                              ...currentCampaign?.schedule,
+                              timeZone: detectedTz
+                            });
+                            toast.success(`Timezone set to ${detectedTz}`);
+                          }}
+                        >
+                          Detect my timezone
+                        </button>
+                      </div>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        value={currentCampaign?.schedule?.timeZone || ''}
+                        onChange={(e) => updateSchedule({
+                          ...currentCampaign?.schedule,
+                          timeZone: e.target.value
+                        })}
+                      >
+                        <option value="">Select timezone...</option>
+                        <optgroup label="Common">
+                          <option value="UTC">UTC (Coordinated Universal Time)</option>
+                          <option value="America/New_York">Eastern Time (US & Canada)</option>
+                          <option value="America/Chicago">Central Time (US & Canada)</option>
+                          <option value="America/Denver">Mountain Time (US & Canada)</option>
+                          <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                          <option value="Europe/London">London (GMT/BST)</option>
+                          <option value="Europe/Paris">Paris (CET/CEST)</option>
+                          <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                        </optgroup>
+                        <optgroup label="Asia">
+                          <option value="Asia/Kolkata">India (IST)</option>
+                          <option value="Asia/Dubai">Dubai (GST)</option>
+                          <option value="Asia/Singapore">Singapore (SGT)</option>
+                          <option value="Asia/Tokyo">Tokyo (JST)</option>
+                          <option value="Asia/Shanghai">China (CST)</option>
+                          <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+                          <option value="Asia/Seoul">Seoul (KST)</option>
+                          <option value="Asia/Bangkok">Bangkok (ICT)</option>
+                          <option value="Asia/Jakarta">Jakarta (WIB)</option>
+                        </optgroup>
+                        <optgroup label="Pacific">
+                          <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                          <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
+                          <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
+                        </optgroup>
+                        <optgroup label="Americas">
+                          <option value="America/Toronto">Toronto (EST/EDT)</option>
+                          <option value="America/Vancouver">Vancouver (PST/PDT)</option>
+                          <option value="America/Mexico_City">Mexico City (CST/CDT)</option>
+                          <option value="America/Sao_Paulo">São Paulo (BRT)</option>
+                          <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
+                        </optgroup>
+                        <optgroup label="Europe">
+                          <option value="Europe/Madrid">Madrid (CET/CEST)</option>
+                          <option value="Europe/Rome">Rome (CET/CEST)</option>
+                          <option value="Europe/Amsterdam">Amsterdam (CET/CEST)</option>
+                          <option value="Europe/Moscow">Moscow (MSK)</option>
+                          <option value="Europe/Istanbul">Istanbul (TRT)</option>
+                        </optgroup>
+                        <optgroup label="Middle East & Africa">
+                          <option value="Africa/Cairo">Cairo (EET)</option>
+                          <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
+                          <option value="Asia/Jerusalem">Jerusalem (IST)</option>
+                          <option value="Asia/Riyadh">Riyadh (AST)</option>
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    {currentCampaign?.schedule && (currentCampaign?.schedule?.startDate || currentCampaign?.schedule?.endDate) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-destructive hover:text-destructive"
+                        onClick={() => updateSchedule(undefined as any)}
+                      >
+                        Clear Schedule
+                      </Button>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Templates Button */}
-            <Button variant="outline" size="sm" onClick={() => setTemplateModalOpen(true)}>
-              <Palette className="w-4 h-4 mr-2" />
-              Templates
-            </Button>
+              <div className="h-6 w-px bg-border mx-1" />
 
-            {/* Save as Template */}
-            <Button variant="outline" size="sm" onClick={() => setSaveTemplateModalOpen(true)}>
-              <Copy className="w-4 h-4 mr-2" />
-              Save as Template
-            </Button>
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Draft'}
+              </Button>
 
-            {/* Schedule Button */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant={currentCampaign?.schedule?.startDate ? "secondary" : "outline"} size="sm">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {currentCampaign?.schedule?.startDate ? 'Scheduled' : 'Schedule'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" align="end">
-                <div className="space-y-4">
-                  <h4 className="font-medium leading-none">Campaign Schedule</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Set when this campaign should be active.
-                  </p>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Start Date</label>
-                    <Input
-                      type="datetime-local"
-                      min={new Date().toISOString().slice(0, 16)}
-                      value={currentCampaign?.schedule?.startDate || ''}
-                      onChange={(e) => {
-                        const newStartDate = e.target.value;
-                        const endDate = currentCampaign?.schedule?.endDate;
-
-                        // If end date exists and is before new start date, clear it
-                        if (endDate && newStartDate && new Date(endDate) < new Date(newStartDate)) {
-                          updateSchedule({
-                            ...currentCampaign?.schedule,
-                            startDate: newStartDate,
-                            endDate: '' // Clear invalid end date
-                          });
-                          toast.warning('End date was cleared because it was before the new start date');
-                        } else {
-                          updateSchedule({
-                            ...currentCampaign?.schedule,
-                            startDate: newStartDate
-                          });
-                        }
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">Campaign starts at this date/time</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">End Date</label>
-                    <Input
-                      type="datetime-local"
-                      min={currentCampaign?.schedule?.startDate || new Date().toISOString().slice(0, 16)}
-                      value={currentCampaign?.schedule?.endDate || ''}
-                      onChange={(e) => {
-                        const newEndDate = e.target.value;
-                        const startDate = currentCampaign?.schedule?.startDate;
-
-                        // Validate end date is after start date
-                        if (startDate && newEndDate && new Date(newEndDate) <= new Date(startDate)) {
-                          toast.error('End date must be after the start date');
-                          return;
-                        }
-
-                        updateSchedule({
-                          ...currentCampaign?.schedule,
-                          endDate: newEndDate
-                        });
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">Campaign ends at this date/time (optional)</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Time Zone</label>
-                      <button
-                        type="button"
-                        className="text-xs text-primary hover:underline"
-                        onClick={() => {
-                          const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                          updateSchedule({
-                            ...currentCampaign?.schedule,
-                            timeZone: detectedTz
-                          });
-                          toast.success(`Timezone set to ${detectedTz}`);
-                        }}
-                      >
-                        Detect my timezone
-                      </button>
-                    </div>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      value={currentCampaign?.schedule?.timeZone || ''}
-                      onChange={(e) => updateSchedule({
-                        ...currentCampaign?.schedule,
-                        timeZone: e.target.value
-                      })}
-                    >
-                      <option value="">Select timezone...</option>
-                      <optgroup label="Common">
-                        <option value="UTC">UTC (Coordinated Universal Time)</option>
-                        <option value="America/New_York">Eastern Time (US & Canada)</option>
-                        <option value="America/Chicago">Central Time (US & Canada)</option>
-                        <option value="America/Denver">Mountain Time (US & Canada)</option>
-                        <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
-                        <option value="Europe/London">London (GMT/BST)</option>
-                        <option value="Europe/Paris">Paris (CET/CEST)</option>
-                        <option value="Europe/Berlin">Berlin (CET/CEST)</option>
-                      </optgroup>
-                      <optgroup label="Asia">
-                        <option value="Asia/Kolkata">India (IST)</option>
-                        <option value="Asia/Dubai">Dubai (GST)</option>
-                        <option value="Asia/Singapore">Singapore (SGT)</option>
-                        <option value="Asia/Tokyo">Tokyo (JST)</option>
-                        <option value="Asia/Shanghai">China (CST)</option>
-                        <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
-                        <option value="Asia/Seoul">Seoul (KST)</option>
-                        <option value="Asia/Bangkok">Bangkok (ICT)</option>
-                        <option value="Asia/Jakarta">Jakarta (WIB)</option>
-                      </optgroup>
-                      <optgroup label="Pacific">
-                        <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
-                        <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
-                        <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
-                      </optgroup>
-                      <optgroup label="Americas">
-                        <option value="America/Toronto">Toronto (EST/EDT)</option>
-                        <option value="America/Vancouver">Vancouver (PST/PDT)</option>
-                        <option value="America/Mexico_City">Mexico City (CST/CDT)</option>
-                        <option value="America/Sao_Paulo">São Paulo (BRT)</option>
-                        <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
-                      </optgroup>
-                      <optgroup label="Europe">
-                        <option value="Europe/Madrid">Madrid (CET/CEST)</option>
-                        <option value="Europe/Rome">Rome (CET/CEST)</option>
-                        <option value="Europe/Amsterdam">Amsterdam (CET/CEST)</option>
-                        <option value="Europe/Moscow">Moscow (MSK)</option>
-                        <option value="Europe/Istanbul">Istanbul (TRT)</option>
-                      </optgroup>
-                      <optgroup label="Middle East & Africa">
-                        <option value="Africa/Cairo">Cairo (EET)</option>
-                        <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
-                        <option value="Asia/Jerusalem">Jerusalem (IST)</option>
-                        <option value="Asia/Riyadh">Riyadh (AST)</option>
-                      </optgroup>
-                    </select>
-                  </div>
-
-                  {currentCampaign?.schedule && (currentCampaign?.schedule?.startDate || currentCampaign?.schedule?.endDate) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full text-destructive hover:text-destructive"
-                      onClick={() => updateSchedule(undefined as any)}
-                    >
-                      Clear Schedule
-                    </Button>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <div className="h-6 w-px bg-border mx-1" />
-
-            <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save Draft'}
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={handleLaunch}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-              disabled={isSaving}
-            >
-              <Rocket className="w-4 h-4 mr-2" />
-              Launch
-            </Button>
-          </div>
-        </header>
-
-        {/* Step Content */}
-        <main className="flex-1 overflow-hidden relative">
-          {!currentCampaign && !searchParams.get('experience') && !searchParams.get('mode') ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-4">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold">No Campaign Loaded</h3>
-                <p className="text-muted-foreground">Please select a campaign or create a new one.</p>
-              </div>
-              <Button onClick={() => navigate('/campaigns')}>
-                Go to Campaigns
+              <Button
+                size="sm"
+                onClick={handleLaunch}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                disabled={isSaving}
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Launch
               </Button>
             </div>
-          ) : (
-            <>
-              {activeStep === 'targeting' && <TargetingStep />}
-              {activeStep === 'goals' && <GoalsRolloutStep />}
-              {activeStep === 'design' && <DesignStep />}
-            </>
-          )}
-        </main>
-      </div>
+          </header>
 
+          {/* Step Content */}
+          <main className="flex-1 overflow-hidden relative">
+            {!currentCampaign && !searchParams.get('experience') && !searchParams.get('mode') ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold">No Campaign Loaded</h3>
+                  <p className="text-muted-foreground">Please select a campaign or create a new one.</p>
+                </div>
+                <Button onClick={() => navigate('/campaigns')}>
+                  Go to Campaigns
+                </Button>
+              </div>
+            ) : (
+              <>
+                {activeStep === 'targeting' && <TargetingStep />}
+                {activeStep === 'goals' && <GoalsRolloutStep />}
+                {activeStep === 'design' && <DesignStep />}
+              </>
+            )}
+          </main>
+        </Panel>
+      </PanelGroup>
       {/* Global Modals for Campaign Builder */}
       <CampaignTemplateGallery
         isOpen={isTemplateModalOpen}
@@ -487,7 +491,7 @@ const CampaignBuilder: React.FC = () => {
         isOpen={isSaveTemplateModalOpen}
         onClose={() => setSaveTemplateModalOpen(false)}
       />
-    </div>
+    </div >
   );
 };
 

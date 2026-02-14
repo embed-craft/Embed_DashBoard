@@ -10,7 +10,6 @@ import {
     ArrowLeft,
     Layout,
     MousePointer,
-    Maximize2,
     Play,
     Repeat,
     Image,
@@ -157,79 +156,7 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                 {/* --- GENERAL TAB --- */}
                 <TabsContent value="general" className="space-y-5 animate-in fade-in-50">
 
-                    {/* Dimensions */}
-                    <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
-                        <Label className="text-xs font-semibold text-gray-700">Dimensions</Label>
-                        <div className="grid grid-cols-2 gap-3">
-                            {/* Width */}
-                            <div>
-                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Width</Label>
-                                <div className="flex gap-1">
-                                    <div className="relative flex-1">
-                                        <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400" />
-                                        <Input
-                                            type="number"
-                                            className="pl-7 h-8 text-xs w-full"
-                                            value={String(layer.style?.width || '').replace(/[^\d.]/g, '')}
-                                            placeholder="Auto"
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                const currentVal = String(layer.style?.width || '');
-                                                const isPercent = currentVal.includes('%');
-                                                updateStyle('width', val === '' ? 'auto' : (isPercent ? `${val}% ` : `${val} px`));
-                                            }}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const currentVal = String(layer.style?.width || '');
-                                            const isPercent = currentVal.includes('%');
-                                            const numVal = parseFloat(currentVal) || 0;
-                                            updateStyle('width', isPercent ? `${numVal} px` : `${Math.min(numVal, 100)}% `);
-                                        }}
-                                        className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
-                                    >
-                                        {String(layer.style?.width || '').includes('%') ? '%' : 'px'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Height */}
-                            <div>
-                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Height</Label>
-                                <div className="flex gap-1">
-                                    <div className="relative flex-1">
-                                        <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400 rotate-90" />
-                                        <Input
-                                            type="number"
-                                            className="pl-7 h-8 text-xs w-full"
-                                            value={String(layer.style?.height || '').replace(/[^\d.]/g, '')}
-                                            placeholder="Auto"
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                const currentVal = String(layer.style?.height || '');
-                                                const isPercent = currentVal.includes('%');
-                                                updateStyle('height', val === '' ? 'auto' : (isPercent ? `${val}% ` : `${val} px`));
-                                            }}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const currentVal = String(layer.style?.height || '');
-                                            const isPercent = currentVal.includes('%');
-                                            const numVal = parseFloat(currentVal) || 0;
-                                            updateStyle('height', isPercent ? `${numVal} px` : `${Math.min(numVal, 100)}% `);
-                                        }}
-                                        className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
-                                    >
-                                        {String(layer.style?.height || '').includes('%') ? '%' : 'px'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <Separator />
+                    {/* Dimensions Removed as per user request */}
 
                     {/* Playback Behavior */}
                     <div className="space-y-3">

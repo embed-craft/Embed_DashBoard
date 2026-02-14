@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Login from "./pages/Login";
+import LandingPage from "./pages/LandingPage";
 import AdminLayout from "./layouts/AdminLayout";
 import Clients from "./pages/admin/Clients";
 import Stats from "./pages/admin/Stats";
@@ -38,6 +39,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/landing" element={<LandingPage />} />
 
             <Route element={<ProtectedRoute />}>
               {/* Super Admin Routes */}

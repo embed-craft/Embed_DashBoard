@@ -9,6 +9,7 @@ import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
 import { CarouselLayerRenderer } from './campaign/renderers/CarouselLayerRenderer';
+import { CountdownRenderer } from './campaign/renderers/CountdownRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -525,7 +526,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             backdropFilter: (() => {
                 const isFloaterContainer = layer.type === 'container' && layer.name === 'Floater Container';
                 const enabled = !isFloaterContainer && (layer.style as any)?.backdropFilter?.enabled;
-                const blur = enabled ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)` : undefined;
+                const blur = enabled ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)})` : undefined;
                 if (layer.type === 'container') {
                     console.log('[FloaterRenderer] Layer backdropFilter:', {
                         name: layer.name,
@@ -537,7 +538,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 return blur;
             })(),
             WebkitBackdropFilter: (layer.type !== 'container' || layer.name !== 'Floater Container') && (layer.style as any)?.backdropFilter?.enabled
-                ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)}px)`
+                ? `blur(${safeScale((layer.style as any).backdropFilter.blur || 10, scale)})`
                 : undefined,
         };
 
@@ -683,6 +684,14 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         scaleY={scaleY}
                         isInteractive={isInteractive}
                         renderChild={(childLayer) => renderLayer(childLayer)}
+                    />
+                );
+                break;
+            case 'countdown':
+                content = (
+                    <CountdownRenderer
+                        layer={layer}
+                        scale={scale}
                     />
                 );
                 break;

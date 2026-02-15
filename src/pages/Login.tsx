@@ -3,6 +3,7 @@ import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -154,7 +155,7 @@ const Login: React.FC = () => {
                                 transition={{ type: "spring", stiffness: 300, damping: 10 }}
                             >
                                 <img
-                                    src="/src/assets/logo.png"
+                                    src={logo}
                                     alt="EmbedCraft Logo"
                                     className="w-full h-full object-contain scale-125 mix-blend-screen filter invert grayscale contrast-200"
                                 />
@@ -199,7 +200,7 @@ const Login: React.FC = () => {
                                 transition={{ duration: 0.6, ease: "easeInOut" }}
                             >
                                 <img
-                                    src="/src/assets/logo.png"
+                                    src={logo}
                                     alt="EmbedCraft Logo"
                                     className="w-full h-full object-contain scale-150 mix-blend-screen filter invert grayscale contrast-200"
                                 />

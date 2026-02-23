@@ -44,6 +44,22 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     const position = config?.position || 'bottom';
     const isTop = position === 'top';
 
+    // Helper to safely scale numeric values
+    const safeScale = (val: string | number | undefined, scaleFactor: number): string | undefined => {
+        if (val === undefined || val === null) return undefined;
+        if (typeof val === 'number') return `${val * scaleFactor}px`;
+        if (typeof val === 'string') {
+            if (val.endsWith('%')) return val; // Do not scale percentages physically
+            if (val.endsWith('px')) {
+                const num = parseFloat(val);
+                if (!isNaN(num)) return `${num * scaleFactor}px`;
+            }
+            const parsed = parseFloat(val);
+            if (!isNaN(parsed)) return `${parsed * scaleFactor}px`;
+        }
+        return val;
+    };
+
     // Create modified config for BottomSheet
     // Override Floater-specific properties and add defaults FloaterRenderer expects
     const bottomSheetConfig = React.useMemo(() => {
@@ -138,7 +154,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     // Shadow Logic
     const shadow = config?.shadow;
     const boxShadow = (shadow?.enabled)
-        ? `0px ${isTop ? '4px' : '-4px'} ${shadow.blur || 12}px ${shadow.spread || 0}px ${shadow.color || 'rgba(0,0,0,0.2)'}`
+        ? `0px ${isTop ? 4 * scale : -4 * scale}px ${(shadow.blur || 12) * scale}px ${(shadow.spread || 0) * scale}px ${shadow.color || 'rgba(0,0,0,0.2)'}`
         : undefined;
 
     return (
@@ -151,7 +167,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                         inset: 0,
                         backgroundColor: config.overlay.color || '#000000',
                         opacity: config.overlay.opacity ?? 0.5,
-                        backdropFilter: config.overlay.blur ? `blur(${config.overlay.blur}px)` : undefined,
+                        backdropFilter: config.overlay.blur ? `blur(${config.overlay.blur * scale}px)` : undefined,
                         pointerEvents: 'auto', // Allow clicking scrim to dismiss
                         zIndex: 0
                     }}
@@ -164,7 +180,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
             <div style={{
                 pointerEvents: 'auto',
                 width: '100%',
-                height: config?.height || 'auto', // Apply height here
+                height: safeScale(config?.height, scaleY) || 'auto', // Apply height here
                 maxHeight: '100%',
                 position: 'relative', // FIX: Position context for absolute content
                 backgroundColor: (config?.backgroundColor === 'transparent' || config?.backgroundColor === '#00000000')
@@ -176,16 +192,16 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 backgroundPosition: 'center',
 
                 // Radius (Top has Bottom Radius, Bottom has Top Radius)
-                borderTopLeftRadius: !isTop ? `${radiusPx}px` : undefined,
-                borderTopRightRadius: !isTop ? `${radiusPx}px` : undefined,
-                borderBottomLeftRadius: isTop ? `${radiusPx}px` : undefined,
-                borderBottomRightRadius: isTop ? `${radiusPx}px` : undefined,
+                borderTopLeftRadius: !isTop ? `${radiusPx * scale}px` : undefined,
+                borderTopRightRadius: !isTop ? `${radiusPx * scale}px` : undefined,
+                borderBottomLeftRadius: isTop ? `${radiusPx * scale}px` : undefined,
+                borderBottomRightRadius: isTop ? `${radiusPx * scale}px` : undefined,
 
                 // Border (Skip the edge connected to screen edge)
-                borderTop: (!isTop && borderWidth > 0) ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
-                borderBottom: (isTop && borderWidth > 0) ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
-                borderLeft: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
-                borderRight: borderWidth > 0 ? `${borderWidth}px ${borderStyle} ${borderColor}` : undefined,
+                borderTop: (!isTop && borderWidth > 0) ? `${borderWidth * scale}px ${borderStyle} ${borderColor}` : undefined,
+                borderBottom: (isTop && borderWidth > 0) ? `${borderWidth * scale}px ${borderStyle} ${borderColor}` : undefined,
+                borderLeft: borderWidth > 0 ? `${borderWidth * scale}px ${borderStyle} ${borderColor}` : undefined,
+                borderRight: borderWidth > 0 ? `${borderWidth * scale}px ${borderStyle} ${borderColor}` : undefined,
 
                 boxShadow: boxShadow,
                 overflow: 'hidden',
@@ -194,8 +210,8 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 boxSizing: 'border-box',
 
                 // Padding for Drag Handle
-                paddingTop: (!isTop && config?.dragHandle) ? '12px' : '0px',
-                paddingBottom: (isTop && config?.dragHandle) ? '12px' : '0px',
+                paddingTop: (!isTop && config?.dragHandle) ? `${12 * scale}px` : '0px',
+                paddingBottom: (isTop && config?.dragHandle) ? `${12 * scale}px` : '0px',
             }}>
 
 
@@ -204,18 +220,18 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                     <div style={{
                         position: 'absolute',
                         zIndex: 1,
-                        top: !isTop ? 8 : undefined,
-                        bottom: isTop ? 8 : undefined,
+                        top: !isTop ? 8 * scale : undefined,
+                        bottom: isTop ? 8 * scale : undefined,
                         left: 0,
                         right: 0,
                         display: 'flex',
                         justifyContent: 'center',
                     }}>
                         <div style={{
-                            width: '40px',
-                            height: '4px',
+                            width: `${40 * scale}px`,
+                            height: `${4 * scale}px`,
                             backgroundColor: 'rgba(0,0,0,0.15)',
-                            borderRadius: '2px'
+                            borderRadius: `${2 * scale}px`
                         }} />
                     </div>
                 )}

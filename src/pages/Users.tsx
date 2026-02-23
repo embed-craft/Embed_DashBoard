@@ -148,7 +148,8 @@ const UsersPage = () => {
                 }
             />
 
-            <PageContainer>
+            {/* Custom Full Width Container */}
+            <div style={{ padding: '32px', maxWidth: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 <Tabs defaultValue="users" className="w-full">
                     <TabsList className="bg-transparent border-b border-gray-200 w-full justify-start h-auto p-0 rounded-none mb-6">
                         <TabsTrigger
@@ -313,7 +314,7 @@ const UsersPage = () => {
                         </div>
                     </TabsContent>
                 </Tabs>
-            </PageContainer>
+            </div>
         </div>
     );
 };

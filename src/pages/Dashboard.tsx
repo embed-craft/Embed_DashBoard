@@ -241,12 +241,6 @@ const Dashboard = () => {
               <Calendar size={16} className="text-gray-500" />
               {dateRange}
             </button>
-            <Link to="/campaign-builder">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-                <Zap size={16} />
-                Create Campaign
-              </Button>
-            </Link>
           </div>
         }
       />

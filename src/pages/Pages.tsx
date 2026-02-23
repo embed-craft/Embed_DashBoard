@@ -202,7 +202,8 @@ const Pages = () => {
                 }
             />
 
-            <PageContainer>
+            {/* Custom Full Width Container */}
+            <div style={{ padding: '32px', maxWidth: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 <div style={{
                     backgroundColor: 'white',
                     borderRadius: theme.borderRadius.lg,
@@ -239,7 +240,7 @@ const Pages = () => {
                         onRowClick={(row: PageRow) => setSelectedPage(row)}
                     />
                 </div>
-            </PageContainer>
+            </div>
 
             <PageUploadModal
                 open={isUploadOpen}

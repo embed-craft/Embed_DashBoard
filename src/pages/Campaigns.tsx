@@ -25,7 +25,6 @@ import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import IconButton from '@/components/shared/IconButton';
 import SearchInput from '@/components/shared/SearchInput';
-import CreateCampaignModal from '@/components/campaign/CreateCampaignModal';
 import { theme } from '@/styles/design-tokens';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,6 @@ const Campaigns = () => {
   const navigate = useNavigate();
   const { campaigns, deleteCampaign, updateCampaignStatus, syncCampaigns } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -459,13 +457,14 @@ const Campaigns = () => {
         title="Campaigns"
         subtitle="Manage your in-app experiences"
         actions={
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-sm">
+          <Button onClick={() => navigate('/campaigns/new')} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-sm">
             <Plus size={16} /> Create Campaign
           </Button>
         }
       />
 
-      <PageContainer>
+      {/* Custom Full Width Container */}
+      <div style={{ padding: '32px', maxWidth: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
         <div style={{
           backgroundColor: 'white',
           borderRadius: theme.borderRadius.lg,
@@ -520,9 +519,7 @@ const Campaigns = () => {
             />
           </div>
         </div>
-      </PageContainer>
-
-      <CreateCampaignModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+      </div>
     </div>
   );
 };

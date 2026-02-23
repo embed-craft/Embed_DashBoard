@@ -3,8 +3,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Megaphone,
-  Workflow,
-  Gift,
   Zap,
   Users,
   FileText,
@@ -48,8 +46,6 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
-    { path: '/flows', label: 'Flows', icon: Workflow },
-    { path: '/rewards', label: 'Rewards', icon: Gift },
     { path: '/events', label: 'Events', icon: Zap },
     { path: '/users', label: 'Users', icon: Users },
     { path: '/pages', label: 'Pages', icon: FileText },

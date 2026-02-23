@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { theme } from '../styles/design-tokens';
 import { toast } from 'sonner';
-import { Columns, Plus } from 'lucide-react';
+import { Activity, Radio, Plus, Layers, ShieldCheck, Database } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/store/useStore';
@@ -19,25 +19,57 @@ interface EventWithId extends EventDefinition {
     id: string;
 }
 
+const StatCard = ({ title, value, icon: Icon, colorClass, bgColorClass }: any) => (
+    <div style={{
+        backgroundColor: 'white',
+        borderRadius: theme.borderRadius.xl,
+        padding: '24px',
+        border: `1px solid ${theme.colors.border.default}`,
+        boxShadow: theme.shadows.sm,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '20px',
+        transition: 'all 0.2s ease',
+    }} className="hover:shadow-md hover:border-gray-300">
+        <div className={`p-4 rounded-2xl ${bgColorClass} ${colorClass}`}>
+            <Icon size={28} strokeWidth={1.5} />
+        </div>
+        <div>
+            <p style={{ fontSize: '14px', color: theme.colors.text.secondary, fontWeight: 500, marginBottom: '4px' }}>
+                {title}
+            </p>
+            <h3 style={{ fontSize: '28px', fontWeight: 700, color: theme.colors.text.primary, letterSpacing: '-0.5px' }}>
+                {value}
+            </h3>
+        </div>
+    </div>
+);
+
 const Events: React.FC = () => {
-    const { eventPreferences, toggleEventStatus, toggleEventGoal } = useStore();
-    const [events, setEvents] = useState<EventWithId[]>([]);
+    const [rawEvents, setRawEvents] = useState<EventWithId[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<EventDefinition | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [showStats, setShowStats] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowStats(false);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const fetchEvents = async () => {
         setLoading(true);
         try {
             const data = await metadataService.getEvents();
-            // Map _id to id for DataTable compatibility
             const formattedEvents = data.map(event => ({
                 ...event,
                 id: event._id
             }));
-            setEvents(formattedEvents as EventWithId[]);
+            setRawEvents(formattedEvents as EventWithId[]);
         } catch (error) {
             console.error('Failed to fetch events:', error);
             toast.error('Failed to load events');
@@ -52,7 +84,7 @@ const Events: React.FC = () => {
                 isActive: !event.isActive
             });
 
-            setEvents(prev => prev.map(e =>
+            setRawEvents(prev => prev.map(e =>
                 e._id === event._id ? { ...e, isActive: updatedEvent.isActive } : e
             ));
 
@@ -67,32 +99,78 @@ const Events: React.FC = () => {
         fetchEvents();
     }, []);
 
-    // Filter data
-    const filteredData = events.filter((row) =>
-        row.name.toLowerCase().includes(searchQuery.toLowerCase())
+    // Memoize Data Deduplication
+    // Reduces multiple events with the exact same name down to a single instance (taking the latest one by createdAt/updatedAt)
+    const deduplicatedEvents = useMemo(() => {
+        const map = new Map<string, EventWithId>();
+        rawEvents.forEach(event => {
+            const existing = map.get(event.name);
+            if (!existing) {
+                map.set(event.name, event);
+            } else {
+                // If existing is older than current, replace it with the newer one
+                const currentIsNewer = new Date(event.updatedAt || event.createdAt).getTime() > new Date(existing.updatedAt || existing.createdAt).getTime();
+                if (currentIsNewer) {
+                    map.set(event.name, event);
+                }
+            }
+        });
+        return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [rawEvents]);
+
+    const activeEventCount = deduplicatedEvents.filter(e => e.isActive).length;
+
+    // Filter data by search query
+    const filteredData = deduplicatedEvents.filter((row) =>
+        row.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (row.displayName && row.displayName.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     const columns: Column<EventWithId>[] = [
         {
-            key: 'enabled',
-            header: 'ON/OFF',
-            width: '80px',
+            key: 'name',
+            header: 'Event Name',
+            width: '35%',
             render: (row) => (
-                <Switch
-                    checked={row.isActive}
-                    onCheckedChange={() => handleToggleStatus(row)}
-                    onClick={(e) => e.stopPropagation()}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                        width: '32px', height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: theme.colors.gray[100],
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: theme.colors.gray[600]
+                    }}>
+                        <Activity size={16} />
+                    </div>
+                    <div className="flex flex-col">
+                        <span style={{ fontSize: '15px', fontWeight: 600, color: theme.colors.gray[900] }}>
+                            {row.displayName || row.name}
+                        </span>
+                        <span style={{ fontSize: '12px', color: theme.colors.gray[500], fontFamily: 'monospace' }}>
+                            {row.name}
+                        </span>
+                    </div>
+                </div>
             )
         },
         {
-            key: 'name',
-            header: 'Name',
-            width: '25%',
+            key: 'enabled',
+            header: 'Tracking Status',
+            width: '15%',
             render: (row) => (
-                <div className="flex flex-col">
-                    <span className="font-medium text-gray-900">{row.displayName || row.name}</span>
-                    <span className="text-xs text-gray-500">{row.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Switch
+                        checked={row.isActive}
+                        onCheckedChange={() => handleToggleStatus(row)}
+                        onClick={(e) => e.stopPropagation()}
+                        className={row.isActive ? "bg-blue-600" : "bg-gray-200"}
+                    />
+                    <span
+                        style={{ fontSize: '13px', fontWeight: 500 }}
+                        className={row.isActive ? "text-blue-600" : "text-gray-500"}
+                    >
+                        {row.isActive ? 'Active' : 'Paused'}
+                    </span>
                 </div>
             )
         },
@@ -101,117 +179,194 @@ const Events: React.FC = () => {
             header: 'Properties',
             width: '15%',
             render: (row) => (
-                <span className="text-sm font-medium text-purple-600">
-                    {row.properties?.length || (row.jsonSchema ? Object.keys(row.jsonSchema).length : 0)}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Database size={14} className="text-gray-400" />
+                    <span style={{ fontSize: '14px', fontWeight: 500, color: theme.colors.text.primary }}>
+                        {row.properties?.length || (row.jsonSchema ? Object.keys(row.jsonSchema).length : 0)}
+                    </span>
+                </div>
             )
         },
         {
             key: 'source',
             header: 'Source',
             width: '15%',
-            render: (row) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.source === 'client' ? 'bg-blue-100 text-blue-700' :
-                    row.source === 'server' ? 'bg-purple-100 text-purple-700' :
-                        'bg-gray-100 text-gray-700'
-                    }`}>
-                    {row.source}
-                </span>
-            )
+            render: (row) => {
+                const isSdk = (row.source as string) === 'sdk_autodetected';
+                const isClient = row.source === 'client';
+                const SourceBg = isClient || isSdk ? theme.colors.info + '1A' : theme.colors.gray[100];
+                const SourceColor = isClient || isSdk ? theme.colors.info : theme.colors.gray[700];
+                const SourceBorder = isClient || isSdk ? theme.colors.info + '33' : theme.colors.gray[200];
+
+                return (
+                    <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        letterSpacing: '0.02em',
+                        backgroundColor: SourceBg,
+                        color: SourceColor,
+                        border: `1px solid ${SourceBorder}`
+                    }}>
+                        {isSdk ? 'Auto-detected' : row.source || 'Unknown'}
+                    </span>
+                );
+            }
         },
         {
             key: 'category',
             header: 'Category',
-            width: '15%',
+            width: '20%',
             render: (row) => (
-                <span className="text-sm text-gray-600 capitalize">{row.category}</span>
-            )
-        },
-        {
-            key: 'version',
-            header: 'Version',
-            width: '10%',
-            render: (row) => (
-                <span className="text-sm text-gray-500">v{row.version}</span>
-            )
-        },
-        {
-            key: 'validationLevel',
-            header: 'Validation',
-            width: '15%',
-            render: (row) => (
-                <span className={`text-xs font-medium ${row.validationLevel === 'strict' ? 'text-red-600' :
-                    row.validationLevel === 'lax' ? 'text-yellow-600' :
-                        'text-gray-500'
-                    }`}>
-                    {row.validationLevel.toUpperCase()}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: theme.colors.gray[400] }} />
+                    <span style={{ fontSize: '14px', color: theme.colors.text.secondary, textTransform: 'capitalize' }}>
+                        {row.category || 'General'}
+                    </span>
+                </div>
             )
         }
     ];
 
-    const handleEventClick = (event: EventDefinition) => {
-        setSelectedEvent(event);
+    const handleEventClick = (event: any) => {
+        setSelectedEvent(event as EventDefinition);
         setIsDetailOpen(true);
     };
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: theme.colors.gray[50] }}>
             <PageHeader
-                title="Events"
-                subtitle="Manage your application events"
-                actions={null}
+                title="Event Library"
+                subtitle="Centralized management for all your application tracking events."
             />
 
-            <PageContainer>
+            {/* Custom Full Width Container */}
+            <div style={{ padding: '32px', maxWidth: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+                {/* Auto-Hiding Stats Section */}
+                <div style={{ transition: 'all 0.4s ease-in-out' }}>
+                    {showStats ? (
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '24px',
+                            width: '100%',
+                            opacity: 1,
+                            transform: 'translateY(0)'
+                        }}>
+                            <div style={{ flex: '1 1 300px' }}>
+                                <StatCard
+                                    title="Total Unique Events"
+                                    value={deduplicatedEvents.length.toString()}
+                                    icon={Layers}
+                                    colorClass="text-black"
+                                    bgColorClass="bg-gray-100"
+                                />
+                            </div>
+                            <div style={{ flex: '1 1 300px' }}>
+                                <StatCard
+                                    title="Actively Tracking"
+                                    value={activeEventCount.toString()}
+                                    icon={Radio}
+                                    colorClass="text-blue-600"
+                                    bgColorClass="bg-blue-50"
+                                />
+                            </div>
+                            <div style={{ flex: '1 1 300px' }}>
+                                <StatCard
+                                    title="Strictly Validated"
+                                    value={deduplicatedEvents.filter(e => e.validationLevel === 'strict').length.toString()}
+                                    icon={ShieldCheck}
+                                    colorClass="text-gray-700"
+                                    bgColorClass="bg-gray-100"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div
+                            onClick={() => setShowStats(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '24px',
+                                padding: '12px 24px',
+                                backgroundColor: 'white',
+                                borderRadius: theme.borderRadius.lg,
+                                border: `1px solid ${theme.colors.border.default}`,
+                                cursor: 'pointer',
+                                width: 'fit-content',
+                                boxShadow: theme.shadows.sm
+                            }}
+                            className="hover:bg-gray-50 transition-colors"
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>
+                                <Layers size={14} /> Total Events: <span style={{ color: theme.colors.text.primary }}>{deduplicatedEvents.length}</span>
+                            </div>
+                            <div style={{ width: '1px', height: '14px', backgroundColor: theme.colors.border.default }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>
+                                <Radio size={14} className="text-blue-600" /> Active: <span style={{ color: theme.colors.text.primary }}>{activeEventCount}</span>
+                            </div>
+                            <div style={{ width: '1px', height: '14px', backgroundColor: theme.colors.border.default }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>
+                                <ShieldCheck size={14} /> Validated: <span style={{ color: theme.colors.text.primary }}>{deduplicatedEvents.filter(e => e.validationLevel === 'strict').length}</span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: theme.colors.text.tertiary, marginLeft: '16px', fontWeight: 500 }}>
+                                (Click to expand)
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Table Container - Expanded Width */}
                 <div style={{
                     backgroundColor: 'white',
-                    borderRadius: theme.borderRadius.lg,
+                    borderRadius: theme.borderRadius.xl,
                     border: `1px solid ${theme.colors.border.default}`,
                     boxShadow: theme.shadows.sm,
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    width: '100%' // Ensure full width utilization
                 }}>
                     <div style={{
-                        padding: '16px 24px',
+                        padding: '20px 24px',
                         borderBottom: `1px solid ${theme.colors.border.default}`,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        gap: '16px'
+                        gap: '16px',
+                        backgroundColor: theme.colors.white
                     }}>
-                        <div style={{ width: '300px' }}>
+                        <div style={{ width: '360px' }}>
                             <SearchInput
-                                placeholder="Search Event..."
+                                placeholder="Search events by name or display name..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-
-                        <div style={{ flex: 1 }} />
-
-                        <Button variant="ghost" className="gap-2 text-gray-500">
-                            <Columns size={14} />
-                            Toggle Columns
-                        </Button>
                     </div>
 
-                    <DataTable
-                        data={filteredData}
-                        columns={columns}
-                        isLoading={loading}
-                        onRowClick={handleEventClick}
-                        emptyMessage="No events recorded yet."
-                    />
+                    <div style={{ width: '100%', overflowX: 'auto' }}>
+                        {/* We inject custom styling to the nested DataTable to make it wider and more spacious */}
+                        <div style={{ minWidth: '1200px', width: '100%' }}>
+                            <DataTable
+                                data={filteredData}
+                                columns={columns}
+                                isLoading={loading}
+                                onRowClick={handleEventClick}
+                                emptyMessage="No unique events found. Add one to get started."
+                            />
+                        </div>
+                    </div>
                 </div>
-            </PageContainer>
+            </div>
 
             <EventDetailPanel
                 event={selectedEvent}
                 open={isDetailOpen}
                 onOpenChange={setIsDetailOpen}
                 onEventUpdated={(updatedEvent) => {
-                    setEvents(prev => prev.map(e => e._id === updatedEvent._id ? { ...updatedEvent, id: updatedEvent._id } : e));
-                    setSelectedEvent({ ...updatedEvent, id: updatedEvent._id });
+                    setRawEvents(prev => prev.map(e => e._id === updatedEvent._id ? { ...updatedEvent, id: updatedEvent._id } : e));
+                    setSelectedEvent(updatedEvent);
                 }}
             />
 

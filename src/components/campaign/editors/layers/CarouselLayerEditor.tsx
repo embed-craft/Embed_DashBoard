@@ -18,7 +18,8 @@ import {
     Navigation,
     CircleDot,
     Activity,
-    Sparkles
+    Sparkles,
+    Maximize2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -42,36 +43,9 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
     const slides = layers.filter(l => l.parent === layer.id);
     const config = (layer.content || {}) as any;
 
-    // --- LOGIC ---
     const handleAddSlide = () => {
-        const slideCount = slides.length + 1;
-        // 1. Add generic container
-        const newId = addLayer('container', layer.id);
-
-        if (newId) {
-            // 2. Immediately enforce Strict Slide Properties via Global Store
-            const globalUpdateLayer = useEditorStore.getState().updateLayer;
-            globalUpdateLayer(newId, {
-                name: `Slide ${slideCount} `,
-                size: { width: '100%', height: '100%' },
-                style: {
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    padding: '0px',
-                    margin: '0px',
-                    gap: '10px',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    borderWidth: 1,
-                    borderStyle: 'dashed',
-                    borderColor: 'rgba(0,0,0,0.1)'
-                }
-            });
-        }
+        // 1. Add generic container. The CarouselLayerRenderer ensures missing properties are handled gracefully.
+        addLayer('container', layer.id);
     };
 
     const handleDeleteSlide = (slideId: string) => {
@@ -88,6 +62,37 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
         updateLayer(layer.id, {
             style: { ...layer.style, [key]: value }
         });
+    };
+
+    const getUnit = (val: string | number | undefined) => {
+        if (typeof val === 'string' && val.endsWith('%')) return '%';
+        return 'px';
+    };
+
+    const getValue = (val: string | number | undefined) => {
+        if (val === undefined) return 0;
+        if (typeof val === 'number') return val;
+        return parseFloat(val);
+    };
+
+    const updateDimension = (key: string, val: number, unit: string) => {
+        if (unit === '%') {
+            updateStyle(key, `${val}%`);
+        } else {
+            updateStyle(key, val);
+        }
+    };
+
+    const toggleUnit = (key: string) => {
+        const currentVal = layer.style?.[key];
+        const currentUnit = getUnit(currentVal);
+        const numVal = getValue(currentVal);
+
+        if (currentUnit === '%') {
+            updateStyle(key, numVal);
+        } else {
+            updateStyle(key, `${Math.min(numVal, 100)}%`);
+        }
     };
 
     return (
@@ -156,7 +161,117 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                 {/* --- GENERAL TAB --- */}
                 <TabsContent value="general" className="space-y-5 animate-in fade-in-50">
 
-                    {/* Dimensions Removed as per user request */}
+                    {/* Dimensions & Position */}
+                    <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+                        <Label className="text-xs font-semibold text-gray-700">Dimensions & Position</Label>
+
+                        {/* Width & Height */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Width</Label>
+                                <div className="flex gap-1">
+                                    <div className="relative flex-1">
+                                        <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400" />
+                                        <Input
+                                            type="number"
+                                            className="pl-7 h-8 text-xs w-full bg-white"
+                                            value={getValue(layer.style?.width)}
+                                            onChange={(e) => updateDimension('width', parseFloat(e.target.value), getUnit(layer.style?.width))}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => toggleUnit('width')}
+                                        className="px-2 h-8 text-[10px] font-medium bg-white rounded border hover:bg-gray-50 w-10 shrink-0"
+                                    >
+                                        {getUnit(layer.style?.width)}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Height</Label>
+                                <div className="flex gap-1">
+                                    <div className="relative flex-1">
+                                        <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400 rotate-90" />
+                                        <Input
+                                            type="number"
+                                            className="pl-7 h-8 text-xs w-full bg-white"
+                                            value={getValue(layer.style?.height)}
+                                            onChange={(e) => updateDimension('height', parseFloat(e.target.value), getUnit(layer.style?.height))}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => toggleUnit('height')}
+                                        className="px-2 h-8 text-[10px] font-medium bg-white rounded border hover:bg-gray-50 w-10 shrink-0"
+                                    >
+                                        {getUnit(layer.style?.height)}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Position Anchors */}
+                        <div>
+                            <Label className="text-[10px] text-gray-500 mb-1.5 block">Anchor Corner</Label>
+                            <Select
+                                value={
+                                    (layer.style?.bottom !== undefined && layer.style?.right !== undefined) ? 'bottom-right' :
+                                        (layer.style?.bottom !== undefined && layer.style?.left !== undefined) ? 'bottom-left' :
+                                            (layer.style?.top !== undefined && layer.style?.right !== undefined) ? 'top-right' :
+                                                'top-left'
+                                }
+                                onValueChange={(val) => {
+                                    if (val === 'top-left') { updateStyle('top', '20px'); updateStyle('left', '20px'); updateStyle('bottom', undefined); updateStyle('right', undefined); }
+                                    if (val === 'top-right') { updateStyle('top', '20px'); updateStyle('right', '20px'); updateStyle('bottom', undefined); updateStyle('left', undefined); }
+                                    if (val === 'bottom-left') { updateStyle('bottom', '20px'); updateStyle('left', '20px'); updateStyle('top', undefined); updateStyle('right', undefined); }
+                                    if (val === 'bottom-right') { updateStyle('bottom', '20px'); updateStyle('right', '20px'); updateStyle('top', undefined); updateStyle('left', undefined); }
+                                }}
+                            >
+                                <SelectTrigger className="h-8 text-[10px] bg-white">
+                                    <SelectValue placeholder="Position" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="top-left">Top Left</SelectItem>
+                                    <SelectItem value="top-right">Top Right</SelectItem>
+                                    <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                    <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Offsets */}
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1 block">X Offset</Label>
+                                <div className="relative">
+                                    <span className="absolute left-2 top-2 text-[10px] text-gray-400 font-mono">X</span>
+                                    <Input
+                                        type="text"
+                                        className="h-8 text-xs pl-6 bg-white"
+                                        value={layer.style?.left ?? layer.style?.right ?? 0}
+                                        onChange={e => {
+                                            if (layer.style?.left !== undefined) updateStyle('left', e.target.value);
+                                            else updateStyle('right', e.target.value);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-[10px] text-gray-500 mb-1 block">Y Offset</Label>
+                                <div className="relative">
+                                    <span className="absolute left-2 top-2 text-[10px] text-gray-400 font-mono">Y</span>
+                                    <Input
+                                        type="text"
+                                        className="h-8 text-xs pl-6 bg-white"
+                                        value={layer.style?.top ?? layer.style?.bottom ?? 0}
+                                        onChange={e => {
+                                            if (layer.style?.top !== undefined) updateStyle('top', e.target.value);
+                                            else updateStyle('bottom', e.target.value);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Playback Behavior */}
                     <div className="space-y-3">
@@ -515,8 +630,8 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                                         <Input
                                             type="number"
                                             className="h-7 text-xs bg-white"
-                                            value={config.arrowOffsetX || 0}
-                                            placeholder="0 = Edge"
+                                            value={config.arrowOffsetX ?? -48}
+                                            placeholder="Default: -48"
                                             onChange={(e) => updateConfig('arrowOffsetX', parseInt(e.target.value))}
                                         />
                                         <p className="text-[8px] text-gray-400 mt-0.5">Negative = Outside</p>
@@ -526,7 +641,7 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                                         <Input
                                             type="number"
                                             className="h-7 text-xs bg-white"
-                                            value={config.arrowOffsetY || 0}
+                                            value={config.arrowOffsetY ?? 0}
                                             placeholder="0 = Center"
                                             onChange={(e) => updateConfig('arrowOffsetY', parseInt(e.target.value))}
                                         />
@@ -754,7 +869,7 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                                         <Input
                                             type="number"
                                             className="h-7 text-xs bg-white"
-                                            value={config.thumbnailOffset ?? 0}
+                                            value={config.thumbnailOffset ?? ''}
                                             placeholder="Default: -24"
                                             onChange={(e) => updateConfig('thumbnailOffset', parseInt(e.target.value))}
                                         />

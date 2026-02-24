@@ -40,9 +40,9 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     scale = 1,
     scaleY = 1
 }) => {
-    // Determine Position
+    // Determine Position (Fix Phase 2: Support legacy 'top-center')
     const position = config?.position || 'bottom';
-    const isTop = position === 'top';
+    const isTop = position === 'top' || position === 'top-center';
 
     // Helper to safely scale numeric values
     const safeScale = (val: string | number | undefined, scaleFactor: number): string | undefined => {
@@ -99,7 +99,12 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         // Ensure controls exists with BottomSheet defaults
         modifiedConfig.controls = {
             ...(modifiedConfig.controls || {}),
-            closeButton: { show: modifiedConfig.showCloseButton ?? false, position: 'top-right', size: 14 },
+            // AND map legacy root 'showCloseButton' to internal control logic (Match Dart)
+            closeButton: {
+                show: modifiedConfig.controls?.closeButton?.show ?? modifiedConfig.showCloseButton ?? false,
+                position: 'top-right',
+                size: 14
+            },
             expandButton: { show: false },
             muteButton: { show: false },
             progressBar: { show: false },
@@ -149,6 +154,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         flexDirection: 'column',
         justifyContent: isTop ? 'flex-start' : 'flex-end', // Top vs Bottom alignment
         pointerEvents: 'none',
+        // Fix (Phase 2): Moved safe area padding to INNER container to avoid transparent gaps
     };
 
     // Shadow Logic
@@ -172,7 +178,9 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                         zIndex: 0
                     }}
                     onClick={() => {
-                        if (config.overlay.dismissOnClick && onDismiss) onDismiss();
+                        // Fix (Phase 2 Parity): In Dart, dismissOnClick defaults to true if omitted.
+                        const shouldDismiss = config.overlay.dismissOnClick ?? true;
+                        if (shouldDismiss && onDismiss) onDismiss();
                     }}
                 />
             )}
@@ -204,14 +212,16 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 borderRight: borderWidth > 0 ? `${borderWidth * scale}px ${borderStyle} ${borderColor}` : undefined,
 
                 boxShadow: boxShadow,
-                overflow: 'hidden',
+                // Fix: Respect user config for overflow instead of hardcoded 'hidden'
+                overflow: config?.overflow === 'scroll' ? 'auto' : 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
 
-                // Padding for Drag Handle
-                paddingTop: (!isTop && config?.dragHandle) ? `${12 * scale}px` : '0px',
-                paddingBottom: (isTop && config?.dragHandle) ? `${12 * scale}px` : '0px',
+                // Fix (Phase 2 Parity): Top Banner has Safe Area TOP and Drag Handle BOTTOM.
+                // Bottom Sheet has Drag Handle TOP and Safe Area BOTTOM. They never overlap sides.
+                paddingTop: isTop ? 'env(safe-area-inset-top)' : (config?.dragHandle ? `${12 * scale}px` : '0px'),
+                paddingBottom: !isTop ? 'env(safe-area-inset-bottom)' : (config?.dragHandle ? `${12 * scale}px` : '0px'),
             }}>
 
 

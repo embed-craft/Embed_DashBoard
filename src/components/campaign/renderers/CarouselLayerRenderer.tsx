@@ -160,7 +160,10 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
         const autoPlay = config.autoPlay ?? true;
         const intervalTime = config.interval || 3000;
 
-        if (!autoPlay || count <= 1 || isInteractive) return;
+        // Parity Fix: `isInteractive` means LIVE preview. 
+        // We want to Autoplay during LIVE (`isInteractive === true`).
+        // We want to pause during EDITOR (`isInteractive === false`).
+        if (!autoPlay || count <= 1 || !isInteractive) return;
         if ((config.pauseOnHover && isHovered) || isVideoPlaying) return;
 
         const timer = setInterval(() => {
@@ -537,7 +540,8 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
                             transformOrigin: 'left',
                             willChange: 'transform',
                             animation: `carousel-progress ${interval}ms linear forwards`,
-                            animationPlayState: (pauseOnHover && isHovered && !isInteractive) ? 'paused' : 'running'
+                            // Parity Fix: pauseOnHover should work in Live Mode (`isInteractive === true`)
+                            animationPlayState: (pauseOnHover && isHovered && isInteractive) ? 'paused' : 'running'
                         }}
                     />
                     <style>{`

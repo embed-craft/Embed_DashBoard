@@ -13,9 +13,13 @@ import {
   Copy,
   Calendar,
   Clock,
-  Plus
+  Plus,
+  Lock,
+  ChevronRight,
+  Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useEditorStore } from '@/store/useEditorStore';
 import { TargetingStep } from '@/components/campaign/targeting/TargetingStep';
@@ -108,11 +112,72 @@ const CampaignBuilder: React.FC = () => {
       else {
         if (!currentCampaign || currentCampaign.nudgeType !== nudgeType) {
           createCampaign(experienceType as any, nudgeType as any);
-          setActiveStep('design');
+          setActiveStep('targeting');
         }
       }
     }
   }, [searchParams, createCampaign, resetCurrentCampaign, currentCampaign?.nudgeType]);
+
+  // Validation Logic
+  const validateStep = (stepId: Step): boolean => {
+    if (!currentCampaign) return false;
+
+    if (stepId === 'targeting') {
+      const { targeting } = currentCampaign;
+      if (!targeting) return true; // Empty is valid (all users, app open)
+
+      // Check audience filters (user_properties)
+      const userProps = targeting.filter(t => t.type === 'user_property');
+      const hasInvalidUserProps = userProps.some(t =>
+        !t.property || (t.operator !== 'set' && t.operator !== 'not_set' && (t.value === undefined || t.value === ''))
+      );
+      if (hasInvalidUserProps) return false;
+
+      // Check events
+      const eventTriggers = targeting.filter(t => t.type === 'event');
+      const hasInvalidEvents = eventTriggers.some(t => !t.event);
+      if (hasInvalidEvents) return false;
+
+      // Check event property filters within triggers
+      const hasInvalidEventProps = eventTriggers.some(t =>
+        t.properties?.some(p => !p.field || (p.operator !== 'set' && p.operator !== 'not_set' && (p.value === undefined || p.value === '')))
+      );
+      if (hasInvalidEventProps) return false;
+
+      return true;
+    }
+
+    if (stepId === 'goals') {
+      // Must have a goal event selected and rollout > 0
+      if (!currentCampaign.goal?.event) return false;
+      if (currentCampaign.goal.rolloutPercentage === undefined || currentCampaign.goal.rolloutPercentage <= 0) return false;
+      return true;
+    }
+
+    if (stepId === 'design') {
+      // Must have at least one layer to launch (excluding containers if empty?)
+      // A valid campaign must have more than just a root container if it's not custom HTML
+      if (!currentCampaign.layers || currentCampaign.layers.length === 0) return false;
+
+      // If it's just the root container with no children, it's considered empty
+      const hasMeaningfulContent = currentCampaign.layers.length > 1 ||
+        (currentCampaign.layers.length === 1 && currentCampaign.layers[0].type === 'custom_html');
+
+      return hasMeaningfulContent;
+    }
+
+    return false;
+  };
+
+  const isTargetingValid = validateStep('targeting');
+  const isGoalsValid = validateStep('goals');
+  const isDesignValid = validateStep('design');
+  const canLaunch = isTargetingValid && isGoalsValid && isDesignValid;
+
+  // Handle Step Navigation (Skippable Unlocking)
+  const handleStepClick = (stepId: Step) => {
+    setActiveStep(stepId);
+  };
 
   const handleSave = async () => {
     if (!currentCampaign) return;
@@ -127,10 +192,30 @@ const CampaignBuilder: React.FC = () => {
 
   const handleLaunch = async () => {
     if (!currentCampaign) return;
+
+    // Final Validation Check before Launch
+    if (!isTargetingValid) {
+      toast.error('Cannot launch: Targeting rules are incomplete.');
+      setActiveStep('targeting');
+      return;
+    }
+    if (!isGoalsValid) {
+      toast.error('Cannot launch: Please set a Goal event and Rollout %.');
+      setActiveStep('goals');
+      return;
+    }
+    if (!isDesignValid) {
+      toast.error('Cannot launch: Design cannot be empty.');
+      setActiveStep('design');
+      return;
+    }
+
     try {
       updateStatus('active');
       await saveCampaign();
-      toast.success('Campaign launched successfully!');
+      toast.success('Campaign launched successfully!', {
+        description: 'Your campaign is now live based on your schedule and targeting rules.'
+      });
       setTimeout(() => navigate('/campaigns'), 1500);
     } catch (error) {
       toast.error('Failed to launch campaign');
@@ -173,27 +258,86 @@ const CampaignBuilder: React.FC = () => {
             <span className="font-semibold">Campaign Builder</span>
           </div>
 
-          <div className="flex-1 py-4">
-            <nav className="space-y-1 px-2">
-              {steps.map((step) => {
-                const Icon = step.icon;
-                const isActive = activeStep === step.id;
-                return (
-                  <button
-                    key={step.id}
-                    onClick={() => setActiveStep(step.id as Step)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted'
-                      }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {step.label}
-                    {isActive && <div className="ml-auto w-1 h-4 bg-primary rounded-full" />}
-                  </button>
-                );
-              })}
-            </nav>
+          <div className="flex-1 py-6 px-3">
+            <div className="relative">
+              {/* Vertical Connector Line for Stepper */}
+              <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gray-100 rounded-full" />
+
+              <nav className="space-y-6 relative z-10">
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+                  const isActive = activeStep === step.id;
+
+                  // Determine Step State
+                  let isCompleted = false;
+                  // All steps are unlocked
+                  const isLocked = false;
+
+                  if (step.id === 'targeting') {
+                    isCompleted = isTargetingValid;
+                  } else if (step.id === 'goals') {
+                    isCompleted = isTargetingValid && isGoalsValid;
+                  } else if (step.id === 'design') {
+                    isCompleted = isTargetingValid && isGoalsValid && isDesignValid;
+                  }
+
+                  // Currently active or completed steps have primary colored icons
+                  const iconBgColor = isActive ? 'bg-primary text-white shadow-md shadow-primary/20 scale-110' :
+                    isCompleted ? 'bg-primary text-white' :
+                      isLocked ? 'bg-gray-100 text-gray-400 border border-gray-200' :
+                        'bg-white text-gray-400 border border-gray-200 shadow-sm';
+
+                  return (
+                    <div key={step.id} className="relative group">
+                      <button
+                        onClick={() => handleStepClick(step.id as Step)}
+                        disabled={isLocked}
+                        className={`w-full flex items-center gap-4 text-left p-2 rounded-xl transition-all duration-300 ${isActive
+                          ? 'bg-primary/5 ring-1 ring-primary/20'
+                          : isLocked
+                            ? 'opacity-60 cursor-not-allowed'
+                            : 'hover:bg-gray-50'
+                          }`}
+                      >
+                        {/* Status Icon Wrapper */}
+                        <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 z-10 shrink-0 ${iconBgColor}`}>
+                          {isLocked ? (
+                            <Lock className="w-4 h-4" />
+                          ) : isCompleted && !isActive ? (
+                            <CheckCircle2 className="w-4 h-4" />
+                          ) : (
+                            <Icon className="w-4 h-4" />
+                          )}
+
+                          {/* Active pulse effect */}
+                          {isActive && (
+                            <div className="absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-20" />
+                          )}
+                        </div>
+
+                        {/* Label & Description */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate transition-colors ${isActive ? 'text-primary' : isLocked ? 'text-gray-400' : 'text-gray-700 group-hover:text-gray-900'
+                            }`}>
+                            {step.label}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate mt-0.5 max-w-[140px]">
+                            {step.id === 'targeting' && (isCompleted ? "Audience set" : "Define audience")}
+                            {step.id === 'goals' && (isCompleted ? "Goal configured" : "Set success metrics")}
+                            {step.id === 'design' && (isCompleted ? "Design ready" : "Create experience")}
+                          </p>
+                        </div>
+
+                        {/* Right Arrow indicating navigation */}
+                        {!isLocked && (
+                          <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${isActive ? 'text-primary translate-x-1' : 'text-gray-300 group-hover:text-gray-500'}`} />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </nav>
+            </div>
           </div>
 
           <div className="p-4 border-t text-xs text-muted-foreground">
@@ -426,15 +570,40 @@ const CampaignBuilder: React.FC = () => {
                 {isSaving ? 'Saving...' : 'Save Draft'}
               </Button>
 
-              <Button
-                size="sm"
-                onClick={handleLaunch}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                disabled={isSaving}
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Launch
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-block cursor-not-allowed">
+                      <Button
+                        size="sm"
+                        onClick={handleLaunch}
+                        className={`shadow-sm transition-all duration-300 relative overflow-hidden ${canLaunch
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-indigo-500/25 hover:shadow-lg'
+                          : 'bg-gray-100 text-gray-400 border-gray-200 pointer-events-none'
+                          }`}
+                        disabled={isSaving || !canLaunch}
+                      >
+                        {/* Shimmer effect for enabled button */}
+                        {canLaunch && (
+                          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                        )}
+                        <Rocket className={`w-4 h-4 mr-2 ${canLaunch ? 'animate-bounce-subtle' : ''}`} />
+                        Launch
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {!canLaunch && (
+                    <TooltipContent side="bottom" align="end" className="text-sm">
+                      <p className="font-semibold mb-1">Cannot launch yet:</p>
+                      <ul className="list-disc pl-4 space-y-0.5 text-xs text-muted-foreground">
+                        {!isTargetingValid && <li>Complete Targeting step</li>}
+                        {!isGoalsValid && <li>Set a Goal Event and Rollout</li>}
+                        {!isDesignValid && <li>Create a Design</li>}
+                      </ul>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </header>
 

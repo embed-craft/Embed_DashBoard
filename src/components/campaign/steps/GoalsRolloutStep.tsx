@@ -6,7 +6,11 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 
 export const GoalsRolloutStep: React.FC = () => {
-    const { currentCampaign, updateGoal } = useEditorStore();
+    const { currentCampaign, updateGoal, availableEvents, fetchMetadata } = useEditorStore();
+
+    React.useEffect(() => {
+        fetchMetadata();
+    }, [fetchMetadata]);
 
     if (!currentCampaign) return null;
 
@@ -28,18 +32,18 @@ export const GoalsRolloutStep: React.FC = () => {
                         <p className="text-sm text-muted-foreground">Select goal events for your experience.</p>
 
                         <Select
-                            value={goal?.event || ''}
+                            value={goal?.event || undefined}
                             onValueChange={(val) => updateGoal({ event: val })}
                         >
                             <SelectTrigger className="w-full max-w-md">
                                 <SelectValue placeholder="Select event..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="conversion">Conversion</SelectItem>
-                                <SelectItem value="signup">Sign Up</SelectItem>
-                                <SelectItem value="purchase">Purchase</SelectItem>
-                                <SelectItem value="share">Share</SelectItem>
-                                <SelectItem value="custom">Custom Event</SelectItem>
+                                {availableEvents?.map((event) => (
+                                    <SelectItem key={event._id} value={event.name}>
+                                        {event.displayName || event.name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -53,7 +57,7 @@ export const GoalsRolloutStep: React.FC = () => {
 
                         <div className="flex items-center gap-4 pt-4">
                             <Slider
-                                value={[goal?.rolloutPercentage || 100]}
+                                value={[goal?.rolloutPercentage ?? 100]}
                                 max={100}
                                 step={1}
                                 onValueChange={(vals) => updateGoal({ rolloutPercentage: vals[0] })}
@@ -62,7 +66,7 @@ export const GoalsRolloutStep: React.FC = () => {
                             <div className="flex items-center gap-2 w-20">
                                 <Input
                                     type="number"
-                                    value={goal?.rolloutPercentage || 100}
+                                    value={goal?.rolloutPercentage ?? 100}
                                     onChange={(e) => updateGoal({ rolloutPercentage: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
                                     className="h-9 text-right"
                                 />

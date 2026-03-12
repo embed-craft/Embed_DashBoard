@@ -17,8 +17,6 @@ export const TargetingStep: React.FC = () => {
         fetchMetadata();
     }, []);
 
-    if (!currentCampaign) return null;
-
     // Extract trigger event from targeting rules
     const eventRules = (currentCampaign?.targeting || []).filter(r => r.type === 'event');
     const firstEventName = eventRules.length > 0 ? eventRules[0].event : null;
@@ -43,9 +41,11 @@ export const TargetingStep: React.FC = () => {
         checkConflicts();
     }, [firstEventName, currentCampaign?._id]);
 
+    if (!currentCampaign) return null;
+
     return (
         <div className="h-full flex flex-col overflow-y-auto bg-gray-50/50">
-            <div className="max-w-4xl mx-auto w-full p-8 space-y-8">
+            <div className="max-w-6xl mx-auto w-full p-8 space-y-8">
 
                 {/* Section 1: Platform */}
                 <section className="bg-white rounded-xl border p-6 shadow-sm">

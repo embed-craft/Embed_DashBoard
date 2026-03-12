@@ -60,7 +60,7 @@ export const DisplayRules: React.FC = () => {
 
             {/* Interaction Limits */}
             <div className="space-y-4">
-                <Label className="text-base font-semibold">Total Interaction Limit</Label>
+                <Label className="text-base font-semibold">Total Interaction Limit <span className="text-red-500">*</span></Label>
                 <p className="text-sm text-muted-foreground">How many times can each user interact with this campaign?</p>
 
                 <RadioGroup

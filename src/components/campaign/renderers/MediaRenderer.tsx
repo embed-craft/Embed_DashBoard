@@ -6,9 +6,11 @@ interface MediaRendererProps {
     layer: Layer;
     scale?: number;
     scaleY?: number;
+    muted?: boolean;
+    isActive?: boolean;
 }
 
-export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, scaleY = 1 }) => {
+export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, scaleY = 1, muted = true, isActive = false }) => {
     // SDK Parity: Safe Scale Helper
     const safeScale = (val: any, factor: number) => {
         if (val == null) return undefined;
@@ -73,7 +75,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
                 <iframe
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0`}
+                    src={`https://www.youtube.com/embed/${youtubeId}?autoplay=${isActive ? 1 : 0}&mute=${muted ? 1 : 0}&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0&enablejsapi=1`}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -91,9 +93,10 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
     if (isVideo) {
         return (
             <video
+                key={isActive ? 'playing' : 'paused'}
                 src={layer.content?.imageUrl}
-                autoPlay
-                muted
+                autoPlay={isActive}
+                muted={muted}
                 loop
                 playsInline
                 controls={false}

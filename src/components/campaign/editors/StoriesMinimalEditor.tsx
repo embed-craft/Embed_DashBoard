@@ -12,7 +12,6 @@ import {
     MousePointer2,
     Sparkles,
     X,
-    VolumeX,
     Pause,
     BarChart3,
     ArrowLeft,
@@ -334,58 +333,6 @@ export const StoriesMinimalEditor = () => {
                             )}
                         </div>
 
-                        {/* ─── Mute Button ─── */}
-                        <div className="border rounded-lg p-3 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-medium flex items-center gap-2">
-                                    <VolumeX className="w-3.5 h-3.5" /> Mute Button
-                                </Label>
-                                <Switch checked={muteBtn.show ?? true} onCheckedChange={c => updateControl('muteButton', 'show', c)} />
-                            </div>
-                            {muteBtn.show && (
-                                <>
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
-                                        <Select value={muteBtn.position || 'top-right'} onValueChange={(val) => updateControl('muteButton', 'position', val)}>
-                                            <SelectTrigger className="h-7 text-[10px]"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="top-right">Top Right</SelectItem>
-                                                <SelectItem value="top-left">Top Left</SelectItem>
-                                                <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                                                <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Input type="number" placeholder="Size" className="h-7 text-xs" value={muteBtn.size || 20} onChange={e => updateControl('muteButton', 'size', parseInt(e.target.value))} />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-[10px] text-gray-400 w-4">X</Label>
-                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={muteBtn.offsetX || 0} onChange={e => updateControl('muteButton', 'offsetX', parseInt(e.target.value))} />
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-[10px] text-gray-400 w-4">Y</Label>
-                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={muteBtn.offsetY || 0} onChange={e => updateControl('muteButton', 'offsetY', parseInt(e.target.value))} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
-                                        <Label className="text-[10px] text-gray-500 block">Colors (Icon / Bg)</Label>
-                                        <div className="flex gap-2">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <Label className="text-[9px] text-gray-400">Icon</Label>
-                                                <input type="color" className="w-8 h-6 rounded cursor-pointer border border-gray-200" value={muteBtn.color || '#FFFFFF'} onChange={e => updateControl('muteButton', 'color', e.target.value)} />
-                                            </div>
-                                            <div className="flex flex-col items-center gap-1 relative">
-                                                <Label className="text-[9px] text-gray-400">Bg</Label>
-                                                <input type="color" className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${muteBtn.backgroundColor === '#00000000' ? 'opacity-30' : ''}`} value={muteBtn.backgroundColor === '#00000000' ? '#000000' : (muteBtn.backgroundColor || '#00000080')} onChange={e => updateControl('muteButton', 'backgroundColor', e.target.value)} />
-                                            </div>
-                                            <div className="flex flex-col items-center gap-1 ml-1">
-                                                <Label className="text-[9px] text-gray-400">Transp.</Label>
-                                                <Switch className="scale-75" checked={muteBtn.backgroundColor === '#00000000'} onCheckedChange={(checked) => updateControl('muteButton', 'backgroundColor', checked ? '#00000000' : '#00000080')} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
 
                         {/* ─── Pause Button ─── */}
                         <div className="border rounded-lg p-3 space-y-3">

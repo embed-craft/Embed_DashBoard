@@ -1131,6 +1131,7 @@ interface EditorStore {
   deleteStory: (id: string) => void;
   updateStoryField: (id: string, field: keyof Pick<StoryItem, 'title' | 'subtitle'>, value: string) => void;
   duplicateStory: (id: string) => void;
+  reorderStories: (startIndex: number, endIndex: number) => void;
 }
 
 // Debounced history tracker to prevent race conditions
@@ -4271,6 +4272,24 @@ export const useEditorStore = create<EditorStore>()(
         });
 
         toast.success('Story duplicated');
+      },
+
+      reorderStories: (startIndex, endIndex) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign || !currentCampaign.stories) return;
+
+        const result = Array.from(currentCampaign.stories);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            stories: result,
+            isDirty: true,
+            updatedAt: new Date().toISOString(),
+          },
+        });
       },
     }),
     {

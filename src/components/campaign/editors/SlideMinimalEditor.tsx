@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -218,6 +219,133 @@ export const SlideMinimalEditor = () => {
                                     </p>
                                 )}
                             </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] text-gray-500">Mute Button</Label>
+                                <Switch 
+                                    checked={content.controls?.muteButton?.show ?? true} 
+                                    onCheckedChange={c => {
+                                        const ctrls = content.controls || {};
+                                        const mute = ctrls.muteButton || {};
+                                        updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, show: c } });
+                                    }}
+                                />
+                            </div>
+                            {content.controls?.muteButton?.show !== false && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Position</Label>
+                                            <Select 
+                                                value={content.controls?.muteButton?.position || 'top-right'} 
+                                                onValueChange={val => {
+                                                    const ctrls = content.controls || {};
+                                                    const mute = ctrls.muteButton || {};
+                                                    updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, position: val } });
+                                                }}
+                                            >
+                                                <SelectTrigger className="h-7 text-[10px]"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="top-right">Top Right</SelectItem>
+                                                    <SelectItem value="top-left">Top Left</SelectItem>
+                                                    <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                                    <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-gray-500">Icon Size</Label>
+                                            <Input 
+                                                type="number" 
+                                                className="h-7 text-xs" 
+                                                value={content.controls?.muteButton?.size || 18} 
+                                                onChange={e => {
+                                                    const ctrls = content.controls || {};
+                                                    const mute = ctrls.muteButton || {};
+                                                    updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, size: parseInt(e.target.value) || 18 } });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-[10px] text-gray-400 w-4">X</Label>
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0" 
+                                                className="h-7 text-xs" 
+                                                value={content.controls?.muteButton?.offsetX || 0} 
+                                                onChange={e => {
+                                                    const ctrls = content.controls || {};
+                                                    const mute = ctrls.muteButton || {};
+                                                    updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, offsetX: parseInt(e.target.value) || 0 } });
+                                                }} 
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-[10px] text-gray-400 w-4">Y</Label>
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0" 
+                                                className="h-7 text-xs" 
+                                                value={content.controls?.muteButton?.offsetY || 0} 
+                                                onChange={e => {
+                                                    const ctrls = content.controls || {};
+                                                    const mute = ctrls.muteButton || {};
+                                                    updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, offsetY: parseInt(e.target.value) || 0 } });
+                                                }} 
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
+                                        <Label className="text-[10px] text-gray-500 block">Colors (Icon / Bg)</Label>
+                                        <div className="flex gap-2">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Label className="text-[9px] text-gray-400">Icon</Label>
+                                                <input 
+                                                    type="color" 
+                                                    className="w-8 h-6 rounded cursor-pointer border border-gray-200" 
+                                                    value={content.controls?.muteButton?.color || '#FFFFFF'} 
+                                                    onChange={e => {
+                                                        const ctrls = content.controls || {};
+                                                        const mute = ctrls.muteButton || {};
+                                                        updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, color: e.target.value } });
+                                                    }} 
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Label className="text-[9px] text-gray-400">Bg</Label>
+                                                <input 
+                                                    type="color" 
+                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${content.controls?.muteButton?.backgroundColor === '#00000000' ? 'opacity-30' : ''}`} 
+                                                    value={content.controls?.muteButton?.backgroundColor === '#00000000' ? '#000000' : (content.controls?.muteButton?.backgroundColor || '#00000080')} 
+                                                    onChange={e => {
+                                                        const ctrls = content.controls || {};
+                                                        const mute = ctrls.muteButton || {};
+                                                        updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, backgroundColor: e.target.value } });
+                                                    }} 
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1 ml-1">
+                                                <Label className="text-[9px] text-gray-400">Transp.</Label>
+                                                <Switch 
+                                                    className="scale-75" 
+                                                    checked={content.controls?.muteButton?.backgroundColor === '#00000000'} 
+                                                    onCheckedChange={(checked) => {
+                                                        const ctrls = content.controls || {};
+                                                        const mute = ctrls.muteButton || {};
+                                                        updateSlideContent('controls', { ...ctrls, muteButton: { ...mute, backgroundColor: checked ? '#00000000' : '#00000080' } });
+                                                    }} 
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 

@@ -80,6 +80,12 @@ const IconPause = ({ size, color }: { size: number; color: string }) => (
         <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
     </svg>
 );
+const IconVolume2 = ({ size, color }: { size: number; color: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+    </svg>
+);
 
 const resolvePositionValue = (pos: string, offsetX: number, offsetY: number, scale: number): React.CSSProperties => {
     const off = (v: number) => `${v * scale}px`;
@@ -128,26 +134,31 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
     onInterfaceAction,
 }) => {
     const { goToNextStory, goToPrevStory, selectLayer, setActiveStory, currentCampaign } = useEditorStore();
+    const [isMuted, setIsMuted] = useState(true);
+    const [isReady, setIsReady] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const lastActiveSlideId = useRef<string | null>(null);
     
     // Swipe detection state (Touch & Mouse)
     const touchStart = useRef<number | null>(null);
+    const touchEndClientX = useRef<number | null>(null); // Renamed to avoid shadowing
     const mouseStart = useRef<number | null>(null);
     const lastSwipeTime = useRef<number>(0);
-    const minSwipeDistance = 50;
+    const minSwipeDistance = 30;
 
     const onTouchStart = (e: React.TouchEvent) => {
-        touchEnd.current = null;
+        touchEndClientX.current = null; // Renamed
         touchStart.current = e.targetTouches[0].clientX;
     };
 
     const onTouchMove = (e: React.TouchEvent) => {
-        touchEnd.current = e.targetTouches[0].clientX;
+        touchEndClientX.current = e.targetTouches[0].clientX; // Renamed
     };
 
     const onTouchEnd = (e: React.TouchEvent) => {
-        const touchEnd = e.changedTouches[0].clientX;
+        const touchEndX = e.changedTouches[0].clientX;
         if (touchStart.current === null) return;
-        const distance = touchStart.current - touchEnd;
+        const distance = touchStart.current - touchEndX;
         
         if (isInteractive && Math.abs(distance) > minSwipeDistance) {
             lastSwipeTime.current = Date.now();
@@ -188,14 +199,18 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
         const isRightHalf = x > rect.width / 2;
 
         if (isRightHalf) {
-            // Next Slide ONLY
+            // Next Slide or Next Story
             if (activeSlideIndex < slides.length - 1) {
                 selectLayer(slides[activeSlideIndex + 1].id);
+            } else {
+                goToNextStory();
             }
         } else {
-            // Prev Slide ONLY
+            // Prev Slide or Prev Story
             if (activeSlideIndex > 0) {
                 selectLayer(slides[activeSlideIndex - 1].id);
+            } else {
+                goToPrevStory();
             }
         }
     };
@@ -243,9 +258,43 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
     const bgUrl = activeSlide?.content?.url || '';
     const objectFit = activeSlide?.content?.objectFit || 'cover';
 
-    // --- AUTO ADVANCE ---
+    const activeSlideIsVideo = useMemo(() => {
+        if (!activeSlide) return false;
+        const url = activeSlide?.content?.url || '';
+        const ytid = getYouTubeId(url);
+        const isDirectVideo = url.toLowerCase().match(/\.(mp4|webm|ogg)$/);
+        
+        const hasVideoLayer = layers.some(l => 
+            l.parent === activeSlide.id && 
+            (l.type === 'video' || (l.type === 'media' && (l.content?.imageUrl?.toLowerCase().match(/\.(mp4|webm|ogg)$/) || getYouTubeId(l.content?.imageUrl || ''))))
+        );
+
+        return !!(ytid || isDirectVideo || hasVideoLayer);
+    }, [activeSlide, layers]);
+
+    // --- PLAYBACK CONTROL & TIMING ---
     useEffect(() => {
-        if (!isInteractive || !activeSlide) return;
+        if (!activeSlide) return;
+        
+        // Restart video if slide changed
+        if (lastActiveSlideId.current !== activeSlide.id) {
+            setIsReady(false);
+            if (videoRef.current) {
+                videoRef.current.currentTime = 0;
+                videoRef.current.play().catch(() => {});
+            }
+            lastActiveSlideId.current = activeSlide.id;
+
+            // If it's an image, mark ready immediately
+            const url = activeSlide.content?.url || '';
+            const isVid = url.toLowerCase().match(/\.(mp4|webm|ogg)$/);
+            const ytid = getYouTubeId(url);
+            if (!isVid && !ytid) setIsReady(true);
+        }
+    }, [activeSlide?.id]);
+
+    useEffect(() => {
+        if (!isInteractive || !activeSlide || !isReady) return;
         
         const mode = activeSlide.content?.autoAdvanceMode || 'fixed';
         const duration = activeSlide.content?.duration || 5;
@@ -257,12 +306,13 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             const timer = setTimeout(() => {
                 if (activeSlideIndex < slides.length - 1) {
                     selectLayer(slides[activeSlideIndex + 1].id);
+                } else {
+                    goToNextStory();
                 }
-                // Story navigation is SWIPE only - no auto-advance jump to next story
             }, duration * 1000);
             return () => clearTimeout(timer);
         }
-    }, [isInteractive, activeSlide?.id, activeSlideIndex, slides.length, activeSlide?.content?.duration, activeSlide?.content?.autoAdvanceMode, bgUrl, selectLayer, goToNextStory]);
+    }, [isInteractive, isReady, activeSlide?.id, activeSlideIndex, slides.length, activeSlide?.content?.duration, activeSlide?.content?.autoAdvanceMode, bgUrl, selectLayer, goToNextStory]);
 
     // Handle Video Completion
     const handleVideoEnded = () => {
@@ -271,11 +321,13 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
 
         if (activeSlideIndex < slides.length - 1) {
             selectLayer(slides[activeSlideIndex + 1].id);
+        } else {
+            goToNextStory();
         }
-        // Manual swipe required for story transition
     };
 
-    const renderLayer = (layer: Layer): React.ReactNode => {
+    // --- RENDERER HELPERS ---
+    const renderLayer = (layer: Layer, slideIsActive: boolean = false): React.ReactNode => {
         if (!layer.visible) return null;
         const isSelected = selectedLayerId === layer.id;
         const isAbsolute = layer.style?.position === 'absolute' || layer.style?.position === 'fixed';
@@ -336,7 +388,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             case 'text': content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'copy_button': content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'media':
-            case 'image': content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
+            case 'image': content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} muted={isMuted} isActive={slideIsActive} />; break;
             case 'button': content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'input': content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={onInterfaceAction} />; break;
             case 'scratch_foil': content = <ScratchFoilLayerRenderer layer={layer} scale={scale} isInteractive={isInteractive} />; break;
@@ -486,9 +538,11 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
                                             <iframe
                                                 width="100%"
                                                 height="100%"
-                                                src={`https://www.youtube.com/embed/${ytid}?autoplay=${isActive ? 1 : 0}&mute=1&loop=1&playlist=${ytid}&controls=0&modestbranding=1&rel=0`}
+                                                src={`https://www.youtube.com/embed/${ytid}?autoplay=${isActive ? 1 : 0}&mute=${isMuted ? 1 : 0}&loop=1&playlist=${ytid}&controls=0&modestbranding=1&rel=0&enablejsapi=1&origin=${window.location.origin}`}
                                                 frameBorder="0"
                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                                onLoad={() => isActive && setIsReady(true)}
                                                 style={{ width: '100%', height: '100%', objectFit: slideObjectFit as any }}
                                             />
                                         </div>
@@ -498,11 +552,13 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
                                     return (
                                         <video
                                             key={slideBgUrl}
+                                            ref={isActive ? videoRef : null}
                                             src={slideBgUrl}
                                             autoPlay={isActive}
-                                            muted
+                                            muted={isMuted}
                                             loop={slide.content?.autoAdvanceMode !== 'video_completion'}
                                             playsInline
+                                            onPlaying={() => isActive && setIsReady(true)}
                                             onEnded={handleVideoEnded}
                                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: slideObjectFit as any, pointerEvents: 'none', zIndex: 0 }}
                                         />
@@ -520,7 +576,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
                             {/* Content */}
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
                                 {layers.filter(l => l.parent === slide.id).map(l => (
-                                    <div key={l.id} style={{ pointerEvents: 'auto' }}>{renderLayer(l)}</div>
+                                    <div key={l.id} style={{ pointerEvents: 'auto' }}>{renderLayer(l, isActive)}</div>
                                 ))}
                             </div>
                         </div>
@@ -558,7 +614,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
                                         height: '100%',
                                         backgroundColor: progressBar.activeColor || '#fff',
                                         width: isPast ? '100%' : isActive ? '0%' : '0%',
-                                        animation: (isActive && isInteractive && duration > 0) 
+                                        animation: (isActive && isInteractive && duration > 0 && isReady && activeSlide?.content?.autoAdvanceMode !== 'manual') 
                                             ? `fillProgressBar ${duration}s linear forwards` 
                                             : 'none',
                                         willChange: 'width',
@@ -571,7 +627,22 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             )}
 
             <ControlButton cfg={backBtn} scale={scale} scaleY={scaleY}><IconArrowLeft size={(backBtn.size || 20) * scale} color={backBtn.color || '#fff'} /></ControlButton>
-            <ControlButton cfg={muteBtn} scale={scale} scaleY={scaleY}><IconVolumeX size={(muteBtn.size || 18) * scale} color={muteBtn.color || '#fff'} /></ControlButton>
+            
+            {(() => {
+                const muteCfg = activeSlide?.content?.controls?.muteButton || {};
+                const showMute = activeSlideIsVideo && (muteCfg.show ?? true);
+                if (!showMute) return null;
+
+                const finalMuteCfg = { ...muteBtn, ...muteCfg, show: true };
+                return (
+                    <div onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}>
+                        <ControlButton cfg={finalMuteCfg} scale={scale} scaleY={scaleY}>
+                            {isMuted ? <IconVolumeX size={(finalMuteCfg.size || 18) * scale} color={finalMuteCfg.color || '#fff'} /> : <IconVolume2 size={(finalMuteCfg.size || 18) * scale} color={finalMuteCfg.color || '#fff'} />}
+                        </ControlButton>
+                    </div>
+                );
+            })()}
+
             <ControlButton cfg={closeBtn} scale={scale} scaleY={scaleY}><IconX size={(closeBtn.size || 20) * scale} color={closeBtn.color || '#fff'} /></ControlButton>
             <ControlButton cfg={pauseBtn} scale={scale} scaleY={scaleY}><IconPause size={(pauseBtn.size || 18) * scale} color={'#fff'} /></ControlButton>
 

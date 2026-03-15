@@ -27,13 +27,13 @@ export interface BackendCampaign {
         timezone?: string;
     };
     targeting?: any[]; // ✅ FIX: Add targeting
-    display_rules?: {  // ✅ FIX: Add Top-Level display_rules
+    display_rules?: Record<string, any> & {  // ✅ FIX: Allow full object while keeping legacy fields
         frequency_cap: number | null;
         session_cap: number | null;
-        cooldown: number;
-        ignore_global_rules: boolean;
     };
     interfaces?: Record<string, any>[]; // ✅ FIX: Add interfaces
+    stories?: any[]; // ✅ FIX: Add stories
+    goal?: Record<string, any>; // ✅ FIX: Add goal
 }
 
 
@@ -214,13 +214,17 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
             end_date: campaign.schedule.endDate,
             timezone: campaign.schedule.timeZone
         } : undefined, // ✅ FIX: Map to snake_case for backend
-        // ✅ FIX: Map Display Rules to Backend Schema
+        // ✅ FIX: Map Display Rules to Backend Schema (Preserve full object)
         display_rules: {
+            ...campaign.displayRules,
+            // Map legacy fields for backend compatibility
             frequency_cap: campaign.displayRules.interactionLimit.type === 'limited' ? (campaign.displayRules.interactionLimit.value || 1) : null,
             session_cap: campaign.displayRules.sessionLimit.enabled ? (campaign.displayRules.sessionLimit.value || 1) : null,
-            cooldown: campaign.displayRules.frequency.type === 'custom' ? (campaign.displayRules.frequency.value || 0) : 0, // Fallback logic
-            ignore_global_rules: campaign.displayRules.overrideGlobal
+            cooldown: campaign.displayRules.frequency.type === 'custom' ? (campaign.displayRules.frequency.value || 0) : 0,
+            ignore_global_rules: campaign.displayRules.overrideGlobal || false,
         },
+        stories: campaign.stories || [], // ✅ FIX: Include stories
+        goal: campaign.goal || {}, // ✅ FIX: Include goal
         config,
         // ✅ FIX: For bottom sheets, exclude the root container layer 
         // The container is represented by bottomSheetConfig, not as a layer
@@ -507,7 +511,43 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             height: backendCampaign.config?.height,
         }) : undefined,
         // Store other configs dynamically if needed in future
-        displayRules: (backendCampaign.config && backendCampaign.config.displayRules) || getDefaultDisplayRules(),
+        // ✅ FIX: Restore Display Rules, Stories, and Goals from Backend
+        // Robust merging with defaults to prevent crashes if nested fields are missing
+        displayRules: (() => {
+            const defaults = getDefaultDisplayRules();
+            let rawBackend = backendCampaign.display_rules || backendCampaign.config?.displayRules || {};
+            
+            // Ensure fromBackend is an object
+            const fromBackend = (typeof rawBackend === 'object' && rawBackend !== null) ? rawBackend : {};
+
+            console.log('backendToEditor: Merging displayRules', { 
+                hasBackend: !!backendCampaign.display_rules,
+                backendType: typeof rawBackend,
+                frequency: fromBackend.frequency 
+            });
+
+            // Defensive merging: Only spread if the property is actually an object
+            const safeMerge = (key: string) => {
+                const backVal = fromBackend[key];
+                const defVal = (defaults as any)[key];
+                if (backVal && typeof backVal === 'object' && !Array.isArray(backVal)) {
+                    return { ...defVal, ...backVal };
+                }
+                return defVal;
+            };
+
+            const merged = {
+                ...defaults,
+                ...fromBackend,
+                frequency: safeMerge('frequency'),
+                interactionLimit: safeMerge('interactionLimit'),
+                sessionLimit: safeMerge('sessionLimit'),
+            };
+            console.log('backendToEditor: Merged displayRules frequency:', merged.frequency);
+            return merged;
+        })(),
+        stories: backendCampaign.stories || [],
+        goal: backendCampaign.goal || {},
         interfaces: (backendCampaign.interfaces || []).map((iface: any) => ({
             id: iface.id,
             name: iface.name,

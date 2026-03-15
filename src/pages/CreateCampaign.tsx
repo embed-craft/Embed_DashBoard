@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Smartphone, ArrowRight, Sparkles } from 'lucide-react';
+import { MessageSquare, Smartphone, Film, ArrowRight, Sparkles } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { theme } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,15 @@ const EXPERIENCE_TYPES = [
         color: theme.colors.purple[600],
         bgColor: theme.colors.purple[50],
         borderColor: theme.colors.purple[200],
+    },
+    {
+        id: 'stories',
+        title: 'Stories',
+        description: 'Create immersive, full-screen story experiences with slides, timelines, and rich media to captivate your users.',
+        icon: Film,
+        color: '#DB2777',
+        bgColor: '#FDF2F8',
+        borderColor: '#FBCFE8',
     },
 ];
 

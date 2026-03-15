@@ -13,6 +13,7 @@ import { validateNumericInput, validatePercentage, validateOpacity, validateDime
 import { TooltipRenderer } from '@/components/TooltipRenderer';
 import { FloaterRenderer } from '@/components/FloaterRenderer';
 import { FullScreenRenderer } from '@/components/FullScreenRenderer';
+import { SlideContainerRenderer } from '@/components/campaign/renderers/SlideContainerRenderer';
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { ShapeEditor } from '@/components/editor/style/ShapeEditor';
@@ -28,6 +29,9 @@ import { FloaterMinimalEditor } from '@/components/campaign/editors/FloaterMinim
 import { TooltipMinimalEditor } from '@/components/campaign/editors/TooltipMinimalEditor';
 import { BottomSheetMinimalEditor } from '@/components/campaign/editors/BottomSheetMinimalEditor';
 import { FullScreenMinimalEditor } from '@/components/campaign/editors/FullScreenMinimalEditor';
+import { StoriesMinimalEditor } from '@/components/campaign/editors/StoriesMinimalEditor';
+import { StoryCubeTransition } from '@/components/campaign/renderers/StoryCubeTransition';
+import { SlideMinimalEditor } from '@/components/campaign/editors/SlideMinimalEditor';
 import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
@@ -81,13 +85,14 @@ const nudgeTypes = [
   // PIP removed - Floater now handles PIP functionality
   { id: 'floater', label: 'Floater', Icon: Film, bg: '#D1FAE5', iconBg: '#A7F3D0', iconColor: '#10B981' },
   { id: 'fullscreen', label: 'Full Screen', Icon: LayoutTemplate, bg: '#E0E7FF', iconBg: '#C7D2FE', iconColor: '#6366F1' },
+  { id: 'inline_stories', label: 'Inline Stories', Icon: LayoutGrid, bg: '#FDF2F8', iconBg: '#FBCFE8', iconColor: '#DB2777', disabled: true },
 ];
 
 
 const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip'],
   'messages': ['floater', 'bottomsheet', 'fullscreen'], // Restricted as per user request
-  'stories': [],
+  'stories': ['inline_stories', 'fullscreen'],
   // Default fallbacks for others or future types
   'challenges': [],
   'streaks': [],
@@ -150,6 +155,9 @@ export const DesignStep: React.FC<any> = () => {
     addCustomCallbackId,
     fetchMetadata,
     availablePages,
+    // Stories Management
+    activeStoryId,
+    setActiveStory,
   } = useEditorStore();
 
   // Fetch metadata on mount if missing
@@ -195,14 +203,14 @@ export const DesignStep: React.FC<any> = () => {
 
   const lastAddRef = useRef(0);
 
-  const handleAddLayer = (type: string, parentId: string | null) => {
+  const handleAddLayer = (type: string, parentId: string | null, name?: string) => {
     const now = Date.now();
     if (now - lastAddRef.current < 500) return; // 500ms debounce to prevent duplicates
     lastAddRef.current = now;
 
-    addLayer(type as any, parentId);
+    addLayer(type as any, parentId, name);
     setLayerAddMenuId(null);
-    toast.success(`Added ${type} layer`);
+    toast.success(`Added ${name || type} layer`);
   };
 
   const [isInteractive, setIsInteractive] = useState(false); // Global interact mode for preview Toggle
@@ -414,8 +422,11 @@ export const DesignStep: React.FC<any> = () => {
     }
   }, [activeInterface?.id, activeInterface?.nudgeType, currentCampaign?.nudgeType]);
 
-  // Display layers: from active interface or main campaign
-  const displayLayers = activeInterface?.layers || currentCampaign?.layers || [];
+  // Display layers: from active story, active interface, or main campaign
+  const activeStory = activeStoryId
+    ? currentCampaign?.stories?.find((s: any) => s.id === activeStoryId)
+    : null;
+  const displayLayers = activeStory?.layers || activeInterface?.layers || currentCampaign?.layers || [];
   const displayNudgeType = activeInterface?.nudgeType || currentCampaign?.nudgeType || 'modal';
 
   // Derived state for selected layer (searches in active context)
@@ -837,10 +848,11 @@ export const DesignStep: React.FC<any> = () => {
     }
   }, [searchParams, editorMode, loadCampaign, setEditorMode, setShowEditor, navigate, currentCampaign]);
 
-  // Get layers from current campaign
-  // Get layers from context (Campaign OR Active Interface)
-  // Note: activeInterface is already defined above at line 246
-  const campaignLayers = activeInterface ? activeInterface.layers : (currentCampaign?.layers || []);
+  // Get layers from context: Active Story > Active Interface > Campaign root
+  const activeStoryForLayers = activeStoryId ? currentCampaign?.stories?.find(s => s.id === activeStoryId) : null;
+  const campaignLayers = activeStoryForLayers ? activeStoryForLayers.layers
+    : activeInterface ? activeInterface.layers
+      : (currentCampaign?.layers || []);
   const campaignName = activeInterface ? activeInterface.name : (currentCampaign?.name || 'New Campaign');
 
   // Debug logging for preview
@@ -1580,13 +1592,42 @@ export const DesignStep: React.FC<any> = () => {
           </ErrorBoundary>
         );
 
-      case 'fullscreen':
+      case 'fullscreen': {
         const currentDeviceConfigFs = DEVICE_PRESETS.find(d => d.id === selectedDevice);
         // Scaling logic same as Modal (Design Baseline 393x852)
         const pureDeviceScaleXFs = (currentDeviceConfigFs?.width || 393) / 393;
         const pureDeviceScaleYFs = (currentDeviceConfigFs?.height || 852) / 852;
         const scaleFactorFs = pureDeviceScaleXFs * previewZoom;
         const scaleYFactorFs = pureDeviceScaleYFs * previewZoom;
+
+        // Stories mode: Use SlideContainerRenderer
+        if (activeStoryId) {
+          return (
+            <ErrorBoundary>
+              <StoryCubeTransition activeStoryId={activeStoryId}>
+                <SlideContainerRenderer
+                  layers={campaignLayers}
+                  selectedLayerId={selectedLayerId}
+                  onLayerSelect={selectLayer}
+                  colors={colors}
+                  config={currentCampaign?.fullscreenConfig}
+                  onLayerUpdate={updateLayer}
+                  scale={scaleFactorFs}
+                  scaleY={scaleYFactorFs}
+                  isInteractive={isInteractive}
+                  onDismiss={() => {
+                    if (isInteractive) {
+                      toast.success('Dismiss action triggered');
+                      setIsPreviewDismissed(true);
+                    }
+                  }}
+                  onNavigate={handlePreviewNavigate}
+                  onInterfaceAction={handleInterfaceAction}
+                />
+              </StoryCubeTransition>
+            </ErrorBoundary>
+          );
+        }
 
         return (
           <ErrorBoundary>
@@ -1613,6 +1654,7 @@ export const DesignStep: React.FC<any> = () => {
             />
           </ErrorBoundary>
         );
+      }
 
       case 'tooltip':
         const device = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
@@ -3230,11 +3272,22 @@ export const DesignStep: React.FC<any> = () => {
       // regardless of what the layer is named.
       const isRootLayer = !selectedLayerObj.parent;
 
+      // Stories mode: distinguish root Slide Container vs individual Slide layers
+      if (activeStoryId && selectedLayerObj.type === 'container') {
+        const isRootSlideContainer = !selectedLayerObj.parent;
+        if (isRootSlideContainer) {
+          // Root "Slide Container" → global config (timing, controls, progress bar)
+          return <StoriesMinimalEditor />;
+        } else {
+          // Slide 1/2/3 → per-slide background/media editor
+          return <SlideMinimalEditor />;
+        }
+      }
+
       if (isRootLayer) {
         if (nudgeType === 'fullscreen') return <FullScreenMinimalEditor />;
         if (nudgeType === 'floater') return renderFloaterConfig();
         if (nudgeType === 'tooltip') return <TooltipMinimalEditor />;
-
         if (nudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       }
 
@@ -4383,7 +4436,6 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'container', label: 'Container', icon: Layout },
             { id: 'media', label: 'Image', icon: ImageIcon },
             { id: 'text', label: 'Text', icon: Type },
-            // ... other types
             { id: 'button', label: 'Button', icon: Square },
             { id: 'copy_button', label: 'Copy Button', icon: Copy },
             { id: 'custom_html', label: 'Custom HTML', icon: Code },
@@ -4393,36 +4445,68 @@ export const DesignStep: React.FC<any> = () => {
           ].filter(item => {
             // Find parent layer
             const parentLayer = campaignLayers.find(l => l.id === layerAddMenuId);
+            
+            // If parent is Slide Container, ONLY show container (as Slide)
+            if (parentLayer?.type === 'container' && parentLayer.name === 'Slide Container') {
+              return item.id === 'container';
+            }
+
             // If parent is carousel, ONLY show container (as Slide)
             if (parentLayer?.type === 'carousel') {
               return item.id === 'container';
             }
             return true;
-          }).map(item => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => handleAddLayer(item.id, layerAddMenuId)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: 'none',
-                background: 'transparent',
-                textAlign: 'left',
-                cursor: 'pointer',
-                fontSize: '12px',
-                color: colors.text.primary,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <item.icon size={14} color={colors.gray[500]} />
-              {item.label}
-            </button>
-          ))}
+          }).map(item => {
+            // Determine Label
+            let label = item.label;
+            const parentLayer = campaignLayers.find(l => l.id === layerAddMenuId);
+            if (item.id === 'container' && parentLayer?.type === 'container' && parentLayer.name === 'Slide Container') {
+              label = 'Slide';
+            }
+            if (item.id === 'container' && parentLayer?.type === 'carousel') {
+              label = 'Slide';
+            }
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  let customName = undefined;
+                  const parentLayer = campaignLayers.find(l => l.id === layerAddMenuId);
+                  
+                  if (item.id === 'container' && parentLayer?.type === 'container' && parentLayer.name === 'Slide Container') {
+                    // Calculate next slide index
+                    const existingSlides = campaignLayers.filter(l => l.parent === parentLayer.id);
+                    customName = `Slide ${existingSlides.length + 1}`;
+                  } else if (item.id === 'container' && parentLayer?.type === 'carousel') {
+                    const existingSlides = campaignLayers.filter(l => l.parent === parentLayer.id);
+                    customName = `Slide ${existingSlides.length + 1}`;
+                  }
+                  
+                  handleAddLayer(item.id, layerAddMenuId, customName);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  color: colors.text.primary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <item.icon size={14} color={colors.gray[500]} />
+                {label}
+              </button>
+            );
+          })}
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layer } from '@/store/useEditorStore';
+import { getYouTubeId } from '@/lib/utils';
 
 interface MediaRendererProps {
     layer: Layer;
@@ -46,6 +47,69 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
                     <line x1="3" y1="3" x2="21" y2="21" />
                 </svg>
             </div>
+        );
+    }
+
+    const imageUrl = layer.content.imageUrl;
+    const youtubeId = getYouTubeId(imageUrl);
+    const isVideo = imageUrl.toLowerCase().match(/\.(mp4|webm|ogg)$/);
+
+    if (youtubeId) {
+        return (
+            <div
+                style={{
+                    width: hasExplicitWidth ? '100%' : 'auto',
+                    height: hasExplicitHeight ? '100%' : 'auto',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    display: 'block',
+                    overflow: 'hidden',
+                    borderRadius: typeof layer.style?.borderRadius === 'object'
+                        ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
+                        : safeScale(layer.style?.borderRadius || 0, scale),
+                    opacity: layer.style?.opacity ?? 1,
+                }}
+            >
+                <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0`}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{
+                        pointerEvents: 'none', // Prevent interaction if in background or just meant for display
+                        objectFit: layer.style?.objectFit || 'cover',
+                        width: '100%',
+                        height: '100%',
+                    }}
+                />
+            </div>
+        );
+    }
+
+    if (isVideo) {
+        return (
+            <video
+                src={layer.content?.imageUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls={false}
+                style={{
+                    width: hasExplicitWidth ? '100%' : 'auto',
+                    height: hasExplicitHeight ? '100%' : 'auto',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    display: 'block',
+                    opacity: layer.style?.opacity ?? 1,
+                    borderRadius: typeof layer.style?.borderRadius === 'object'
+                        ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
+                        : safeScale(layer.style?.borderRadius || 0, scale),
+                    objectFit: layer.style?.objectFit || 'cover',
+                }}
+            />
         );
     }
 

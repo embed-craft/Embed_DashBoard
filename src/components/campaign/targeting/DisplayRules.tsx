@@ -16,6 +16,11 @@ export const DisplayRules: React.FC = () => {
     if (!currentCampaign || !currentCampaign.displayRules) return null;
 
     const { displayRules } = currentCampaign;
+    
+    // ✅ SAFETY FIX: Ensure nested properties exist to prevent Uncaught TypeError
+    const frequency = displayRules.frequency || { type: 'every_time' };
+    const interactionLimit = displayRules.interactionLimit || { type: 'unlimited' };
+    const sessionLimit = displayRules.sessionLimit || { enabled: false };
 
     return (
         <div className="space-y-8">
@@ -24,8 +29,8 @@ export const DisplayRules: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center gap-4">
                     <Select
-                        value={displayRules.frequency.type}
-                        onValueChange={(val: any) => updateDisplayRules({ frequency: { ...displayRules.frequency, type: val } })}
+                        value={frequency.type}
+                        onValueChange={(val: any) => updateDisplayRules({ frequency: { ...frequency, type: val } })}
                     >
                         <SelectTrigger className="w-[200px]">
                             <SelectValue placeholder="Select frequency" />
@@ -39,33 +44,33 @@ export const DisplayRules: React.FC = () => {
                             <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                     </Select>
-
-                    {displayRules.frequency.type !== 'every_time' && displayRules.frequency.type !== 'once_per_session' && (
+ 
+                    {frequency.type !== 'every_time' && frequency.type !== 'once_per_session' && (
                         <div className="flex items-center gap-2">
                             <span className="text-sm">Show</span>
                             <Input
                                 type="number"
                                 className="w-20"
                                 min={1}
-                                value={displayRules.frequency.value || 1}
-                                onChange={(e) => updateDisplayRules({ frequency: { ...displayRules.frequency, value: parseInt(e.target.value) || 1 } })}
+                                value={frequency.value || 1}
+                                onChange={(e) => updateDisplayRules({ frequency: { ...frequency, value: parseInt(e.target.value) || 1 } })}
                             />
                             <span className="text-sm">times</span>
                         </div>
                     )}
                 </div>
             </div>
-
+ 
             <Separator />
-
+ 
             {/* Interaction Limits */}
             <div className="space-y-4">
                 <Label className="text-base font-semibold">Total Interaction Limit <span className="text-red-500">*</span></Label>
                 <p className="text-sm text-muted-foreground">How many times can each user interact with this campaign?</p>
-
+ 
                 <RadioGroup
-                    value={displayRules.interactionLimit.type}
-                    onValueChange={(val: any) => updateDisplayRules({ interactionLimit: { ...displayRules.interactionLimit, type: val } })}
+                    value={interactionLimit.type}
+                    onValueChange={(val: any) => updateDisplayRules({ interactionLimit: { ...interactionLimit, type: val } })}
                     className="space-y-3"
                 >
                     <div className="flex items-center space-x-2">
@@ -78,27 +83,27 @@ export const DisplayRules: React.FC = () => {
                         <Input
                             type="number"
                             className="w-20 h-8"
-                            disabled={displayRules.interactionLimit.type !== 'limited'}
-                            value={displayRules.interactionLimit.value || 1}
-                            onChange={(e) => updateDisplayRules({ interactionLimit: { ...displayRules.interactionLimit, value: parseInt(e.target.value) || 1 } })}
+                            disabled={interactionLimit.type !== 'limited'}
+                            value={interactionLimit.value || 1}
+                            onChange={(e) => updateDisplayRules({ interactionLimit: { ...interactionLimit, value: parseInt(e.target.value) || 1 } })}
                         />
                         <span className="text-sm text-muted-foreground">times total</span>
                     </div>
                 </RadioGroup>
-
+ 
                 <div className="flex items-center space-x-2 pt-2">
                     <Switch
-                        checked={displayRules.sessionLimit.enabled}
-                        onCheckedChange={(checked) => updateDisplayRules({ sessionLimit: { ...displayRules.sessionLimit, enabled: checked } })}
+                        checked={sessionLimit.enabled}
+                        onCheckedChange={(checked) => updateDisplayRules({ sessionLimit: { ...sessionLimit, enabled: checked } })}
                         id="session-limit"
                     />
                     <Label htmlFor="session-limit">Add session limit</Label>
-                    {displayRules.sessionLimit.enabled && (
+                    {sessionLimit.enabled && (
                         <Input
                             type="number"
                             className="w-20 h-8 ml-2"
-                            value={displayRules.sessionLimit.value || 1}
-                            onChange={(e) => updateDisplayRules({ sessionLimit: { ...displayRules.sessionLimit, value: parseInt(e.target.value) || 1 } })}
+                            value={sessionLimit.value || 1}
+                            onChange={(e) => updateDisplayRules({ sessionLimit: { ...sessionLimit, value: parseInt(e.target.value) || 1 } })}
                         />
                     )}
                 </div>

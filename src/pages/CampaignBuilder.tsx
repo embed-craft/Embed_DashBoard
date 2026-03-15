@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -33,7 +33,11 @@ import { Badge } from '@/components/ui/badge';
 import CampaignTemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
 
-type Step = 'targeting' | 'goals' | 'design';
+import { StoriesStep } from '@/components/campaign/stories/StoriesStep';
+import { StoryEditorWrapper } from '@/components/campaign/stories/StoryEditorWrapper';
+import { Film, CheckCircle2 as CheckCircle2Icon } from 'lucide-react';
+
+type Step = 'targeting' | 'goals' | 'design' | 'stories';
 
 const CampaignBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -61,7 +65,9 @@ const CampaignBuilder: React.FC = () => {
     isTemplateModalOpen,
     isSaveTemplateModalOpen,
     applyTemplate,
-    validateAndFixCampaign
+    validateAndFixCampaign,
+    activeStoryId,
+    setActiveStory,
   } = useEditorStore();
 
   // Mode detection: Sync store mode with URL param
@@ -104,15 +110,26 @@ const CampaignBuilder: React.FC = () => {
     // If we are in "Create New" mode
     if (experienceType && !campaignId) {
       if (!nudgeType) {
-        if (currentCampaign) {
-          resetCurrentCampaign();
+        // Stories: skip nudge selection, auto-create with fullscreen and go to stories step
+        if (experienceType === 'stories') {
+          createCampaign('stories' as any, 'fullscreen' as any);
+          setActiveStep('stories');
+        } else {
+          if (currentCampaign) {
+            resetCurrentCampaign();
+          }
+          setActiveStep('design');
         }
-        setActiveStep('design');
       }
       else {
         if (!currentCampaign || currentCampaign.nudgeType !== nudgeType) {
           createCampaign(experienceType as any, nudgeType as any);
-          setActiveStep('targeting');
+          // Auto-navigate to stories step for stories experience
+          if (experienceType === 'stories') {
+            setActiveStep('stories');
+          } else {
+            setActiveStep('targeting');
+          }
         }
       }
     }
@@ -124,23 +141,35 @@ const CampaignBuilder: React.FC = () => {
 
     if (stepId === 'targeting') {
       const { targeting } = currentCampaign;
-      if (!targeting) return true; // Empty is valid (all users, app open)
+      if (!targeting || targeting.length === 0) return true; // Empty is valid (all users, app open)
 
       // Check audience filters (user_properties)
       const userProps = targeting.filter(t => t.type === 'user_property');
-      const hasInvalidUserProps = userProps.some(t =>
-        !t.property || (t.operator !== 'set' && t.operator !== 'not_set' && (t.value === undefined || t.value === ''))
-      );
+      const hasInvalidUserProps = userProps.some(t => {
+        if (!t.property) return true;
+        // If operator is NOT 'set' or 'not_set', it NEEDS a value
+        if (t.operator !== 'set' && t.operator !== 'not_set') {
+          return t.value === undefined || t.value === '';
+        }
+        return false;
+      });
       if (hasInvalidUserProps) return false;
 
       // Check events
       const eventTriggers = targeting.filter(t => t.type === 'event');
+      // If there are event triggers, make sure none are empty
       const hasInvalidEvents = eventTriggers.some(t => !t.event);
       if (hasInvalidEvents) return false;
 
       // Check event property filters within triggers
       const hasInvalidEventProps = eventTriggers.some(t =>
-        t.properties?.some(p => !p.field || (p.operator !== 'set' && p.operator !== 'not_set' && (p.value === undefined || p.value === '')))
+        t.properties?.some(p => {
+          if (!p.field) return true;
+          if (p.operator !== 'set' && p.operator !== 'not_set') {
+            return p.value === undefined || p.value === '';
+          }
+          return false;
+        })
       );
       if (hasInvalidEventProps) return false;
 
@@ -150,16 +179,28 @@ const CampaignBuilder: React.FC = () => {
     if (stepId === 'goals') {
       // Must have a goal event selected and rollout > 0
       if (!currentCampaign.goal?.event) return false;
-      if (currentCampaign.goal.rolloutPercentage === undefined || currentCampaign.goal.rolloutPercentage <= 0) return false;
+      const rollout = Number(currentCampaign.goal.rolloutPercentage);
+      if (isNaN(rollout) || rollout <= 0) return false;
       return true;
     }
 
-    if (stepId === 'design') {
-      // Must have at least one layer to launch (excluding containers if empty?)
-      // A valid campaign must have more than just a root container if it's not custom HTML
-      if (!currentCampaign.layers || currentCampaign.layers.length === 0) return false;
+    if (stepId === 'design' || stepId === 'stories') {
+      // 1. Stories mode check
+      if (currentCampaign.experienceType === 'stories' || (currentCampaign.nudgeType as any) === 'stories') {
+        return !!currentCampaign.stories && currentCampaign.stories.length > 0;
+      }
 
-      // If it's just the root container with no children, it's considered empty
+      // 2. Interfaces mode check (new structure)
+      if (currentCampaign.interfaces && currentCampaign.interfaces.length > 0) {
+        // At least one interface must have meaningful content
+        return currentCampaign.interfaces.some((intf: any) => {
+           if (!intf.layers || intf.layers.length === 0) return false;
+           return intf.layers.length > 1 || (intf.layers.length === 1 && intf.layers[0].type === 'custom_html');
+        });
+      }
+
+      // 3. Legacy flat layers check
+      if (!currentCampaign.layers || currentCampaign.layers.length === 0) return false;
       const hasMeaningfulContent = currentCampaign.layers.length > 1 ||
         (currentCampaign.layers.length === 1 && currentCampaign.layers[0].type === 'custom_html');
 
@@ -194,6 +235,9 @@ const CampaignBuilder: React.FC = () => {
     if (!currentCampaign) return;
 
     // Final Validation Check before Launch
+    const isStoriesExp = currentCampaign.experienceType === 'stories' || (currentCampaign.nudgeType as any) === 'stories';
+    const isDesignOrStoriesValid = validateStep(isStoriesExp ? 'stories' : 'design');
+
     if (!isTargetingValid) {
       toast.error('Cannot launch: Targeting rules are incomplete.');
       setActiveStep('targeting');
@@ -204,9 +248,9 @@ const CampaignBuilder: React.FC = () => {
       setActiveStep('goals');
       return;
     }
-    if (!isDesignValid) {
-      toast.error('Cannot launch: Design cannot be empty.');
-      setActiveStep('design');
+    if (!isDesignOrStoriesValid) {
+      toast.error(isStoriesExp ? 'Cannot launch: Please add at least one Story.' : 'Cannot launch: Design cannot be empty.');
+      setActiveStep(isStoriesExp ? 'stories' : 'design');
       return;
     }
 
@@ -235,10 +279,16 @@ const CampaignBuilder: React.FC = () => {
     updateTags(newTags);
   };
 
+  const isStories = currentCampaign?.experienceType === 'stories';
+
   const steps = [
     { id: 'targeting', label: 'Targeting', icon: Target },
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
-    { id: 'design', label: 'Design', icon: Palette },
+    ...(isStories ? [
+      { id: 'stories', label: 'Stories', icon: Film },
+    ] : [
+      { id: 'design', label: 'Design', icon: Palette },
+    ]),
   ];
 
   // In Template Mode, show only the editor (fullscreen)
@@ -324,6 +374,7 @@ const CampaignBuilder: React.FC = () => {
                           <p className="text-xs text-gray-400 truncate mt-0.5 max-w-[140px]">
                             {step.id === 'targeting' && (isCompleted ? "Audience set" : "Define audience")}
                             {step.id === 'goals' && (isCompleted ? "Goal configured" : "Set success metrics")}
+                            {step.id === 'stories' && (isCompleted ? "Stories ready" : "Manage stories")}
                             {step.id === 'design' && (isCompleted ? "Design ready" : "Create experience")}
                           </p>
                         </div>
@@ -623,6 +674,13 @@ const CampaignBuilder: React.FC = () => {
               <>
                 {activeStep === 'targeting' && <TargetingStep />}
                 {activeStep === 'goals' && <GoalsRolloutStep />}
+                {activeStep === 'stories' && (
+                  activeStoryId ? (
+                    <StoryEditorWrapper />
+                  ) : (
+                    <StoriesStep />
+                  )
+                )}
                 {activeStep === 'design' && <DesignStep />}
               </>
             )}

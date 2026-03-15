@@ -716,6 +716,7 @@ export interface FullScreenConfig {
     tapToDismiss?: boolean;
     doubleTapToDismiss?: boolean;
   };
+  loopStories?: boolean;
 }
 
 export interface CampaignSchedule {
@@ -931,6 +932,16 @@ export interface CoachmarkConfig {
   closeOnTargetClick: boolean;         // Advances to next step
 }
 
+// Story Item (individual story within a stories campaign)
+export interface StoryItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  layers: Layer[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Campaign Interface (Sub-campaign within main campaign)
 export interface CampaignInterface {
   id: string;
@@ -967,6 +978,7 @@ export interface CampaignEditor {
   priority?: number; // ✅ FIX: Add priority property
 
   layers: Layer[];
+  stories?: StoryItem[]; // Stories for stories experience type
   interfaces: CampaignInterface[]; // Sub-campaigns/interfaces
   targeting: TargetingRule[];
   displayRules: DisplayRules;
@@ -1023,7 +1035,7 @@ interface EditorStore {
   toggleLayerVisibility: (id: string) => void;
   toggleLayerLock: (id: string) => void;
   deleteLayer: (id: string) => void;
-  addLayer: (type: LayerType, parentId: string | null) => void;
+  addLayer: (type: LayerType, parentId: string | null, name?: string) => void;
 
   // Actions - Content
   updateLayerContent: (id: string, content: Partial<LayerContent>) => void;
@@ -1109,6 +1121,16 @@ interface EditorStore {
   deleteInterfaceLayer: (interfaceId: string, layerId: string) => void;
   reorderInterfaces: (startIndex: number, endIndex: number) => void;
   duplicateInterface: (interfaceId: string) => void;
+
+  // Stories Management
+  activeStoryId: string | null;
+  setActiveStory: (id: string | null) => void;
+  addStory: (title?: string) => string;
+  goToNextStory: () => void;
+  goToPrevStory: () => void;
+  deleteStory: (id: string) => void;
+  updateStoryField: (id: string, field: keyof Pick<StoryItem, 'title' | 'subtitle'>, value: string) => void;
+  duplicateStory: (id: string) => void;
 }
 
 // Debounced history tracker to prevent race conditions
@@ -1159,6 +1181,7 @@ export const useEditorStore = create<EditorStore>()(
       isTemplateModalOpen: false,
       isSaveTemplateModalOpen: false,
       activeInterfaceId: null,
+      activeStoryId: null,
 
       // Saved Callbacks Initial State
       customCallbackIds: [],
@@ -2138,7 +2161,7 @@ export const useEditorStore = create<EditorStore>()(
 
 
       // Add layer
-      addLayer: (type, parentId) => {
+      addLayer: (type, parentId, name) => {
         const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return '';
 
@@ -2151,7 +2174,7 @@ export const useEditorStore = create<EditorStore>()(
         const newLayer: Layer = {
           id: uniqueLayerId,
           type,
-          name: `New ${type}`,
+          name: name || `New ${type}`,
           parent: parentId || null,
           children: [],
           visible: true,
@@ -2163,7 +2186,43 @@ export const useEditorStore = create<EditorStore>()(
           style: initialStyle,
         };
 
-        // --- SCENARIO 1: ADD TO SUB-INTERFACE ---
+        // --- SCENARIO 1: ADD TO STORY (NEW) ---
+        const { activeStoryId } = get();
+        if (activeStoryId && currentCampaign.stories) {
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (story.id !== activeStoryId) return story;
+
+            // Set Z-index
+            newLayer.zIndex = story.layers.length;
+
+            let updatedLayers = [...story.layers, newLayer];
+
+            // Update parent's children array
+            if (parentId) {
+              const parentIndex = updatedLayers.findIndex(l => l.id === parentId);
+              if (parentIndex !== -1) {
+                updatedLayers[parentIndex] = {
+                  ...updatedLayers[parentIndex],
+                  children: [...updatedLayers[parentIndex].children, newLayer.id]
+                };
+              }
+            }
+
+            return { ...story, layers: updatedLayers, updatedAt: new Date().toISOString() };
+          });
+
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              stories: updatedStories,
+              selectedLayerId: newLayer.id,
+              isDirty: true
+            }
+          });
+          return newLayer.id;
+        }
+
+        // --- SCENARIO 2: ADD TO SUB-INTERFACE ---
         if (activeInterfaceId) {
           const updatedInterfaces = currentCampaign.interfaces.map(iface => {
             if (iface.id !== activeInterfaceId) return iface;
@@ -2282,7 +2341,7 @@ export const useEditorStore = create<EditorStore>()(
         });
 
         if (found) {
-          // Verify history push (simplified for now, history might need robust handling for deeply nested updates)
+          // Verify history push
           const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
           newHistory.push(updatedMainLayers);
 
@@ -2299,7 +2358,42 @@ export const useEditorStore = create<EditorStore>()(
           return;
         }
 
-        // 2. Try finding in Interfaces
+        // 2. Try finding in Stories (NEW)
+        if (currentCampaign.stories) {
+          let foundInStory = false;
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (!story.layers) return story;
+
+            let layerChanged = false;
+            const newStoryLayers = story.layers.map(layer => {
+              if (layer.id === id) {
+                foundInStory = true;
+                layerChanged = true;
+                return { ...layer, ...updates };
+              }
+              return layer;
+            });
+
+            if (layerChanged) {
+              return { ...story, layers: newStoryLayers, updatedAt: new Date().toISOString() };
+            }
+            return story;
+          });
+
+          if (foundInStory) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                stories: updatedStories,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            return;
+          }
+        }
+
+        // 3. Try finding in Interfaces
         if (currentCampaign.interfaces) {
           let foundInInterface = false;
           const updatedInterfaces = currentCampaign.interfaces.map(iface => {
@@ -2377,7 +2471,55 @@ export const useEditorStore = create<EditorStore>()(
           return;
         }
 
-        // 2. Try Interfaces
+        // 2. Try Stories (NEW)
+        if (currentCampaign.stories) {
+          let foundInStory = false;
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (!story.layers) return story;
+            const layerInStory = story.layers.find(l => l.id === id);
+
+            if (layerInStory) {
+              foundInStory = true;
+              let updatedLayers = story.layers.map(l => {
+                if (l.id === layerInStory.parent) {
+                  return {
+                    ...l,
+                    children: l.children.filter(childId => childId !== id),
+                  };
+                }
+                return l;
+              });
+
+              const deleteRecursive = (layerId: string) => {
+                const toDelete = updatedLayers.find(l => l.id === layerId);
+                if (toDelete) {
+                  toDelete.children.forEach(childId => deleteRecursive(childId));
+                  updatedLayers = updatedLayers.filter(l => l.id !== layerId);
+                }
+              };
+              deleteRecursive(id);
+
+              return { ...story, layers: updatedLayers, updatedAt: new Date().toISOString() };
+            }
+            return story;
+          });
+
+          if (foundInStory) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                stories: updatedStories,
+                selectedLayerId: currentCampaign.selectedLayerId === id ? null : currentCampaign.selectedLayerId,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            saveToHistoryDebounced(get, set);
+            return;
+          }
+        }
+
+        // 3. Try Interfaces
         if (currentCampaign.interfaces) {
           let foundInInterface = false;
           const updatedInterfaces = currentCampaign.interfaces.map(iface => {
@@ -2499,7 +2641,55 @@ export const useEditorStore = create<EditorStore>()(
           return newLayer.id;
         }
 
-        // 2. Try Interfaces
+        // 2. Try Stories (NEW)
+        if (currentCampaign.stories) {
+          let newLayerId = '';
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (!story.layers) return story;
+            const layerInStory = story.layers.find(l => l.id === id);
+            if (layerInStory) {
+              const newLayer: Layer = {
+                ...layerInStory,
+                id: `layer_${Date.now()}`,
+                name: `${layerInStory.name} Copy`,
+                children: [],
+                content: { ...layerInStory.content },
+                style: cloneAndOffsetStyle(layerInStory.style),
+                position: { ...layerInStory.position },
+                size: { ...layerInStory.size },
+              };
+              newLayerId = newLayer.id;
+              let updatedLayers = [...story.layers, newLayer];
+              if (layerInStory.parent) {
+                const parentIndex = updatedLayers.findIndex(l => l.id === layerInStory.parent);
+                if (parentIndex !== -1) {
+                  updatedLayers[parentIndex] = {
+                    ...updatedLayers[parentIndex],
+                    children: [...updatedLayers[parentIndex].children, newLayer.id],
+                  };
+                }
+              }
+              return { ...story, layers: updatedLayers, updatedAt: new Date().toISOString() };
+            }
+            return story;
+          });
+
+          if (newLayerId) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                stories: updatedStories,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+                selectedLayerId: newLayerId
+              },
+            });
+            saveToHistoryDebounced(get, set);
+            return newLayerId;
+          }
+        }
+
+        // 3. Try Interfaces
         if (currentCampaign.interfaces) {
           let newLayerId = '';
           const updatedInterfaces = currentCampaign.interfaces.map(iface => {
@@ -2865,7 +3055,38 @@ export const useEditorStore = create<EditorStore>()(
           return;
         }
 
-        // 2. Try Interfaces
+        // 2. Try Stories (NEW)
+        if (currentCampaign.stories) {
+          let foundInStory = false;
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (!story.layers) return story;
+            let layerChanged = false;
+            const newLayers = story.layers.map(layer => {
+              if (layer.id === id) {
+                foundInStory = true;
+                layerChanged = true;
+                return { ...layer, content: { ...layer.content, ...content } };
+              }
+              return layer;
+            });
+            return layerChanged ? { ...story, layers: newLayers, updatedAt: new Date().toISOString() } : story;
+          });
+
+          if (foundInStory) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                stories: updatedStories,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            saveToHistoryDebounced(get, set);
+            return;
+          }
+        }
+
+        // 3. Try Interfaces
         if (currentCampaign.interfaces) {
           let foundInInterface = false;
           const updatedInterfaces = currentCampaign.interfaces.map(iface => {
@@ -2924,7 +3145,38 @@ export const useEditorStore = create<EditorStore>()(
           return;
         }
 
-        // 2. Try Interfaces
+        // 2. Try Stories (NEW)
+        if (currentCampaign.stories) {
+          let foundInStory = false;
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (!story.layers) return story;
+            let layerChanged = false;
+            const newLayers = story.layers.map(layer => {
+              if (layer.id === id) {
+                foundInStory = true;
+                layerChanged = true;
+                return { ...layer, style: { ...layer.style, ...style } };
+              }
+              return layer;
+            });
+            return layerChanged ? { ...story, layers: newLayers, updatedAt: new Date().toISOString() } : story;
+          });
+
+          if (foundInStory) {
+            set({
+              currentCampaign: {
+                ...currentCampaign,
+                stories: updatedStories,
+                updatedAt: new Date().toISOString(),
+                isDirty: true,
+              },
+            });
+            saveToHistoryDebounced(get, set);
+            return;
+          }
+        }
+
+        // 3. Try Interfaces
         if (currentCampaign.interfaces) {
           let foundInInterface = false;
           const updatedInterfaces = currentCampaign.interfaces.map(iface => {
@@ -3800,6 +4052,225 @@ export const useEditorStore = create<EditorStore>()(
         });
 
         toast.success('Interface duplicated');
+      },
+
+      // ===== Stories Management =====
+      setActiveStory: (id) => set({ activeStoryId: id }),
+
+      addStory: (title) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign) return '';
+
+        const storyCount = (currentCampaign.stories || []).length;
+        const storyId = `story_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const now = new Date().toISOString();
+
+        // Create root Slide Container + first Slide child
+        const rootLayerId = `layer_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const slide1Id = `layer_${Date.now() + 1}_${Math.random().toString(36).substring(2, 9)}`;
+
+        const defaultLayers: Layer[] = [
+          // Root: Slide Container (story frame)
+          {
+            id: rootLayerId,
+            type: 'container' as LayerType,
+            name: 'Slide Container',
+            parent: null,
+            children: [slide1Id],
+            visible: true,
+            locked: false,
+            zIndex: 0,
+            position: { x: 0, y: 0 },
+            size: { width: '100%', height: '100%' },
+            content: {
+              width: 393,
+              height: 852,
+              autoAdvanceDuration: 5,
+              transition: 'slide',
+              showProgressBar: true,
+            } as any,
+            style: {
+              backgroundColor: '#e5e7eb',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            } as any,
+          },
+          // Child: Slide 1 (first slide page)
+          {
+            id: slide1Id,
+            type: 'container' as LayerType,
+            name: 'Slide 1',
+            parent: rootLayerId,
+            children: [],
+            visible: true,
+            locked: false,
+            zIndex: 1,
+            position: { x: 0, y: 0 },
+            size: { width: '100%', height: '100%' },
+            content: {
+              width: 393,
+              height: 852,
+            } as any,
+            style: {
+              backgroundColor: '#e5e7eb',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            } as any,
+          },
+        ];
+
+        const newStory: StoryItem = {
+          id: storyId,
+          title: title || `Story ${storyCount + 1}`,
+          subtitle: '',
+          layers: defaultLayers,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            stories: [...(currentCampaign.stories || []), newStory],
+            isDirty: true,
+            updatedAt: now,
+          },
+        });
+
+        return storyId;
+      },
+
+      goToNextStory: () => {
+        const { currentCampaign, activeStoryId, setActiveStory, selectLayer } = get();
+        if (!currentCampaign?.stories || !activeStoryId) return;
+
+        const stories = currentCampaign.stories;
+        const index = stories.findIndex(s => s.id === activeStoryId);
+        if (index === -1) return;
+
+        const isLastStory = index === stories.length - 1;
+        const shouldLoop = currentCampaign.fullscreenConfig?.loopStories ?? true;
+
+        if (isLastStory && !shouldLoop) return;
+
+        const nextIndex = (index + 1) % stories.length;
+        const nextStory = stories[nextIndex];
+
+        if (nextStory) {
+          setActiveStory(nextStory.id);
+          // Select first slide of next story
+          const root = nextStory.layers.find(l => l.type === 'container' && !l.parent);
+          if (root) {
+            const firstSlide = nextStory.layers.find(l => l.parent === root.id && l.type === 'container');
+            if (firstSlide) selectLayer(firstSlide.id);
+          }
+        }
+      },
+
+      goToPrevStory: () => {
+        const { currentCampaign, activeStoryId, setActiveStory, selectLayer } = get();
+        if (!currentCampaign?.stories || !activeStoryId) return;
+
+        const stories = currentCampaign.stories;
+        const index = stories.findIndex(s => s.id === activeStoryId);
+        if (index === -1) return;
+
+        const isFirstStory = index === 0;
+        const shouldLoop = currentCampaign.fullscreenConfig?.loopStories ?? true;
+
+        if (isFirstStory && !shouldLoop) return;
+
+        const prevIndex = (index - 1 + stories.length) % stories.length;
+        const prevStory = stories[prevIndex];
+        if (prevStory) {
+          setActiveStory(prevStory.id);
+          // Select first slide of prev story
+          const root = prevStory.layers.find(l => l.type === 'container' && !l.parent);
+          if (root) {
+            const firstSlide = prevStory.layers.find(l => l.parent === root.id && l.type === 'container');
+            if (firstSlide) selectLayer(firstSlide.id);
+          }
+        }
+      },
+
+      deleteStory: (id) => {
+        const { currentCampaign, activeStoryId } = get();
+        if (!currentCampaign || !currentCampaign.stories) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            stories: currentCampaign.stories.filter(s => s.id !== id),
+            isDirty: true,
+            updatedAt: new Date().toISOString(),
+          },
+          ...(activeStoryId === id ? { activeStoryId: null } : {}),
+        });
+        toast.success('Story deleted');
+      },
+
+      updateStoryField: (id, field, value) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign || !currentCampaign.stories) return;
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            stories: currentCampaign.stories.map(s =>
+              s.id === id ? { ...s, [field]: value, updatedAt: new Date().toISOString() } : s
+            ),
+            isDirty: true,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      },
+
+      duplicateStory: (id) => {
+        const { currentCampaign } = get();
+        if (!currentCampaign || !currentCampaign.stories) return;
+
+        const storyToDuplicate = currentCampaign.stories.find(s => s.id === id);
+        if (!storyToDuplicate) return;
+
+        const now = new Date().toISOString();
+
+        // Remap layer IDs
+        const idMap = new Map<string, string>();
+        storyToDuplicate.layers.forEach(l => {
+          idMap.set(l.id, `layer_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`);
+        });
+
+        const newLayers = storyToDuplicate.layers.map(layer => {
+          const newId = idMap.get(layer.id);
+          if (!newId) return layer;
+          const newParent = (layer.parent && idMap.has(layer.parent)) ? idMap.get(layer.parent)! : layer.parent;
+          const newChildren = (layer.children || []).map((childId: string) => idMap.get(childId)).filter((id): id is string => !!id);
+          return { ...layer, id: newId, parent: newParent, children: newChildren };
+        });
+
+        const newStory: StoryItem = {
+          ...storyToDuplicate,
+          id: `story_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          title: `${storyToDuplicate.title} (Copy)`,
+          layers: newLayers,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set({
+          currentCampaign: {
+            ...currentCampaign,
+            stories: [...currentCampaign.stories, newStory],
+            isDirty: true,
+            updatedAt: now,
+          },
+        });
+
+        toast.success('Story duplicated');
       },
     }),
     {

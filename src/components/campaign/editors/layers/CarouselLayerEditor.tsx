@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { useEditorStore } from '@/store/useEditorStore';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 import {
     Plus,
     Trash2,
@@ -38,6 +39,7 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
     // Access global store to add children correctly
     const { addLayer, deleteLayer, currentCampaign } = useEditorStore();
     const layers = currentCampaign?.layers || [];
+    const [isArrowPickerOpen, setIsArrowPickerOpen] = useState(false);
 
     // Derived state
     const slides = layers.filter(l => l.parent === layer.id);
@@ -594,7 +596,15 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                                 {/* Image Config */}
                                 {config.arrowType === 'image' && (
                                     <div>
-                                        <Label className="text-[10px] text-gray-500 mb-1.5 block">Image URL</Label>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <Label className="text-[10px] text-gray-500">Image URL</Label>
+                                            <button
+                                                onClick={() => setIsArrowPickerOpen(true)}
+                                                className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                            >
+                                                Asset Library
+                                            </button>
+                                        </div>
                                         <Input
                                             className="h-7 text-xs bg-white"
                                             placeholder="https://..."
@@ -883,6 +893,14 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
 
                 </TabsContent>
             </Tabs>
+
+            {/* Asset Picker */}
+            <AssetPickerDialog
+                isOpen={isArrowPickerOpen}
+                onClose={() => setIsArrowPickerOpen(false)}
+                onSelect={(url) => updateConfig('arrowImageUrl', url)}
+                accept="image"
+            />
         </div>
     );
 };

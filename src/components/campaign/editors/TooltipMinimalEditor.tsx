@@ -36,6 +36,7 @@ import {
     MoveVertical,
     Scaling
 } from 'lucide-react';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 const PALETTE = [
     '#FFFFFF', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827',
@@ -49,6 +50,7 @@ export const TooltipMinimalEditor = () => {
         updateTooltipConfig,
         availablePages
     } = useEditorStore();
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
 
     const pages = availablePages || [];
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
@@ -617,18 +619,26 @@ export const TooltipMinimalEditor = () => {
 
                                         {/* Image */}
                                         <div className="space-y-2 pt-1">
-                                            <Label className="text-[10px] text-gray-500 flex items-center justify-between">
-                                                <span>Background Image URL</span>
-                                                <select
-                                                    className="text-[10px] border-none bg-transparent text-gray-500 font-normal focus:ring-0 cursor-pointer p-0 h-auto"
-                                                    value={config.backgroundSize || 'cover'}
-                                                    onChange={(e) => updateConfig('backgroundSize', e.target.value)}
-                                                >
-                                                    <option value="cover">Cover</option>
-                                                    <option value="contain">Contain</option>
-                                                    <option value="fill">Fill</option>
-                                                </select>
-                                            </Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-[10px] text-gray-500 m-0">Background Image URL</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        className="text-[10px] border-none bg-transparent text-gray-500 font-normal focus:ring-0 cursor-pointer p-0 h-auto"
+                                                        value={config.backgroundSize || 'cover'}
+                                                        onChange={(e) => updateConfig('backgroundSize', e.target.value)}
+                                                    >
+                                                        <option value="cover">Cover</option>
+                                                        <option value="contain">Contain</option>
+                                                        <option value="fill">Fill</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => setIsAssetPickerOpen(true)}
+                                                        className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-medium hover:bg-blue-100 transition-colors"
+                                                    >
+                                                        Asset Library
+                                                    </button>
+                                                </div>
+                                            </div>
                                             <Input
                                                 className="h-8 text-xs"
                                                 placeholder="https://..."
@@ -1238,6 +1248,14 @@ export const TooltipMinimalEditor = () => {
                     </div>
                 </TabsContent>
             </Tabs >
+
+            {/* Asset Picker Form */}
+            <AssetPickerDialog
+                isOpen={isAssetPickerOpen}
+                onClose={() => setIsAssetPickerOpen(false)}
+                onSelect={(url) => updateConfig('backgroundImageUrl', url)}
+                accept="image"
+            />
         </div >
     );
 };

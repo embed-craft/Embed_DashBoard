@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { Paintbrush, Image as ImageIcon, BoxSelect, Sun } from 'lucide-react';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 interface StylesEditorProps {
     layer: Layer;
@@ -19,6 +20,8 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
     const bgSize = layer.style?.backgroundSize || 'cover';
     const hasBgImage = bgImage && bgImage !== 'none';
 
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+
     // Border Logic
     const borderRadius = layer.style?.borderRadius || 0;
     const borderWidth = layer.style?.borderWidth || 0;
@@ -32,16 +35,10 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
     // Shadow Parsing/Helpers
     const isShadowEnabled = boxShadow !== 'none';
     const getShadowValues = () => {
-        if (!isShadowEnabled) return { blur: 20, spread: 0, color: 'rgba(0,0,0,0.15)' }; // Defaults
-        // Expected format: "0px 4px {blur}px {spread}px {color}"
+        if (!isShadowEnabled) return { blur: 20, spread: 0, color: 'rgba(0,0,0,0.15)' };
         const parts = boxShadow.split('px');
-        // parts[0] -> 0 (x)
-        // parts[1] -> 4 (y)
-        // parts[2] -> blur
-        // parts[3] -> spread
-        // parts[4] -> color (rest of string)
         if (parts.length >= 4) {
-            const colorPart = parts.slice(4).join('px').trim(); // Rejoin in case color has px (unlikely but safe)
+            const colorPart = parts.slice(4).join('px').trim();
             return {
                 blur: parseInt(parts[2].trim()) || 0,
                 spread: parseInt(parts[3].trim()) || 0,
@@ -54,7 +51,6 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
     const { blur, spread, color: shadowColor } = getShadowValues();
 
     const updateShadow = (newBlur: number, newSpread: number, newColor: string) => {
-        // Enforce consistent format: offset-x | offset-y | blur-radius | spread-radius | color
         const newShadow = `0px 4px ${newBlur}px ${newSpread}px ${newColor}`;
         onStyleUpdate('boxShadow', newShadow);
     };
@@ -63,311 +59,295 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
         if (isShadowEnabled) {
             onStyleUpdate('boxShadow', 'none');
         } else {
-            updateShadow(20, 0, 'rgba(0,0,0,0.15)'); // Default start
+            updateShadow(20, 0, 'rgba(0,0,0,0.15)');
         }
     };
 
     return (
-        <div className="space-y-6">
+        <>
+            <div className="space-y-6">
 
-            {/* 1. Background Section */}
-            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
-                <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
-                    <Paintbrush size={14} className="text-gray-500" />
-                    Appearance
-                </h5>
-
-                <div className="space-y-4">
-                    {/* Background Color */}
-                    <div>
-                        <div className="flex justify-between mb-1">
-                            <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Fill Color</label>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                            <div className="w-8 h-8 rounded-full border border-gray-200 overflow-hidden relative shadow-sm">
-                                <input
-                                    type="color"
-                                    value={bgColor.startsWith('#') ? bgColor : '#ffffff'}
-                                    onChange={(e) => onStyleUpdate('backgroundColor', e.target.value)}
-                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                />
-                                <div
-                                    className="w-full h-full"
-                                    style={{ backgroundColor: bgColor }}
-                                />
-                            </div>
-                            <input
-                                type="text"
-                                value={bgColor}
-                                onChange={(e) => onStyleUpdate('backgroundColor', e.target.value)}
-                                className="flex-1 p-1.5 text-xs border border-gray-200 rounded outline-none focus:border-indigo-500 font-mono"
-                                placeholder="#TargetColor"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Background Image */}
-                    <div>
-                        <div className="flex justify-between mb-1">
-                            <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Image URL</label>
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="relative flex-1">
-                                <ImageIcon size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    value={hasBgImage ? bgImage.replace('url(', '').replace(')', '') : ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        onStyleUpdate('backgroundImage', val ? `url(${val})` : 'none');
-                                    }}
-                                    placeholder="https://..."
-                                    className="w-full pl-8 p-1.5 text-xs border border-gray-200 rounded outline-none focus:border-indigo-500"
-                                />
-                            </div>
-                        </div>
-                        {hasBgImage && (
-                            <div className="mt-2 flex gap-2">
-                                <select
-                                    value={bgSize}
-                                    onChange={(e) => onStyleUpdate('backgroundSize', e.target.value)}
-                                    className="block w-full p-1.5 text-xs border border-gray-200 rounded bg-white"
-                                >
-                                    <option value="cover">Cover (Fill)</option>
-                                    <option value="contain">Contain (Fit)</option>
-                                    <option value="100% 100%">Stretch</option>
-                                </select>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* 2. Border Section */}
-            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
-                <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
-                    <BoxSelect size={14} className="text-gray-500" />
-                    Border
-                </h5>
-
-                <div className="grid grid-cols-2 gap-4">
-                    {/* Radius */}
-                    <div>
-                        <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-1">Radius</label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                value={typeof borderRadius === 'number' ? borderRadius : 0}
-                                onChange={(e) => onStyleUpdate('borderRadius', parseFloat(e.target.value))}
-                                className="w-full p-1.5 text-xs border border-gray-200 rounded outline-none"
-                                min={0}
-                            />
-                            <span className="text-[10px] text-gray-400">px</span>
-                        </div>
-                    </div>
-                    {/* Width */}
-                    <div>
-                        <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-1">Width</label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                value={typeof borderWidth === 'number' ? borderWidth : 0}
-                                onChange={(e) => onStyleUpdate('borderWidth', parseFloat(e.target.value))}
-                                className="w-full p-1.5 text-xs border border-gray-200 rounded outline-none"
-                                min={0}
-                            />
-                            <span className="text-[10px] text-gray-400">px</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-3 flex gap-2">
-                    <div className="flex-1">
-                        <input
-                            type="color"
-                            value={borderColor}
-                            onChange={(e) => onStyleUpdate('borderColor', e.target.value)}
-                            className="w-full h-8 rounded border border-gray-200 p-0.5 cursor-pointer"
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <select
-                            value={borderStyle}
-                            onChange={(e) => onStyleUpdate('borderStyle', e.target.value)}
-                            className="w-full h-8 px-2 text-xs border border-gray-200 rounded bg-white outline-none"
-                        >
-                            <option value="solid">Solid</option>
-                            <option value="dashed">Dashed</option>
-                            <option value="dotted">Dotted</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* 3. Effects Section - REFACTORED TO MATCH FLOATER EDITOR */}
-            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
-                <div className="flex items-center justify-between mb-3">
-                    <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
-                        <Sun size={14} className="text-gray-500" />
-                        Shadow
+                {/* 1. Background Section */}
+                <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+                    <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                        <Paintbrush size={14} className="text-gray-500" />
+                        Appearance
                     </h5>
-                    <button
-                        onClick={toggleShadow}
-                        className={`w-11 h-6 rounded-full relative transition-colors ${isShadowEnabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
-                    >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${isShadowEnabled ? 'left-6' : 'left-1'}`} />
-                    </button>
-                </div>
 
-                {isShadowEnabled && (
-                    <div className="space-y-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        {/* Blur Slider */}
+                    <div className="space-y-4">
+                        {/* Background Color */}
                         <div>
                             <div className="flex justify-between mb-1">
-                                <label className="text-[10px] text-gray-500 uppercase font-semibold">Blur</label>
-                                <span className="text-[10px] text-indigo-600 font-medium">{blur}px</span>
+                                <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Fill Color</label>
                             </div>
-                            <input
-                                type="range"
-                                min="0" max="50"
-                                value={blur}
-                                onChange={(e) => updateShadow(parseInt(e.target.value), spread, shadowColor)}
-                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                            />
-                        </div>
-
-                        {/* Spread Slider */}
-                        <div>
-                            <div className="flex justify-between mb-1">
-                                <label className="text-[10px] text-gray-500 uppercase font-semibold">Spread</label>
-                                <span className="text-[10px] text-indigo-600 font-medium">{spread}px</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0" max="20"
-                                value={spread}
-                                onChange={(e) => updateShadow(blur, parseInt(e.target.value), shadowColor)}
-                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                            />
-                        </div>
-
-                        {/* Shadow Color */}
-                        <div>
-                            <label className="text-[10px] text-gray-500 uppercase font-semibold block mb-1">Color</label>
                             <div className="flex gap-2 items-center">
-                                <div className="w-8 h-8 rounded border border-gray-200 overflow-hidden relative shadow-sm">
+                                <div className="w-8 h-8 rounded-full border border-gray-200 overflow-hidden relative shadow-sm">
                                     <input
                                         type="color"
-                                        value={shadowColor.startsWith('#') ? shadowColor : '#000000'}
-                                        onChange={(e) => updateShadow(blur, spread, e.target.value)}
+                                        value={bgColor.startsWith('#') ? bgColor : '#ffffff'}
+                                        onChange={(e) => onStyleUpdate('backgroundColor', e.target.value)}
                                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                                     />
-                                    <div
-                                        className="w-full h-full"
-                                        style={{ backgroundColor: shadowColor }}
-                                    />
+                                    <div className="w-full h-full" style={{ backgroundColor: bgColor }} />
                                 </div>
                                 <input
                                     type="text"
-                                    value={shadowColor}
-                                    onChange={(e) => updateShadow(blur, spread, e.target.value)}
+                                    value={bgColor}
+                                    onChange={(e) => onStyleUpdate('backgroundColor', e.target.value)}
                                     className="flex-1 p-1.5 text-xs border border-gray-200 rounded outline-none focus:border-indigo-500 font-mono"
-                                    placeholder="rgba(0,0,0,0.15)"
+                                    placeholder="#TargetColor"
                                 />
                             </div>
                         </div>
-                    </div>
-                )}
 
-                {/* Opacity */}
-                <div className="mt-4">
-                    <div className="flex justify-between mb-1">
-                        <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Opacity</label>
-                        <span className="text-[10px] text-gray-500">{Math.round(opacity * 100)}%</span>
-                    </div>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={opacity}
-                        onChange={(e) => onStyleUpdate('opacity', parseFloat(e.target.value))}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                    />
-                </div>
-
-            </div>
-
-            {/* 4. Glassmorphism Section */}
-            <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
-                <div className="flex items-center justify-between mb-3">
-                    <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
-                        <div className="w-3.5 h-3.5 rounded-full bg-indigo-500/50 backdrop-blur-sm flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60" />
-                        </div>
-                        Glassmorphism
-                    </h5>
-                    {/* Toggle */}
-                    <button
-                        onClick={() => {
-                            const current = layer.style?.backdropFilter || { enabled: false, blur: 10 };
-                            const enabled = !current.enabled;
-                            onStyleUpdate('backdropFilter', { ...current, enabled });
-                            // Auto-adjust opacity for better UX if enabling
-                            if (enabled && (!layer.style?.backgroundColor || layer.style.backgroundColor.length === 7)) {
-                                onStyleUpdate('backgroundColor', `${layer.style?.backgroundColor || '#ffffff'}80`); // 50% opacity
-                            }
-                        }}
-                        className={`w-11 h-6 rounded-full relative transition-colors ${(layer.style?.backdropFilter?.enabled) ? 'bg-indigo-600' : 'bg-gray-300'}`}
-                    >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${(layer.style?.backdropFilter?.enabled) ? 'left-6' : 'left-1'}`} />
-                    </button>
-                </div>
-
-                {layer.style?.backdropFilter?.enabled && (
-                    <div className="space-y-4 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
-                        {/* Blur Slider */}
+                        {/* Background Image */}
                         <div>
                             <div className="flex justify-between mb-1">
-                                <label className="text-[10px] text-gray-500 uppercase font-semibold">Blur Intensity</label>
-                                <span className="text-[10px] text-indigo-600 font-medium">{layer.style.backdropFilter?.blur ?? 10}px</span>
+                                <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Image URL</label>
+                                <button
+                                    onClick={() => setIsAssetPickerOpen(true)}
+                                    className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                >
+                                    Asset Library
+                                </button>
                             </div>
-                            <input
-                                type="range"
-                                min="0" max="40" step="1"
-                                value={layer.style.backdropFilter?.blur ?? 10}
-                                onChange={(e) => onStyleUpdate('backdropFilter', { ...layer.style.backdropFilter, blur: parseInt(e.target.value) })}
-                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                            />
-                        </div>
-
-                        {/* Opacity Helper - ADDED */}
-                        <div className="space-y-1">
-                            <div className="flex justify-between">
-                                <label className="text-[10px] text-gray-500 uppercase font-semibold">Opacity Helper</label>
-                                <span className="text-[10px] text-gray-400">
-                                    {Math.round(((parseInt((layer.style?.backgroundColor || '#ffffffFF').slice(7, 9), 16) || 255) / 255) * 100)}%
-                                </span>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <ImageIcon size={14} className="absolute left-2.5 top-2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={hasBgImage ? bgImage.replace('url(', '').replace(')', '') : ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            onStyleUpdate('backgroundImage', val ? `url(${val})` : 'none');
+                                        }}
+                                        placeholder="https://..."
+                                        className="w-full pl-8 p-1.5 text-xs border border-gray-200 rounded outline-none focus:border-indigo-500"
+                                    />
+                                </div>
                             </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="255"
-                                step="5"
-                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                value={parseInt((layer.style?.backgroundColor || '#ffffffFF').slice(7, 9), 16) || 255}
-                                onChange={(e) => {
-                                    const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
-                                    const base = (layer.style?.backgroundColor || '#ffffff').slice(0, 7);
-                                    onStyleUpdate('backgroundColor', `${base}${alpha}`);
-                                }}
-                            />
-                            <p className="text-[9px] text-gray-400">Lower opacity to see the blur effect efficiently.</p>
+                            {hasBgImage && (
+                                <div className="mt-2 flex gap-2">
+                                    <select
+                                        value={bgSize}
+                                        onChange={(e) => onStyleUpdate('backgroundSize', e.target.value)}
+                                        className="block w-full p-1.5 text-xs border border-gray-200 rounded bg-white"
+                                    >
+                                        <option value="cover">Cover (Fill)</option>
+                                        <option value="contain">Contain (Fit)</option>
+                                        <option value="100% 100%">Stretch</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
+                </div>
+
+                {/* 2. Border Section */}
+                <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+                    <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                        <BoxSelect size={14} className="text-gray-500" />
+                        Border
+                    </h5>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-1">Radius</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    value={typeof borderRadius === 'number' ? borderRadius : 0}
+                                    onChange={(e) => onStyleUpdate('borderRadius', parseFloat(e.target.value))}
+                                    className="w-full p-1.5 text-xs border border-gray-200 rounded outline-none"
+                                    min={0}
+                                />
+                                <span className="text-[10px] text-gray-400">px</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-1">Width</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    value={typeof borderWidth === 'number' ? borderWidth : 0}
+                                    onChange={(e) => onStyleUpdate('borderWidth', parseFloat(e.target.value))}
+                                    className="w-full p-1.5 text-xs border border-gray-200 rounded outline-none"
+                                    min={0}
+                                />
+                                <span className="text-[10px] text-gray-400">px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-3 flex gap-2">
+                        <div className="flex-1">
+                            <input
+                                type="color"
+                                value={borderColor}
+                                onChange={(e) => onStyleUpdate('borderColor', e.target.value)}
+                                className="w-full h-8 rounded border border-gray-200 p-0.5 cursor-pointer"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <select
+                                value={borderStyle}
+                                onChange={(e) => onStyleUpdate('borderStyle', e.target.value)}
+                                className="w-full h-8 px-2 text-xs border border-gray-200 rounded bg-white outline-none"
+                            >
+                                <option value="solid">Solid</option>
+                                <option value="dashed">Dashed</option>
+                                <option value="dotted">Dotted</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Effects Section */}
+                <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
+                            <Sun size={14} className="text-gray-500" />
+                            Shadow
+                        </h5>
+                        <button
+                            onClick={toggleShadow}
+                            className={`w-11 h-6 rounded-full relative transition-colors ${isShadowEnabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                        >
+                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${isShadowEnabled ? 'left-6' : 'left-1'}`} />
+                        </button>
+                    </div>
+
+                    {isShadowEnabled && (
+                        <div className="space-y-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Blur</label>
+                                    <span className="text-[10px] text-indigo-600 font-medium">{blur}px</span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="50" value={blur}
+                                    onChange={(e) => updateShadow(parseInt(e.target.value), spread, shadowColor)}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Spread</label>
+                                    <span className="text-[10px] text-indigo-600 font-medium">{spread}px</span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="20" value={spread}
+                                    onChange={(e) => updateShadow(blur, parseInt(e.target.value), shadowColor)}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase font-semibold block mb-1">Color</label>
+                                <div className="flex gap-2 items-center">
+                                    <div className="w-8 h-8 rounded border border-gray-200 overflow-hidden relative shadow-sm">
+                                        <input
+                                            type="color"
+                                            value={shadowColor.startsWith('#') ? shadowColor : '#000000'}
+                                            onChange={(e) => updateShadow(blur, spread, e.target.value)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                        />
+                                        <div className="w-full h-full" style={{ backgroundColor: shadowColor }} />
+                                    </div>
+                                    <input
+                                        type="text" value={shadowColor}
+                                        onChange={(e) => updateShadow(blur, spread, e.target.value)}
+                                        className="flex-1 p-1.5 text-xs border border-gray-200 rounded outline-none focus:border-indigo-500 font-mono"
+                                        placeholder="rgba(0,0,0,0.15)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Opacity */}
+                    <div className="mt-4">
+                        <div className="flex justify-between mb-1">
+                            <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Opacity</label>
+                            <span className="text-[10px] text-gray-500">{Math.round(opacity * 100)}%</span>
+                        </div>
+                        <input
+                            type="range" min="0" max="1" step="0.01" value={opacity}
+                            onChange={(e) => onStyleUpdate('opacity', parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                        />
+                    </div>
+                </div>
+
+                {/* 4. Glassmorphism Section */}
+                <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
+                            <div className="w-3.5 h-3.5 rounded-full bg-indigo-500/50 backdrop-blur-sm flex items-center justify-center">
+                                <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60" />
+                            </div>
+                            Glassmorphism
+                        </h5>
+                        <button
+                            onClick={() => {
+                                const current = layer.style?.backdropFilter || { enabled: false, blur: 10 };
+                                const enabled = !current.enabled;
+                                onStyleUpdate('backdropFilter', { ...current, enabled });
+                                if (enabled && (!layer.style?.backgroundColor || layer.style.backgroundColor.length === 7)) {
+                                    onStyleUpdate('backgroundColor', `${layer.style?.backgroundColor || '#ffffff'}80`);
+                                }
+                            }}
+                            className={`w-11 h-6 rounded-full relative transition-colors ${(layer.style?.backdropFilter?.enabled) ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                        >
+                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${(layer.style?.backdropFilter?.enabled) ? 'left-6' : 'left-1'}`} />
+                        </button>
+                    </div>
+
+                    {layer.style?.backdropFilter?.enabled && (
+                        <div className="space-y-4 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Blur Intensity</label>
+                                    <span className="text-[10px] text-indigo-600 font-medium">{layer.style.backdropFilter?.blur ?? 10}px</span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="40" step="1"
+                                    value={layer.style.backdropFilter?.blur ?? 10}
+                                    onChange={(e) => onStyleUpdate('backdropFilter', { ...layer.style.backdropFilter, blur: parseInt(e.target.value) })}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex justify-between">
+                                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Opacity Helper</label>
+                                    <span className="text-[10px] text-gray-400">
+                                        {Math.round(((parseInt((layer.style?.backgroundColor || '#ffffffFF').slice(7, 9), 16) || 255) / 255) * 100)}%
+                                    </span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="255" step="5"
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                    value={parseInt((layer.style?.backgroundColor || '#ffffffFF').slice(7, 9), 16) || 255}
+                                    onChange={(e) => {
+                                        const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
+                                        const base = (layer.style?.backgroundColor || '#ffffff').slice(0, 7);
+                                        onStyleUpdate('backgroundColor', `${base}${alpha}`);
+                                    }}
+                                />
+                                <p className="text-[9px] text-gray-400">Lower opacity to see the blur effect efficiently.</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
             </div>
 
-        </div>
+            {/* Asset Picker Dialog */}
+            <AssetPickerDialog
+                isOpen={isAssetPickerOpen}
+                onClose={() => setIsAssetPickerOpen(false)}
+                onSelect={(url) => onStyleUpdate('backgroundImage', `url(${url})`)}
+                accept="image"
+            />
+        </>
     );
 };

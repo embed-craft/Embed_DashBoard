@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -17,6 +17,7 @@ import {
     Video,
     VolumeX
 } from 'lucide-react';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 const PALETTE = [
     '#FFFFFF', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827',
@@ -30,6 +31,7 @@ export const FullScreenMinimalEditor = () => {
         updateFullScreenConfig,
         updateCampaign
     } = useEditorStore();
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
 
     // Resolve Config
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
@@ -203,7 +205,15 @@ export const FullScreenMinimalEditor = () => {
                         {mode === 'media' && (
                             <>
                                 <div>
-                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Media URL</Label>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <Label className="text-[10px] text-gray-500 m-0 block">Media URL</Label>
+                                        <button
+                                            onClick={() => setIsAssetPickerOpen(true)}
+                                            className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                        >
+                                            Asset Library
+                                        </button>
+                                    </div>
                                     <Input
                                         placeholder="https://..."
                                         className="text-xs mb-1"
@@ -447,6 +457,25 @@ export const FullScreenMinimalEditor = () => {
 
                 </TabsContent>
             </Tabs>
+
+            {/* Asset Picker Form */}
+            <AssetPickerDialog
+                isOpen={isAssetPickerOpen}
+                onClose={() => setIsAssetPickerOpen(false)}
+                onSelect={(url) => {
+                    let type: any = 'image';
+                    if (url.includes('youtube') || url.includes('youtu.be')) type = 'youtube';
+                    else if (url.endsWith('.mp4') || url.endsWith('.webm')) type = 'video';
+                    updateFullScreenConfig({
+                        media: {
+                            ...config.media,
+                            url,
+                            type
+                        }
+                    });
+                }}
+                accept="image/*,video/*"
+            />
         </div>
     );
 };

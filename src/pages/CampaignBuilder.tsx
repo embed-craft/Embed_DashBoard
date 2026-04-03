@@ -32,6 +32,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import CampaignTemplateGallery from '@/components/campaign/TemplateGallery';
 import { SaveTemplateModal } from '@/components/campaign/SaveTemplateModal';
+import { TemplateEditorHeader } from '@/components/campaign/TemplateEditorHeader';
+
 
 import { StoriesStep } from '@/components/campaign/stories/StoriesStep';
 import { StoryEditorWrapper } from '@/components/campaign/stories/StoryEditorWrapper';
@@ -81,28 +83,27 @@ const CampaignBuilder: React.FC = () => {
     }
   }, [searchParams, editorMode, setEditorMode]);
 
-  // Load campaign on mount
+  // Load campaign/template on mount
   useEffect(() => {
     const campaignId = searchParams.get('id');
     const mode = searchParams.get('mode');
 
-    // Skip loading if in template mode (DesignStep handles this)
-    if (mode === 'template') return;
-
     if (campaignId) {
-      // Don't reload if it's already the current campaign (prevents 500 on unsaved drafts)
-      if (currentCampaign?.id === campaignId) return;
-
+      // Don't reload if already loaded
+      if (currentCampaign?.id === campaignId || currentCampaign?._id === campaignId) return;
+      // In template mode, load via loadCampaign with the template ID
+      // The API endpoint /admin/templates/:id returns the template which backendToEditor can handle
       loadCampaign(campaignId);
     }
   }, [searchParams, loadCampaign]);
 
-  // Handle new campaign flow
+  // Handle new campaign flow + template pre-apply
   useEffect(() => {
     const experienceType = searchParams.get('experience');
     const nudgeType = searchParams.get('nudge');
     const campaignId = searchParams.get('id');
     const mode = searchParams.get('mode');
+    const templateId = searchParams.get('template');
 
     // Skip if in template mode
     if (mode === 'template') return;
@@ -134,6 +135,32 @@ const CampaignBuilder: React.FC = () => {
       }
     }
   }, [searchParams, createCampaign, resetCurrentCampaign, currentCampaign?.nudgeType]);
+
+  // Apply template after campaign is created (from "Use in Campaign" flow)
+  useEffect(() => {
+    const templateId = searchParams.get('template');
+    if (!templateId || !currentCampaign) return;
+
+    // Only apply once — check if already applied by comparing source
+    if ((currentCampaign as any)._sourceTemplateId === templateId) return;
+
+    const apply = async () => {
+      try {
+        const api = await import('@/lib/api');
+        const transformers = await import('@/lib/campaignTransformers');
+        const rawTemplate = await api.apiClient.getTemplate(templateId);
+        const fullTemplate = transformers.backendToEditor(rawTemplate);
+        applyTemplate({ ...fullTemplate, _sourceTemplateId: templateId } as any);
+        toast.success(`Template "${rawTemplate.name}" applied!`);
+      } catch {
+        console.warn('Failed to pre-apply template from URL param');
+      }
+    };
+
+    apply();
+  }, [currentCampaign?.id, searchParams]);
+
+
 
   // Validation Logic
   const validateStep = (stepId: Step): boolean => {
@@ -291,10 +318,18 @@ const CampaignBuilder: React.FC = () => {
     ]),
   ];
 
-  // In Template Mode, show only the editor (fullscreen)
+  // In Template Mode, show only the editor (fullscreen) with context header
   if (editorMode === 'template') {
-    return <DesignStep />;
+    return (
+      <div className="h-screen flex flex-col overflow-hidden">
+        <TemplateEditorHeader />
+        <div className="flex-1 overflow-hidden">
+          <DesignStep />
+        </div>
+      </div>
+    );
   }
+
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">

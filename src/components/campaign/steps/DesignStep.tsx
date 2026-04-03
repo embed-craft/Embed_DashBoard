@@ -15,6 +15,10 @@ import { FloaterRenderer } from '@/components/FloaterRenderer';
 import { FullScreenRenderer } from '@/components/FullScreenRenderer';
 import { SlideContainerRenderer } from '@/components/campaign/renderers/SlideContainerRenderer';
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
+import { ModalRenderer } from '@/components/ModalRenderer';
+import { BannerRenderer } from '@/components/BannerRenderer';
+import { ScratchCardRenderer } from '@/components/ScratchCardRenderer';
+import { PipRenderer } from '@/components/PipRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { ShapeEditor } from '@/components/editor/style/ShapeEditor';
 import { DESIGN_TYPES, TEMPLATES, DESIGN_CATEGORIES } from '@/lib/designTypes';
@@ -548,8 +552,8 @@ export const DesignStep: React.FC<any> = () => {
     }
   };
 
-  // Image upload handler (Fix 1)
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'background' | 'tooltip_image_only') => {
+  // Image upload handler — uploads to Asset Library (Cloudinary) instead of base64
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'background' | 'tooltip_image_only') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -559,32 +563,45 @@ export const DesignStep: React.FC<any> = () => {
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
+    // Validate file size (10MB max — matches Asset Library limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
       return;
     }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
+    // Try API upload first (saves to Asset Library + Cloudinary)
+    try {
+      const asset = await apiClient.uploadAsset(file);
+      const imageUrl = asset.url; // Cloudinary secure_url
 
       if (target === 'layer') {
-        handleContentUpdate('imageUrl', base64);
-        toast.success('Image uploaded successfully');
+        handleContentUpdate('imageUrl', imageUrl);
+        toast.success('Image uploaded to Asset Library');
       } else if (target === 'tooltip_image_only') {
-        updateTooltipConfig({ imageUrl: base64 });
+        updateTooltipConfig({ imageUrl });
         toast.success('Tooltip image uploaded');
       } else {
-        handleStyleUpdate('backgroundImage', `url('${base64}')`);
+        handleStyleUpdate('backgroundImage', `url('${imageUrl}')`);
         toast.success('Background image uploaded');
       }
-    };
-    reader.onerror = () => {
-      toast.error('Failed to upload image');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      // Fallback to base64 if API fails
+      console.warn('API upload failed, falling back to base64:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (target === 'layer') {
+          handleContentUpdate('imageUrl', base64);
+        } else if (target === 'tooltip_image_only') {
+          updateTooltipConfig({ imageUrl: base64 });
+        } else {
+          handleStyleUpdate('backgroundImage', `url('${base64}')`);
+        }
+        toast.success('Image uploaded (local)');
+      };
+      reader.onerror = () => toast.error('Failed to upload image');
+      reader.readAsDataURL(file);
+    }
   };
 
   // Drag and Drop Handlers for Layer Reordering

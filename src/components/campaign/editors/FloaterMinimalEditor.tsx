@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -16,6 +16,7 @@ import {
     VolumeX,
     Sparkles,
 } from 'lucide-react';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 // Colors for palette picker (Same as Scratch Card)
 const PALETTE = [
@@ -29,6 +30,7 @@ export const FloaterMinimalEditor = () => {
         updateFloaterConfig,
         activeInterfaceId
     } = useEditorStore();
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
 
     // Resolve Config
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
@@ -510,7 +512,15 @@ export const FloaterMinimalEditor = () => {
                         {mode === 'media' && (
                             <>
                                 <div>
-                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Media URL</Label>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <Label className="text-[10px] text-gray-500 m-0">Media URL</Label>
+                                        <button
+                                            onClick={() => setIsAssetPickerOpen(true)}
+                                            className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                        >
+                                            Asset Library
+                                        </button>
+                                    </div>
                                     <Input
                                         placeholder="https://..."
                                         className="text-xs mb-1"
@@ -851,6 +861,19 @@ export const FloaterMinimalEditor = () => {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            {/* Asset Picker Dialog */}
+            <AssetPickerDialog
+                isOpen={isAssetPickerOpen}
+                onClose={() => setIsAssetPickerOpen(false)}
+                onSelect={(url) => {
+                    let type: any = 'image';
+                    if (url.includes('youtube') || url.includes('youtu.be')) type = 'youtube';
+                    else if (url.endsWith('.mp4') || url.endsWith('.webm')) type = 'video';
+                    updateFloaterConfig({ media: { ...config.media, url, type } });
+                }}
+                accept="image"
+            />
         </div>
     );
 };

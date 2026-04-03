@@ -1,287 +1,516 @@
-import React, { useState } from 'react';
-import { theme } from '@/styles/design-tokens';
-import { toast } from 'sonner';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
 import {
-    Search,
-    Plus,
-    LayoutTemplate,
-    MoreHorizontal,
-    Trash2,
-    Copy,
-    Smartphone,
-    Monitor,
-    Filter,
-    Clock,
-    User as UserIcon,
-    History
+    Search, Plus, MoreVertical, Trash2, Copy, Edit3,
+    Globe, Building2, LayoutTemplate, Layers, Clock,
+    Sparkles, Loader2, Rocket, X, AlertTriangle
 } from 'lucide-react';
-import { useStore, Template } from '@/store/useStore';
-import PageHeader from '@/components/layout/PageHeader';
-import PageContainer from '@/components/layout/PageContainer';
-import SearchInput from '@/components/shared/SearchInput';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator,
-    DropdownMenuLabel
-} from "@/components/ui/dropdown-menu";
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-    CardDescription
-} from "@/components/ui/card";
-import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage
-} from "@/components/ui/avatar";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { apiClient } from '@/lib/api';
+import { toast } from 'sonner';
 import { CreateTemplateDialog } from '@/components/campaign/CreateTemplateDialog';
+import { formatDistanceToNow } from 'date-fns';
 
-// Helper to generate consistent color from string
-const stringToColor = (str: string) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-    return '#' + "00000".substring(0, 6 - c.length) + c;
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+interface Template {
+    _id: string;
+    id?: string;
+    name: string;
+    category: string;
+    description?: string;
+    thumbnail?: string;
+    tags?: string[];
+    type?: string;
+    config?: any;
+    is_system: boolean;
+    layers?: any[];
+    createdAt?: string;
+    updatedAt?: string;
+    createdBy?: { name: string };
+}
+
+// ─── Constants ─────────────────────────────────────────────────────────────────
+
+// Categories removed
+const NUDGE_TYPES = [
+    { id: 'all',         label: 'All Types' },
+    { id: 'bottomsheet', label: 'Bottom Sheet' },
+    { id: 'modal',       label: 'Modal' },
+    { id: 'banner',      label: 'Banner' },
+    { id: 'tooltip',     label: 'Tooltip' },
+    { id: 'floater',     label: 'Floater' },
+    { id: 'fullscreen',  label: 'Full Screen' },
+    { id: 'scratchcard', label: 'Scratch Card' },
+];
+
+const typeGradients: Record<string, string> = {
+    bottomsheet: 'from-indigo-500 to-violet-600',
+    modal:       'from-blue-500 to-cyan-500',
+    tooltip:     'from-orange-400 to-amber-500',
+    floater:     'from-teal-500 to-green-500',
+    fullscreen:  'from-gray-600 to-slate-800',
+    pip:         'from-rose-500 to-pink-500',
+    carousel:    'from-purple-500 to-fuchsia-500',
+    banner:      'from-sky-400 to-blue-500',
 };
 
-const UserAvatar = ({ user, className }: { user?: { name: string, email: string }, className?: string }) => {
-    if (!user) return null;
-    const displayName = user.name || user.email.split('@')[0]; // Fallback to email username
-    const initials = displayName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
-    const bg = stringToColor(user.email || 'default');
+const typeDots: Record<string, string> = {
+    bottomsheet: 'bg-indigo-500',
+    modal:       'bg-blue-500',
+    tooltip:     'bg-amber-500',
+    floater:     'bg-teal-500',
+    fullscreen:  'bg-gray-600',
+    pip:         'bg-rose-500',
+    carousel:    'bg-purple-500',
+    banner:      'bg-sky-500',
+};
 
+const nudgeTypeLabel: Record<string, string> = {
+    bottomsheet: 'Bottom Sheet',
+    modal:       'Modal',
+    tooltip:     'Tooltip',
+    floater:     'Floater',
+    fullscreen:  'Full Screen',
+    pip:         'PiP Video',
+    carousel:    'Carousel',
+    banner:      'Banner',
+};
+
+// ─── Delete Confirm Dialog ──────────────────────────────────────────────────────
+
+const DeleteConfirmDialog: React.FC<{
+    template: Template | null;
+    onConfirm: () => void;
+    onCancel: () => void;
+}> = ({ template, onConfirm, onCancel }) => {
+    if (!template) return null;
     return (
-        <Avatar className={className}>
-            <AvatarFallback style={{ backgroundColor: `${bg}20`, color: bg, borderColor: `${bg}40`, borderStyle: 'solid', borderWidth: '1px' }} className="text-xs font-medium">
-                {initials}
-            </AvatarFallback>
-        </Avatar>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-sm w-full mx-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center">
+                        <AlertTriangle size={18} className="text-red-500" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-gray-900 text-sm">Delete Template</p>
+                        <p className="text-xs text-gray-400">This cannot be undone</p>
+                    </div>
+                </div>
+                <p className="text-sm text-gray-600 mb-5">
+                    Are you sure you want to delete <span className="font-semibold text-gray-800">"{template.name}"</span>?
+                </p>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">Cancel</Button>
+                    <Button size="sm" onClick={onConfirm} className="flex-1 bg-red-600 hover:bg-red-700 text-white">Delete</Button>
+                </div>
+            </div>
+        </div>
     );
 };
 
-const Templates = () => {
+// ─── Template Card ──────────────────────────────────────────────────────────────
+
+const TemplateCard: React.FC<{
+    template: Template;
+    onEdit: () => void;
+    onDuplicate: () => void;
+    onDelete: () => void;
+    onUse: () => void;
+    index: number;
+}> = ({ template, onEdit, onDuplicate, onDelete, onUse, index }) => {
+    const nudgeType = template.type || template.config?.type || 'modal';
+    const gradient = typeGradients[nudgeType] || typeGradients.modal;
+    const dot = typeDots[nudgeType] || typeDots.modal;
+    const hasThumbnail = template.thumbnail && (
+        template.thumbnail.startsWith('data:') || template.thumbnail.startsWith('http')
+    );
+    const timeAgo = template.updatedAt
+        ? formatDistanceToNow(new Date(template.updatedAt), { addSuffix: true })
+        : null;
+
+    return (
+        <div
+            className="group relative bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer
+                transition-all duration-300 hover:shadow-xl hover:shadow-indigo-100/50 hover:border-indigo-300 flex flex-col"
+            style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
+        >
+            {/* Thumbnail */}
+            <div className="aspect-video relative overflow-hidden bg-gray-50/50">
+                {hasThumbnail ? (
+                    <img
+                        src={template.thumbnail}
+                        alt={template.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradient} flex flex-col items-center justify-center gap-3 opacity-90 group-hover:opacity-100 transition-opacity`}>
+                        <LayoutTemplate size={28} className="text-white/70" />
+                        <span className="text-white/90 text-xs font-semibold">{nudgeTypeLabel[nudgeType] || nudgeType}</span>
+                    </div>
+                )}
+
+                {/* Badges container */}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-start pointer-events-none">
+                    <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm shadow-sm text-[10px] font-semibold px-2 py-1 rounded-full text-gray-700">
+                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                        {nudgeTypeLabel[nudgeType] || nudgeType}
+                    </span>
+                    {template.is_system && (
+                        <span className="bg-amber-100/90 backdrop-blur-sm text-amber-800 border border-amber-200/50 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm pointer-events-auto">
+                            System
+                        </span>
+                    )}
+                </div>
+
+                {/* Primary Action Overlay */}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px] flex items-center justify-center p-4">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onUse(); }}
+                        className="flex items-center justify-center gap-2 bg-white text-gray-900 text-sm font-bold px-6 py-2.5 rounded-full hover:bg-slate-100 hover:scale-105 transition-all shadow-xl translate-y-4 group-hover:translate-y-0 duration-300"
+                    >
+                        <Rocket size={15} />
+                        Use Template
+                    </button>
+                </div>
+            </div>
+
+            {/* Card Body & Footer */}
+            <div className="p-3.5 flex flex-col flex-1 bg-white relative">
+                <div className="flex-1 min-w-0 mb-3">
+                    <p className="text-[13px] font-bold text-gray-800 truncate" title={template.name}>{template.name}</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                        {template.layers && template.layers.length > 0 && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500">
+                                <Layers size={11} className="text-gray-400" /> {template.layers.length} Layers
+                            </span>
+                        )}
+                        {timeAgo && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500">
+                                <Clock size={11} className="text-gray-400" /> {timeAgo}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Quick Actions Footer - visible to improve discovery but subtle */}
+                <div className="flex items-center gap-1 pt-3 border-t border-gray-100">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="Edit Design"
+                    >
+                        <Edit3 size={12} /> Edit
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="Duplicate"
+                    >
+                        <Copy size={12} /> Copy
+                    </button>
+                    {!template.is_system && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                        >
+                            <Trash2 size={12} /> Delete
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Skeleton Card ──────────────────────────────────────────────────────────────
+
+const SkeletonCard = () => (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse flex flex-col">
+        <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-50" />
+        <div className="p-3.5 space-y-3 flex-1 flex flex-col">
+            <div className="h-4 bg-gray-100 rounded w-2/3" />
+            <div className="h-3 bg-gray-50 rounded w-1/2" />
+            <div className="mt-auto pt-3 border-t border-gray-50 flex gap-2">
+                <div className="h-6 bg-gray-50 rounded flex-1" />
+                <div className="h-6 bg-gray-50 rounded flex-1" />
+                <div className="h-6 bg-gray-50 rounded flex-1" />
+            </div>
+        </div>
+    </div>
+);
+
+// ─── Main Page ──────────────────────────────────────────────────────────────────
+
+const Templates: React.FC = () => {
     const navigate = useNavigate();
-    const { templates, fetchTemplates, deleteTemplate } = useStore();
+    const [templates, setTemplates]         = useState<Template[]>([]);
+    const [loading, setLoading]             = useState(true);
+    const [search, setSearch]               = useState('');
+    const [source, setSource]               = useState<'yours' | 'system'>('yours');
+    const [typeFilter, setTypeFilter]       = useState('all');
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget]   = useState<Template | null>(null);
 
-    React.useEffect(() => {
-        fetchTemplates();
+    const fetchTemplates = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await apiClient.listTemplates({});
+            setTemplates(res.templates || []);
+        } catch {
+            toast.error('Failed to load templates');
+        } finally {
+            setLoading(false);
+        }
     }, []);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('your_templates');
 
-    const handleEdit = (template: any) => {
-        const templateId = template._id || template.id;
-        navigate(`/campaign-builder?mode=template&id=${templateId}`);
+    useEffect(() => { fetchTemplates(); }, []);
+
+    // Debounced search
+    useEffect(() => {
+        const t = setTimeout(() => fetchTemplates(), 350);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    const filtered = templates.filter((t) => {
+        const tType = t.type || t.config?.type || '';
+        if (source === 'yours' && t.is_system) return false;
+        if (source === 'system' && !t.is_system) return false;
+        if (typeFilter !== 'all' && tType !== typeFilter) return false;
+        if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+    });
+
+    const handleEdit = (template: Template) => {
+        navigate(`/campaign-builder?mode=template&id=${template._id || template.id}`);
     };
 
-    const handleDelete = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (confirm('Are you sure you want to delete this template?')) {
-            deleteTemplate(id);
-            toast.success('Template deleted');
+    const handleDuplicate = async (template: Template) => {
+        try {
+            const { name, category, type, config, layers, tags } = template;
+            await apiClient.createTemplate({
+                name: `${name} (Copy)`,
+                category,
+                type,
+                config,
+                layers: layers || [],
+                tags: tags || [],
+                thumbnail: template.thumbnail || null,
+                is_system: false,
+            });
+            toast.success('Template duplicated!');
+            fetchTemplates();
+        } catch {
+            toast.error('Failed to duplicate template');
         }
     };
 
-    const filteredTemplates = templates.filter(template => {
-        const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const isSystem = template.type === 'system' || (template as any).is_system; // Handle legacy check
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
+        try {
+            await apiClient.deleteTemplate(deleteTarget._id || deleteTarget.id || '');
+            toast.success('Template deleted');
+            setDeleteTarget(null);
+            fetchTemplates();
+        } catch {
+            toast.error('Failed to delete template');
+        }
+    };
 
-        if (activeTab === 'system') return matchesSearch && isSystem;
-        if (activeTab === 'your_templates') return matchesSearch && !isSystem; // Simplification, ideally verify ownership
-        return matchesSearch;
-    });
+    // "Use in Campaign" — industrial standard: create new campaign from template, navigate to builder
+    const handleUse = (template: Template) => {
+        const nudgeType = template.type || template.config?.type || 'modal';
+        const templateId = template._id || template.id;
+        navigate(`/campaign-builder?experience=nudges&nudge=${nudgeType}&template=${templateId}`);
+    };
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#F9F9F7' }}>
-            <PageHeader
-                title="Templates"
-                subtitle="Design and manage campaign templates"
-                actions={
-                    <Button onClick={() => setIsCreateOpen(true)} className="bg-black text-white hover:bg-gray-800">
-                        <Plus className="mr-2 h-4 w-4" /> Create Template
-                    </Button>
-                }
-            />
-
-            <PageContainer>
-                <div className="flex flex-col space-y-6">
-                    {/* Controls Bar */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-                            <TabsList className="bg-gray-100 p-1">
-                                <TabsTrigger value="your_templates" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Your Templates</TabsTrigger>
-                                <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">System Library</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-
-                        <div className="flex items-center gap-2 w-full md:w-auto">
-                            <div className="relative w-full md:w-[300px]">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                                <Input
-                                    placeholder="Search by name..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 h-9 bg-gray-50 border-gray-200"
-                                />
-                            </div>
-                            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
-                                <Filter className="h-4 w-4 text-gray-500" />
-                            </Button>
+        <div className="flex h-full bg-gray-50/50 overflow-hidden">
+            {/* ── Left Sidebar ────────────────────────────────────────────── */}
+            <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden">
+                {/* Sidebar Header */}
+                <div className="px-4 pt-5 pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+                            <LayoutTemplate size={14} className="text-white" />
                         </div>
+                        <span className="font-bold text-gray-900 text-sm">Templates</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400">Reusable designs for campaigns</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3 space-y-5">
+                    {/* Source — Yours / System */}
+                    <div className="space-y-0.5">
+                        {[
+                            { id: 'yours',  label: 'Your Templates', icon: Building2 },
+                            { id: 'system', label: 'System Library',  icon: Globe },
+                        ].map(({ id, label, icon: Icon }) => (
+                            <button
+                                key={id}
+                                onClick={() => setSource(id as 'yours' | 'system')}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                                    ${source === id
+                                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                    }`}
+                            >
+                                <Icon size={13} className={source === id ? 'text-indigo-600' : 'text-gray-400'} />
+                                {label}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Content Area */}
-                    {filteredTemplates.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                                <LayoutTemplate className="h-8 w-8 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900">No templates found</h3>
-                            <p className="mt-1 text-sm text-gray-500 max-w-sm text-center">
-                                {searchQuery ? `No matches for "${searchQuery}"` : "Get started by creating your first template manually."}
-                            </p>
-                            {!searchQuery && (
-                                <Button variant="outline" className="mt-6" onClick={() => setIsCreateOpen(true)}>
-                                    Create New Template
-                                </Button>
+                    {/* Divider */}
+                    <div className="h-px bg-gray-100" />
+
+                    {/* Type Filter */}
+                    <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Nudge Type</p>
+                        <div className="space-y-0.5">
+                            {NUDGE_TYPES.map((nt) => (
+                                <button
+                                    key={nt.id}
+                                    onClick={() => setTypeFilter(nt.id)}
+                                    className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                                        ${typeFilter === nt.id
+                                            ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                        }`}
+                                >
+                                    {nt.id !== 'all' && (
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${typeDots[nt.id] || 'bg-gray-400'}`} />
+                                    )}
+                                    {nt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            {/* ── Main Content ─────────────────────────────────────────────── */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Top bar */}
+                <div className="h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between gap-4 shrink-0">
+                    <div className="flex items-center gap-3">
+                        {/* Search */}
+                        <div className="relative w-64">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Input
+                                placeholder="Search templates…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9 h-9 text-sm bg-gray-50 border-gray-200 focus:bg-white"
+                            />
+                            {search && (
+                                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <X size={13} />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                            {typeFilter !== 'all' && (
+                                <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                    {nudgeTypeLabel[typeFilter]}
+                                    <button onClick={() => setTypeFilter('all')}><X size={10} /></button>
+                                </span>
+                            )}
+                        </div>
+
+                        {!loading && (
+                            <span className="text-xs text-gray-400 font-medium">
+                                {filtered.length} template{filtered.length !== 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+
+                    <Button
+                        onClick={() => setCreateDialogOpen(true)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm gap-2 shadow-sm shadow-indigo-200 hover:shadow-indigo-300 transition-all"
+                    >
+                        <Plus size={15} />
+                        New Template
+                    </Button>
+                </div>
+
+                {/* Grid */}
+                <div className="flex-1 overflow-y-auto p-6">
+                    {loading ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+                            {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+                        </div>
+                    ) : filtered.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center py-24">
+                            {source === 'yours' ? (
+                                <>
+                                    <div className="relative mb-6">
+                                        <div className="w-20 h-20 rounded-3xl bg-indigo-50 border-2 border-dashed border-indigo-200 flex items-center justify-center">
+                                            <Sparkles size={30} className="text-indigo-300" />
+                                        </div>
+                                        <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg">
+                                            <Plus size={14} className="text-white" />
+                                        </div>
+                                    </div>
+                                    <p className="text-xl font-bold text-gray-800 mb-2">No templates yet</p>
+                                    <p className="text-sm text-gray-400 mb-6 max-w-xs">
+                                        Create your first template, or save a campaign design as a template from the Campaign Builder.
+                                    </p>
+                                    <Button onClick={() => setCreateDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                                        <Plus size={15} />
+                                        Create First Template
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-4">
+                                        <Globe size={24} className="text-amber-400" />
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-700 mb-1">No system templates found</p>
+                                    <p className="text-sm text-gray-400">
+                                        {search || typeFilter !== 'all'
+                                            ? 'Try clearing your filters'
+                                            : 'System templates will appear here once seeded'}
+                                    </p>
+                                </>
                             )}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredTemplates.map((template) => (
-                                <Card
-                                    key={template.id || template._id}
-                                    className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border-gray-200 bg-white"
-                                    onClick={() => handleEdit(template)}
-                                >
-                                    {/* Thumbnail Area */}
-                                    <div className="aspect-[16/10] bg-gray-50 relative border-b border-gray-100 overflow-hidden">
-                                        {/* Mockup / Icon */}
-                                        <div className="absolute inset-0 flex items-center justify-center text-gray-300 group-hover:scale-105 transition-transform duration-500">
-                                            {template.type === 'modal' ? <Smartphone size={48} strokeWidth={1} /> : <Monitor size={48} strokeWidth={1} />}
-                                        </div>
-
-                                        {/* Type Badge */}
-                                        <div className="absolute top-3 left-3">
-                                            <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm border border-gray-100/50 shadow-sm text-xs font-normal uppercase tracking-wide">
-                                                {template.type}
-                                            </Badge>
-                                        </div>
-
-                                        {/* Hover Overlay */}
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[1px]">
-                                            <Button size="sm" variant="secondary" className="h-8 text-xs font-medium">
-                                                Edit Design
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {/* Details Area */}
-                                    <CardContent className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-semibold text-gray-900 truncate pr-2 group-hover:text-purple-600 transition-colors">
-                                                {template.name}
-                                            </h3>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 text-gray-400 hover:text-gray-900" onClick={(e) => e.stopPropagation()}>
-                                                        <MoreHorizontal size={14} />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-40">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(template); }}>
-                                                        Edit Template
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); /* TODO: duplicate */ }}>
-                                                        <Copy className="mr-2 h-3.5 w-3.5" /> Duplicate
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={(e) => handleDelete(template._id || template.id, e)}
-                                                        className="text-red-600 focus:text-red-600"
-                                                    >
-                                                        <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-
-                                        {/* Collaboration Strip */}
-                                        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                                            <div className="flex items-center -space-x-2">
-                                                <TooltipProvider>
-                                                    {template.createdBy && (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <div className="relative z-10 ring-2 ring-white rounded-full cursor-help">
-                                                                    <UserAvatar user={template.createdBy} className="h-6 w-6" />
-                                                                </div>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="bottom" className="text-xs p-3 max-w-[200px]">
-                                                                <div className="font-semibold mb-1">Created By</div>
-                                                                <div className="mb-2">
-                                                                    <p className="font-medium text-gray-900">{template.createdBy.name || template.createdBy.email}</p>
-                                                                    <p className="text-gray-400 text-[10px]">{new Date(template.createdAt).toLocaleString()}</p>
-                                                                </div>
-
-                                                                {template.lastEditedBy && (
-                                                                    <>
-                                                                        <div className="font-semibold mb-1 border-t pt-2 mt-1">Last Edited By</div>
-                                                                        <div>
-                                                                            <p className="font-medium text-gray-900">{template.lastEditedBy.name || template.lastEditedBy.email}</p>
-                                                                            <p className="text-gray-400 text-[10px]">{formatDistanceToNow(new Date(template.updatedAt), { addSuffix: true })}</p>
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    )}
-                                                </TooltipProvider>
-                                            </div>
-
-                                            <div className="flex items-center text-[10px] text-gray-400 font-medium">
-                                                <Clock size={10} className="mr-1" />
-                                                {formatDistanceToNow(new Date(template.updatedAt), { addSuffix: true })}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+                            {filtered.map((template, i) => (
+                                <TemplateCard
+                                    key={template._id}
+                                    template={template}
+                                    index={i}
+                                    onEdit={() => handleEdit(template)}
+                                    onDuplicate={() => handleDuplicate(template)}
+                                    onDelete={() => setDeleteTarget(template)}
+                                    onUse={() => handleUse(template)}
+                                />
                             ))}
                         </div>
                     )}
                 </div>
-            </PageContainer>
+            </div>
 
+            {/* ── Dialogs ──────────────────────────────────────────────────── */}
             <CreateTemplateDialog
-                isOpen={isCreateOpen}
-                onClose={() => setIsCreateOpen(false)}
-                onSuccess={(tpl) => handleEdit(tpl)}
+                isOpen={createDialogOpen}
+                onClose={() => setCreateDialogOpen(false)}
+                onSuccess={() => fetchTemplates()}
             />
-        </div >
+
+            <DeleteConfirmDialog
+                template={deleteTarget}
+                onConfirm={handleDeleteConfirm}
+                onCancel={() => setDeleteTarget(null)}
+            />
+        </div>
     );
 };
 

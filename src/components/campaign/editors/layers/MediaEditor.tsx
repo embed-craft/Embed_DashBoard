@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
@@ -9,9 +9,11 @@ import {
     Palette,
     Link as LinkIcon,
     Maximize,
-    Square
+    Square,
+    FolderOpen
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 // Helper components
 const Label = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -52,6 +54,7 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
         primary: { 500: '#6366f1' }
     }
 }) => {
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     const imageUrl = layer?.content?.imageUrl || layer?.content?.videoUrl || '';
 
     // SAFE ACCESSORS for Style Properties
@@ -100,21 +103,35 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
                                             filter: `brightness(${filter.brightness}%) contrast(${filter.contrast}%) blur(${filter.blur}px) grayscale(${filter.grayscale}%)`
                                         }}
                                     />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <label className="cursor-pointer px-4 py-2 bg-white/90 hover:bg-white text-gray-900 rounded-md text-sm font-medium shadow-lg backdrop-blur-sm transition-transform transform scale-95 group-hover:scale-100">
-                                            Replace Image
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <label className="cursor-pointer px-3 py-1.5 bg-white/90 hover:bg-white text-gray-900 rounded-md text-xs font-medium shadow-lg backdrop-blur-sm">
+                                            Replace
                                             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
                                         </label>
+                                        <button
+                                            onClick={() => setIsAssetPickerOpen(true)}
+                                            className="px-3 py-1.5 bg-indigo-500/90 hover:bg-indigo-600 text-white rounded-md text-xs font-medium shadow-lg backdrop-blur-sm flex items-center gap-1"
+                                        >
+                                            <FolderOpen size={12} /> Assets
+                                        </button>
                                     </div>
                                 </>
                             ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2">
-                                    <ImageIcon size={32} />
+                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-3">
+                                    <ImageIcon size={28} strokeWidth={1.2} />
                                     <span className="text-xs">No image selected</span>
-                                    <label className="mt-2 text-indigo-600 text-xs font-medium cursor-pointer hover:underline">
-                                        Upload Image
-                                        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
-                                    </label>
+                                    <div className="flex gap-2">
+                                        <label className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-md text-xs font-medium cursor-pointer hover:border-gray-300">
+                                            Upload
+                                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
+                                        </label>
+                                        <button
+                                            onClick={() => setIsAssetPickerOpen(true)}
+                                            className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-md text-xs font-medium hover:bg-indigo-100 flex items-center gap-1"
+                                        >
+                                            <FolderOpen size={12} /> Asset Library
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -132,6 +149,16 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
                             </div>
                         </div>
                     </div>
+
+                    {/* Asset Picker Dialog */}
+                    <AssetPickerDialog
+                        isOpen={isAssetPickerOpen}
+                        onClose={() => setIsAssetPickerOpen(false)}
+                        onSelect={(url) => {
+                            handleContentUpdate(layer.type === 'video' ? 'videoUrl' : 'imageUrl', url);
+                        }}
+                        accept={layer.type === 'video' ? 'video' : 'image'}
+                    />
                 </TabsContent>
 
                 {/* --- ADJUSTMENTS TAB --- */}

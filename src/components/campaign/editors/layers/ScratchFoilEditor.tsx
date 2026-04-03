@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles, Move, Maximize2, Brush, Percent, Palette, Image as ImageIcon } from 'lucide-react';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 // UI Components
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,8 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
 
     // Tab State
     const [activeTab, setActiveTab] = React.useState<'design' | 'interaction' | 'layout'>('design');
+    const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
+    const [isCursorPickerOpen, setIsCursorPickerOpen] = useState(false);
 
     return (
         <div className="flex flex-col h-full bg-white">
@@ -98,7 +101,15 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
 
                             {coverType === 'image' ? (
                                 <div className="space-y-3 pt-1">
-                                    <Label className="text-[10px] text-gray-500">Image URL</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-[10px] text-gray-500">Image URL</Label>
+                                        <button
+                                            onClick={() => setIsCoverPickerOpen(true)}
+                                            className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                        >
+                                            Asset Library
+                                        </button>
+                                    </div>
                                     <div className="space-y-2">
                                         <Input
                                             value={content.coverImage === 'https://' ? '' : (content.coverImage || '')}
@@ -205,12 +216,23 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
                             <p className="text-[10px] text-gray-500">Optional image to replace the mouse cursor when scratching.</p>
 
                             <div className="flex gap-2">
-                                <Input
-                                    value={content.cursorImage || ''}
-                                    onChange={(e) => updateContent('cursorImage', e.target.value)}
-                                    placeholder="https://example.com/coin.png"
-                                    className="h-8 text-xs bg-white flex-1"
-                                />
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-gray-500">Image URL</span>
+                                        <button
+                                            onClick={() => setIsCursorPickerOpen(true)}
+                                            className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                        >
+                                            Asset Library
+                                        </button>
+                                    </div>
+                                    <Input
+                                        value={content.cursorImage || ''}
+                                        onChange={(e) => updateContent('cursorImage', e.target.value)}
+                                        placeholder="https://example.com/coin.png"
+                                        className="h-8 text-xs bg-white"
+                                    />
+                                </div>
                                 {content.cursorImage && (
                                     <div className="w-8 h-8 rounded border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
                                         <img src={content.cursorImage} className="w-full h-full object-contain" alt="Cursor" />
@@ -240,6 +262,20 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Asset Pickers */}
+            <AssetPickerDialog
+                isOpen={isCoverPickerOpen}
+                onClose={() => setIsCoverPickerOpen(false)}
+                onSelect={(url) => updateContent('coverImage', url)}
+                accept="image"
+            />
+            <AssetPickerDialog
+                isOpen={isCursorPickerOpen}
+                onClose={() => setIsCursorPickerOpen(false)}
+                onSelect={(url) => updateContent('cursorImage', url)}
+                accept="image"
+            />
         </div>
     );
 };

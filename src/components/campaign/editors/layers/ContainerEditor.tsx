@@ -20,6 +20,7 @@ import {
     LayoutGrid,
     Type
 } from 'lucide-react';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 // Colors for palette picker (Same as Scratch Card/Floater)
 const PALETTE = [
@@ -44,6 +45,7 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
     handleTooltipUpdate,
     colors
 }) => {
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     // Style Helpers
     const style = layer.style || {};
 
@@ -411,7 +413,15 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                             {mode === 'media' && (
                                 <div className="space-y-3">
                                     <div>
-                                        <Label className="text-[10px] text-gray-500 mb-1.5 block">Image URL</Label>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <Label className="text-[10px] text-gray-500 block m-0">Image URL</Label>
+                                            <button
+                                                onClick={() => setIsAssetPickerOpen(true)}
+                                                className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                            >
+                                                Asset Library
+                                            </button>
+                                        </div>
                                         <div className="relative">
                                             <ImageIcon size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
                                             <Input
@@ -650,6 +660,16 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
 
                 </div>
             </Tabs>
+
+            {/* Asset Picker Form */}
+            <AssetPickerDialog
+                isOpen={isAssetPickerOpen}
+                onClose={() => setIsAssetPickerOpen(false)}
+                onSelect={(url) => {
+                    onStyleUpdate('backgroundImage', url ? `url(${url})` : 'none');
+                }}
+                accept="image"
+            />
         </div>
     );
 };

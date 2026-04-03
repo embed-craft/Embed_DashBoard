@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -17,6 +17,7 @@ import {
     ChevronDown,
     Layers,
 } from 'lucide-react';
+import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 
 // Colors for palette picker
 const PALETTE = [
@@ -26,6 +27,7 @@ const PALETTE = [
 
 export const BottomSheetMinimalEditor = () => {
     const { currentCampaign, activeInterfaceId, updateBottomSheetConfig, updateBannerConfig } = useEditorStore();
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
 
     // Determine context (Bottom Sheet vs Banner)
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
@@ -289,7 +291,15 @@ export const BottomSheetMinimalEditor = () => {
 
                         {/* Background Image */}
                         <div className="space-y-2 border rounded-lg p-3">
-                            <Label className="text-[10px] text-gray-500 block">Background Image URL</Label>
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] text-gray-500 block">Background Image URL</Label>
+                                <button
+                                    onClick={() => setIsAssetPickerOpen(true)}
+                                    className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-medium hover:bg-indigo-100 transition-colors"
+                                >
+                                    Asset Library
+                                </button>
+                            </div>
                             <Input
                                 type="text"
                                 className="h-8 text-xs"
@@ -500,6 +510,14 @@ export const BottomSheetMinimalEditor = () => {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            {/* Asset Picker Form */}
+            <AssetPickerDialog
+                isOpen={isAssetPickerOpen}
+                onClose={() => setIsAssetPickerOpen(false)}
+                onSelect={(url) => updateConfig('backgroundImageUrl', url)}
+                accept="image"
+            />
         </div >
     );
 };

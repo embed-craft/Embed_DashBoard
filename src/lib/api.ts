@@ -272,31 +272,31 @@ class ApiClient {
     if (params?.search) query.append('search', params.search);
 
     const queryString = query.toString();
-    const url = `/admin/templates${queryString ? `?${queryString}` : ''}`;
+    const url = `/v1/admin/templates${queryString ? `?${queryString}` : ''}`;
 
     return this.request(url);
   }
 
   public async getTemplate(id: string): Promise<any> {
-    return this.request(`/admin/templates/${encodeURIComponent(id)}`);
+    return this.request(`/v1/admin/templates/${encodeURIComponent(id)}`);
   }
 
   public async createTemplate(template: any): Promise<any> {
-    return this.request('/admin/templates', {
+    return this.request('/v1/admin/templates', {
       method: 'POST',
       body: JSON.stringify(template),
     });
   }
 
   public async updateTemplate(id: string, template: any): Promise<any> {
-    return this.request(`/admin/templates/${encodeURIComponent(id)}`, {
+    return this.request(`/v1/admin/templates/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(template),
     });
   }
 
   public async deleteTemplate(id: string): Promise<any> {
-    return this.request(`/admin/templates/${encodeURIComponent(id)}`, {
+    return this.request(`/v1/admin/templates/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
   }
@@ -304,7 +304,7 @@ class ApiClient {
   // ============================================================================
   // Assets
   // ============================================================================
-  public async listAssets(): Promise<{ assets: any[] }> {
+  public async listAssets(): Promise<{ assets: any[]; meta: { total: number; images: number; videos: number; files: number; totalSize: string; totalSizeBytes: number } }> {
     return this.request('/v1/admin/assets');
   }
 
@@ -318,10 +318,27 @@ class ApiClient {
     });
   }
 
-  public async createAssetFromUrl(data: { name: string; url: string; type?: 'image' | 'file' }): Promise<any> {
+  public async uploadMultipleAssets(files: File[]): Promise<{ assets: any[]; count: number }> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return this.request('/v1/admin/assets/bulk', {
+      method: 'POST',
+      body: formData,
+      timeout: 120000,
+    });
+  }
+
+  public async createAssetFromUrl(data: { name: string; url: string; type?: 'image' | 'video' | 'file' }): Promise<any> {
     return this.request('/v1/admin/assets/url', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  public async renameAsset(id: string, name: string): Promise<any> {
+    return this.request(`/v1/admin/assets/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
     });
   }
 

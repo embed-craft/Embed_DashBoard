@@ -221,7 +221,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
 
     // Find floater container layer (not 'modal' type, but 'container' with name 'Floater Container')
     const floaterLayer = layers.find(l => l.type === 'container' && l.name === 'Floater Container') || layers[0] || { id: 'fallback', type: 'container', content: {}, style: {} } as any;
-    const childLayers = layers.filter(l => l.parent === floaterLayer.id);
+    const childLayers = layers.filter(l => l.parent === floaterLayer.id).sort((a, b) => (a.style?.zIndex || 0) - (b.style?.zIndex || 0));
 
     // Guard: Track when interact mode was enabled to prevent auto-triggering
     const interactModeEntryTimeRef = useRef<number>(0);
@@ -555,19 +555,6 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             case 'image':
                 content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
                 break;
-            case 'handle':
-                content = (
-                    <div style={{
-                        width: layer.size?.width || 40,
-                        height: layer.size?.height || 4,
-                        backgroundColor: layer.style?.backgroundColor || '#e5e7eb',
-                        borderRadius: typeof layer.style?.borderRadius === 'object'
-                            ? `${layer.style.borderRadius.topLeft}px ${layer.style.borderRadius.topRight}px ${layer.style.borderRadius.bottomRight}px ${layer.style.borderRadius.bottomLeft}px`
-                            : (layer.style?.borderRadius || 2),
-                        margin: '0 auto'
-                    }} />
-                );
-                break;
             case 'button':
                 content = (
                     <ButtonRenderer
@@ -578,77 +565,11 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     />
                 );
                 break;
-            case 'custom_html':
-                content = (
-                    <div
-                        dangerouslySetInnerHTML={{ __html: layer.content?.html || '<div style="padding:10px; border:1px dashed #ccc; color:#999">Empty HTML Layer</div>' }}
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                );
-                break;
             case 'input':
                 content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />;
                 break;
-            case 'checkbox':
-                content = (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input type="checkbox" style={{ width: '16px', height: '16px' }} />
-                        <span style={{
-                            fontSize: `${layer.content?.fontSize || 14}px`,
-                            color: layer.content?.textColor || '#000000',
-                        }}>
-                            {layer.content?.label || 'Checkbox'}
-                        </span>
-                    </div>
-                );
-                break;
-            case 'list':
-                content = (
-                    <ul style={{
-                        listStyleType: 'disc',
-                        paddingLeft: '20px',
-                        color: layer.content?.textColor || '#000000',
-                        fontSize: `${layer.content?.fontSize || 14}px`,
-                    }}>
-                        <li>Item 1</li>
-                        <li>Item 2</li>
-                        <li>Item 3</li>
-                    </ul>
-                );
-                break;
-            case 'rating':
-                content = (
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <span key={star} style={{ color: '#FBBF24', fontSize: '20px' }}>★</span>
-                        ))}
-                    </div>
-                );
-                break;
-            case 'badge':
-                content = (
-                    <div style={{
-                        backgroundColor: layer.content?.badgeBackgroundColor || '#EF4444',
-                        color: layer.content?.badgeTextColor || '#FFFFFF',
-                        padding: typeof layer.content?.badgePadding === 'object'
-                            ? `${layer.content.badgePadding.vertical}px ${layer.content.badgePadding.horizontal}px`
-                            : `${layer.content?.badgePadding || 4}px 8px`,
-                        borderRadius: `${layer.content?.badgeBorderRadius || 4}px`,
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                    }}>
-                        {layer.content?.badgeText || 'Badge'}
-                    </div>
-                );
-                break;
             case 'progress-bar':
                 content = renderProgressBar(layer);
-                break;
-            case 'progress-circle':
-                content = <div>Progress Circle Placeholder</div>;
                 break;
             case 'statistic':
                 content = <StatisticLayer layer={layer} />;

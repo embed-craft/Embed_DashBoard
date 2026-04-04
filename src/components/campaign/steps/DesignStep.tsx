@@ -15,10 +15,6 @@ import { FloaterRenderer } from '@/components/FloaterRenderer';
 import { FullScreenRenderer } from '@/components/FullScreenRenderer';
 import { SlideContainerRenderer } from '@/components/campaign/renderers/SlideContainerRenderer';
 import { BottomSheetRenderer } from '@/components/BottomSheetRenderer';
-import { ModalRenderer } from '@/components/ModalRenderer';
-import { BannerRenderer } from '@/components/BannerRenderer';
-import { ScratchCardRenderer } from '@/components/ScratchCardRenderer';
-import { PipRenderer } from '@/components/PipRenderer';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { ShapeEditor } from '@/components/editor/style/ShapeEditor';
 import { DESIGN_TYPES, TEMPLATES, DESIGN_CATEGORIES } from '@/lib/designTypes';
@@ -36,7 +32,6 @@ import { FullScreenMinimalEditor } from '@/components/campaign/editors/FullScree
 import { StoriesMinimalEditor } from '@/components/campaign/editors/StoriesMinimalEditor';
 import { StoryCubeTransition } from '@/components/campaign/renderers/StoryCubeTransition';
 import { SlideMinimalEditor } from '@/components/campaign/editors/SlideMinimalEditor';
-import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 import { CommonStyleControls } from '@/components/campaign/editors/shared/CommonStyleControls';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 import { TextEditor } from '@/components/campaign/editors/layers/TextEditor';
@@ -45,13 +40,8 @@ import { InputEditor } from '@/components/campaign/editors/layers/InputEditor';
 import { CopyButtonEditor } from '@/components/campaign/editors/layers/CopyButtonEditor';
 import { ContainerEditor } from '@/components/campaign/editors/layers/ContainerEditor';
 import { MediaEditor } from '@/components/campaign/editors/layers/MediaEditor';
-import { CheckboxEditor } from '@/components/campaign/editors/layers/CheckboxEditor';
-import { RatingEditor } from '@/components/campaign/editors/layers/RatingEditor';
 import { ProgressBarEditor } from '@/components/campaign/editors/layers/ProgressBarEditor';
-import { ProgressCircleEditor } from '@/components/campaign/editors/layers/ProgressCircleEditor';
-import { ListEditor } from '@/components/campaign/editors/layers/ListEditor';
 import { StatisticEditor } from '@/components/campaign/editors/layers/StatisticEditor';
-import { BadgeEditor } from '@/components/campaign/editors/layers/BadgeEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
 import { ScratchFoilEditor } from '@/components/campaign/editors/layers/ScratchFoilEditor';
 import { CarouselLayerEditor } from '@/components/campaign/editors/layers/CarouselLayerEditor';
@@ -1253,7 +1243,7 @@ export const DesignStep: React.FC<any> = () => {
     switch (iface.nudgeType) {
       case 'modal':
         return interfaceWrapper(
-          <ModalRenderer
+          <FloaterRenderer
             layers={interfaceLayers}
             selectedLayerId={null}
             onLayerSelect={() => { }}
@@ -1327,7 +1317,7 @@ export const DesignStep: React.FC<any> = () => {
         );
       case 'banner':
         return interfaceWrapper(
-          <BannerRenderer
+          <FloaterRenderer
             layers={interfaceLayers}
             selectedLayerId={null}
             onLayerSelect={() => { }}
@@ -1345,7 +1335,7 @@ export const DesignStep: React.FC<any> = () => {
         );
       case 'scratchcard':
         return interfaceWrapper(
-          <ScratchCardRenderer
+          <FloaterRenderer
             layers={interfaceLayers}
             selectedLayerId={null}
             onLayerSelect={() => { }}
@@ -1505,7 +1495,7 @@ export const DesignStep: React.FC<any> = () => {
 
         return (
           <ErrorBoundary>
-            <ModalRenderer
+            <FloaterRenderer
               layers={campaignLayers}
               selectedLayerId={selectedLayerId}
               onLayerSelect={selectLayer}
@@ -1538,7 +1528,7 @@ export const DesignStep: React.FC<any> = () => {
         const scaleYFactorBanner = pureDeviceScaleYBanner * previewZoom;
         return (
           <ErrorBoundary>
-            <BannerRenderer
+            <FloaterRenderer
               layers={campaignLayers}
               selectedLayerId={selectedLayerId}
               onLayerSelect={selectLayer}
@@ -1792,7 +1782,7 @@ export const DesignStep: React.FC<any> = () => {
         const scaleYFactorPip = pureDeviceScaleYPip * previewZoom;
 
         return (
-          <PipRenderer
+          <FloaterRenderer
             layers={campaignLayers}
             selectedLayerId={selectedLayerId}
             onLayerSelect={selectLayer}
@@ -1825,7 +1815,7 @@ export const DesignStep: React.FC<any> = () => {
 
         return (
           <ErrorBoundary>
-            <ScratchCardRenderer
+            <FloaterRenderer
               key={previewRefreshKey}
               layers={campaignLayers}
               selectedLayerId={selectedLayerId}
@@ -2226,9 +2216,6 @@ export const DesignStep: React.FC<any> = () => {
     }
     */
 
-    if (selectedLayerObj.type === 'custom_html') {
-      return <CustomHtmlEditor />;
-    }
 
     // PIP Editor - Now uses unified Floater editor
     if (selectedNudgeType === 'pip' && (!selectedLayerObj || selectedLayerObj.name?.toLowerCase().includes('container'))) {
@@ -3194,70 +3181,6 @@ export const DesignStep: React.FC<any> = () => {
 
     console.log('Checking for handle type...', selectedLayerObj.type);
     // Handle Properties (Drag Handle)
-    if (selectedLayerObj.type === 'handle') {
-      const handleWidth = selectedLayerObj.size?.width ?? 40;
-      const handleHeight = selectedLayerObj.size?.height ?? 4;
-      const handleRadius = selectedLayerObj.style?.borderRadius ?? 2;
-      const handleColor = selectedLayerObj.style?.backgroundColor ?? '#e5e7eb';
-
-      return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, color: colors.text.primary }}>Handle Properties</h5>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Width</label>
-                <input
-                  type="number"
-                  value={handleWidth}
-                  onChange={(e) => updateLayer(selectedLayerId!, { size: { ...selectedLayerObj.size, width: Number(e.target.value) || 0, height: handleHeight } })}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Height</label>
-                <input
-                  type="number"
-                  value={handleHeight}
-                  onChange={(e) => updateLayer(selectedLayerId!, { size: { ...selectedLayerObj.size, width: handleWidth, height: Number(e.target.value) || 0 } })}
-                  style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Color</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={handleColor as string}
-                  onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                  style={{ width: '40px', height: '40px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={handleColor as string}
-                  onChange={(e) => handleStyleUpdate('backgroundColor', e.target.value)}
-                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.text.secondary, marginBottom: '4px' }}>Corner Radius</label>
-              <input
-                type="number"
-                value={handleRadius as number}
-                onChange={(e) => handleStyleUpdate('borderRadius', Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', border: `1px solid ${colors.gray[200]}`, borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-              />
-            </div>
-          </div>
-          {renderCommonStyles()}
-        </>
-      );
-    }
 
     // Media/Image properties
     if (selectedLayerObj.type === 'media' || selectedLayerObj.type === 'image' || selectedLayerObj.type === 'video' || selectedLayerObj.type === 'icon' || selectedLayerObj.type === 'overlay') {
@@ -3374,36 +3297,10 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Progress Circle properties (Phase 2)
-    if (selectedLayerObj.type === 'progress-circle') {
-      return (
-        <ProgressCircleEditor
-          layer={selectedLayerObj}
-          selectedLayerId={selectedLayerId!}
-          updateLayer={updateLayer}
-          handleContentUpdate={handleContentUpdate}
-          onStyleUpdate={handleStyleUpdate}
-          handleTooltipUpdate={handleTooltipUpdate}
-          colors={colors}
-        />
-      );
-    }
 
 
 
     // List properties (Phase 2)
-    if (selectedLayerObj.type === 'list') {
-      return (
-        <ListEditor
-          layer={selectedLayerObj}
-          selectedLayerId={selectedLayerId!}
-          updateLayer={updateLayer}
-          handleContentUpdate={handleContentUpdate}
-          onStyleUpdate={handleStyleUpdate}
-          handleTooltipUpdate={handleTooltipUpdate}
-          colors={colors}
-        />
-      );
-    }
 
     // Input properties (Phase 2)
     if (selectedLayerObj.type === 'input') {
@@ -3437,19 +3334,6 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Checkbox properties
-    if (selectedLayerObj.type === 'checkbox') {
-      return (
-        <CheckboxEditor
-          layer={selectedLayerObj}
-          selectedLayerId={selectedLayerId!}
-          updateLayer={updateLayer}
-          handleContentUpdate={handleContentUpdate}
-          onStyleUpdate={handleStyleUpdate}
-          handleTooltipUpdate={handleTooltipUpdate}
-          colors={colors}
-        />
-      );
-    }
 
     // Statistic properties (Phase 2)
     if (selectedLayerObj.type === 'statistic') {
@@ -3467,34 +3351,8 @@ export const DesignStep: React.FC<any> = () => {
     }
 
     // Rating properties (Phase 3.5)
-    if (selectedLayerObj.type === 'rating') {
-      return (
-        <RatingEditor
-          layer={selectedLayerObj}
-          selectedLayerId={selectedLayerId!}
-          updateLayer={updateLayer}
-          handleContentUpdate={handleContentUpdate}
-          onStyleUpdate={handleStyleUpdate}
-          handleTooltipUpdate={handleTooltipUpdate}
-          colors={colors}
-        />
-      );
-    }
 
     // Badge properties (Phase 3.5)
-    if (selectedLayerObj.type === 'badge') {
-      return (
-        <BadgeEditor
-          layer={selectedLayerObj}
-          selectedLayerId={selectedLayerId!}
-          updateLayer={updateLayer}
-          handleContentUpdate={handleContentUpdate}
-          onStyleUpdate={handleStyleUpdate}
-          handleTooltipUpdate={handleTooltipUpdate}
-          colors={colors}
-        />
-      );
-    }
 
     // Gradient Overlay properties (Feature 4 - Gradient Builder UI)
     if (selectedLayerObj.type === 'gradient-overlay') {
@@ -4455,7 +4313,6 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'text', label: 'Text', icon: Type },
             { id: 'button', label: 'Button', icon: Square },
             { id: 'copy_button', label: 'Copy Button', icon: Copy },
-            { id: 'custom_html', label: 'Custom HTML', icon: Code },
             { id: 'scratch_foil', label: 'Scratch Foil', icon: Eraser },
             { id: 'carousel', label: 'Carousel', icon: GalleryHorizontal },
             { id: 'countdown', label: 'Countdown', icon: Timer },

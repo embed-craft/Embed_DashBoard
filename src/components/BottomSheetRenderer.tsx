@@ -44,6 +44,24 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     const position = config?.position || 'bottom';
     const isTop = position === 'top' || position === 'top-center';
 
+    // Phase 2 Parity: Keyboard Avoidance via visualViewport
+    const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+    React.useEffect(() => {
+        if (!window.visualViewport || isTop) return;
+        
+        const viewport = window.visualViewport;
+        const initialHeight = window.innerHeight; // Baseline height
+        
+        const handleResize = () => {
+            const currentHeight = viewport.height;
+            const diff = initialHeight - currentHeight;
+            setKeyboardOffset(diff > 0 ? diff : 0);
+        };
+        
+        viewport.addEventListener('resize', handleResize);
+        return () => viewport.removeEventListener('resize', handleResize);
+    }, [isTop]);
+
     // Helper to safely scale numeric values
     const safeScale = (val: string | number | undefined, scaleFactor: number): string | undefined => {
         if (val === undefined || val === null) return undefined;
@@ -154,6 +172,8 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         flexDirection: 'column',
         justifyContent: isTop ? 'flex-start' : 'flex-end', // Top vs Bottom alignment
         pointerEvents: 'none',
+        transform: `translateY(${-keyboardOffset}px)`,
+        transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
         // Fix (Phase 2): Moved safe area padding to INNER container to avoid transparent gaps
     };
 

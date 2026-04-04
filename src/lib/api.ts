@@ -199,6 +199,14 @@ class ApiClient {
     return this.request('/v1/admin/analytics/dashboard');
   }
 
+  public async getCampaignStats(campaignId: string): Promise<any> {
+    return this.request(`/v1/admin/analytics/campaign/${encodeURIComponent(campaignId)}`);
+  }
+
+  public async getCampaignEvents(campaignId: string, limit = 50, offset = 0): Promise<{ events: any[]; total: number }> {
+    return this.request(`/v1/admin/analytics/campaign/${encodeURIComponent(campaignId)}/events?limit=${limit}&offset=${offset}`);
+  }
+
   public async uploadImage(file: File): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('image', file);
@@ -406,9 +414,6 @@ class ApiClient {
     return this.request(`/v1/admin/flows/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
-  }
-  public async getCampaignStats(campaignId: string): Promise<any> {
-    return this.request(`/v1/admin/analytics/campaign/${encodeURIComponent(campaignId)}`);
   }
 }
 

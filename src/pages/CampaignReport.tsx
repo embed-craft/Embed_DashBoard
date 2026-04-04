@@ -18,10 +18,12 @@ import {
     Monitor,
     Tablet,
     Clock,
-    Zap,
     Activity,
     ChevronRight,
-    MoreHorizontal
+    MoreHorizontal,
+    XCircle,
+    Trophy,
+    PieChart as PieChartIcon
 } from 'lucide-react';
 import { format, subDays, parseISO, getHours, getDay, isWithinInterval } from 'date-fns';
 import { theme } from '@/styles/design-tokens';
@@ -69,102 +71,6 @@ type DateRange = {
 };
 
 // --- Helper Functions ---
-
-const processEvents = (events: any[], campaignId: string, dateRange: DateRange) => {
-    // Filter events by Campaign ID (metadata.campaignId or properties.campaignId) 
-    // and Date Range
-    const filteredEvents = events.filter(e => {
-        const eventTime = new Date(e.createdAt || e.timestamp);
-        const inDateRange = dateRange.from && (!dateRange.to || isWithinInterval(eventTime, { start: dateRange.from, end: dateRange.to }));
-
-        // Check if event belongs to this campaign
-        // Check multiple possible locations for campaign ID
-        const matchesCampaign =
-            e.nudge_id === campaignId ||
-            e.campaignId === campaignId ||
-            e.metadata?.campaignId === campaignId ||
-            e.metadata?.nudgeId === campaignId ||
-            (e.action && e.action.includes('NINJA') && e.metadata?.CAMPAIGN_ID === campaignId);
-
-        return inDateRange && matchesCampaign;
-    });
-
-    return filteredEvents;
-};
-
-const aggregateTrend = (events: any[], dateRange: DateRange) => {
-    if (!dateRange.from) return [];
-
-    const days = new Map<string, { date: string, impressions: number, clicks: number }>();
-
-    // Initialize days
-    const start = new Date(dateRange.from);
-    const end = dateRange.to || new Date();
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const key = format(d, 'yyyy-MM-dd');
-        days.set(key, { date: format(d, 'MMM dd'), impressions: 0, clicks: 0 });
-    }
-
-    events.forEach(e => {
-        const dateKey = format(new Date(e.createdAt || e.timestamp), 'yyyy-MM-dd');
-        if (days.has(dateKey)) {
-            const dayStats = days.get(dateKey)!;
-            const action = (e.action || '').toLowerCase();
-            if (action === 'impression' || action === 'campaign_impression' || action === 'ninja_experience_open' || action.includes('impression')) {
-                dayStats.impressions++;
-            } else if (action === 'click' || action === 'campaign_clicked' || action === 'ninja_component_cta_click' || action.includes('click')) {
-                dayStats.clicks++;
-            }
-        }
-    });
-
-    return Array.from(days.values());
-};
-
-const aggregateFunnel = (events: any[]) => {
-    let impressions = 0;
-    let clicks = 0;
-    let conversions = 0; // Assuming specific conversion event or inferred
-
-    events.forEach(e => {
-        const action = (e.action || '').toLowerCase();
-        if (action === 'impression' || action === 'campaign_impression' || action === 'ninja_experience_open' || action.includes('impression')) impressions++;
-        if (action === 'click' || action === 'campaign_clicked' || action === 'ninja_component_cta_click' || action.includes('click')) clicks++;
-        if (action === 'conversion' || action === 'campaign_conversion' || action === 'ninja_conversion') conversions++;
-    });
-
-    // If no explicit conversions, maybe mock strictly based on clicks for now or hide
-    // But strictly speaking, funnel is useful even with just Imp -> Click
-    return [
-        { name: 'Impressions', value: impressions, fill: '#8884d8' },
-        { name: 'Clicks', value: clicks, fill: '#ffc658' },
-        { name: 'Conversions', value: conversions, fill: '#82ca9d' },
-    ];
-};
-
-const aggregateHeatmap = (events: any[]) => {
-    const map = new Map<string, number>();
-
-    events.forEach(e => {
-        const d = new Date(e.createdAt || e.timestamp);
-        // Recharts needs specific day/hour keys
-        const dayStr = format(d, 'EEE'); // Mon, Tue...
-        const hour = getHours(d);
-        const key = `${dayStr}-${hour}`;
-        map.set(key, (map.get(key) || 0) + 1);
-    });
-
-    return Array.from({ length: 7 }, (_, dayIndex) => {
-        const dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dayIndex];
-        return Array.from({ length: 24 }, (_, hourIndex) => ({
-            day: dayName,
-            hour: hourIndex,
-            value: map.get(`${dayName}-${hourIndex}`) || 0
-        }));
-    }).flat();
-};
-
-
 const MetricCard = ({ title, value, change, icon: Icon, subtext, trend }: any) => {
     const isPositive = change >= 0;
     return (
@@ -308,12 +214,12 @@ const CampaignReport = () => {
         enabled: !!id,
     });
 
-    // Fetch Real Events (For Dynamic Charts)
+    // Fetch Real Events (For Dynamic Charts/Live Log)
     const { data: eventsData, isLoading: isLoadingEvents } = useQuery({
-        queryKey: ['events-list', id],
+        queryKey: ['campaign-events', id],
         queryFn: async () => {
             try {
-                return await apiClient.listEvents(1000);
+                return await apiClient.getCampaignEvents(id!, 50);
             } catch (err) {
                 console.warn("Analytics API unavailable:", err);
                 return { events: [] };
@@ -323,22 +229,12 @@ const CampaignReport = () => {
     });
 
     const isLoading = isLoadingCampaign || isLoadingStats || isLoadingEvents;
-
-    // --- Dynamic Data Transformation ---
-    const { processedTrend, processedHeatmap, processedFunnel, filteredEvents } = useMemo(() => {
-        if (!eventsData?.events || !date || !date.from) {
-            return { processedTrend: [], processedHeatmap: [], processedFunnel: [], filteredEvents: [] };
-        }
-
-        const relevantEvents = processEvents(eventsData.events, id!, date);
-
-        return {
-            processedTrend: aggregateTrend(relevantEvents, date),
-            processedHeatmap: aggregateHeatmap(relevantEvents),
-            processedFunnel: aggregateFunnel(relevantEvents),
-            filteredEvents: relevantEvents
-        };
-    }, [eventsData, id, date]);
+    
+    // --- Data Binding ---
+    const processedTrend = statsData?.timeSeries?.trend || [];
+    const processedHeatmap = statsData?.timeSeries?.heatmap || [];
+    const processedFunnel = statsData?.timeSeries?.funnel || [];
+    const filteredEvents = eventsData?.events || [];
 
 
     if (isLoading) return <PageContainer><div>Loading report...</div></PageContainer>;
@@ -346,7 +242,10 @@ const CampaignReport = () => {
 
     const totalImpressions = statsData?.stats?.impressions || 0;
     const totalClicks = statsData?.stats?.clicks || 0;
+    const totalDismissals = statsData?.stats?.dismissals || 0;
     const ctr = statsData?.stats?.ctr || 0;
+    const goalTracking = statsData?.goalTracking || null;
+    const audienceBreakdown = statsData?.audienceBreakdown || [];
 
     return (
         <div className="min-h-screen bg-neutral-50/50 space-y-8 pb-10">
@@ -411,7 +310,7 @@ const CampaignReport = () => {
 
                     {/* OVERVIEW */}
                     <TabsContent value="overview" className="space-y-6">
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className={`grid gap-6 md:grid-cols-2 ${goalTracking?.event ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
                             <MetricCard
                                 title="Total Impressions"
                                 value={totalImpressions.toLocaleString()}
@@ -427,12 +326,28 @@ const CampaignReport = () => {
                                 change={0}
                             />
                             <MetricCard
+                                title="Dismissals"
+                                value={totalDismissals.toLocaleString()}
+                                icon={XCircle}
+                                subtext="Users opted out"
+                                change={0}
+                            />
+                            <MetricCard
                                 title="CTR"
                                 value={`${ctr} % `}
                                 icon={Target}
                                 subtext="Click Through Rate"
                                 change={0}
                             />
+                            {goalTracking?.event && (
+                                <MetricCard
+                                    title="Goal Reached"
+                                    value={goalTracking.completed.toLocaleString()}
+                                    icon={Trophy}
+                                    subtext={`Event: ${goalTracking.event}`}
+                                    change={0}
+                                />
+                            )}
                         </div>
 
                         <Card className="col-span-full shadow-sm">
@@ -457,6 +372,7 @@ const CampaignReport = () => {
                                             <Legend verticalAlign="top" iconType="circle" />
                                             <Area type="monotone" dataKey="impressions" stroke="#8884d8" fillOpacity={1} fill="url(#colorImpressions)" name="Impressions" />
                                             <Area type="monotone" dataKey="clicks" stroke="#82ca9d" fillOpacity={1} fill="none" name="Clicks" />
+                                            <Area type="monotone" dataKey="dismissals" stroke="#ef4444" fillOpacity={1} fill="none" name="Dismissals" />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 ) : (
@@ -468,10 +384,43 @@ const CampaignReport = () => {
                         </Card>
                     </TabsContent>
 
-                    {/* FUNNEL */}
+                    {/* FUNNEL & BEHAVIOR */}
                     <TabsContent value="funnel" className="space-y-6">
+                        
+                        {/* Audience Breakdown */}
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b bg-gray-50/40 py-4">
+                                <CardTitle className="text-base flex items-center gap-2"><PieChartIcon className="w-5 h-5 text-indigo-500"/>Audience Segments</CardTitle>
+                                <CardDescription>Detected dynamic properties and segments from user interactions</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                {audienceBreakdown.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                        {audienceBreakdown.slice(0, 9).map((a: any, i: number) => {
+                                            const percentage = totalImpressions > 0 ? (a.count / totalImpressions) * 100 : 0;
+                                            return (
+                                                <div key={i} className="flex flex-col gap-2">
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="font-medium text-gray-700 capitalize">{a.property}: <span className="font-semibold text-gray-900">{typeof a.value === 'string' ? a.value.charAt(0).toUpperCase() + a.value.slice(1) : a.value}</span></span>
+                                                        <span className="text-gray-500 font-mono text-xs">{a.count}</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                                        <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(2, percentage))}%` }} />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="py-8 text-center text-muted-foreground bg-gray-50 rounded-lg border border-dashed mt-2">
+                                        No dynamic audience tracking data discovered yet.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <Card className="h-full">
+                            <Card className="h-full shadow-sm">
                                 <CardHeader>
                                     <CardTitle>Conversion Funnel</CardTitle>
                                     <CardDescription>Based on filtered events</CardDescription>

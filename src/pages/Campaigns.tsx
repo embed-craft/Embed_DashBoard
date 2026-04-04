@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -79,7 +79,7 @@ const Campaigns = () => {
             name: bc.campaign_name || bc.name || 'Untitled Campaign',
             status: status as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
             trigger: bc.trigger_event || bc.trigger,
-            experience: bc.config?.type === 'modal' ? 'In-app messages' : 'In-App', // Infer experience
+            experience: bc.experience === 'stories' ? 'Stories' : bc.experience === 'messages' ? 'Out-of-app Messages' : 'In-App',
             events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
             tags: bc.tags || [], // Show actual tags
             segment: 'All Users',
@@ -306,7 +306,7 @@ const Campaigns = () => {
       width: '15%',
       render: (row: any) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '4px', height: '16px', backgroundColor: row.experience === 'In-App' ? '#3b82f6' : '#ec4899', borderRadius: '2px' }} />
+          <div style={{ width: '4px', height: '16px', backgroundColor: row.experience === 'In-App' ? '#3b82f6' : row.experience === 'Stories' ? '#8b5cf6' : '#ec4899', borderRadius: '2px' }} />
           <span style={{ fontSize: '12px', color: theme.colors.text.primary }}>{row.experience || 'In-App'}</span>
         </div>
       )
@@ -492,7 +492,7 @@ const Campaigns = () => {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <FilterDropdown label="Status" options={['active', 'paused', 'draft', 'scheduled']} selected={statusFilter} onChange={setStatusFilter} />
-              <FilterDropdown label="Experience" options={['In-App', 'In-app messages']} selected={experienceFilter} onChange={setExperienceFilter} />
+              <FilterDropdown label="Experience" options={['In-App', 'Out-of-app Messages', 'Stories']} selected={experienceFilter} onChange={setExperienceFilter} />
               <FilterDropdown label="Tags" options={uniqueTags} selected={tagsFilter} onChange={setTagsFilter} />
               <FilterDropdown label="Events" options={uniqueEvents} selected={eventsFilter} onChange={setEventsFilter} />
             </div>

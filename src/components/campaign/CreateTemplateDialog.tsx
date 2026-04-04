@@ -25,6 +25,17 @@ const NudgePreviews: Record<string, React.ReactNode> = {
             <div className="absolute bottom-0 left-1.5 right-1.5 h-4 bg-indigo-500 rounded-t shadow shadow-indigo-500/20" />
         </PreviewWrapper>
     ),
+    modal: (
+        <PreviewWrapper bg="bg-blue-50">
+            <div className="m-auto w-7 h-5 bg-blue-500 rounded-[3px] shadow shadow-blue-500/20" />
+        </PreviewWrapper>
+    ),
+    banner: (
+        <PreviewWrapper bg="bg-sky-50">
+            <div className="absolute top-0 left-0 right-0 h-[12px] bg-sky-500 shadow-sm" />
+            <div className="absolute top-[14px] left-2 w-8 h-[3px] rounded-full bg-sky-200" />
+        </PreviewWrapper>
+    ),
     tooltip: (
         <PreviewWrapper bg="bg-amber-50">
             <div className="m-auto flex flex-col items-center gap-0">
@@ -41,6 +52,13 @@ const NudgePreviews: Record<string, React.ReactNode> = {
     fullscreen: (
         <PreviewWrapper bg="bg-slate-700">
             <div className="absolute inset-1 border border-white/20 rounded-[2px]" />
+        </PreviewWrapper>
+    ),
+    scratchcard: (
+        <PreviewWrapper bg="bg-yellow-50">
+            <div className="m-auto w-6 h-6 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-sm shadow-sm flex items-center justify-center">
+                <Sparkles size={10} className="text-white" />
+            </div>
         </PreviewWrapper>
     ),
 };

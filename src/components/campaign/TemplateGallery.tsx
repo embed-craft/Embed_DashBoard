@@ -35,12 +35,11 @@ interface TemplateGalleryProps {
 const typeGradients: Record<string, string> = {
     bottomsheet: 'from-indigo-500 to-violet-600',
     modal:       'from-blue-500 to-cyan-500',
-    tooltip:     'from-orange-400 to-amber-500',
-    floater:     'from-teal-500 to-green-500',
-    fullscreen:  'from-gray-600 to-slate-800',
-    pip:         'from-rose-500 to-pink-500',
-    carousel:    'from-purple-500 to-fuchsia-500',
+    tooltip:     'from-amber-400 to-orange-500',
+    floater:     'from-teal-500 to-emerald-600',
+    fullscreen:  'from-slate-600 to-gray-800',
     banner:      'from-sky-400 to-blue-500',
+    scratchcard: 'from-yellow-400 to-amber-500',
 };
 
 const typeDots: Record<string, string> = {
@@ -48,21 +47,19 @@ const typeDots: Record<string, string> = {
     modal:       'bg-blue-500',
     tooltip:     'bg-amber-500',
     floater:     'bg-teal-500',
-    fullscreen:  'bg-gray-600',
-    pip:         'bg-rose-500',
-    carousel:    'bg-purple-500',
+    fullscreen:  'bg-slate-600',
     banner:      'bg-sky-500',
+    scratchcard: 'bg-yellow-500',
 };
 
 const nudgeTypeLabel: Record<string, string> = {
     bottomsheet: 'Bottom Sheet',
-    modal: 'Modal',
-    tooltip: 'Tooltip',
-    floater: 'Floater',
-    fullscreen: 'Full Screen',
-    pip: 'PiP Video',
-    carousel: 'Carousel',
-    banner: 'Banner',
+    modal:       'Modal',
+    tooltip:     'Tooltip',
+    floater:     'Floater',
+    fullscreen:  'Full Screen',
+    banner:      'Banner',
+    scratchcard: 'Scratch Card',
 };
 
 const CATEGORIES = ['All', 'Marketing', 'Onboarding', 'Feedback', 'Announcement', 'Support', 'Other'];
@@ -80,9 +77,9 @@ const TemplateCard: React.FC<{
     onClick: () => void;
     onUse: () => void;
 }> = ({ template, isSelected, onClick, onUse }) => {
-    const nudgeType = template.type || template.config?.type || 'modal';
-    const gradient = typeGradients[nudgeType] || typeGradients.modal;
-    const dot = typeDots[nudgeType] || typeDots.modal;
+    const nudgeType = template.type || template.config?.type || 'bottomsheet';
+    const gradient = typeGradients[nudgeType] || typeGradients.bottomsheet;
+    const dot = typeDots[nudgeType] || typeDots.bottomsheet;
     const hasThumbnail = template.thumbnail && (
         template.thumbnail.startsWith('data:') || template.thumbnail.startsWith('http')
     );

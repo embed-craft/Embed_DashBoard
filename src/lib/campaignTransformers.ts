@@ -395,7 +395,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     let layers: Layer[] = [];
     if (backendCampaign.layers && backendCampaign.layers.length > 0) {
         console.log('backendToEditor: Using direct layers from backend');
-        layers = backendCampaign.layers;
+        layers = backendCampaign.layers.filter((l: Layer) => l.type !== 'handle');
     } else {
         console.log(`backendToEditor: Reconstructing layers from config for type: ${campaignType}`);
         layers = reconstructLayersFromConfig(backendCampaign.config || {}, campaignType);
@@ -1679,64 +1679,7 @@ function reconstructLayersFromConfig(config: Record<string, any>, type: string):
     };
     layers.push(containerLayer);
 
-    // Handle layer
-    if (config.dragHandle !== false) {
-        const handleLayer: Layer = {
-            id: `layer_${baseId + 1}`,
-            type: 'handle',
-            name: 'Drag Handle',
-            parent: containerLayer.id,
-            children: [],
-            visible: config.dragHandle === undefined ? true : config.dragHandle,
-            locked: false,
-            zIndex: 1,
-            position: {
-                x: config.dragHandlePositionX || 0,
-                y: config.dragHandlePositionY || 0,
-                type: config.dragHandlePositionType || 'relative'
-            },
-            size: {
-                width: config.dragHandleWidth || 40,
-                height: config.dragHandleHeight || 4
-            },
-            content: {},
-            style: {
-                backgroundColor: config.dragHandleColor || '#D1D5DB',
-                borderRadius: config.dragHandleBorderRadius || 2,
-                opacity: config.dragHandleOpacity !== undefined ? config.dragHandleOpacity : 1.0,
-                borderWidth: config.dragHandleBorderWidth || 0,
-                borderColor: config.dragHandleBorderColor,
-                borderStyle: config.dragHandleBorderStyle || 'solid',
-                filter: (config.dragHandleFilterBlur || config.dragHandleFilterBrightness !== 100 ||
-                    config.dragHandleFilterContrast !== 100 || config.dragHandleFilterGrayscale) ? {
-                    blur: config.dragHandleFilterBlur || 0,
-                    brightness: config.dragHandleFilterBrightness || 100,
-                    contrast: config.dragHandleFilterContrast || 100,
-                    grayscale: config.dragHandleFilterGrayscale || 0,
-                } : undefined,
-                transform: (config.dragHandleTranslateX !== undefined && config.dragHandleTranslateX !== 0) ||
-                    (config.dragHandleTranslateY !== undefined && config.dragHandleTranslateY !== 0) ||
-                    (config.dragHandleRotate !== undefined && config.dragHandleRotate !== 0) ||
-                    (config.dragHandleScale !== undefined && config.dragHandleScale !== 1) ? {
-                    translateX: config.dragHandleTranslateX || 0,
-                    translateY: config.dragHandleTranslateY || 0,
-                    rotate: config.dragHandleRotate || 0,
-                    scale: config.dragHandleScale || 1,
-                } : undefined,
-                boxShadow: config.dragHandleShadowColor
-                    ? `${config.dragHandleShadowInset ? 'inset ' : ''}${config.dragHandleShadowOffsetX || 0}px ${config.dragHandleShadowOffsetY || 0}px ${config.dragHandleShadowBlur || 0}px ${config.dragHandleShadowSpread || 0}px ${config.dragHandleShadowColor}`
-                    : undefined,
-                margin: {
-                    top: config.dragHandleMarginTop || 0,
-                    right: 0,
-                    bottom: config.dragHandleMarginBottom || 16,
-                    left: 0
-                },
-            },
-        };
-        layers.push(handleLayer);
-        containerLayer.children.push(handleLayer.id);
-    }
+    // Drag handle layer generation has been removed as it is now natively supported by renderers
 
     // Image layer
     if (config.imageUrl) {

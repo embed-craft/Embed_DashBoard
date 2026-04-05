@@ -2,10 +2,106 @@ import { create } from 'zustand';
 import { apiClient } from '@/lib/api';
 import { persist } from 'zustand/middleware';
 
+export interface RewardItem {
+  id: string;
+  name: string;      
+  description?: string;
+  type: string; // 'coupon' | 'points' | 'badge' | 'feature_unlock'
+  
+  // Dynamic Configuration Payloads
+  couponConfig?: {
+    couponType: string;
+    couponValue: string;
+    codeType: string;
+    code?: string;
+    expiryType: string;
+    expiryDate?: string;
+  };
+  pointsConfig?: {
+    amount: number;
+  };
+  featureConfig?: {
+    featureFlagId: string;
+  };
+  
+  // Visuals & Extensions
+  iconUrl?: string; 
+  lockedIconUrl?: string; // Grayscale or locked state visual
+  customVariables?: { key: string; value: string }[];
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChallengeTaskLogic {
+  eventGroups: {
+    operator: 'AND' | 'OR';
+    events: {
+      eventId: string;
+      operator: string;
+      count: number;
+      filters?: any[];
+    }[];
+  }[];
+  userTrigger: 'all_users' | 'segment';
+  userFilters?: any[];
+  limits: {
+    attemptFrequency: 'always' | 'once' | 'daily';
+    completionLimit?: number;
+  };
+}
+
+export interface VariableRewardCondition {
+  id: string;
+  userProperty: string;
+  operator: string;
+  value: any;
+  payoutAmount: number;
+}
+
+export interface VariableRewardConfig {
+  type: 'random' | 'conditional' | 'formula' | 'sdk_calculated';
+  minAmount?: number;
+  maxAmount?: number;
+  conditions?: VariableRewardCondition[];
+  fallbackAmount?: number;
+  expression?: string;
+}
+
+export interface RewardItemConfig {
+  rewardItemId: string;
+  amount: number;
+  allowVariable: boolean;
+  variableConfig?: VariableRewardConfig;
+}
+
+export interface ChallengeTaskReward {
+  rewardGroups: {
+    operator: 'AND' | 'OR';
+    rewards: RewardItemConfig[];
+  }[];
+}
+
+export interface ChallengeTask {
+  id: string;
+  title: string;
+  logic: ChallengeTaskLogic;
+  reward: ChallengeTaskReward;
+}
+
+export interface ChallengeConfig {
+  executionOrder: 'sequential' | 'any_order'; 
+  allowMultipleSimultaneousTasks: boolean;
+  hideOnCompletion: boolean;
+  tasks: ChallengeTask[];
+}
+
 export interface Campaign {
   id: string;
   name: string;
   status: 'active' | 'paused' | 'draft' | 'completed' | 'scheduled';
+  type: 'nudge' | 'challenge'; // Added for Phase 2
+  challengeDetails?: ChallengeConfig; // Centralized gamification config
   trigger: string;
   segment: string;
   impressions: number;
@@ -60,6 +156,12 @@ export interface AnalyticsData {
 }
 
 interface Store {
+  // Rewards
+  rewards: RewardItem[];
+  addReward: (reward: Omit<RewardItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateReward: (id: string, reward: Partial<RewardItem>) => void;
+  deleteReward: (id: string) => void;
+
   // Campaigns
   campaigns: Campaign[];
   addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -151,6 +253,30 @@ export interface Template {
 export const useStore = create<Store>()(
   persist(
     (set) => ({
+      rewards: [],
+      addReward: (reward) =>
+        set((state) => ({
+          rewards: [
+            {
+              ...reward,
+              id: Date.now().toString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+            ...state.rewards,
+          ],
+        })),
+      updateReward: (id, reward) =>
+        set((state) => ({
+          rewards: state.rewards.map((r) =>
+            r.id === id ? { ...r, ...reward, updatedAt: new Date().toISOString() } : r
+          ),
+        })),
+      deleteReward: (id) =>
+        set((state) => ({
+          rewards: state.rewards.filter((r) => r.id !== id),
+        })),
+
       campaigns: [],
       segments: [],
       analyticsData: [],

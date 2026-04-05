@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { validateCampaignConfig, validateLayer } from '@/lib/configValidator';
 import { metadataService, EventDefinition, PropertyDefinition, PageDefinition } from '@/services/metadataService';
 import { ScratchCardConfig } from '@/lib/designTypes';
+import { ChallengeConfig } from './useStore';
 import { toast } from 'sonner';
 export type { ScratchCardConfig };
 
@@ -966,8 +967,10 @@ export interface CampaignEditor {
   id: string;
   _id?: string; // Support for backend ID
   name: string;
-  experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey';
-  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight' | 'coachmark' | 'fullscreen';
+  type?: 'nudge' | 'challenge'; // Added for Phase 2 Gamification engine
+  challengeDetails?: ChallengeConfig;
+  experienceType: 'nudges' | 'messages' | 'stories' | 'challenges' | 'streaks' | 'survey' | string;
+  nudgeType: 'modal' | 'banner' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'carousel' | 'inline' | 'floater' | 'spotlight' | 'coachmark' | 'fullscreen' | string;
 
   // Trigger configuration (industry-standard events)
   trigger?: string; // e.g., 'screen_viewed', 'button_clicked', 'product_viewed'
@@ -1049,7 +1052,7 @@ interface EditorStore {
   updateStatus: (status: 'active' | 'paused' | 'draft') => void;
   updateGoal: (goal: Partial<CampaignGoal>) => void;
   loadCampaign: (campaign: CampaignEditor | string) => Promise<void>;
-  createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => void;
+  createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType'], type?: 'nudge' | 'challenge') => void;
   // Actions - Targeting
   addTargetingRule: (rule: Omit<TargetingRule, 'id'>) => void;
   updateTargetingRule: (id: string, rule: Partial<TargetingRule>) => void;
@@ -1282,7 +1285,7 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       // Create new campaign
-      createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType']) => {
+      createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType'], type: 'nudge' | 'challenge' = 'nudge') => {
         const defaultLayers = getDefaultLayersForNudgeType(nudgeType);
 
         // FIX #4: Generate unique ID using UUID pattern
@@ -1291,6 +1294,7 @@ export const useEditorStore = create<EditorStore>()(
         const newCampaign: CampaignEditor = {
           id: uniqueId,
           name: 'New Campaign',
+          type,
           experienceType,
           nudgeType,
           trigger: 'screen_viewed', // Default trigger
@@ -1937,6 +1941,8 @@ export const useEditorStore = create<EditorStore>()(
             const dashboardCampaign = {
               id: savedCampaign.id || updatedCampaign.id,
               name: savedCampaign.name,
+              type: (savedCampaign.campaignType || 'nudge') as 'nudge' | 'challenge',
+              challengeDetails: savedCampaign.challengeDetails as any,
               status: savedCampaign.status as 'active' | 'paused' | 'draft',
               trigger: savedCampaign.trigger,
               segment: 'All Users',
@@ -1969,11 +1975,11 @@ export const useEditorStore = create<EditorStore>()(
 
             if (existingCampaign) {
               // Update existing campaign
-              dashboardStore.updateCampaign(dashboardCampaign.id, dashboardCampaign);
+              dashboardStore.updateCampaign(dashboardCampaign.id, dashboardCampaign as any);
               console.log('saveCampaign: Updated existing campaign in dashboard store');
             } else {
               // Add new campaign
-              dashboardStore.addCampaign(dashboardCampaign);
+              dashboardStore.addCampaign(dashboardCampaign as any);
               console.log('saveCampaign: Added new campaign to dashboard store');
             }
           } catch (syncError) {

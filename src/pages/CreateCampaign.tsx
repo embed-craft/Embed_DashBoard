@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Smartphone, Film, ArrowRight, Sparkles } from 'lucide-react';
+import { MessageSquare, Smartphone, Film, Target, ArrowRight, Sparkles } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { theme } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 const EXPERIENCE_TYPES = [
     {
         id: 'nudges',
+        type: 'nudge',
         title: 'In-app nudges',
         description: 'Guide users intuitively inside your application with highly targeted tooltips, dynamic banners, and subtle floaters.',
         icon: MessageSquare,
@@ -17,6 +18,7 @@ const EXPERIENCE_TYPES = [
     },
     {
         id: 'messages',
+        type: 'nudge',
         title: 'Out-of-app Messages',
         description: 'Re-engage users beyond the app using personalized push notifications and automated email sequences.',
         icon: Smartphone,
@@ -26,6 +28,7 @@ const EXPERIENCE_TYPES = [
     },
     {
         id: 'stories',
+        type: 'nudge',
         title: 'Stories',
         description: 'Create immersive, full-screen story experiences with slides, timelines, and rich media to captivate your users.',
         icon: Film,
@@ -33,13 +36,29 @@ const EXPERIENCE_TYPES = [
         bgColor: '#FDF2F8',
         borderColor: '#FBCFE8',
     },
+    {
+        id: 'challenge',
+        type: 'challenge',
+        title: 'Gamified Challenge',
+        description: 'Architect complex, multi-step player journeys with logic gating, event tracking, and an integrated reward economy.',
+        icon: Target,
+        color: '#059669', // Emerald 600
+        bgColor: '#ecfdf5', // Emerald 50
+        borderColor: '#6ee7b7', // Emerald 300
+    },
 ];
 
 const CreateCampaign = () => {
     const navigate = useNavigate();
 
-    const handleSelect = (id: string) => {
-        navigate(`/campaign-builder?experience=${id}`);
+    const handleSelect = (exp: typeof EXPERIENCE_TYPES[0]) => {
+        if (exp.type === 'challenge') {
+            navigate(`/campaign-builder?type=challenge&new=true`);
+        } else if (exp.id === 'stories') {
+            navigate(`/campaign-builder?experience=stories`);
+        } else {
+            navigate(`/campaign-builder?experience=${exp.id}`);
+        }
     };
 
     return (
@@ -104,7 +123,7 @@ const CreateCampaign = () => {
                             return (
                                 <div
                                     key={exp.id}
-                                    onClick={() => handleSelect(exp.id)}
+                                    onClick={() => handleSelect(exp)}
                                     style={{
                                         backgroundColor: theme.colors.white,
                                         borderRadius: '24px',
@@ -119,8 +138,8 @@ const CreateCampaign = () => {
                                         boxShadow: theme.shadows.md,
                                     }}
                                     className={`hover:shadow-2xl hover:scale-[1.02] group`}
-                                    onMouseOver={(e) => e.currentTarget.style.borderColor = exp.borderColor}
-                                    onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
+                                    onMouseOver={(e) => (e.currentTarget as HTMLElement).style.borderColor = exp.borderColor}
+                                    onMouseOut={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'transparent'}
                                 >
                                     <div style={{
                                         backgroundColor: exp.bgColor,

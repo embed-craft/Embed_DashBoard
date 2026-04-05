@@ -39,7 +39,10 @@ import { StoriesStep } from '@/components/campaign/stories/StoriesStep';
 import { StoryEditorWrapper } from '@/components/campaign/stories/StoryEditorWrapper';
 import { Film, CheckCircle2 as CheckCircle2Icon } from 'lucide-react';
 
-type Step = 'targeting' | 'goals' | 'design' | 'stories';
+import { ChallengeTypeStep } from '@/components/campaign/steps/ChallengeTypeStep';
+import { TasksStep } from '@/components/campaign/steps/TasksStep';
+
+type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks';
 
 const CampaignBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -99,33 +102,54 @@ const CampaignBuilder: React.FC = () => {
 
   // Handle new campaign flow + template pre-apply
   useEffect(() => {
-    const experienceType = searchParams.get('experience');
+    // Support ?experience= (original) and ?experienceType= (fallback)
+    const experienceType = searchParams.get('experience') || searchParams.get('experienceType');
     const nudgeType = searchParams.get('nudge');
     const campaignId = searchParams.get('id');
     const mode = searchParams.get('mode');
-    const templateId = searchParams.get('template');
 
-    // Skip if in template mode
+    // Skip if in template mode or loading existing campaign
     if (mode === 'template') return;
 
-    // If we are in "Create New" mode
+    // Challenge engine flow
+    if (searchParams.get('type') === 'challenge' && !campaignId) {
+      const isNewUserRequest = searchParams.get('new') === 'true';
+      
+      if (isNewUserRequest && currentCampaign) {
+          resetCurrentCampaign();
+          // Remove 'new' to prevent infinite loop of resetting
+          searchParams.delete('new');
+          navigate({ search: searchParams.toString() }, { replace: true });
+          return;
+      }
+
+      if (!currentCampaign || currentCampaign.type !== 'challenge') {
+        createCampaign('challenges', null as any, 'challenge');
+        setActiveStep('targeting');
+      }
+      return;
+    }
+
+    // Standard nudge / messages / stories flow
     if (experienceType && !campaignId) {
       if (!nudgeType) {
-        // Stories: skip nudge selection, auto-create with fullscreen and go to stories step
         if (experienceType === 'stories') {
-          createCampaign('stories' as any, 'fullscreen' as any);
-          setActiveStep('stories');
+          // Stories: auto-create with fullscreen and jump to stories step
+          if (!currentCampaign || currentCampaign.experienceType !== 'stories') {
+            createCampaign('stories' as any, 'fullscreen' as any);
+            setActiveStep('stories');
+          }
         } else {
+          // nudges / messages: reset and show nudge-type picker (design step)
           if (currentCampaign) {
             resetCurrentCampaign();
           }
           setActiveStep('design');
         }
-      }
-      else {
+      } else {
+        // nudge type already picked - create campaign
         if (!currentCampaign || currentCampaign.nudgeType !== nudgeType) {
           createCampaign(experienceType as any, nudgeType as any);
-          // Auto-navigate to stories step for stories experience
           if (experienceType === 'stories') {
             setActiveStep('stories');
           } else {
@@ -134,7 +158,8 @@ const CampaignBuilder: React.FC = () => {
         }
       }
     }
-  }, [searchParams, createCampaign, resetCurrentCampaign, currentCampaign?.nudgeType]);
+  }, [searchParams, createCampaign, resetCurrentCampaign, currentCampaign?.nudgeType, currentCampaign?.type, currentCampaign?.experienceType]);
+
 
   // Apply template after campaign is created (from "Use in Campaign" flow)
   useEffect(() => {
@@ -237,10 +262,14 @@ const CampaignBuilder: React.FC = () => {
     return false;
   };
 
+  const isChallengesValid = true; // TODO validation logic
+
   const isTargetingValid = validateStep('targeting');
   const isGoalsValid = validateStep('goals');
   const isDesignValid = validateStep('design');
-  const canLaunch = isTargetingValid && isGoalsValid && isDesignValid;
+  const canLaunch = currentCampaign?.type === 'challenge' 
+    ? (isTargetingValid && isGoalsValid && isChallengesValid) 
+    : (isTargetingValid && isGoalsValid && isDesignValid);
 
   // Handle Step Navigation (Skippable Unlocking)
   const handleStepClick = (stepId: Step) => {
@@ -307,8 +336,15 @@ const CampaignBuilder: React.FC = () => {
   };
 
   const isStories = currentCampaign?.experienceType === 'stories';
+  const isChallenge = currentCampaign?.type === 'challenge';
 
-  const steps = [
+  const steps = isChallenge ? [
+    { id: 'targeting', label: 'Targeting', icon: Target },
+    { id: 'goals', label: 'Goals & Rollout', icon: Flag },
+    { id: 'challenge_type', label: 'Challenge Logic', icon: Target },
+    { id: 'tasks', label: 'Tasks', icon: CheckCircle2Icon },
+    { id: 'design', label: 'Design Experience', icon: Palette },
+  ] : [
     { id: 'targeting', label: 'Targeting', icon: Target },
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
     ...(isStories ? [
@@ -709,6 +745,8 @@ const CampaignBuilder: React.FC = () => {
               <>
                 {activeStep === 'targeting' && <TargetingStep />}
                 {activeStep === 'goals' && <GoalsRolloutStep />}
+                {activeStep === 'challenge_type' && <ChallengeTypeStep />}
+                {activeStep === 'tasks' && <TasksStep />}
                 {activeStep === 'stories' && (
                   activeStoryId ? (
                     <StoryEditorWrapper />

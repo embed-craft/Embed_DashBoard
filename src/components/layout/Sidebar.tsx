@@ -12,7 +12,8 @@ import {
   Settings,
   HelpCircle,
   ChevronDown,
-  LogOut
+  LogOut,
+  Gift
 } from 'lucide-react';
 import { theme } from '../../styles/design-tokens';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
+    { path: '/rewards', label: 'Rewards', icon: Gift },
     { path: '/events', label: 'Events', icon: Zap },
     { path: '/users', label: 'Users', icon: Users },
     { path: '/pages', label: 'Pages', icon: FileText },

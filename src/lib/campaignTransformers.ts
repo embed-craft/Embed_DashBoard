@@ -12,6 +12,8 @@ export interface BackendCampaign {
     nudge_id?: string; // ✅ FIX: Add nudge_id
     name: string;
     type: string;
+    campaignType?: 'nudge' | 'challenge'; // Phase 2: Campaign mode
+    challengeDetails?: Record<string, any>; // Phase 2: Gamification engine config blob
     status: 'active' | 'paused' | 'draft';
     trigger: string;
     experience?: string; // ✅ FIX: Add experience
@@ -186,7 +188,9 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
     return {
         id: campaign.id,
         name: campaign.name,
-        type: campaign.nudgeType,
+        type: campaign.nudgeType,                         // nudge widget type (modal, banner…)
+        campaignType: campaign.type || 'nudge',           // Phase 2: nudge | challenge
+        challengeDetails: campaign.challengeDetails,       // Phase 2: full gamification config
         interfaces: (campaign.interfaces || []).map(int => ({
             id: int.id,
             name: int.name,
@@ -483,6 +487,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
     const result = {
         id: campaignId,
         name: campaignName,
+        type: (backendCampaign.campaignType || 'nudge') as any, // ✅ Phase 2 Gamification: 'nudge' | 'challenge'
+        challengeDetails: backendCampaign.challengeDetails || undefined, // ✅ Phase 2 Gamification: Extract config
         nudgeType: campaignType as any,
         experienceType: (backendCampaign.experience || 'nudges') as any, // ✅ FIX: Restore experience type
         status: campaignStatus === 'inactive' ? 'paused' : campaignStatus, // ✅ FIX: Map inactive -> paused
@@ -2233,7 +2239,6 @@ function extractModalConfig(config: Record<string, any>): ModalConfig {
     return {
         width: config.width,
         height: config.height,
-        sizeUnit: config.sizeUnit || (typeof config.width === 'string' && config.width.includes('%') ? '%' : 'px'),
         backgroundColor: config.backgroundColor || '#FFFFFF',
         backgroundImageUrl: config.backgroundImageUrl,
         backgroundSize: config.backgroundSize,
@@ -2254,7 +2259,7 @@ function extractModalConfig(config: Record<string, any>): ModalConfig {
             duration: config.animationDuration || 300,
             easing: config.animationEasing || 'ease-out',
         },
-    };
+    } as ModalConfig;
 }
 
 /**
@@ -2265,7 +2270,6 @@ function extractBannerConfig(config: Record<string, any>): BannerConfig {
         position: config.position || 'top',
         width: config.width || '100%',
         height: config.height || 'auto',
-        sizeUnit: config.sizeUnit || (typeof config.width === 'string' && config.width.includes('%') ? '%' : 'px'),
         backgroundColor: config.backgroundColor || '#FFFFFF',
         backgroundImageUrl: config.backgroundImageUrl,
         backgroundSize: config.backgroundSize,
@@ -2295,7 +2299,7 @@ function extractBannerConfig(config: Record<string, any>): BannerConfig {
             spread: 0,
             opacity: 0.1
         }
-    };
+    } as BannerConfig;
 }
 
 /**
@@ -2314,6 +2318,7 @@ function extractScratchCardConfig(config: Record<string, any>): ScratchCardConfi
         coverColor: config.coverColor || '#CCCCCC',
         coverImage: config.coverImage,
         scratchSize: config.scratchSize || 20,
+        scratchType: config.scratchType || 'brush', // Required field — default to brush
         revealThreshold: config.revealThreshold || 50,
         autoReveal: config.autoReveal !== false,
         scratchArea: config.scratchArea || { x: 0, y: 0, width: '100%', height: '100%' },
@@ -2329,7 +2334,7 @@ function extractScratchCardConfig(config: Record<string, any>): ScratchCardConfi
             color: config.overlay?.color ?? '#000000',
             dismissOnClick: config.overlay?.dismissOnClick ?? true
         }
-    }; // Final check brace match
+    };
 }
 
 /**
@@ -2383,15 +2388,15 @@ function buildComponentsTree(layers: Layer[]): any[] {
                 gap: layer.style?.gap || 0,
                 flexWrap: layer.style?.flexWrap || 'nowrap',
             } : undefined,
-            flexChild: layer.parent ? {
-                flexGrow: layer.style?.flexGrow || 0,
-                flexShrink: layer.style?.flexShrink || 1,
-                alignSelf: layer.style?.alignSelf || 'auto',
+            flexChild: layer.parent ? ({
+                flexGrow: (layer.style as any)?.flexGrow || 0,
+                flexShrink: (layer.style as any)?.flexShrink || 1,
+                alignSelf: (layer.style as any)?.alignSelf || 'auto',
                 minWidth: layer.style?.minWidth,
                 maxWidth: layer.style?.maxWidth,
                 minHeight: layer.style?.minHeight,
                 maxHeight: layer.style?.maxHeight,
-            } : undefined,
+            } as any) : undefined,
         };
     };
 

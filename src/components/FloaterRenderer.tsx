@@ -1255,21 +1255,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
                                 {config?.controls?.expandButton?.show && (config?.controls?.expandButton?.position === 'top-left' || !config?.controls?.expandButton?.position) &&
                                     renderControlBtn(
-                                        config.controls.expandButton,
+                                        config?.controls?.expandButton,
                                         isExpanded ? <Minimize /> : <Expand />,
                                         () => setIsExpanded(!isExpanded)
                                     )
                                 }
                                 {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'top-left' &&
                                     renderControlBtn(
-                                        config.controls.muteButton,
+                                        config?.controls?.muteButton,
                                         isMuted ? <VolumeX /> : <Volume2 />,
                                         () => setIsMuted(!isMuted)
                                     )
                                 }
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'top-left' &&
                                     renderControlBtn(
-                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 }, // Fallback for bare showCloseButton=true
+                                        config?.controls?.closeButton || { size: 14, offsetX: 0, offsetY: 0 }, // Fallback for bare showCloseButton=true
                                         <X />,
                                         () => { if (isInteractive && onDismiss) onDismiss(); }
                                     )
@@ -1280,21 +1280,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
                                 {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'top-right' &&
                                     renderControlBtn(
-                                        config.controls.expandButton,
+                                        config?.controls?.expandButton,
                                         isExpanded ? <Minimize /> : <Expand />,
                                         () => setIsExpanded(!isExpanded)
                                     )
                                 }
                                 {config?.controls?.muteButton?.show && isVideo && (config?.controls?.muteButton?.position === 'top-right' || !config?.controls?.muteButton?.position) &&
                                     renderControlBtn(
-                                        config.controls.muteButton,
+                                        config?.controls?.muteButton,
                                         isMuted ? <VolumeX /> : <Volume2 />,
                                         () => setIsMuted(!isMuted)
                                     )
                                 }
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && (config?.controls?.closeButton?.position === 'top-right' || !config?.controls?.closeButton?.position) &&
                                     renderControlBtn(
-                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
+                                        config?.controls?.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
                                         <X />,
                                         () => { if (isInteractive && onDismiss) onDismiss(); }
                                     )
@@ -1311,21 +1311,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
                                 {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-left' &&
                                     renderControlBtn(
-                                        config.controls.expandButton,
+                                        config?.controls?.expandButton,
                                         isExpanded ? <Minimize /> : <Expand />,
                                         () => setIsExpanded(!isExpanded)
                                     )
                                 }
                                 {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-left' &&
                                     renderControlBtn(
-                                        config.controls.muteButton,
+                                        config?.controls?.muteButton,
                                         isMuted ? <VolumeX /> : <Volume2 />,
                                         () => setIsMuted(!isMuted)
                                     )
                                 }
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-left' &&
                                     renderControlBtn(
-                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
+                                        config?.controls?.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
                                         <X />,
                                         () => { if (isInteractive && onDismiss) onDismiss(); }
                                     )
@@ -1336,21 +1336,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                             <div style={{ display: 'flex', gap: '8px', pointerEvents: 'auto' }}>
                                 {config?.controls?.expandButton?.show && config?.controls?.expandButton?.position === 'bottom-right' &&
                                     renderControlBtn(
-                                        config.controls.expandButton,
+                                        config?.controls?.expandButton,
                                         isExpanded ? <Minimize /> : <Expand />,
                                         () => setIsExpanded(!isExpanded)
                                     )
                                 }
                                 {config?.controls?.muteButton?.show && isVideo && config?.controls?.muteButton?.position === 'bottom-right' &&
                                     renderControlBtn(
-                                        config.controls.muteButton,
+                                        config?.controls?.muteButton,
                                         isMuted ? <VolumeX /> : <Volume2 />,
                                         () => setIsMuted(!isMuted)
                                     )
                                 }
                                 {(config?.showCloseButton === true || config?.controls?.closeButton?.show === true) && config?.controls?.closeButton?.position === 'bottom-right' &&
                                     renderControlBtn(
-                                        config.controls.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
+                                        config?.controls?.closeButton || { size: 14, offsetX: 0, offsetY: 0 },
                                         <X />,
                                         () => { if (isInteractive && onDismiss) onDismiss(); }
                                     )

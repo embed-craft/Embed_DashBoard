@@ -25,6 +25,7 @@ import Templates from './pages/Templates';
 import UserDetails from "./pages/UserDetails";
 import Flows from "./pages/Flows";
 import Pages from "./pages/Pages";
+import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
 import ApiPage from "./pages/ApiPage";
 
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/events" element={<Events />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/users/:id" element={<UserDetails />} />
+                <Route path="/rewards" element={<Rewards />} />
                 <Route path="/pages" element={<Pages />} />
                 <Route path="/apis" element={<ApiPage />} />
                 <Route path="/settings" element={<Settings />} />

@@ -10,6 +10,7 @@ import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
 import { CarouselLayerRenderer } from './campaign/renderers/CarouselLayerRenderer';
 import { CountdownRenderer } from './campaign/renderers/CountdownRenderer';
+import { SpinTheWheelLayerRenderer } from './campaign/renderers/SpinTheWheelLayerRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -300,6 +301,11 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 break;
             case 'custom':
                 console.log('Custom action triggered:', action);
+                break;
+            case 'spin_wheel':
+                // Dispatch a custom event to trigger the spin wheel animation
+                window.dispatchEvent(new CustomEvent('spinTheWheel'));
+                console.log('Spin Wheel action triggered');
                 break;
         }
     };
@@ -622,6 +628,19 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         layer={layer}
                         layers={layers}
                         renderChild={renderLayer}
+                    />
+                );
+                break;
+            case 'spinthewheel':
+                content = (
+                    <SpinTheWheelLayerRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
+                        isInteractive={isInteractive}
+                        layers={layers}
+                        renderChild={renderLayer}
+                        selectedLayerId={selectedLayerId}
                     />
                 );
                 break;

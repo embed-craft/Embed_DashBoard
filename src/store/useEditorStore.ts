@@ -12,7 +12,7 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel';
 
 
 // Scratch Foil Props
@@ -198,6 +198,31 @@ export interface LayerContent extends ScratchFoilProps {
   showMinutes?: boolean;
   showSeconds?: boolean;
   preset?: 'box' | 'ring';
+
+  // Spin The Wheel content
+  wheelScale?: number;
+  wheelImage?: string;
+  pointerImage?: string;
+  pointerOffsetX?: number;
+  pointerOffsetY?: number;
+  spinButtonImage?: string; // Custom spin button image (overlays wheel center)
+  spinButtonOffsetX?: number;
+  spinButtonOffsetY?: number;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  textColor?: string;
+  maxAttempts?: number;
+  showSpinCounter?: boolean;
+  showWinPopup?: boolean;
+  showCongratsScreen?: boolean;
+  showBetterLuckScreen?: boolean;
+  addConfetti?: boolean;
+  confettiImage?: string;
+  confettiImageUrl?: string; // URL toggle mode
+  confettiObjectFit?: 'cover' | 'contain' | 'fill';
+  spinTheWheelSections?: Array<{ id: string; label: string; color: string; image?: string }>;
+  spinDuration?: number;
   useLocalTime?: boolean;
   onExpiry?: 'none' | 'hide' | 'message' | 'redirect';
   showLabels?: boolean;
@@ -726,6 +751,23 @@ export interface CampaignSchedule {
   timeZone?: string;
 }
 
+export interface SpinTheWheelSection {
+  id: string;
+  name: string;
+  rewardId: string;
+  weight: number;
+  quantity?: number;
+  audienceId?: string; // New: For Audience Based mode
+  color?: string;      // Section slice color (Design tab)
+  image?: string;      // Section image URL (Design tab)
+}
+
+export interface SpinTheWheelConfig {
+  winningCriteria: 'audience' | 'weight';
+  sections: SpinTheWheelSection[];
+  sectionWinLimit?: number;
+}
+
 // Template System (Phase 1)
 export interface BottomSheetTemplate {
   id: string;
@@ -997,6 +1039,7 @@ export interface CampaignEditor {
   floaterConfig?: any;
   spotlightConfig?: SpotlightConfig;
   fullscreenConfig?: FullScreenConfig;
+  spinTheWheelConfig?: SpinTheWheelConfig;
 
   // Editor state
   selectedLayerId: string | null;
@@ -1074,6 +1117,7 @@ interface EditorStore {
   updatePipConfig: (config: any) => void;
   updateFloaterConfig: (config: any) => void;
   updateFullScreenConfig: (config: Partial<FullScreenConfig>) => void;
+  updateSpinTheWheelConfig: (config: Partial<SpinTheWheelConfig>) => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
 
@@ -1437,6 +1481,11 @@ export const useEditorStore = create<EditorStore>()(
               duration: 300,
               easing: 'ease-out',
             },
+          } : undefined,
+          // Initialize spinTheWheelConfig
+          spinTheWheelConfig: type === 'spinthewheel' || nudgeType === 'spinthewheel' ? {
+             winningCriteria: 'weight',
+             sections: [],
           } : undefined,
           // Initialize floater config for floater nudge type
           floaterConfig: nudgeType === 'floater' ? {
@@ -2178,12 +2227,81 @@ export const useEditorStore = create<EditorStore>()(
         // Helper to get initial style
         let initialStyle = getDefaultStyleForType(type);
 
+        const autoChildren: Layer[] = [];
+        const autoChildrenIds: string[] = [];
+
+        if (type === 'spinthewheel') {
+          const congratsId = `layer_${Date.now()}_congrats`;
+          const lossId = `layer_${Date.now()}_loss`;
+          const spinsCounterId = `layer_${Date.now()}_spinscounter`;
+          autoChildrenIds.push(congratsId, lossId, spinsCounterId);
+
+          autoChildren.push({
+            id: congratsId,
+            type: 'container',
+            name: 'Congrats Screen',
+            parent: uniqueLayerId,
+            children: [],
+            visible: false,
+            locked: false,
+            zIndex: 1,
+            position: { x: 0, y: 0 },
+            size: { width: '100%', height: '100%' },
+            content: getDefaultContentForType('container'),
+            style: getDefaultStyleForType('container'),
+          });
+
+          autoChildren.push({
+            id: lossId,
+            type: 'container',
+            name: 'Better Luck Next Time',
+            parent: uniqueLayerId,
+            children: [],
+            visible: false,
+            locked: false,
+            zIndex: 2,
+            position: { x: 0, y: 0 },
+            size: { width: '100%', height: '100%' },
+            content: getDefaultContentForType('container'),
+            style: getDefaultStyleForType('container'),
+          });
+
+          // Spins Left counter button — uses {{spins_left}} placeholder
+          autoChildren.push({
+            id: spinsCounterId,
+            type: 'button',
+            name: 'Spins Left Counter',
+            parent: uniqueLayerId,
+            children: [],
+            visible: true,
+            locked: false,
+            zIndex: 3,
+            position: { x: 370, y: 790 },
+            size: { width: 340, height: 50 },
+            content: {
+              ...getDefaultContentForType('button'),
+              label: '🎰 Spins Left: {{spins_left}}',
+              fontSize: 14,
+              fontWeight: 'bold',
+              textColor: '#FFFFFF',
+            },
+            style: {
+              ...getDefaultStyleForType('button'),
+              backgroundColor: '#1F2937',
+              borderRadius: 25,
+              position: 'absolute',
+              width: 340,
+              height: 50,
+            },
+          });
+        }
+
         const newLayer: Layer = {
           id: uniqueLayerId,
           type,
           name: name || `New ${type}`,
           parent: parentId || null,
-          children: [],
+          children: autoChildrenIds,
           visible: true,
           locked: false,
           zIndex: 0, // Will be updated below
@@ -2202,7 +2320,7 @@ export const useEditorStore = create<EditorStore>()(
             // Set Z-index
             newLayer.zIndex = story.layers.length;
 
-            let updatedLayers = [...story.layers, newLayer];
+            let updatedLayers = [...story.layers, newLayer, ...autoChildren];
 
             // Update parent's children array
             if (parentId) {
@@ -2253,7 +2371,7 @@ export const useEditorStore = create<EditorStore>()(
             // Set Z-index
             newLayer.zIndex = iface.layers.length;
 
-            const updatedLayers = [...iface.layers, newLayer];
+            const updatedLayers = [...iface.layers, newLayer, ...autoChildren];
 
             // Update parent's children array
             if (parentId) {
@@ -2298,7 +2416,7 @@ export const useEditorStore = create<EditorStore>()(
 
         newLayer.zIndex = currentCampaign.layers.length;
 
-        const updatedLayers = [...currentCampaign.layers, newLayer];
+        const updatedLayers = [...currentCampaign.layers, newLayer, ...autoChildren];
 
         // Update parent's children array
         if (parentId) {
@@ -3285,6 +3403,26 @@ export const useEditorStore = create<EditorStore>()(
             },
           });
         }
+      },
+
+      // Update SpinTheWheel config
+      updateSpinTheWheelConfig: (config: Partial<SpinTheWheelConfig>) => {
+        set((state) => {
+          if (!state.currentCampaign) return state;
+          
+          const currentConfig = state.currentCampaign.spinTheWheelConfig || { winningCriteria: 'weight', sections: [] };
+          return {
+            currentCampaign: {
+              ...state.currentCampaign,
+              spinTheWheelConfig: {
+                ...currentConfig,
+                ...config
+              } as SpinTheWheelConfig,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            }
+          };
+        });
       },
 
       // Update PIP config
@@ -4603,6 +4741,7 @@ export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeTyp
       ];
 
 
+    case 'fullpage':
     case 'fullscreen':
       return [
         {
@@ -4776,6 +4915,24 @@ function getDefaultContentForType(type: LayerType): LayerContent {
         coverColor: '#CCCCCC',
         scratchSize: 50,
         revealThreshold: 50,
+      };
+    case 'spinthewheel':
+      return {
+        showCongratsScreen: true,
+        showBetterLuckScreen: true,
+        wheelImage: '',
+        pointerImage: '',
+        spinButtonImage: '',
+        primaryColor: '#ffffff',
+        accentColor: '#000000',
+        textColor: '#000000',
+        maxAttempts: 50,
+        showSpinCounter: false,
+        showWinPopup: false,
+        addConfetti: true,
+        confettiImage: '',
+        confettiObjectFit: 'cover',
+        spinDuration: 3000,
       };
     default:
       return {};

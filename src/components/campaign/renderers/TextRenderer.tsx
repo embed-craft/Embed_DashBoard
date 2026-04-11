@@ -35,6 +35,36 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
         ? `${safeScale(layer.content.textShadowX || 0, scale)} ${safeScale(layer.content.textShadowY || 0, scale)} ${safeScale(layer.content.textShadowBlur || 0, scale)} ${layer.content.textShadowColor || '#000000'}`
         : undefined;
 
+    // STW Placeholder replacement: {{reward_name}}, {{section_name}}, {{spins_left}}, {{max_spins}}
+    const resolveText = (text: string): string => {
+        if (!text) return text;
+        let resolved = text;
+
+        // Reward placeholders
+        if (resolved.includes('{{reward_name}}') || resolved.includes('{{section_name}}')) {
+            const result = (window as any).__stwResult;
+            const rewardName = result?.name || '{{reward_name}}';
+            resolved = resolved
+                .replace(/\{\{reward_name\}\}/g, rewardName)
+                .replace(/\{\{section_name\}\}/g, rewardName);
+        }
+
+        // Spin counter placeholders
+        if (resolved.includes('{{spins_left}}')) {
+            const spinsLeft = (window as any).__stwSpinsLeft ?? '{{spins_left}}';
+            resolved = resolved.replace(/\{\{spins_left\}\}/g, String(spinsLeft));
+        }
+        if (resolved.includes('{{max_spins}}')) {
+            const maxSpins = (window as any).__stwMaxSpins ?? '{{max_spins}}';
+            resolved = resolved.replace(/\{\{max_spins\}\}/g, String(maxSpins));
+        }
+
+        return resolved;
+    };
+
+    const rawText = layer.content?.text || 'Text';
+    const displayText = resolveText(rawText);
+
     return (
         <div style={{
             // Typography (from Content)
@@ -84,10 +114,10 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
                     transform: `translate(${safeScale(layer.content.textOffsetX || 0, scale)}, ${safeScale(layer.content.textOffsetY || 0, scale)})`,
                     width: '100%' // Ensure alignment still works
                 }}>
-                    {layer.content?.text || 'Text'}
+                    {displayText}
                 </div>
             ) : (
-                layer.content?.text || 'Text'
+                displayText
             )}
         </div>
     );

@@ -40,6 +40,7 @@ const typeGradients: Record<string, string> = {
     fullscreen:  'from-slate-600 to-gray-800',
     banner:      'from-sky-400 to-blue-500',
     scratchcard: 'from-yellow-400 to-amber-500',
+    spinthewheel: 'from-purple-400 to-fuchsia-500',
 };
 
 const typeDots: Record<string, string> = {
@@ -50,6 +51,7 @@ const typeDots: Record<string, string> = {
     fullscreen:  'bg-slate-600',
     banner:      'bg-sky-500',
     scratchcard: 'bg-yellow-500',
+    spinthewheel: 'bg-purple-500',
 };
 
 const nudgeTypeLabel: Record<string, string> = {
@@ -60,6 +62,7 @@ const nudgeTypeLabel: Record<string, string> = {
     fullscreen:  'Full Screen',
     banner:      'Banner',
     scratchcard: 'Scratch Card',
+    spinthewheel: 'Spin The Wheel',
 };
 
 const CATEGORIES = ['All', 'Marketing', 'Onboarding', 'Feedback', 'Announcement', 'Support', 'Other'];
@@ -69,6 +72,8 @@ const NUDGE_TYPES = [
     { id: 'tooltip', label: 'Tooltip' },
     { id: 'floater', label: 'Floater' },
     { id: 'fullscreen', label: 'Full Screen' },
+    { id: 'scratchcard', label: 'Scratch Card' },
+    { id: 'spinthewheel', label: 'Spin The Wheel' },
 ];
 
 const TemplateCard: React.FC<{

@@ -30,7 +30,25 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
         return '#' + (0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (B < 255 ? (B < 1 ? 0 : B) : 255) * 0x100 + (G < 255 ? (G < 1 ? 0 : G) : 255)).toString(16).slice(1);
     };
 
-    const label = layer.content?.label || 'Button';
+    // STW Placeholder replacement for button labels
+    const resolveText = (text: string): string => {
+        if (!text) return text;
+        let resolved = text;
+        if (resolved.includes('{{reward_name}}') || resolved.includes('{{section_name}}')) {
+            const result = (window as any).__stwResult;
+            const rewardName = result?.name || '{{reward_name}}';
+            resolved = resolved.replace(/\{\{reward_name\}\}/g, rewardName).replace(/\{\{section_name\}\}/g, rewardName);
+        }
+        if (resolved.includes('{{spins_left}}')) {
+            resolved = resolved.replace(/\{\{spins_left\}\}/g, String((window as any).__stwSpinsLeft ?? '{{spins_left}}'));
+        }
+        if (resolved.includes('{{max_spins}}')) {
+            resolved = resolved.replace(/\{\{max_spins\}\}/g, String((window as any).__stwMaxSpins ?? '{{max_spins}}'));
+        }
+        return resolved;
+    };
+
+    const label = resolveText(layer.content?.label || 'Button');
     const variant = layer.content?.buttonVariant || 'primary';
     // FIX: Prioritize style.backgroundColor defined by Editor
     const themeColor = layer.style?.backgroundColor || layer.content?.themeColor || '#6366F1';

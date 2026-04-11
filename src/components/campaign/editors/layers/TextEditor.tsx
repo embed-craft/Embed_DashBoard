@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
@@ -6,10 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     AlignCenter, AlignJustify, AlignLeft, AlignRight, Type, Palette, Layers, Box,
     CaseSensitive, Move, ArrowUpFromLine, Scaling, Underline, Strikethrough,
-    CaseUpper, CaseLower, Sun, Square, PaintBucket, Ghost, PenTool
+    CaseUpper, CaseLower, Sun, Square, PaintBucket, Ghost, PenTool, Braces
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useEditorStore } from '@/store/useEditorStore';
+
+const STW_VARIABLES = [
+    { label: '🎁 Reward Name', value: '{{reward_name}}', desc: 'Name of the won reward' },
+    { label: '🎰 Spins Left', value: '{{spins_left}}', desc: 'Remaining spin attempts' },
+    { label: '🔄 Max Spins', value: '{{max_spins}}', desc: 'Total allowed spins' },
+];
 
 const Label = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
     <label className={`text-xs font-medium text-gray-700 block mb-1.5 ${className}`}>
@@ -61,10 +68,32 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     const fontWeight = layer?.content?.fontWeight || 'semibold';
     const textColor = layer?.content?.textColor || '#111827';
     const textAlign = layer?.content?.textAlign || 'center';
+    const { currentCampaign } = useEditorStore();
+    const isSTW = currentCampaign?.nudgeType === 'spinthewheel';
+    const [showVarMenu, setShowVarMenu] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Derived Design Props
     const style = layer?.style || {};
     const content = layer?.content || {};
+
+    const insertVariable = (varValue: string) => {
+        const ta = textareaRef.current;
+        if (ta) {
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            const newText = textContent.substring(0, start) + varValue + textContent.substring(end);
+            handleContentUpdate('text', newText);
+            // Restore cursor after the inserted variable
+            setTimeout(() => {
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + varValue.length;
+            }, 0);
+        } else {
+            handleContentUpdate('text', textContent + varValue);
+        }
+        setShowVarMenu(false);
+    };
 
     return (
         <div className="p-1">
@@ -85,9 +114,42 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <Label>Content</Label>
-                            <span className="text-[10px] text-gray-400">{textContent.length} chars</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-400">{textContent.length} chars</span>
+                                {isSTW && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowVarMenu(!showVarMenu)}
+                                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-all"
+                                            title="Insert dynamic variable"
+                                        >
+                                            <Braces size={12} />
+                                            <span>Insert Variable</span>
+                                        </button>
+                                        {showVarMenu && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setShowVarMenu(false)} />
+                                                <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-1.5 min-w-[200px] animate-in fade-in-50 slide-in-from-top-2 duration-200">
+                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider px-2 py-1 mb-0.5">Dynamic Variables</p>
+                                                    {STW_VARIABLES.map(v => (
+                                                        <button
+                                                            key={v.value}
+                                                            onClick={() => insertVariable(v.value)}
+                                                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-indigo-50 transition-colors group"
+                                                        >
+                                                            <span className="text-xs font-medium text-gray-800 group-hover:text-indigo-700">{v.label}</span>
+                                                            <p className="text-[10px] text-gray-400 mt-0.5">{v.desc}</p>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <textarea
+                            ref={textareaRef}
                             placeholder="Type your text here..."
                             value={textContent}
                             onChange={(e) => handleContentUpdate('text', e.target.value)}

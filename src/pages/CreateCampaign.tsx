@@ -46,6 +46,16 @@ const EXPERIENCE_TYPES = [
         bgColor: '#ecfdf5', // Emerald 50
         borderColor: '#6ee7b7', // Emerald 300
     },
+    {
+        id: 'spinthewheel',
+        type: 'gamification', // or whatever type
+        title: 'Spin The Wheel',
+        description: 'Engage users with a gamified reward wheel to increase conversions and retention.',
+        icon: Sparkles, // importing Sparkles or use another one
+        color: '#9333ea', // Purple 600
+        bgColor: '#faf5ff', // Purple 50
+        borderColor: '#d8b4fe', // Purple 300
+    },
 ];
 
 const CreateCampaign = () => {
@@ -54,6 +64,8 @@ const CreateCampaign = () => {
     const handleSelect = (exp: typeof EXPERIENCE_TYPES[0]) => {
         if (exp.type === 'challenge') {
             navigate(`/campaign-builder?type=challenge&new=true`);
+        } else if (exp.type === 'gamification') {
+            navigate(`/campaign-builder?type=${exp.id}&new=true`);
         } else if (exp.id === 'stories') {
             navigate(`/campaign-builder?experience=stories`);
         } else {

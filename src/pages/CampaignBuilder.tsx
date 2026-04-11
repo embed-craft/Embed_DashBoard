@@ -16,7 +16,8 @@ import {
   Plus,
   Lock,
   ChevronRight,
-  Info
+  Info,
+  Gift
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -41,8 +42,9 @@ import { Film, CheckCircle2 as CheckCircle2Icon } from 'lucide-react';
 
 import { ChallengeTypeStep } from '@/components/campaign/steps/ChallengeTypeStep';
 import { TasksStep } from '@/components/campaign/steps/TasksStep';
+import SpinWheelRewardsStep from '@/components/campaign/steps/SpinWheelRewardsStep';
 
-type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks';
+type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks' | 'rewards';
 
 const CampaignBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -125,6 +127,24 @@ const CampaignBuilder: React.FC = () => {
 
       if (!currentCampaign || currentCampaign.type !== 'challenge') {
         createCampaign('challenges', null as any, 'challenge');
+        setActiveStep('targeting');
+      }
+      return;
+    }
+
+    // Spin The Wheel flow
+    if (searchParams.get('type') === 'spinthewheel' && !campaignId) {
+      const isNewUserRequest = searchParams.get('new') === 'true';
+      
+      if (isNewUserRequest && currentCampaign) {
+          resetCurrentCampaign();
+          searchParams.delete('new');
+          navigate({ search: searchParams.toString() }, { replace: true });
+          return;
+      }
+
+      if (!currentCampaign || currentCampaign.type !== 'spinthewheel') {
+        createCampaign('gamification' as any, 'fullscreen' as any, 'spinthewheel');
         setActiveStep('targeting');
       }
       return;
@@ -269,6 +289,8 @@ const CampaignBuilder: React.FC = () => {
   const isDesignValid = validateStep('design');
   const canLaunch = currentCampaign?.type === 'challenge' 
     ? (isTargetingValid && isGoalsValid && isChallengesValid) 
+    : currentCampaign?.type === 'spinthewheel'
+    ? (isTargetingValid && isGoalsValid) // simplified for now
     : (isTargetingValid && isGoalsValid && isDesignValid);
 
   // Handle Step Navigation (Skippable Unlocking)
@@ -337,6 +359,7 @@ const CampaignBuilder: React.FC = () => {
 
   const isStories = currentCampaign?.experienceType === 'stories';
   const isChallenge = currentCampaign?.type === 'challenge';
+  const isSpinTheWheel = currentCampaign?.type === 'spinthewheel';
 
   const steps = isChallenge ? [
     { id: 'targeting', label: 'Targeting', icon: Target },
@@ -344,6 +367,11 @@ const CampaignBuilder: React.FC = () => {
     { id: 'challenge_type', label: 'Challenge Logic', icon: Target },
     { id: 'tasks', label: 'Tasks', icon: CheckCircle2Icon },
     { id: 'design', label: 'Design Experience', icon: Palette },
+  ] : isSpinTheWheel ? [
+    { id: 'targeting', label: 'Targeting', icon: Target },
+    { id: 'goals', label: 'Goals & Rollout', icon: Flag },
+    { id: 'rewards', label: 'Rewards', icon: Gift },
+    { id: 'design', label: 'Wheel Game', icon: Palette },
   ] : [
     { id: 'targeting', label: 'Targeting', icon: Target },
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
@@ -747,6 +775,7 @@ const CampaignBuilder: React.FC = () => {
                 {activeStep === 'goals' && <GoalsRolloutStep />}
                 {activeStep === 'challenge_type' && <ChallengeTypeStep />}
                 {activeStep === 'tasks' && <TasksStep />}
+                {activeStep === 'rewards' && <SpinWheelRewardsStep />}
                 {activeStep === 'stories' && (
                   activeStoryId ? (
                     <StoryEditorWrapper />

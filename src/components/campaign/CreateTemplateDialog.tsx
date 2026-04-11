@@ -61,6 +61,17 @@ const NudgePreviews: Record<string, React.ReactNode> = {
             </div>
         </PreviewWrapper>
     ),
+    spinthewheel: (
+        <PreviewWrapper bg="bg-purple-50">
+            <div className="m-auto w-6 h-6 bg-gradient-to-br from-purple-400 to-fuchsia-500 rounded-full shadow-sm flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-x-0 h-0.5 bg-white/40 rotate-45" />
+                <div className="absolute inset-y-0 w-0.5 bg-white/40 rotate-45" />
+                <div className="absolute inset-x-0 h-0.5 bg-white/40" />
+                <div className="absolute inset-y-0 w-0.5 bg-white/40" />
+                <div className="w-2 h-2 bg-white rounded-full z-10 shadow-sm border border-purple-200" />
+            </div>
+        </PreviewWrapper>
+    ),
 };
 
 const NUDGE_TYPES = [
@@ -68,6 +79,8 @@ const NUDGE_TYPES = [
     { id: 'tooltip',     label: 'Tooltip',       desc: 'Anchor to any element' },
     { id: 'floater',     label: 'Floater',       desc: 'Floating corner widget' },
     { id: 'fullscreen',  label: 'Full Screen',   desc: 'Immersive full coverage' },
+    { id: 'scratchcard', label: 'Scratch Card',  desc: 'Interactive reveal' },
+    { id: 'spinthewheel',label: 'Spin The Wheel',desc: 'Gamified reward wheel' },
 ];
 
 export const CreateTemplateDialog: React.FC<CreateTemplateDialogProps> = ({
@@ -159,7 +172,7 @@ export const CreateTemplateDialog: React.FC<CreateTemplateDialogProps> = ({
                     {/* Nudge Type Grid */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">Nudge Type</label>
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="grid grid-cols-3 gap-3">
                             {NUDGE_TYPES.map((t) => {
                                 const isSelected = type === t.id;
                                 return (

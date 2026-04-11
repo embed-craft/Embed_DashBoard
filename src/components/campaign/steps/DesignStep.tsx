@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical, Gamepad2, RotateCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -47,9 +47,11 @@ import { GradientEditor } from '@/components/campaign/editors/layers/GradientEdi
 import { ScratchFoilEditor } from '@/components/campaign/editors/layers/ScratchFoilEditor';
 import { CarouselLayerEditor } from '@/components/campaign/editors/layers/CarouselLayerEditor';
 import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownEditor';
+import { SpinTheWheelEditor } from '@/components/campaign/editors/SpinTheWheelEditor';
 
 import { InterfacesList } from '@/components/campaign/InterfacesList';
 import { InterfaceTypeSelector } from '@/components/campaign/InterfaceTypeSelector';
+import { BOTTOM_SHEET_TEMPLATES } from '@/lib/bottomSheetTemplates';
 
 
 
@@ -349,7 +351,7 @@ export const DesignStep: React.FC<any> = () => {
 
   const handleRenameSubmit = () => {
     if (editingLayerId && editingName.trim()) {
-      updateLayerContent(editingLayerId, { name: editingName.trim() });
+      updateLayer(editingLayerId, { name: editingName.trim() });
       toast.success('Layer renamed');
     }
     setEditingLayerId(null);
@@ -1066,7 +1068,8 @@ export const DesignStep: React.FC<any> = () => {
                   layer.type === 'image' || layer.type === 'media' ? <ImageIcon size={15} /> :
                     layer.type === 'carousel' ? <GalleryHorizontal size={15} /> :
                       layer.type === 'countdown' ? <Timer size={15} /> :
-                        <Layers size={15} />
+                        layer.type === 'spinthewheel' ? <Gamepad2 size={15} /> :
+                          <Layers size={15} />
             }
           </div>
 
@@ -1657,6 +1660,7 @@ export const DesignStep: React.FC<any> = () => {
           </ErrorBoundary>
         );
 
+      case 'fullpage':
       case 'fullscreen': {
         const currentDeviceConfigFs = DEVICE_PRESETS.find(d => d.id === selectedDevice);
         // Scaling logic same as Modal (Design Baseline 393x852)
@@ -1721,6 +1725,36 @@ export const DesignStep: React.FC<any> = () => {
         );
       }
 
+      case 'spinthewheel': {
+        const currentDeviceConfigStw = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+        const scaleFactorStw = ((currentDeviceConfigStw?.width || 393) / 393) * previewZoom;
+        const scaleYFactorStw = ((currentDeviceConfigStw?.height || 852) / 852) * previewZoom;
+
+        return (
+          <ErrorBoundary>
+            <FullScreenRenderer
+              layers={campaignLayers}
+              selectedLayerId={selectedLayerId}
+              onLayerSelect={selectLayer}
+              colors={colors}
+              config={currentCampaign?.fullscreenConfig}
+              onLayerUpdate={updateLayer}
+              onDismiss={() => {
+                if (isInteractive) {
+                  toast.success('Dismiss action triggered');
+                  setIsPreviewDismissed(true);
+                }
+              }}
+              isInteractive={isInteractive}
+              onNavigate={handlePreviewNavigate}
+              onInterfaceAction={handleInterfaceAction}
+              scale={scaleFactorStw}
+              scaleY={scaleYFactorStw}
+            />
+          </ErrorBoundary>
+        );
+      }
+
       case 'tooltip':
         const device = DEVICE_PRESETS.find(d => d.id === selectedDevice) || DEVICE_PRESETS[0];
         const deviceMeta = selectedPage?.deviceMetadata || { width: 1080, height: 1920 };
@@ -1770,7 +1804,7 @@ export const DesignStep: React.FC<any> = () => {
               alignItems: 'center', justifyContent: 'center', color: colors.text.secondary
             }}>
               <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(255,255,255,0.8)', borderRadius: '50%' }}>
-                <check size={24} color={colors.green[500]} />
+                <CheckCircle2 size={24} color={colors.green[500]} />
               </div>
               <p style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 500 }}>Interface Dismissed</p>
               <button
@@ -2013,7 +2047,8 @@ export const DesignStep: React.FC<any> = () => {
             { value: 'deeplink', label: 'Deep Link', icon: <Link size={16} /> },
             { value: 'link', label: 'External URL', icon: <Globe size={16} /> },
             { value: 'custom', label: 'Callback', icon: <Code size={16} /> },
-            { value: 'interface', label: 'Interface', icon: <Layers size={16} /> }
+            { value: 'interface', label: 'Interface', icon: <Layers size={16} /> },
+            ...(currentCampaign?.nudgeType === 'spinthewheel' ? [{ value: 'spin_wheel', label: 'Spin Wheel', icon: <RotateCw size={16} /> }] : [])
           ].map((option) => {
             const isSelected = (selectedLayerObj.content?.action?.type || 'none') === option.value;
             return (
@@ -2258,7 +2293,9 @@ export const DesignStep: React.FC<any> = () => {
       if (selectedNudgeType === 'pip') return renderPipConfig();
       if (selectedNudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
       // if (selectedNudgeType === 'banner') return <BannerMinimalEditor />;
-      if (selectedNudgeType === 'scratchcard') return <ScratchCardMinimalEditor />;
+      
+      if (selectedNudgeType === 'floater') return <FloaterMinimalEditor />;
+      if (selectedNudgeType === 'fullscreen' || selectedNudgeType === 'fullpage' || selectedNudgeType === 'spinthewheel') return <FullScreenMinimalEditor />;
       return null;
     }
 
@@ -2318,13 +2355,21 @@ export const DesignStep: React.FC<any> = () => {
         animation: { type: 'pop', duration: 300, easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' }
       };
 
+      const handleModalUpdate = (updates: any) => {
+        if (activeInterface?.id) {
+          updateInterface(activeInterface.id, { modalConfig: { ...activeConfig, ...updates } });
+        } else {
+          updateCampaign({ modalConfig: { ...activeConfig, ...updates } });
+        }
+      };
+
       const handleConfigUpdate = (field: string, value: any) => {
-        updateModalConfig({ [field]: value });
+        handleModalUpdate({ [field]: value });
       };
 
       const handleNestedConfigUpdate = (parent: 'overlay' | 'animation', field: string, value: any) => {
         const parentObj = config[parent] as any;
-        updateModalConfig({ [parent]: { ...parentObj, [field]: value } });
+        handleModalUpdate({ [parent]: { ...parentObj, [field]: value } });
       };
 
       const shouldShowFullConfig = !selectedLayerObj;
@@ -3283,7 +3328,7 @@ export const DesignStep: React.FC<any> = () => {
       }
 
       if (isRootLayer) {
-        if (nudgeType === 'fullscreen') return <FullScreenMinimalEditor />;
+        if (nudgeType === 'fullscreen' || nudgeType === 'fullpage' || nudgeType === 'spinthewheel') return <FullScreenMinimalEditor />;
         if (nudgeType === 'floater') return renderFloaterConfig();
         if (nudgeType === 'tooltip') return <TooltipMinimalEditor />;
         if (nudgeType === 'bottomsheet') return <BottomSheetMinimalEditor />;
@@ -3473,8 +3518,10 @@ export const DesignStep: React.FC<any> = () => {
     }
 
 
-
-
+    // Spin The Wheel properties
+    if (selectedLayerObj.type === 'spinthewheel') {
+      return <SpinTheWheelEditor />;
+    }
 
     // Default properties
     return (
@@ -3869,8 +3916,6 @@ export const DesignStep: React.FC<any> = () => {
       <SaveTemplateModal
         isOpen={isSaveTemplateModalOpen}
         onClose={() => setSaveTemplateModalOpen(false)}
-        config={currentCampaign}
-        nudgeType={selectedNudgeType || 'unknown'}
       />
 
 
@@ -4024,7 +4069,9 @@ export const DesignStep: React.FC<any> = () => {
                           'banner': 'Banner Container',
                           'tooltip': 'Tooltip Container',
                           'pip': 'PIP Container',
-                          'scratchcard': 'Scratch Card Container'
+                          'scratchcard': 'Scratch Card Container',
+                          'fullscreen': 'Fullscreen Layout',
+                          'fullpage': 'Fullscreen Layout',
                         };
 
                         // Use displayNudgeType for context switching
@@ -4241,6 +4288,7 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'scratch_foil', label: 'Scratch Foil', icon: Eraser },
             { id: 'carousel', label: 'Carousel', icon: GalleryHorizontal },
             { id: 'countdown', label: 'Countdown', icon: Timer },
+            { id: 'spinthewheel', label: 'Spin The Wheel', icon: Gamepad2 },
           ].filter(item => {
             // Find parent layer
             const parentLayer = campaignLayers.find(l => l.id === layerAddMenuId);
@@ -4254,6 +4302,13 @@ export const DesignStep: React.FC<any> = () => {
             if (parentLayer?.type === 'carousel') {
               return item.id === 'container';
             }
+
+            // If parent is Fullscreen Layout (Full Page), show only relevant layers including spinthewheel
+            // Hide spinthewheel for all other parent types
+            if (item.id === 'spinthewheel') {
+              return parentLayer?.name === 'Fullscreen Layout';
+            }
+
             return true;
           }).map(item => {
             // Determine Label

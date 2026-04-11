@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
@@ -19,11 +19,19 @@ import {
     Upload,
     User,
     Settings,
-    Grid
+    Grid,
+    Braces
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useEditorStore } from '@/store/useEditorStore';
+
+const STW_VARIABLES = [
+    { label: '🎁 Reward Name', value: '{{reward_name}}', desc: 'Name of the won reward' },
+    { label: '🎰 Spins Left', value: '{{spins_left}}', desc: 'Remaining spin attempts' },
+    { label: '🔄 Max Spins', value: '{{max_spins}}', desc: 'Total allowed spins' },
+];
 
 // Helper for consistent label styling
 const Label = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -69,6 +77,28 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
 }) => {
     const content = layer.content || {};
     const style = layer.style || {};
+    const { currentCampaign } = useEditorStore();
+    const isSTW = currentCampaign?.nudgeType === 'spinthewheel';
+    const [showVarMenu, setShowVarMenu] = useState(false);
+    const labelInputRef = useRef<HTMLInputElement>(null);
+
+    const insertVariable = (varValue: string) => {
+        const inp = labelInputRef.current;
+        const currentLabel = content.label || '';
+        if (inp) {
+            const start = inp.selectionStart || currentLabel.length;
+            const end = inp.selectionEnd || currentLabel.length;
+            const newLabel = currentLabel.substring(0, start) + varValue + currentLabel.substring(end);
+            handleContentUpdate('label', newLabel);
+            setTimeout(() => {
+                inp.focus();
+                inp.selectionStart = inp.selectionEnd = start + varValue.length;
+            }, 0);
+        } else {
+            handleContentUpdate('label', currentLabel + varValue);
+        }
+        setShowVarMenu(false);
+    };
 
     const buttonIcons = ['ArrowRight', 'ArrowLeft', 'Play', 'Search', 'Home', 'Check', 'X', 'Download', 'Upload', 'User', 'Settings'];
 
@@ -90,8 +120,41 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
                     {/* Text Config */}
                     <div className="space-y-3">
                         <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3">
-                            <Label className="text-blue-900">Button Text</Label>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <Label className="text-blue-900 mb-0">Button Text</Label>
+                                {isSTW && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowVarMenu(!showVarMenu)}
+                                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-all"
+                                            title="Insert dynamic variable"
+                                        >
+                                            <Braces size={12} />
+                                            <span>Insert Variable</span>
+                                        </button>
+                                        {showVarMenu && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setShowVarMenu(false)} />
+                                                <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-1.5 min-w-[200px] animate-in fade-in-50 slide-in-from-top-2 duration-200">
+                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider px-2 py-1 mb-0.5">Dynamic Variables</p>
+                                                    {STW_VARIABLES.map(v => (
+                                                        <button
+                                                            key={v.value}
+                                                            onClick={() => insertVariable(v.value)}
+                                                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-indigo-50 transition-colors group"
+                                                        >
+                                                            <span className="text-xs font-medium text-gray-800 group-hover:text-indigo-700">{v.label}</span>
+                                                            <p className="text-[10px] text-gray-400 mt-0.5">{v.desc}</p>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             <Input
+                                ref={labelInputRef}
                                 value={content.label || ''}
                                 onChange={(e) => handleContentUpdate('label', e.target.value)}
                                 placeholder="Button Label"

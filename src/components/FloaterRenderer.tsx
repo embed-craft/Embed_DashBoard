@@ -454,7 +454,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             paddingLeft: safeScale(layer.style?.paddingLeft, scale),
             paddingRight: safeScale(layer.style?.paddingRight, scale),
             // Handle borderRadius: if object, serialize to string, if number/string, scale
-            borderRadius: typeof layer.style?.borderRadius === 'object'
+            borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null && layer.style?.borderRadius !== null
                 ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
                 : safeScale(layer.style?.borderRadius, scale),
             fontSize: safeScale(layer.style?.fontSize, scale),

@@ -114,18 +114,37 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     const wheelImage = content.wheelImage;
 
     // ─── Spin Logic ───────────────────────────────────────────────
+    const winningCriteria = currentCampaign?.spinTheWheelConfig?.winningCriteria || 'weight';
+
     const getWinnerByWeight = useCallback((): number => {
         if (sections.length === 0) return Math.floor(Math.random() * sliceCount);
 
-        const totalWeight = sections.reduce((sum, s) => sum + (s.weight || 1), 0);
+        const getEffectiveWeight = (s: any) => {
+            if (winningCriteria === 'audience' && s.audienceId && s.audienceId.trim() !== '') {
+                return 0;
+            }
+            const w = s.weight !== undefined ? Number(s.weight) : 1;
+            return w > 0 ? w : 0;
+        };
+
+        const eligibleIndices = sections
+            .map((s, index) => ({ index, weight: getEffectiveWeight(s) }))
+            .filter(s => s.weight > 0);
+
+        if (eligibleIndices.length === 0) {
+             return Math.floor(Math.random() * sliceCount);
+        }
+
+        const totalWeight = eligibleIndices.reduce((sum, s) => sum + s.weight, 0);
         let random = Math.random() * totalWeight;
 
-        for (let i = 0; i < sections.length; i++) {
-            random -= (sections[i].weight || 1);
-            if (random <= 0) return i;
+        for (let i = 0; i < eligibleIndices.length; i++) {
+            random -= eligibleIndices[i].weight;
+            if (random <= 0) return eligibleIndices[i].index;
         }
-        return sections.length - 1;
-    }, [sections, sliceCount]);
+        
+        return eligibleIndices[eligibleIndices.length - 1].index;
+    }, [sections, sliceCount, winningCriteria]);
 
     const triggerConfetti = useCallback(() => {
         const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFEAA7', '#DDA0DD', '#FFD700', '#FF69B4', '#00CED1'];
@@ -161,8 +180,15 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
         // Calculate target angle using ref for latest rotation
         const currentRotation = rotationRef.current;
         const targetSectionAngle = winnerIdx * degreesPerSlice + degreesPerSlice / 2;
+        
         const extraSpins = (5 + Math.floor(Math.random() * 3)) * 360;
-        const targetRotation = currentRotation + extraSpins + (360 - targetSectionAngle);
+        
+        // Ensure rotational offset is consistently relative to initial unrotated angle (0) instead of cumulative sum
+        const requiredAbsoluteRotation = 360 - targetSectionAngle;
+        let delta = requiredAbsoluteRotation - (currentRotation % 360);
+        if (delta < 0) delta += 360;
+        
+        const targetRotation = currentRotation + delta + extraSpins;
 
         const spinDuration = content.spinDuration || 3000;
 

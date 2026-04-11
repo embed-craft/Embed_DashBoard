@@ -121,7 +121,7 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
         borderWidth: safeScale(layer.style?.borderWidth, scale),
         borderStyle: layer.style?.borderStyle,
         borderColor: layer.style?.borderColor,
-        borderRadius: typeof layer.style?.borderRadius === 'object'
+        borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
             ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
             : safeScale(layer.style?.borderRadius, scale),
 

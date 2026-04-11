@@ -36,7 +36,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderRadius: typeof layer.style?.borderRadius === 'object'
+                    borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
                         ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
                         : safeScale(layer.style?.borderRadius || 0, scale),
                 }}
@@ -66,7 +66,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
                     maxHeight: '100%',
                     display: 'block',
                     overflow: 'hidden',
-                    borderRadius: typeof layer.style?.borderRadius === 'object'
+                    borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
                         ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
                         : safeScale(layer.style?.borderRadius || 0, scale),
                     opacity: layer.style?.opacity ?? 1,
@@ -107,7 +107,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
                     maxHeight: '100%',
                     display: 'block',
                     opacity: layer.style?.opacity ?? 1,
-                    borderRadius: typeof layer.style?.borderRadius === 'object'
+                    borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
                         ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
                         : safeScale(layer.style?.borderRadius || 0, scale),
                     objectFit: layer.style?.objectFit || 'cover',
@@ -129,7 +129,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
                 display: 'block',
                 userSelect: 'none',
                 opacity: layer.style?.opacity ?? 1,
-                borderRadius: typeof layer.style?.borderRadius === 'object'
+                borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
                     ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
                     : safeScale(layer.style?.borderRadius || 0, scale),
                 borderWidth: safeScale(layer.style?.borderWidth || 0, scale),

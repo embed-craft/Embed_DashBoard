@@ -363,7 +363,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             marginBottom: safeScale(layer.style?.marginBottom, scaleY),
             marginLeft: safeScale(layer.style?.marginLeft, scale),
             marginRight: safeScale(layer.style?.marginRight, scale),
-            borderRadius: typeof layer.style?.borderRadius === 'object'
+            borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
                 ? `${safeScale(layer.style.borderRadius.topLeft || 0, scale)} ${safeScale(layer.style.borderRadius.topRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomRight || 0, scale)} ${safeScale(layer.style.borderRadius.bottomLeft || 0, scale)}`
                 : safeScale(layer.style?.borderRadius, scale),
             fontSize: safeScale(layer.style?.fontSize, scale),

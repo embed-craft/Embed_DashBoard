@@ -28,6 +28,7 @@ import Pages from "./pages/Pages";
 import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
 import ApiPage from "./pages/ApiPage";
+import Support from "./pages/Support";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/assets" element={<Assets />} />
                 <Route path="/templates" element={<Templates />} />
+                <Route path="/support" element={<Support />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Route>

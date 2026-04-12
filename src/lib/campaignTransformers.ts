@@ -3,7 +3,7 @@
  * Converts between rich frontend CampaignEditor model and simplified backend Campaign model
  */
 
-import type { CampaignEditor, Layer, TargetingRule, BottomSheetConfig, DisplayRules, ModalConfig, BannerConfig, ScratchCardConfig } from '@/store/useEditorStore';
+import type { CampaignEditor, Layer, TargetingRule, BottomSheetConfig, DisplayRules, ModalConfig, BannerConfig, ScratchCardConfig, SpinTheWheelConfig, FullScreenConfig } from '@/store/useEditorStore';
 
 // Backend campaign structure (as expected by server)
 export interface BackendCampaign {
@@ -182,8 +182,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
     }
     if (campaign.bannerConfig) config.bannerConfig = campaign.bannerConfig;
     if (campaign.scratchCardConfig) config.scratchCardConfig = campaign.scratchCardConfig;
-
-    if (campaign.scratchCardConfig) config.scratchCardConfig = campaign.scratchCardConfig;
+    if (campaign.spinTheWheelConfig) config.spinTheWheelConfig = campaign.spinTheWheelConfig;
+    if (campaign.fullscreenConfig) config.fullscreenConfig = campaign.fullscreenConfig;
 
     return {
         id: campaign.id,
@@ -203,6 +203,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
             ...(int.nudgeType === 'scratchcard' && int.scratchCardConfig ? { scratchCardConfig: int.scratchCardConfig } : {}),
             ...(int.nudgeType === 'pip' && int.pipConfig ? { pipConfig: int.pipConfig } : {}),
             ...(int.nudgeType === 'floater' && int.floaterConfig ? { floaterConfig: int.floaterConfig } : {}),
+            ...(int.nudgeType === 'spinthewheel' && int.spinTheWheelConfig ? { spinTheWheelConfig: int.spinTheWheelConfig } : {}),
+            ...((int.nudgeType === 'fullscreen' || int.nudgeType === 'fullpage') && int.fullscreenConfig ? { fullscreenConfig: int.fullscreenConfig } : {}),
             layers: int.layers || [],
             createdAt: int.createdAt,
             updatedAt: int.updatedAt,
@@ -426,6 +428,27 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
         ? (backendCampaign.config?.scratchCardConfig || extractScratchCardConfig(backendCampaign.config || {}))
         : undefined;
 
+    const spinTheWheelConfig = campaignType === 'spinthewheel'
+        ? (backendCampaign.config?.spinTheWheelConfig || backendCampaign.spinTheWheelConfig || {
+            winningCriteria: backendCampaign.config?.winningCriteria || 'weight',
+            sections: backendCampaign.config?.sections || [],
+            sectionWinLimit: backendCampaign.config?.sectionWinLimit,
+        })
+        : undefined;
+
+    const fullscreenConfig = (campaignType === 'fullscreen' || campaignType === 'fullpage')
+        ? (backendCampaign.config?.fullscreenConfig || backendCampaign.fullscreenConfig || {
+            showCloseButton: backendCampaign.config?.showCloseButton ?? true,
+            backgroundColor: backendCampaign.config?.backgroundColor || '#ffffff',
+            media: backendCampaign.config?.media || { type: 'none', url: '' },
+            padding: backendCampaign.config?.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+            alignItems: backendCampaign.config?.alignItems || 'center',
+            justifyContent: backendCampaign.config?.justifyContent || 'flex-end',
+            animation: backendCampaign.config?.animation,
+            closeIcon: backendCampaign.config?.closeIcon,
+        })
+        : undefined;
+
     // ✅ FIX: Add floaterConfig extraction (FULL PARITY - must match buildConfigFromLayers)
     const floaterConfig = campaignType === 'floater'
         ? (backendCampaign.config?.floaterConfig || backendCampaign.floaterConfig || {
@@ -506,6 +529,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
         scratchCardConfig,
         floaterConfig,
         pipConfig,
+        spinTheWheelConfig,
+        fullscreenConfig,
 
         tooltipConfig: campaignType === 'tooltip' ? (backendCampaign.config?.tooltipConfig || {
             // Fallback/Legacy migration: check if properties exist on root config
@@ -567,6 +592,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             scratchCardConfig: iface.nudgeType === 'scratchcard' ? iface.scratchCardConfig : undefined,
             pipConfig: iface.nudgeType === 'pip' ? iface.pipConfig : undefined,
             floaterConfig: iface.nudgeType === 'floater' ? iface.floaterConfig : undefined,
+            spinTheWheelConfig: iface.nudgeType === 'spinthewheel' ? iface.spinTheWheelConfig : undefined,
+            fullscreenConfig: (iface.nudgeType === 'fullscreen' || iface.nudgeType === 'fullpage') ? iface.fullscreenConfig : undefined,
             createdAt: iface.createdAt || new Date().toISOString(),
             updatedAt: iface.updatedAt || new Date().toISOString(),
         })), // ✅ CRITICAL FIX: Transform interfaces with proper config structure
@@ -720,6 +747,32 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             position: sc.position,
             completionAnimation: sc.completionAnimation,
             overlay: sc.overlay,
+        });
+    }
+
+    // ✅ FIX: Add SpinTheWheel config flattening
+    if (campaign.nudgeType === 'spinthewheel' && campaign.spinTheWheelConfig) {
+        const swc = campaign.spinTheWheelConfig;
+        Object.assign(config, {
+            winningCriteria: swc.winningCriteria,
+            sections: swc.sections,
+            sectionWinLimit: swc.sectionWinLimit,
+        });
+    }
+
+    // ✅ FIX: Add Fullscreen/Fullpage config flattening
+    if ((campaign.nudgeType === 'fullscreen' || campaign.nudgeType === 'fullpage') && campaign.fullscreenConfig) {
+        const fc = campaign.fullscreenConfig;
+        Object.assign(config, {
+            showCloseButton: fc.showCloseButton,
+            backgroundColor: fc.backgroundColor,
+            backgroundImageUrl: fc.media?.url,
+            media: fc.media,
+            padding: fc.padding,
+            alignItems: fc.alignItems,
+            justifyContent: fc.justifyContent,
+            animation: fc.animation,
+            closeIcon: fc.closeIcon,
         });
     }
 

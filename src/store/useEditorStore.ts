@@ -1766,6 +1766,8 @@ export const useEditorStore = create<EditorStore>()(
           const type = template.type || currentCampaign.nudgeType;
           let configKey = `${type}Config`;
           if (type === 'bottomsheet') configKey = 'bottomSheetConfig'; // Special case for casing
+          if (type === 'scratchcard') configKey = 'scratchCardConfig';
+          if (type === 'spinthewheel') configKey = 'spinTheWheelConfig';
           mappedData[configKey] = template.config;
         }
 
@@ -2068,9 +2070,12 @@ export const useEditorStore = create<EditorStore>()(
         try {
           const api = await import('@/lib/api');
 
-          // Determine config based on type
           // Determine config based on type (Dynamic)
-          const configKey = `${currentCampaign.nudgeType}Config` as keyof CampaignEditor;
+          let configKey = `${currentCampaign.nudgeType}Config` as keyof CampaignEditor;
+          if (currentCampaign.nudgeType === 'bottomsheet') configKey = 'bottomSheetConfig' as keyof CampaignEditor;
+          if (currentCampaign.nudgeType === 'scratchcard') configKey = 'scratchCardConfig' as keyof CampaignEditor;
+          if (currentCampaign.nudgeType === 'spinthewheel') configKey = 'spinTheWheelConfig' as keyof CampaignEditor;
+          
           const config = (currentCampaign[configKey] as any) || {};
 
           // FIX: Handle temporary IDs for new templates

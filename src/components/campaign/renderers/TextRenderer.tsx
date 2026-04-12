@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layer } from '@/store/useEditorStore';
+import { useGridElementData } from '@/components/campaign/renderers/GridElementContext';
 
 interface TextRendererProps {
     layer: Layer;
@@ -62,7 +63,20 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
         return resolved;
     };
 
-    const rawText = layer.content?.text || 'Text';
+    // Grid Data Binding: resolve mapped_key from GridElementContext
+    const { dataItem } = useGridElementData();
+    let rawText = layer.content?.text || 'Text';
+    
+    if (dataItem && layer.content?.mapped_key) {
+        const paths = layer.content.mapped_key.split('.');
+        let value: any = dataItem;
+        for (const p of paths) {
+            if (value && typeof value === 'object') value = value[p];
+            else { value = null; break; }
+        }
+        if (value != null) rawText = String(value);
+    }
+    
     const displayText = resolveText(rawText);
 
     return (

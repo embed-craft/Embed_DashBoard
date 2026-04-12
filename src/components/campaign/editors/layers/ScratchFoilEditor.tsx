@@ -208,7 +208,33 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
                             </div>
                         </div>
 
-                        <Separator />
+                        <Separator className="bg-gray-100" />
+                        
+                        {/* Data Flow Binding */}
+                        <div className="space-y-3 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                             <h5 className="text-[12px] font-semibold text-indigo-900">Grid Data Mapping</h5>
+                             <p className="text-[10px] text-gray-500">If placed inside a Grid loop, map these keys to the API JSON fields to auto-reveal scratched items and report unique IDs.</p>
+                             <div className="space-y-2">
+                                <Label className="text-[10px] text-indigo-700">Status Check Key (e.g. isScratched)</Label>
+                                <Input
+                                    placeholder="status"
+                                    value={content.statusBindingKey || ''}
+                                    onChange={(e) => updateContent('statusBindingKey', e.target.value)}
+                                    className="h-8 text-xs bg-white"
+                                />
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[10px] text-indigo-700">Reward ID Key (e.g. id)</Label>
+                                <Input
+                                    placeholder="id"
+                                    value={content.rewardIdBindingKey || ''}
+                                    onChange={(e) => updateContent('rewardIdBindingKey', e.target.value)}
+                                    className="h-8 text-xs bg-white"
+                                />
+                             </div>
+                        </div>
+
+                        <Separator className="bg-gray-100" />
 
                         {/* Cursor Image */}
                         <div className="space-y-3">

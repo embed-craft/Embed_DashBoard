@@ -48,6 +48,8 @@ import { ScratchFoilEditor } from '@/components/campaign/editors/layers/ScratchF
 import { CarouselLayerEditor } from '@/components/campaign/editors/layers/CarouselLayerEditor';
 import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownEditor';
 import { SpinTheWheelEditor } from '@/components/campaign/editors/SpinTheWheelEditor';
+import { GridContainerEditor } from '@/components/campaign/editors/layers/GridContainerEditor';
+import { GridItemEditor } from '@/components/campaign/editors/layers/GridItemEditor';
 
 import { InterfacesList } from '@/components/campaign/InterfacesList';
 import { InterfaceTypeSelector } from '@/components/campaign/InterfaceTypeSelector';
@@ -967,7 +969,7 @@ export const DesignStep: React.FC<any> = () => {
     const indentPx = depth * 16; // Slightly reduced indentation (was 20)
 
     // Check if layer can have children (for + button)
-    const canHaveChildren = ['container', 'carousel', 'bottomsheet', 'modal', 'banner', 'floater', 'pip', 'scratchcard', 'fullscreen', 'tooltip'].includes(layer.type) || layer.name.toLowerCase().includes('container') || layer.name.toLowerCase().includes('group');
+    const canHaveChildren = ['container', 'carousel', 'bottomsheet', 'modal', 'banner', 'floater', 'pip', 'scratchcard', 'fullscreen', 'tooltip', 'grid_container', 'grid_item'].includes(layer.type) || layer.name.toLowerCase().includes('container') || layer.name.toLowerCase().includes('group');
 
     return (
       <div key={layer.id} style={{ position: 'relative' }}>
@@ -3351,6 +3353,46 @@ export const DesignStep: React.FC<any> = () => {
         </>
       );
     }
+    
+    // Grid Container
+    if (selectedLayerObj.type === 'grid_container') {
+      return (
+        <GridContainerEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          onStyleUpdate={handleStyleUpdate}
+          colors={colors}
+        />
+      );
+    }
+    
+    // Grid Item Template — uses full ContainerEditor for design properties
+    if (selectedLayerObj.type === 'grid_item') {
+      return (
+        <>
+          <div style={{
+            margin: '8px 12px', padding: '10px 12px',
+            background: 'linear-gradient(135deg, #fef3c7, #fefce8)',
+            border: '1px solid #fde68a', borderRadius: '8px',
+            fontSize: '11px', color: '#92400e', lineHeight: 1.4
+          }}>
+            <strong style={{ display: 'block', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              🔁 Grid Loop Template
+            </strong>
+            This element is cloned for each item from the data source. Design its appearance below — all children will inherit the same layout per item.
+          </div>
+          <ContainerEditor
+            layer={selectedLayerObj}
+            selectedLayerId={selectedLayerId!}
+            updateLayer={updateLayer}
+            onStyleUpdate={handleStyleUpdate}
+            handleTooltipUpdate={handleTooltipUpdate}
+            colors={colors}
+          />
+        </>
+      );
+    }
 
     // Text properties
     if (selectedLayerObj.type === 'text') {
@@ -4288,6 +4330,8 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'scratch_foil', label: 'Scratch Foil', icon: Eraser },
             { id: 'carousel', label: 'Carousel', icon: GalleryHorizontal },
             { id: 'countdown', label: 'Countdown', icon: Timer },
+            { id: 'grid_container', label: 'Grid Container', icon: Grid3x3 },
+            { id: 'grid_item', label: 'Grid Element', icon: LayoutGrid },
             { id: 'spinthewheel', label: 'Spin The Wheel', icon: Gamepad2 },
           ].filter(item => {
             // Find parent layer
@@ -4307,6 +4351,15 @@ export const DesignStep: React.FC<any> = () => {
             // Hide spinthewheel for all other parent types
             if (item.id === 'spinthewheel') {
               return parentLayer?.name === 'Fullscreen Layout';
+            }
+
+            // Grid Control Logic
+            if (parentLayer?.type === 'grid_container') {
+               const hasGridItem = campaignLayers.some(l => l.parent === parentLayer.id && l.type === 'grid_item');
+               return item.id === 'grid_item' && !hasGridItem;
+            }
+            if (item.id === 'grid_item') {
+               return false; // Already handled above if parent is grid_container, otherwise deny
             }
 
             return true;

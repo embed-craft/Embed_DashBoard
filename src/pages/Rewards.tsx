@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 
 const Rewards = () => {
   const { rewards, deleteReward } = useStore();
-  const [activeTab, setActiveTab] = useState<'rewards' | 'delivery'>('rewards');
+  const [activeTab, setActiveTab] = useState<'rewards' | 'distribution' | 'delivery'>('rewards');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -67,6 +67,17 @@ const Rewards = () => {
           }}
         >
           Rewards
+        </button>
+        <button
+          onClick={() => setActiveTab('distribution')}
+          style={{
+            padding: '12px 16px', border: 'none', background: 'none',
+            borderBottom: activeTab === 'distribution' ? `2px solid ${theme.colors.primary[600]}` : '2px solid transparent',
+            color: activeTab === 'distribution' ? theme.colors.primary[600] : theme.colors.text.secondary,
+            fontWeight: activeTab === 'distribution' ? 600 : 500, fontSize: '14px', cursor: 'pointer',
+          }}
+        >
+          Distribution Logs
         </button>
         <button
           onClick={() => setActiveTab('delivery')}
@@ -192,6 +203,50 @@ const Rewards = () => {
                 <span style={{ cursor: 'not-allowed', opacity: 0.5 }}>{'>>'}</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'distribution' && (
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${theme.colors.border.default}`, overflow: 'hidden' }}>
+          <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.colors.border.default}` }}>
+            <div style={{ position: 'relative', width: '300px' }}>
+              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: theme.colors.text.secondary }} />
+              <input
+                type="text"
+                placeholder="Search Logs.."
+                style={{
+                  width: '100%', padding: '10px 12px 10px 38px',
+                  border: `1px solid ${theme.colors.border.default}`, borderRadius: '8px',
+                  fontSize: '14px', outline: 'none',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button style={{ padding: '8px 12px', border: `1px solid ${theme.colors.border.default}`, borderRadius: '6px', fontSize: '14px', backgroundColor: 'white', cursor: 'pointer' }}>Filter by Status</button>
+              <button style={{ padding: '8px 12px', border: `1px solid ${theme.colors.border.default}`, borderRadius: '6px', fontSize: '14px', backgroundColor: 'white', cursor: 'pointer' }}>Export CSV</button>
+            </div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ backgroundColor: theme.colors.gray[50], borderBottom: `1px solid ${theme.colors.border.default}` }}>
+                  <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>Log ID</th>
+                  <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>Reward ID</th>
+                  <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>User ID</th>
+                  <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>Distribution Date</th>
+                  <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: theme.colors.text.secondary }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                  <tr>
+                    <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: theme.colors.text.secondary }}>
+                      <Clock className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                      <p>No distribution logs recorded yet.</p>
+                    </td>
+                  </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       )}

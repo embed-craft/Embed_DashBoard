@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { getYouTubeId } from '@/lib/utils';
+import { useGridElementData } from '@/components/campaign/renderers/GridElementContext';
 
 interface MediaRendererProps {
     layer: Layer;
@@ -52,7 +53,20 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
         );
     }
 
-    const imageUrl = layer.content.imageUrl;
+    // Grid Data Binding: resolve mapped_key for dynamic image URL
+    const { dataItem } = useGridElementData();
+    let imageUrl = layer.content?.imageUrl || '';
+    
+    if (dataItem && layer.content?.mapped_key) {
+        const paths = layer.content.mapped_key.split('.');
+        let value: any = dataItem;
+        for (const p of paths) {
+            if (value && typeof value === 'object') value = value[p];
+            else { value = null; break; }
+        }
+        if (value != null) imageUrl = String(value);
+    }
+
     const youtubeId = getYouTubeId(imageUrl);
     const isVideo = imageUrl.toLowerCase().match(/\.(mp4|webm|ogg)$/);
 

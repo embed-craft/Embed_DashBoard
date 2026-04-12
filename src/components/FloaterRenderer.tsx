@@ -5,6 +5,7 @@ import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { GridContainerRenderer } from './campaign/renderers/GridContainerRenderer';
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
@@ -487,6 +488,17 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             delete scaledStyle.overflowY;
         }
 
+        // ENFORCE: Scratch foil always rigidly covers its parent. Never follows flex/auto-flow.
+        if (layer.type === 'scratch_foil') {
+            scaledStyle.position = 'absolute';
+            scaledStyle.top = 0;
+            scaledStyle.left = 0;
+            scaledStyle.right = 0;
+            scaledStyle.bottom = 0;
+            scaledStyle.width = '100%';
+            scaledStyle.height = '100%';
+        }
+
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
 
@@ -520,7 +532,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             scaledStyle.paddingBottom = undefined;
             scaledStyle.paddingLeft = undefined;
             scaledStyle.paddingRight = undefined;
-        } else if (layer.type !== 'custom_html') {
+        } else if (layer.type !== 'custom_html' && layer.type !== 'grid_item' && layer.type !== 'grid_container') {
             // If no explicit marginBottom AND no shorthand margin, apply default
             if (finalMarginBottom === undefined && finalMargin === undefined) {
                 finalMarginBottom = safeScale(10, scaleY); // FIX: Use scaleY
@@ -639,6 +651,27 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     />
                 );
                 break;
+            case 'grid_container':
+                content = (
+                    <GridContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
+                        scale={scale}
+                        scaleY={scaleY}
+                    />
+                );
+                break;
+            case 'grid_item':
+                // Grid Item acts like a regular relative container inside its parent grid
+                content = (
+                    <ContainerRenderer
+                        layer={layer}
+                        layers={layers}
+                        renderChild={renderLayer}
+                    />
+                );
+                break;
             case 'spinthewheel':
                 content = (
                     <SpinTheWheelLayerRenderer
@@ -687,6 +720,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 onLayerUpdate={onLayerUpdate}
                 onLayerSelect={onLayerSelect}
                 onLayerAction={(layer) => handleAction(layer.content?.action)}
+                isDraggable={layer.type !== 'grid_item'}
                 style={{
                     ...baseStyle,
                     outline: isSelected ? `5px solid ${colors.primary[500] || '#6366F1'}` : 'none',

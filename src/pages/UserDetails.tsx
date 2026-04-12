@@ -10,7 +10,8 @@ import {
     Activity,
     Smartphone,
     MapPin,
-    Mail
+    Mail,
+    Gift
 } from 'lucide-react';
 import { theme } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ const UserDetails = () => {
                     avatar: data.user.avatar || '',
                     location: data.user.properties?.location || data.user.location || 'Unknown Location',
                     segments: data.user.segments || [],
+                    rewards: data.user.rewards || [], // Parse rewards if available
                     properties: {
                         ...data.user.properties,
                         'Last Seen': new Date(data.user.last_seen).toLocaleString(),
@@ -193,6 +195,12 @@ const UserDetails = () => {
                                 >
                                     Segments
                                 </TabsTrigger>
+                                <TabsTrigger
+                                    value="rewards"
+                                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 rounded-none px-4 py-3 text-sm font-medium text-gray-500"
+                                >
+                                    Rewards
+                                </TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -222,6 +230,43 @@ const UserDetails = () => {
                                         <p className="text-sm text-gray-500 italic">No active segments</p>
                                     )}
                                 </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="rewards" className="flex-1 p-6 m-0 overflow-auto">
+                            <div className="space-y-4 max-w-4xl">
+                                <h3 className="text-sm font-semibold text-gray-900">Claimed Rewards</h3>
+                                {user.rewards && user.rewards.length > 0 ? (
+                                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                                <tr>
+                                                    <th className="px-4 py-3 font-medium">Reward ID</th>
+                                                    <th className="px-4 py-3 font-medium">Campaign</th>
+                                                    <th className="px-4 py-3 font-medium">Claimed At</th>
+                                                    <th className="px-4 py-3 font-medium">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {user.rewards.map((r: any, idx: number) => (
+                                                    <tr key={idx} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-3 font-mono text-gray-900">{r.reward_id}</td>
+                                                        <td className="px-4 py-3">{r.campaign_id}</td>
+                                                        <td className="px-4 py-3 text-gray-500">{new Date(r.claimed_at).toLocaleString()}</td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge variant={r.status === 'redeemed' ? 'default' : 'secondary'}>{r.status}</Badge>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 border border-dashed border-gray-200 rounded-lg">
+                                        <Gift className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                                        <p className="text-sm text-gray-500 font-medium">No rewards claimed yet</p>
+                                    </div>
+                                )}
                             </div>
                         </TabsContent>
 

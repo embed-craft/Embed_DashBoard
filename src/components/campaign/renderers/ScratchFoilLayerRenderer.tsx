@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Layer } from '@/store/useEditorStore';
+import { useGridElementData } from '@/components/campaign/renderers/GridElementContext';
 
 interface ScratchFoilLayerRendererProps {
     layer: Layer;
@@ -15,6 +16,11 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const content = layer.content || {};
+
+    // Grid Data Binding: check if this reward is already claimed
+    const { dataItem } = useGridElementData();
+    const statusKey = content.statusBindingKey;
+    const isClaimed = dataItem && statusKey ? !!dataItem[statusKey] : false;
 
     // Config defaults
     const scratchSize = content.scratchSize || 40;
@@ -191,6 +197,11 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
             canvas.removeEventListener('pointerleave', stop as any);
         };
     }, [isInteractive, isRevealed, scratchSize, scale, revealThreshold]);
+
+    // If reward is already claimed via grid data binding, hide the foil
+    if (isClaimed) {
+        return <div style={{ width: '100%', height: '100%' }} />;
+    }
 
     return (
         <div style={{

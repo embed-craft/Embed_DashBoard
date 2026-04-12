@@ -12,7 +12,7 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel' | 'grid_container' | 'grid_item';
 
 
 // Scratch Foil Props
@@ -1766,6 +1766,8 @@ export const useEditorStore = create<EditorStore>()(
           const type = template.type || currentCampaign.nudgeType;
           let configKey = `${type}Config`;
           if (type === 'bottomsheet') configKey = 'bottomSheetConfig'; // Special case for casing
+          if (type === 'scratchcard') configKey = 'scratchCardConfig';
+          if (type === 'spinthewheel') configKey = 'spinTheWheelConfig';
           mappedData[configKey] = template.config;
         }
 
@@ -2068,9 +2070,12 @@ export const useEditorStore = create<EditorStore>()(
         try {
           const api = await import('@/lib/api');
 
-          // Determine config based on type
           // Determine config based on type (Dynamic)
-          const configKey = `${currentCampaign.nudgeType}Config` as keyof CampaignEditor;
+          let configKey = `${currentCampaign.nudgeType}Config` as keyof CampaignEditor;
+          if (currentCampaign.nudgeType === 'bottomsheet') configKey = 'bottomSheetConfig' as keyof CampaignEditor;
+          if (currentCampaign.nudgeType === 'scratchcard') configKey = 'scratchCardConfig' as keyof CampaignEditor;
+          if (currentCampaign.nudgeType === 'spinthewheel') configKey = 'spinTheWheelConfig' as keyof CampaignEditor;
+          
           const config = (currentCampaign[configKey] as any) || {};
 
           // FIX: Handle temporary IDs for new templates
@@ -2310,6 +2315,24 @@ export const useEditorStore = create<EditorStore>()(
           content: getDefaultContentForType(type),
           style: initialStyle,
         };
+
+        // Fix layout flow inheritance context (Flexbox vs Absolute)
+        if (parentId) {
+          const allLayersForSearch = [
+            ...currentCampaign.layers,
+            ...(currentCampaign.interfaces?.flatMap(i => i.layers) || []),
+            ...(currentCampaign.stories?.flatMap(s => s.layers) || [])
+          ];
+          const parentLayer = allLayersForSearch.find(l => l.id === parentId);
+          if (parentLayer && parentLayer.style?.layoutMode === 'auto') {
+             newLayer.style = {
+                 ...newLayer.style,
+                 position: 'relative',
+                 top: undefined,
+                 left: undefined
+             };
+          }
+        }
 
         // --- SCENARIO 1: ADD TO STORY (NEW) ---
         const { activeStoryId } = get();

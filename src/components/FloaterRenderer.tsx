@@ -479,6 +479,14 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             delete scaledStyle.margin;
         }
 
+        // FIX: For Container, we must strip overflow from the wrapper because ContainerRenderer handles it internally. 
+        // Otherwise, both Wrapper and Inner Container apply overflow, causing a double scrollbar.
+        if (layer.type === 'container') {
+            delete scaledStyle.overflow;
+            delete scaledStyle.overflowX;
+            delete scaledStyle.overflowY;
+        }
+
         // SDK PARITY: Margin Precedence Logic
         // 1. Explicit marginTop/Bottom > 2. Shorthand margin > 3. Default (for relative only)
 

@@ -93,13 +93,14 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
     })();
 
     // Construct Styles
+    const layoutMode = layer.style?.layoutMode || 'free';
     const style: React.CSSProperties = {
         // Layout
-        display: layer.style?.display || 'flex',
-        flexDirection: layer.style?.flexDirection || 'column',
-        alignItems: layer.style?.alignItems || 'stretch',
-        justifyContent: layer.style?.justifyContent || 'flex-start',
-        gap: safeScale(layer.style?.gap || 0, scale),
+        display: layoutMode === 'free' ? 'block' : (layer.style?.display || 'flex'),
+        flexDirection: layoutMode === 'auto' ? (layer.style?.flexDirection || 'column') : undefined,
+        alignItems: layoutMode === 'auto' ? (layer.style?.alignItems || 'stretch') : undefined,
+        justifyContent: layoutMode === 'auto' ? (layer.style?.justifyContent || 'flex-start') : undefined,
+        gap: layoutMode === 'auto' ? safeScale(layer.style?.gap || 0, scale) : undefined,
         padding: 0,
 
         // Size & Position (Relative to parent wrapper)
@@ -107,9 +108,9 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
         height: '100%',
         position: 'relative',
 
-        // Overflow
-        overflowX: 'hidden',
-        overflowY: layer.style?.overflow === 'scroll' ? 'auto' : (layer.style?.overflow || 'hidden'),
+        // Overflow - Respect explicit X/Y if set, otherwise fallback to legacy logic
+        overflowX: layer.style?.overflowX !== undefined ? layer.style.overflowX : 'hidden',
+        overflowY: layer.style?.overflowY !== undefined ? layer.style.overflowY : (layer.style?.overflow === 'scroll' ? 'auto' : (layer.style?.overflow || 'hidden')),
 
         // Visuals (Applied directly to inner div)
         backgroundColor: layer.style?.backgroundColor,
@@ -133,9 +134,51 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
         WebkitBackdropFilter: webkitBackdropFilter,
     };
 
+    const hasCustomScrollbar = layer.style?.overflow === 'scroll' && !(layer.style?.hideScrollbar ?? true);
+    const scrollbarStyle = hasCustomScrollbar ? `
+        #layer-${layer.id}::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        #layer-${layer.id}::-webkit-scrollbar-track {
+            background: ${layer.style?.scrollbarTrackColor || 'transparent'};
+            border-radius: 4px;
+        }
+        #layer-${layer.id}::-webkit-scrollbar-thumb {
+            background: ${layer.style?.scrollbarThumbColor || '#cbd5e1'};
+            border-radius: 4px;
+        }
+        #layer-${layer.id}::-webkit-scrollbar-button {
+            display: none;
+            width: 0px;
+            height: 0px;
+        }
+    ` : '';
+
     return (
-        <div style={style}>
-            {children.map(child => renderChild(child))}
-        </div>
+        <>
+            {hasCustomScrollbar && <style>{scrollbarStyle}</style>}
+            <div id={`layer-${layer.id}`} style={style} className={layer.style?.hideScrollbar ? "hide-scrollbar" : ""}>
+                {children.map(child => {
+                    if (layoutMode === 'auto') {
+                        // Inherently enforce relative flow if container is in Auto Flow
+                        const forcedChild = {
+                            ...child,
+                            style: {
+                                ...child.style,
+                                position: 'relative' as any,
+                                top: undefined,
+                                left: undefined,
+                                bottom: undefined,
+                                right: undefined,
+                                transform: undefined
+                            }
+                        };
+                        return renderChild(forcedChild);
+                    }
+                    return renderChild(child);
+                })}
+            </div>
+        </>
     );
 };

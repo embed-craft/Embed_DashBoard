@@ -12,7 +12,7 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel' | 'grid_container' | 'grid_item';
 
 
 // Scratch Foil Props
@@ -2310,6 +2310,24 @@ export const useEditorStore = create<EditorStore>()(
           content: getDefaultContentForType(type),
           style: initialStyle,
         };
+
+        // Fix layout flow inheritance context (Flexbox vs Absolute)
+        if (parentId) {
+          const allLayersForSearch = [
+            ...currentCampaign.layers,
+            ...(currentCampaign.interfaces?.flatMap(i => i.layers) || []),
+            ...(currentCampaign.stories?.flatMap(s => s.layers) || [])
+          ];
+          const parentLayer = allLayersForSearch.find(l => l.id === parentId);
+          if (parentLayer && parentLayer.style?.layoutMode === 'auto') {
+             newLayer.style = {
+                 ...newLayer.style,
+                 position: 'relative',
+                 top: undefined,
+                 left: undefined
+             };
+          }
+        }
 
         // --- SCENARIO 1: ADD TO STORY (NEW) ---
         const { activeStoryId } = get();

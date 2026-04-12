@@ -325,3 +325,11 @@ All colors MUST be HSL.
 .animate-bounce-subtle {
   animation: bounce-subtle 1.5s infinite;
 }
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+

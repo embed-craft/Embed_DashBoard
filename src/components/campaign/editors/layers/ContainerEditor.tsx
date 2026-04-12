@@ -181,12 +181,22 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                                                 onChange={(e) => updateDimension('width', parseFloat(e.target.value), getUnit(style.width))}
                                             />
                                         </div>
-                                        <button
-                                            onClick={() => toggleUnit('width')}
-                                            className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
+                                        <select
+                                            value={getUnit(style.width)}
+                                            onChange={(e) => {
+                                                const newUnit = e.target.value;
+                                                const currentVal = getValue(style.width);
+                                                if (newUnit === '%') {
+                                                    onStyleUpdate('width', `${Math.min(currentVal, 100)}%`);
+                                                } else {
+                                                    onStyleUpdate('width', currentVal);
+                                                }
+                                            }}
+                                            className="px-1 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-11 shrink-0 outline-none text-center appearance-none cursor-pointer"
                                         >
-                                            {getUnit(style.width)}
-                                        </button>
+                                            <option value="px">px</option>
+                                            <option value="%">%</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div>
@@ -201,12 +211,22 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                                                 onChange={(e) => updateDimension('height', parseFloat(e.target.value), getUnit(style.height))}
                                             />
                                         </div>
-                                        <button
-                                            onClick={() => toggleUnit('height')}
-                                            className="px-2 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-10 shrink-0"
+                                        <select
+                                            value={getUnit(style.height)}
+                                            onChange={(e) => {
+                                                const newUnit = e.target.value;
+                                                const currentVal = getValue(style.height);
+                                                if (newUnit === '%') {
+                                                    onStyleUpdate('height', `${Math.min(currentVal, 100)}%`);
+                                                } else {
+                                                    onStyleUpdate('height', currentVal);
+                                                }
+                                            }}
+                                            className="px-1 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-11 shrink-0 outline-none text-center appearance-none cursor-pointer"
                                         >
-                                            {getUnit(style.height)}
-                                        </button>
+                                            <option value="px">px</option>
+                                            <option value="%">%</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>

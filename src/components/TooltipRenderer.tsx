@@ -5,6 +5,7 @@ import { ButtonRenderer } from './campaign/renderers/ButtonRenderer';
 import { TextRenderer } from './campaign/renderers/TextRenderer';
 import { MediaRenderer } from './campaign/renderers/MediaRenderer';
 import { ContainerRenderer } from './campaign/renderers/ContainerRenderer';
+import { GridContainerRenderer } from './campaign/renderers/GridContainerRenderer';
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
@@ -186,6 +187,12 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                 );
                 break;
             case 'container': content = <ContainerRenderer layer={layer} layers={layers} renderChild={renderLayer} />; break;
+            case 'grid_container': 
+                content = (
+                    <GridContainerRenderer layer={layer} layers={layers} renderChild={renderLayer} scale={scale} />
+                ); 
+                break;
+            case 'grid_item': content = <ContainerRenderer layer={layer} layers={layers} renderChild={renderLayer} />; break;
             default: content = <div style={{ padding: 4, border: '1px dashed #ccc' }}>Unknown</div>;
         }
 

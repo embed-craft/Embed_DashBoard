@@ -191,6 +191,18 @@ export interface LayerContent extends ScratchFoilProps {
   coverImage?: string;
   cursorImage?: string;
 
+  // Grid Container / Grid Element (Reward Repository)
+  dataSourceUrl?: string;     // API endpoint for fetching reward/data JSON
+  shimmerEnabled?: boolean;   // Show shimmer loading skeleton
+  span?: number;              // Number of grid columns (1-4)
+  gridGapX?: number;          // Horizontal gap between columns (px)
+  gridGapY?: number;          // Vertical gap between rows (px)
+
+  // Data Binding (used inside Grid loops)
+  mapped_key?: string;        // JSON path to inject dynamic text/image (e.g. "reward_name")
+  statusBindingKey?: string;  // JSON field indicating if scratch foil is already claimed (boolean)
+  rewardIdBindingKey?: string; // JSON field for the unique reward ID sent on claim
+
   // Countdown content
   targetDate?: string;
   showDays?: boolean;
@@ -260,6 +272,16 @@ export interface LayerContent extends ScratchFoilProps {
 
   // Rating content
   maxRating?: number;
+
+  // Grid & Data Mapping (Phase Reward Repository)
+  dataSourceUrl?: string;
+  shimmerEnabled?: boolean;
+  span?: number;
+  gridGap?: number;
+  gridPaddingX?: number;
+  mapped_key?: string;
+  rewardIdBindingKey?: string;
+  statusBindingKey?: string;
 
   // Heirarchy
   children?: Layer[];
@@ -2324,7 +2346,7 @@ export const useEditorStore = create<EditorStore>()(
             ...(currentCampaign.stories?.flatMap(s => s.layers) || [])
           ];
           const parentLayer = allLayersForSearch.find(l => l.id === parentId);
-          if (parentLayer && parentLayer.style?.layoutMode === 'auto') {
+          if (parentLayer && parentLayer.style?.layoutMode === 'auto' && type !== 'scratch_foil') {
              newLayer.style = {
                  ...newLayer.style,
                  position: 'relative',
@@ -4957,6 +4979,16 @@ function getDefaultContentForType(type: LayerType): LayerContent {
         confettiObjectFit: 'cover',
         spinDuration: 3000,
       };
+    case 'grid_container':
+      return {
+        dataSourceUrl: '',
+        shimmerEnabled: true,
+        span: 2,
+        gridGapX: 0,
+        gridGapY: 0,
+      };
+    case 'grid_item':
+      return {};
     default:
       return {};
   }
@@ -5046,6 +5078,33 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
         justifyContent: 'center',
         gap: 10,
         padding: { top: 10, right: 10, bottom: 10, left: 10 }
+      };
+    case 'grid_container':
+      return {
+        ...baseStyle,
+        width: '100%',
+        height: 'auto',
+        top: '0px',
+        left: '0px',
+        position: 'relative',
+        overflow: 'hidden',
+      };
+    case 'grid_item':
+      return {
+        ...baseStyle,
+        width: '100%',
+        height: 'auto',
+        position: 'relative',
+        top: undefined,
+        left: undefined,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#D1D5DB',
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        borderRadius: 8,
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        layoutMode: 'auto',
+        flexDirection: 'column',
       };
     default:
       return baseStyle;

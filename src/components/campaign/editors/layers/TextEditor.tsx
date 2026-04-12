@@ -155,6 +155,20 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                             onChange={(e) => handleContentUpdate('text', e.target.value)}
                             className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none min-h-[100px] resize-y font-sans"
                         />
+                        
+                        {/* Data Source Mapping */}
+                        <div className="pt-2">
+                            <Label className="text-[10px] text-indigo-700 flex items-center gap-1">
+                                <Braces size={12}/> Data Flow Mapping Key
+                            </Label>
+                            <Input
+                                placeholder="e.g. reward_name"
+                                value={layer.content?.mapped_key || ''}
+                                onChange={(e) => handleContentUpdate('mapped_key', e.target.value)}
+                                className="h-8 text-xs bg-indigo-50/50"
+                            />
+                            <p className="text-[9px] text-gray-400 mt-1">If this is inside a Grid Container, this key pulls text from the API.</p>
+                        </div>
                     </div>
 
                     {/* Typography Section */}

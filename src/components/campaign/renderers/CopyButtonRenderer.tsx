@@ -2,6 +2,7 @@ import React from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { toast } from 'sonner';
 import { Copy, Layout, FileText, Link as LinkIcon, Check } from 'lucide-react';
+import { useGridElementData, interpolateDataBinding } from '@/components/campaign/renderers/GridElementContext';
 
 interface CopyButtonRendererProps {
     layer: Layer;
@@ -27,12 +28,14 @@ export const CopyButtonRenderer: React.FC<CopyButtonRendererProps> = ({
 
     const style = layer.style || {};
     const content = layer.content || {};
+    const { dataItem } = useGridElementData();
+    const resolvedCopyText = dataItem ? interpolateDataBinding(content.copyText, dataItem) : content.copyText;
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
-        if (content.copyText) {
-            navigator.clipboard.writeText(content.copyText)
+        if (resolvedCopyText) {
+            navigator.clipboard.writeText(resolvedCopyText)
                 .then(() => {
                     if (content.showToast) {
                         toast.success(content.toastMessage || 'Copied to clipboard!');
@@ -101,7 +104,7 @@ export const CopyButtonRenderer: React.FC<CopyButtonRendererProps> = ({
                 transform: `translate(${safeScale(style.textOffsetX || 0, scale)}, ${safeScale(style.textOffsetY || 0, scale)})`,
                 display: 'block', // Ensure transform works
             }}>
-                {content.copyText || 'Copy Code'}
+                {resolvedCopyText || 'Copy Code'}
             </span>
 
             {/* Icon Rendering */}

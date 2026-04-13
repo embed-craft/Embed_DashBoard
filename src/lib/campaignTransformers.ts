@@ -203,7 +203,7 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
             ...(int.nudgeType === 'scratchcard' && int.scratchCardConfig ? { scratchCardConfig: int.scratchCardConfig } : {}),
             ...(int.nudgeType === 'pip' && int.pipConfig ? { pipConfig: int.pipConfig } : {}),
             ...(int.nudgeType === 'floater' && int.floaterConfig ? { floaterConfig: int.floaterConfig } : {}),
-            ...(int.nudgeType === 'spinthewheel' && int.spinTheWheelConfig ? { spinTheWheelConfig: int.spinTheWheelConfig } : {}),
+            ...(int.spinTheWheelConfig ? { spinTheWheelConfig: int.spinTheWheelConfig } : {}),
             ...((int.nudgeType === 'fullscreen' || int.nudgeType === 'fullpage') && int.fullscreenConfig ? { fullscreenConfig: int.fullscreenConfig } : {}),
             layers: int.layers || [],
             createdAt: int.createdAt,
@@ -428,7 +428,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
         ? (backendCampaign.config?.scratchCardConfig || extractScratchCardConfig(backendCampaign.config || {}))
         : undefined;
 
-    const spinTheWheelConfig = campaignType === 'spinthewheel'
+    const isSpinTheWheel = backendCampaign.campaignType === 'spinthewheel' || backendCampaign.type === 'spinthewheel' || backendCampaign.config?.campaignType === 'spinthewheel';
+    const spinTheWheelConfig = isSpinTheWheel
         ? (backendCampaign.config?.spinTheWheelConfig || backendCampaign.spinTheWheelConfig || {
             winningCriteria: backendCampaign.config?.winningCriteria || 'weight',
             sections: backendCampaign.config?.sections || [],
@@ -592,7 +593,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             scratchCardConfig: iface.nudgeType === 'scratchcard' ? iface.scratchCardConfig : undefined,
             pipConfig: iface.nudgeType === 'pip' ? iface.pipConfig : undefined,
             floaterConfig: iface.nudgeType === 'floater' ? iface.floaterConfig : undefined,
-            spinTheWheelConfig: iface.nudgeType === 'spinthewheel' ? iface.spinTheWheelConfig : undefined,
+            spinTheWheelConfig: iface.spinTheWheelConfig ? iface.spinTheWheelConfig : undefined,
             fullscreenConfig: (iface.nudgeType === 'fullscreen' || iface.nudgeType === 'fullpage') ? iface.fullscreenConfig : undefined,
             createdAt: iface.createdAt || new Date().toISOString(),
             updatedAt: iface.updatedAt || new Date().toISOString(),
@@ -751,7 +752,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     }
 
     // ✅ FIX: Add SpinTheWheel config flattening
-    if (campaign.nudgeType === 'spinthewheel' && campaign.spinTheWheelConfig) {
+    if ((campaign.type === 'spinthewheel' || campaign.nudgeType === 'spinthewheel') && campaign.spinTheWheelConfig) {
         const swc = campaign.spinTheWheelConfig;
         Object.assign(config, {
             winningCriteria: swc.winningCriteria,

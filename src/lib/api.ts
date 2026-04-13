@@ -149,6 +149,34 @@ class ApiClient {
     return this.request(`/v1/admin/campaigns?limit=${limit}&offset=${offset}`);
   }
 
+  // ============================================================================
+  // Gamification Vault (Rewards)
+  // ============================================================================
+
+  public async listRewards(): Promise<any> {
+    return this.request('/v1/admin/rewards');
+  }
+
+  public async createReward(data: any): Promise<any> {
+    return this.request('/v1/admin/rewards', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public async updateReward(id: string, data: any): Promise<any> {
+    return this.request(`/v1/admin/rewards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public async deleteReward(id: string): Promise<any> {
+    return this.request(`/v1/admin/rewards/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   public async getCampaign(id: string): Promise<BackendCampaign> {
     return this.request(`/v1/admin/campaigns/${encodeURIComponent(id)}`);
   }

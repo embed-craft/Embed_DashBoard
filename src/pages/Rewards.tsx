@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { theme } from '../styles/design-tokens';
 import { useStore } from '../store/useStore';
 import { Plus, Search, MoreHorizontal, LayoutGrid, Clock, Gift } from 'lucide-react';
@@ -6,17 +6,31 @@ import CreateRewardModal from '../components/rewards/CreateRewardModal';
 import { format } from 'date-fns';
 
 const Rewards = () => {
-  const { rewards, deleteReward } = useStore();
+  const { rewards, deleteReward, fetchRewards } = useStore();
   const [activeTab, setActiveTab] = useState<'rewards' | 'distribution' | 'delivery'>('rewards');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  // Hydrate Data on Mount
+  useEffect(() => {
+    fetchRewards();
+  }, [fetchRewards]);
 
   const filteredRewards = rewards.filter((r) =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (r.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())
   );
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+      {/* Click outside overlay for dropdown */}
+      {activeDropdown && (
+        <div 
+          onClick={() => setActiveDropdown(null)} 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9 }} 
+        />
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -175,16 +189,73 @@ const Rewards = () => {
                       <td style={{ padding: '16px', color: theme.colors.text.secondary, fontSize: '14px' }}>
                         {format(new Date(reward.updatedAt), 'dd MMM yyyy, hh:mm a')}
                       </td>
-                      <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <td style={{ padding: '16px', textAlign: 'right', position: 'relative' }}>
                         <button 
-                          onClick={() => deleteReward(reward.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdown(activeDropdown === reward.id ? null : reward.id);
+                          }}
                           style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: theme.colors.text.secondary, padding: '4px'
+                            background: activeDropdown === reward.id ? theme.colors.gray[100] : 'none', 
+                            border: 'none', cursor: 'pointer', borderRadius: '4px',
+                            color: theme.colors.text.secondary, padding: '4px',
+                            transition: 'background 0.2s'
                           }}
                         >
                           <MoreHorizontal size={18} />
                         </button>
+                        
+                        {/* Dropdown Menu */}
+                        {activeDropdown === reward.id && (
+                          <div style={{
+                            position: 'absolute',
+                            right: '32px',
+                            top: '40px',
+                            backgroundColor: 'white',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                            border: `1px solid ${theme.colors.border.default}`,
+                            zIndex: 10,
+                            minWidth: '120px',
+                            overflow: 'hidden'
+                          }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdown(null);
+                                alert("Edit Reward feature is coming soon!");
+                              }}
+                              style={{
+                                width: '100%', padding: '10px 16px', textAlign: 'left',
+                                border: 'none', background: 'none', cursor: 'pointer',
+                                fontSize: '13px', color: theme.colors.text.primary,
+                                borderBottom: `1px solid ${theme.colors.border.default}`
+                              }}
+                              onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.colors.gray[50]}
+                              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdown(null);
+                                if (window.confirm("Are you sure you want to delete this reward?")) {
+                                  deleteReward(reward.id);
+                                }
+                              }}
+                              style={{
+                                width: '100%', padding: '10px 16px', textAlign: 'left',
+                                border: 'none', background: 'none', cursor: 'pointer',
+                                fontSize: '13px', color: '#EF4444'
+                              }}
+                              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
+                              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

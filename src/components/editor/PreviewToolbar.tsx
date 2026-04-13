@@ -1,5 +1,6 @@
-import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand, Play, Image } from 'lucide-react';
+import { Smartphone, ZoomIn, ZoomOut, Maximize2, Grid, RotateCw, Camera, MousePointer2, Hand, Play, Image, User } from 'lucide-react';
 import { DEVICE_PRESETS, DevicePreset } from '@/lib/devicePresets';
+import { useEditorStore } from '@/store/useEditorStore';
 
 interface PreviewToolbarProps {
     selectedDevice: string;
@@ -39,6 +40,7 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
     onBackgroundChange
 }) => {
     const currentDevice = DEVICE_PRESETS.find(d => d.id === selectedDevice);
+    const { previewUserId, setPreviewUserId } = useEditorStore();
     console.log('[PreviewToolbar] Rendering. isInteractive:', isInteractive);
 
     const selectStyle = {
@@ -161,6 +163,36 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
 
             {/* Right: Action Buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Simulation Mode User ID Input */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    backgroundColor: '#F9FAFB',
+                    marginRight: '8px'
+                }}>
+                    <User size={14} color="#6B7280" />
+                    <input
+                        type="text"
+                        placeholder="Simulate User ID..."
+                        value={previewUserId || ''}
+                        onChange={(e) => setPreviewUserId(e.target.value.trim() || null)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onPaste={(e) => e.stopPropagation()}
+                        style={{
+                            border: 'none',
+                            outline: 'none',
+                            backgroundColor: 'transparent',
+                            fontSize: '12px',
+                            color: '#374151',
+                            width: '120px'
+                        }}
+                    />
+                </div>
+
                 <button
                     onClick={onInteractToggle}
                     style={{

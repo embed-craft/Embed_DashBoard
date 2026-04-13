@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layer } from '@/store/useEditorStore';
-import { useGridElementData } from '@/components/campaign/renderers/GridElementContext';
+import { useGridElementData, interpolateDataBinding } from '@/components/campaign/renderers/GridElementContext';
 
 interface TextRendererProps {
     layer: Layer;
@@ -76,6 +76,11 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
         }
         if (value != null) rawText = String(value);
     }
+
+    // Attempt {{handlebars}} string interpolations if dataItem exists (Fallback/Enhanced Mode)
+    if (dataItem && typeof rawText === 'string') {
+        rawText = interpolateDataBinding(rawText, dataItem);
+    }
     
     const displayText = resolveText(rawText);
 
@@ -96,6 +101,15 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
                 : undefined,
             textShadow: textShadow,
             whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+
+            // SDK Overflow Parity
+            overflow: 'hidden',
+            textOverflow: layer.content?.maxLines ? 'ellipsis' : undefined,
+            display: layer.content?.maxLines ? '-webkit-box' : 'flex',
+            WebkitBoxOrient: layer.content?.maxLines ? 'vertical' : undefined,
+            WebkitLineClamp: layer.content?.maxLines || undefined,
 
             // Box Model (from Style)
             backgroundColor: layer.style?.backgroundColor || 'transparent',
@@ -111,8 +125,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({ layer, scale = 1, sc
             margin: 0,
             padding: layer.style?.padding ? `${safeScale(layer.style.padding, scale)}` : 0, // Enable padding if set
             boxSizing: 'border-box' as const,
-            display: 'flex',
-            flexDirection: 'column',
+            flexDirection: layer.content?.maxLines ? undefined : 'column',
             outline: 'none',
         }}>
             {/* Inject Custom Font CSS if URL provided */}

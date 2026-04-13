@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { Check, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings } from 'lucide-react';
+import { useGridElementData, interpolateDataBinding } from '@/components/campaign/renderers/GridElementContext';
 
 interface ButtonRendererProps {
     layer: Layer;
@@ -48,7 +49,13 @@ export const ButtonRenderer: React.FC<ButtonRendererProps> = ({ layer, scale = 1
         return resolved;
     };
 
-    const label = resolveText(layer.content?.label || 'Button');
+    const { dataItem } = useGridElementData();
+    let rawLabel = layer.content?.label || 'Button';
+    if (dataItem) {
+        rawLabel = interpolateDataBinding(rawLabel, dataItem);
+    }
+    const label = resolveText(rawLabel);
+    
     const variant = layer.content?.buttonVariant || 'primary';
     // FIX: Prioritize style.backgroundColor defined by Editor
     const themeColor = layer.style?.backgroundColor || layer.content?.themeColor || '#6366F1';

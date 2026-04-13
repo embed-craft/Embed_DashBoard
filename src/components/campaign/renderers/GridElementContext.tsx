@@ -43,3 +43,20 @@ export const GridElementProvider: React.FC<{
 export const useGridElementData = (): GridElementContextValue => {
   return useContext(GridElementCtx);
 };
+
+/**
+ * Utility to interpolate `{{key.subkey}}` in strings using Grid dataItem payload
+ */
+export const interpolateDataBinding = (text: string | undefined | null, dataItem: Record<string, any> | null): string => {
+    if (!text || typeof text !== 'string' || !dataItem) return text || '';
+    
+    return text.replace(/\{\{([a-zA-Z0-9_.]+)\}\}/g, (match, key) => {
+        const paths = key.split('.');
+        let value: any = dataItem;
+        for (const p of paths) {
+            if (value && typeof value === 'object') value = value[p];
+            else { value = null; break; }
+        }
+        return value != null ? String(value) : match;
+    });
+};

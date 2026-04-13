@@ -14,6 +14,7 @@ export interface RewardItem {
     couponValue: string;
     codeType: string;
     code?: string;
+    bulkCodes?: string[];
     expiryType: string;
     expiryDate?: string;
   };
@@ -29,6 +30,13 @@ export interface RewardItem {
   lockedIconUrl?: string; // Grayscale or locked state visual
   customVariables?: { key: string; value: string }[];
   
+  // Anti-Fraud & Vault Limits
+  inventory?: {
+    total_quantity: number | null;
+    claimed_quantity: number;
+  };
+  status?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -156,11 +164,12 @@ export interface AnalyticsData {
 }
 
 interface Store {
-  // Rewards
+  // Rewards Sync (MongoDB Connected)
   rewards: RewardItem[];
-  addReward: (reward: Omit<RewardItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateReward: (id: string, reward: Partial<RewardItem>) => void;
-  deleteReward: (id: string) => void;
+  fetchRewards: () => Promise<void>;
+  addReward: (reward: Omit<RewardItem, 'id' | 'createdAt' | 'updatedAt' | 'inventory'> & { inventory?: any }) => Promise<void>;
+  updateReward: (id: string, reward: Partial<RewardItem>) => Promise<void>;
+  deleteReward: (id: string) => Promise<void>;
 
   // Campaigns
   campaigns: Campaign[];
@@ -253,29 +262,67 @@ export interface Template {
 export const useStore = create<Store>()(
   persist(
     (set) => ({
+      // ---------------------------------------------------------
+      // GAMIFICATION REWARD VAULT (Synced from API)
+      // ---------------------------------------------------------
       rewards: [],
-      addReward: (reward) =>
-        set((state) => ({
-          rewards: [
-            {
-              ...reward,
-              id: Date.now().toString(),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-            ...state.rewards,
-          ],
-        })),
-      updateReward: (id, reward) =>
-        set((state) => ({
-          rewards: state.rewards.map((r) =>
-            r.id === id ? { ...r, ...reward, updatedAt: new Date().toISOString() } : r
-          ),
-        })),
-      deleteReward: (id) =>
-        set((state) => ({
-          rewards: state.rewards.filter((r) => r.id !== id),
-        })),
+      
+      fetchRewards: async () => {
+        try {
+          const res = await apiClient.listRewards();
+          if (res && res.data) {
+             // Re-map internal `_id` to `id` for frontend rendering map functions
+             const mappedRewards = res.data.map((r: any) => ({
+                 ...r,
+                 id: r._id || r.id
+             }));
+             set({ rewards: mappedRewards });
+          }
+        } catch (error) {
+          console.error("Failed to fetch rewards:", error);
+        }
+      },
+
+      addReward: async (reward) => {
+        try {
+          const res = await apiClient.createReward(reward);
+          if (res && res.data) {
+             const newReward = { ...res.data, id: res.data._id };
+             set((state) => ({ rewards: [...state.rewards, newReward] }));
+          }
+        } catch (error) {
+          console.error("Failed to create reward:", error);
+          throw error;
+        }
+      },
+
+      updateReward: async (id, reward) => {
+         try {
+           const res = await apiClient.updateReward(id, reward);
+           if (res && res.data) {
+              set((state) => ({
+                rewards: state.rewards.map((r) =>
+                  r.id === id ? { ...r, ...res.data, id: res.data._id } : r
+                ),
+              }));
+           }
+         } catch (error) {
+           console.error("Failed to update reward", error);
+           throw error;
+         }
+      },
+
+      deleteReward: async (id) => {
+         try {
+            await apiClient.deleteReward(id);
+            set((state) => ({
+              rewards: state.rewards.filter((r) => r.id !== id),
+            }));
+         } catch (error) {
+           console.error("Failed to delete reward", error);
+           throw error;
+         }
+      },
 
       campaigns: [],
       segments: [],

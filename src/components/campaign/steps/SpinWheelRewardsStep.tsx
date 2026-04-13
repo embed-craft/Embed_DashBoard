@@ -5,7 +5,7 @@ import { Trash2, Plus, GripVertical, ChevronDown, ChevronRight, HelpCircle } fro
 
 const SpinWheelRewardsStep = () => {
     const { currentCampaign, updateSpinTheWheelConfig } = useEditorStore();
-    const { rewards, segments, fetchSegments } = useStore();
+    const { rewards, segments, fetchSegments, fetchRewards } = useStore();
     
     // Expand/collapse states for sections
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -13,6 +13,7 @@ const SpinWheelRewardsStep = () => {
     useEffect(() => {
         // Fetch segments/cohorts on mount
         fetchSegments();
+        fetchRewards();
         
         // Auto-expand sections that are recently added
         if (currentCampaign?.spinTheWheelConfig?.sections) {

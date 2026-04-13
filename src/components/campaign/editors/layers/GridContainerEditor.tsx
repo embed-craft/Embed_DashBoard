@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LayoutGrid, Link, Layers, List, Maximize2, RefreshCw } from 'lucide-react';
+import { LayoutGrid, List, Maximize2 } from 'lucide-react';
+import { DataBindingEditor } from '@/components/campaign/editors/shared/DataBindingEditor';
 
 interface GridContainerEditorProps {
     layer: any;
@@ -32,30 +32,7 @@ export const GridContainerEditor: React.FC<GridContainerEditorProps> = ({
 
     const content = layer.content || {};
 
-    // Live Server DataSources
-    const [liveDataSources, setLiveDataSources] = useState<any[]>([]);
-    const [isLoadingSources, setIsLoadingSources] = useState(false);
-    
-    React.useEffect(() => {
-        const fetchFeeds = async () => {
-            setIsLoadingSources(true);
-            try {
-                // Fetch from the newly created backend API
-                const res = await fetch('http://localhost:4000/v1/admin/datasources');
-                if (res.ok) {
-                    const data = await res.json();
-                    setLiveDataSources(data);
-                }
-            } catch (err) {
-                console.warn('Could not fetch liver server DataSources', err);
-            } finally {
-                setIsLoadingSources(false);
-            }
-        };
-        fetchFeeds();
-    }, []);
 
-    const activeSchema = liveDataSources.find(ds => ds._id === content.dataSourceId);
 
     return (
         <div className="flex flex-col h-full bg-white font-sans text-gray-900">
@@ -73,58 +50,11 @@ export const GridContainerEditor: React.FC<GridContainerEditorProps> = ({
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
 
                 {/* --- DATA BINDING --- */}
-                <div className="space-y-4 border rounded-lg p-3 bg-indigo-50/30">
-                    <h5 className="text-[12px] font-semibold text-indigo-900 flex items-center gap-1.5 mb-3">
-                        <Link size={14} className="text-indigo-600" />
-                        Data Source Binding
-                    </h5>
+                <div className="space-y-4">
+                    <DataBindingEditor layer={layer} selectedLayerId={selectedLayerId} updateLayer={updateLayer} />
                     
-                    <div className="space-y-3">
-                        <Label className="text-[10px] text-indigo-700 font-medium">Data Source</Label>
-                        <Select
-                            value={content.dataSourceId || ''}
-                            onValueChange={(val) => {
-                                const feed = liveDataSources.find(d => d._id === val);
-                                updateLayer(selectedLayerId, {
-                                    content: {
-                                        ...layer.content,
-                                        dataSourceId: val,
-                                        dataSourceUrl: feed ? feed.endpoint_url : ''
-                                    }
-                                });
-                            }}
-                        >
-                            <SelectTrigger className="h-8 text-[11px] bg-white border-indigo-100 placeholder:text-gray-300">
-                                <SelectValue placeholder={isLoadingSources ? 'Loading data sources...' : 'Select internal data source'} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {liveDataSources.map((ds) => (
-                                    <SelectItem key={ds._id} value={ds._id}>{ds.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        {/* Internal Schema Introspection */}
-                        {content.dataSourceId && activeSchema ? (
-                            <div className="p-2 bg-white border border-indigo-50 rounded-md mt-2">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-[9px] font-semibold text-indigo-500 uppercase tracking-wider">Available Variables</span>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {activeSchema.cached_schema && activeSchema.cached_schema.map((field: any) => (
-                                        <span key={field.key} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded text-[9px] font-mono cursor-pointer hover:bg-indigo-100 transition-colors" title="Copy placeholder">
-                                            {`{{${field.key}}}`}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-[9px] text-gray-400 mt-1">Select an internal database table to auto-generate mapping placeholders for the marketing team.</p>
-                        )}
-                    </div>
-
-                    <div className="pt-2 border-t border-indigo-100/50 flex items-center justify-between">
-                        <Label className="text-[11px] text-indigo-800 font-medium cursor-pointer">Enable Loading Shimmer</Label>
+                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                        <Label className="text-[11px] text-gray-800 font-medium cursor-pointer">Enable Loading Shimmer</Label>
                         <Switch
                             checked={content.shimmerEnabled ?? true}
                             onCheckedChange={(c) => updateContent('shimmerEnabled', c)}

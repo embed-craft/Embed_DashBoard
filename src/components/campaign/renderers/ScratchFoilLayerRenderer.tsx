@@ -19,8 +19,18 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
 
     // Grid Data Binding: check if this reward is already claimed
     const { dataItem } = useGridElementData();
-    const statusKey = content.statusBindingKey;
-    const isClaimed = dataItem && statusKey ? !!dataItem[statusKey] : false;
+    const statusKey = content.statusBindingKey || 'status'; // fallback to standard 'status'
+    let isClaimed = false;
+    
+    if (dataItem && dataItem[statusKey] !== undefined) {
+        const val = dataItem[statusKey];
+        if (typeof val === 'string') {
+            // "locked", "unlocked", "redeemed", "claimed"
+            isClaimed = ['unlocked', 'redeemed', 'claimed'].includes(val.toLowerCase());
+        } else {
+            isClaimed = !!val; // boolean fallback
+        }
+    }
 
     // Config defaults
     const scratchSize = content.scratchSize || 40;

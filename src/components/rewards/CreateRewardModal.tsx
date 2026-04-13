@@ -29,13 +29,30 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
     expiryType: 'never',
     expiryDate: ''
   });
+  const [bulkCodes, setBulkCodes] = useState<string[]>([]);
+
+  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      // Skip header if it looks like one
+      const startIdx = lines[0]?.toLowerCase() === 'code' ? 1 : 0;
+      const codes = lines.slice(startIdx).filter(c => c.length > 0);
+      setBulkCodes(codes);
+    };
+    reader.readAsText(file);
+  };
 
   const [pointsConfig, setPointsConfig] = useState({ amount: 100 });
   const [featureConfig, setFeatureConfig] = useState({ featureFlagId: '' });
+  const [inventory, setInventory] = useState<{ total_quantity: string }>({ total_quantity: '' });
 
   const [uploadMode, setUploadMode] = useState<'preset' | 'upload'>('preset');
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!formData.name) return;
     
     // Construct final payload
@@ -53,7 +70,8 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
          couponType: couponConfig.couponType,
          couponValue: couponConfig.couponValue,
          codeType: couponConfig.codeType,
-         code: couponConfig.code,
+         code: couponConfig.codeType === 'static' ? couponConfig.code : '',
+         bulkCodes: couponConfig.codeType === 'bulk' ? bulkCodes : undefined,
          expiryType: couponConfig.expiryType,
          expiryDate: couponConfig.expiryDate
       };
@@ -63,8 +81,19 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
       payload.featureConfig = { featureFlagId: featureConfig.featureFlagId };
     }
 
-    addReward(payload);
-    onClose();
+    // Embed The Vault Limit
+    if (inventory.total_quantity !== undefined && inventory.total_quantity !== null && inventory.total_quantity !== '') {
+        (payload as any).inventory = { total_quantity: Number(inventory.total_quantity), claimed_quantity: 0 };
+    } else {
+        (payload as any).inventory = { total_quantity: null, claimed_quantity: 0 };
+    }
+
+    try {
+        await addReward(payload);
+        onClose();
+    } catch(e) {
+        alert("Failed to save reward to database.");
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,6 +191,18 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
             />
           </div>
 
+          <div style={{ backgroundColor: '#fff8f1', padding: '16px', borderRadius: '8px', border: '1px solid #ffe8cc' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d97706', marginBottom: '4px' }}>Global Company Stock Limit (Vault)</label>
+              <p style={{ fontSize: '11px', color: '#b45309', marginBottom: '8px', marginTop: 0 }}>If set, the backend will completely stop distributing this reward once this many people claim it across ALL campaigns globally.</p>
+              <input 
+                type="number"
+                placeholder="Leave blank for infinite stock"
+                value={inventory.total_quantity}
+                onChange={(e) => setInventory({ total_quantity: e.target.value })}
+                style={{ width: '100%', padding: '10px 12px', border: `1px solid #fcd34d`, borderRadius: '8px', outline: 'none', fontSize: '13px', backgroundColor: 'white' }} 
+              />
+          </div>
+
           {/* Conditional Fields Divider */}
           <div style={{ height: '1px', backgroundColor: theme.colors.gray[100], margin: '4px 0' }} />
 
@@ -223,18 +264,44 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
                   style={{ width: '100%', padding: '10px 12px', border: `1px solid ${theme.colors.border.default}`, borderRadius: '8px', outline: 'none', backgroundColor: 'white' }}
                 >
                   <option value="static">Static</option>
-                  <option value="dynamic">Dynamic</option>
+                  <option value="bulk">Bulk</option>
                 </select>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: theme.colors.text.secondary, marginBottom: '6px' }}>Coupon Code</label>
-                <input 
-                  value={couponConfig.code}
-                  onChange={(e) => setCouponConfig({...couponConfig, code: e.target.value})}
-                  style={{ width: '100%', padding: '10px 12px', border: `1px solid ${theme.colors.border.default}`, borderRadius: '8px', outline: 'none' }} 
-                />
-              </div>
+              {couponConfig.codeType === 'static' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: theme.colors.text.secondary, marginBottom: '6px' }}>Coupon Code</label>
+                  <input 
+                    value={couponConfig.code}
+                    placeholder="e.g. SAVE50"
+                    onChange={(e) => setCouponConfig({...couponConfig, code: e.target.value})}
+                    style={{ width: '100%', padding: '10px 12px', border: `1px solid ${theme.colors.border.default}`, borderRadius: '8px', outline: 'none' }} 
+                  />
+                </div>
+              )}
+
+              {couponConfig.codeType === 'bulk' && (
+                <div>
+                  <div style={{ backgroundColor: '#f0f4ff', padding: '12px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #dbeafe' }}>
+                    <p style={{ fontSize: '12px', color: '#3b82f6', margin: 0 }}>Your CSV should have a column header called <strong>code</strong> as the first column. Each row should contain a coupon code.</p>
+                  </div>
+                  <label style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 16px', border: '1px solid #a78bfa', borderRadius: '8px',
+                    backgroundColor: '#f5f3ff', cursor: 'pointer', fontSize: '13px',
+                    color: '#7c3aed', fontWeight: 600, transition: 'all 0.2s'
+                  }}>
+                    <UploadCloud size={16} />
+                    Upload CSV
+                    <input type="file" accept=".csv" onChange={handleCsvUpload} style={{ display: 'none' }} />
+                  </label>
+                  {bulkCodes.length > 0 && (
+                    <p style={{ fontSize: '12px', color: theme.colors.text.secondary, marginTop: '8px' }}>
+                      ✅ <strong>{bulkCodes.length}</strong> coupon codes parsed successfully.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: theme.colors.text.secondary, marginBottom: '6px' }}>Coupon Expiry Type</label>

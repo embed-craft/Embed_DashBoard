@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Move, Maximize2, Brush, Percent, Palette, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Move, Maximize2, Brush, Percent, Palette, Image as ImageIcon, Database } from 'lucide-react';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 import { PositionEditor } from '@/components/editor/style/PositionEditor';
 import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
+import { DataBindingEditor } from '@/components/campaign/editors/shared/DataBindingEditor';
 
 // UI Components
 import { Label } from '@/components/ui/label';
@@ -37,7 +38,7 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
     const coverType = content.coverImage ? 'image' : 'color';
 
     // Tab State
-    const [activeTab, setActiveTab] = React.useState<'design' | 'interaction' | 'layout'>('design');
+    const [activeTab, setActiveTab] = React.useState<'design' | 'interaction' | 'layout' | 'data'>('design');
     const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
     const [isCursorPickerOpen, setIsCursorPickerOpen] = useState(false);
 
@@ -58,7 +59,7 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
 
             {/* Tabs */}
             <div className="flex p-1 bg-gray-100/50 rounded-lg mb-4 gap-1 flex-shrink-0">
-                {(['design', 'interaction', 'layout'] as const).map((tab) => (
+                {(['design', 'interaction', 'layout', 'data'] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -70,6 +71,7 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
                         {tab === 'design' && <Palette size={12} />}
                         {tab === 'interaction' && <Brush size={12} />}
                         {tab === 'layout' && <Move size={12} />}
+                        {tab === 'data' && <Database size={12} />}
                         <span className="capitalize">{tab}</span>
                     </button>
                 ))}
@@ -77,6 +79,17 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto min-h-0 pr-1 pb-20 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+
+                {/* 0. DATA TAB */}
+                {activeTab === 'data' && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                        <DataBindingEditor
+                            layer={layer}
+                            selectedLayerId={selectedLayerId}
+                            updateLayer={updateLayer}
+                        />
+                    </div>
+                )}
 
                 {/* 1. DESIGN TAB */}
                 {activeTab === 'design' && (

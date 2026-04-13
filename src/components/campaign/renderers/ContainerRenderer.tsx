@@ -101,7 +101,10 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
         alignItems: layoutMode === 'auto' ? (layer.style?.alignItems || 'stretch') : undefined,
         justifyContent: layoutMode === 'auto' ? (layer.style?.justifyContent || 'flex-start') : undefined,
         gap: layoutMode === 'auto' ? safeScale(layer.style?.gap || 0, scale) : undefined,
-        padding: 0,
+        paddingLeft: safeScale(layer.style?.paddingX || 0, scale),
+        paddingRight: safeScale(layer.style?.paddingX || 0, scale),
+        paddingTop: safeScale(layer.style?.paddingY || 0, scale),
+        paddingBottom: safeScale(layer.style?.paddingY || 0, scale),
 
         // Size & Position (Relative to parent wrapper)
         width: '100%',

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { GridElementProvider } from '@/components/campaign/renderers/GridElementContext';
 import { ContainerRenderer } from '@/components/campaign/renderers/ContainerRenderer';
+import { useEditorStore } from '@/store/useEditorStore';
+import { getApiKey } from '@/lib/api';
 
 interface GridContainerRendererProps {
   layer: Layer;
@@ -42,6 +44,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
   const [data, setData] = useState<Record<string, any>[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewUserId = useEditorStore(state => state.previewUserId);
 
   // Fetch data from URL when configured
   useEffect(() => {
@@ -54,7 +57,28 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     setLoading(true);
     setError(null);
 
-    fetch(dataSourceUrl)
+    let fetchUrl = dataSourceUrl;
+    
+    // Resolve relative URLs to the API backend directly, identical to dashboard fetch logic
+    if (fetchUrl.startsWith('/')) {
+        const baseUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
+        fetchUrl = `${baseUrl}${fetchUrl}`;
+    }
+    
+    if (previewUserId) {
+      const separator = fetchUrl.includes('?') ? '&' : '?';
+      fetchUrl += `${separator}userId=${encodeURIComponent(previewUserId)}`;
+    }
+
+    const apiKey = getApiKey();
+    const headers: Record<string, string> = {
+        'Accept': 'application/json'
+    };
+    if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    fetch(fetchUrl, { headers })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -81,7 +105,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [dataSourceUrl]);
+  }, [dataSourceUrl, previewUserId]);
 
   // Find the single Grid Element template child
   const templateChild = layers.find(

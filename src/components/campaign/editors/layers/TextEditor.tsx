@@ -2,11 +2,12 @@ import React, { useRef, useState } from 'react';
 import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
+import { DataBindingEditor } from '../shared/DataBindingEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     AlignCenter, AlignJustify, AlignLeft, AlignRight, Type, Palette, Layers, Box,
     CaseSensitive, Move, ArrowUpFromLine, Scaling, Underline, Strikethrough,
-    CaseUpper, CaseLower, Sun, Square, PaintBucket, Ghost, PenTool, Braces
+    CaseUpper, CaseLower, Sun, Square, PaintBucket, Ghost, PenTool, Braces, Database
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
@@ -98,7 +99,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     return (
         <div className="p-1">
             <Tabs defaultValue="text" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="data" title="Data Context">
+                        <Database size={14} className="mr-1.5" /> Data
+                    </TabsTrigger>
                     <TabsTrigger value="text" title="Content & Typography">
                         <Type size={14} className="mr-1.5" /> Text
                     </TabsTrigger>
@@ -106,6 +110,14 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         <Palette size={14} className="mr-1.5" /> Design
                     </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="data" className="space-y-4 animate-in fade-in-50 duration-300">
+                    <DataBindingEditor
+                        layer={layer}
+                        selectedLayerId={selectedLayerId}
+                        updateLayer={updateLayer}
+                    />
+                </TabsContent>
 
                 {/* --- TEXT TAB --- */}
                 <TabsContent value="text" className="space-y-4 animate-in fade-in-50 duration-300">
@@ -155,20 +167,6 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                             onChange={(e) => handleContentUpdate('text', e.target.value)}
                             className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none min-h-[100px] resize-y font-sans"
                         />
-                        
-                        {/* Data Source Mapping */}
-                        <div className="pt-2">
-                            <Label className="text-[10px] text-indigo-700 flex items-center gap-1">
-                                <Braces size={12}/> Data Flow Mapping Key
-                            </Label>
-                            <Input
-                                placeholder="e.g. reward_name"
-                                value={layer.content?.mapped_key || ''}
-                                onChange={(e) => handleContentUpdate('mapped_key', e.target.value)}
-                                className="h-8 text-xs bg-indigo-50/50"
-                            />
-                            <p className="text-[9px] text-gray-400 mt-1">If this is inside a Grid Container, this key pulls text from the API.</p>
-                        </div>
                     </div>
 
                     {/* Typography Section */}

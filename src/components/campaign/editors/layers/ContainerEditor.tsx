@@ -19,10 +19,12 @@ import {
     Sun,
     LayoutGrid,
     Type,
-    Ban
+    Ban,
+    Database
 } from 'lucide-react';
 import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
 import { useEditorStore } from '@/store/useEditorStore';
+import { DataBindingEditor } from '@/components/campaign/editors/shared/DataBindingEditor';
 
 // Colors for palette picker (Same as Scratch Card/Floater)
 const PALETTE = [
@@ -151,10 +153,11 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
 
             <Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
                 <div className="px-3 pt-3 pb-0 bg-gray-50/50 border-b border-gray-100 shrink-0">
-                    <TabsList className="grid w-full grid-cols-3 bg-gray-200/50 p-1 rounded-lg">
+                    <TabsList className="grid w-full grid-cols-4 bg-gray-200/50 p-1 rounded-lg">
                         <TabsTrigger value="general" className="text-[11px] h-7 gap-1.5"><Layout size={12} /> General</TabsTrigger>
                         <TabsTrigger value="design" className="text-[11px] h-7 gap-1.5"><Paintbrush size={12} /> Design</TabsTrigger>
                         <TabsTrigger value="layout" className="text-[11px] h-7 gap-1.5"><LayoutGrid size={12} /> Layout</TabsTrigger>
+                        <TabsTrigger value="data" className="text-[11px] h-7 gap-1.5"><Database size={12} /> Data</TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -421,6 +424,15 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                             </div>
 
                         </div>
+                    </TabsContent>
+
+                    {/* --- TAB: DATA --- */}
+                    <TabsContent value="data" className="space-y-6 mt-0 animate-in fade-in-50">
+                        <DataBindingEditor 
+                            layer={layer} 
+                            selectedLayerId={selectedLayerId} 
+                            updateLayer={updateLayer} 
+                        />
                     </TabsContent>
 
                     {/* --- TAB: DESIGN --- */}
@@ -767,6 +779,34 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                                         ? 'Children can be dragged anywhere (Absolute).' 
                                         : 'Children align automatically in a stack (Flexbox).'}
                                 </p>
+                            </div>
+
+                            {/* Internal Padding */}
+                            <div className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-100 pb-4">
+                                <div>
+                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Horizontal Padding (X)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="number"
+                                            className="h-8 text-xs"
+                                            value={style.paddingX ?? 0}
+                                            onChange={(e) => onStyleUpdate('paddingX', parseFloat(e.target.value))}
+                                        />
+                                        <span className="text-[10px] text-gray-400">px</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Vertical Padding (Y)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="number"
+                                            className="h-8 text-xs"
+                                            value={style.paddingY ?? 0}
+                                            onChange={(e) => onStyleUpdate('paddingY', parseFloat(e.target.value))}
+                                        />
+                                        <span className="text-[10px] text-gray-400">px</span>
+                                    </div>
+                                </div>
                             </div>
 
                             {style.layoutMode === 'auto' && (

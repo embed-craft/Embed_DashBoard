@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { useEditorStore } from '@/store/useEditorStore';
 
+// API base URL for backend calls
+const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
+
 // Default colors when no sections exist
 const DEFAULT_COLORS = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD',
@@ -27,7 +30,7 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     renderChild,
     selectedLayerId,
 }) => {
-    const { currentCampaign } = useEditorStore();
+    const { currentCampaign, previewUserId } = useEditorStore();
     const sections = currentCampaign?.spinTheWheelConfig?.sections || [];
     const content = layer.content || {};
 
@@ -161,47 +164,25 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
         setTimeout(() => setShowConfetti(false), 3500);
     }, []);
 
-    const triggerSpin = useCallback(() => {
-        // Use refs to avoid stale closure issues
-        if (isSpinningRef.current) return;
-        if (spinsLeftRef.current <= 0) {
-            console.log('[STW] No spins remaining');
-            return;
-        }
-
-        isSpinningRef.current = true;
-        setIsSpinning(true);
-        setShowResult(null);
-        setResultIndex(null);
-
-        // Determine winner
-        const winnerIdx = getWinnerByWeight();
-
-        // Calculate target angle using ref for latest rotation
+    // ─── Animate wheel to a specific winning index ───────────────
+    const animateToIndex = useCallback((winnerIdx: number) => {
         const currentRotation = rotationRef.current;
         const targetSectionAngle = winnerIdx * degreesPerSlice + degreesPerSlice / 2;
-        
         const extraSpins = (5 + Math.floor(Math.random() * 3)) * 360;
-        
-        // Ensure rotational offset is consistently relative to initial unrotated angle (0) instead of cumulative sum
         const requiredAbsoluteRotation = 360 - targetSectionAngle;
         let delta = requiredAbsoluteRotation - (currentRotation % 360);
         if (delta < 0) delta += 360;
-        
         const targetRotation = currentRotation + delta + extraSpins;
-
         const spinDuration = content.spinDuration || 3000;
 
         setRotation(targetRotation);
         rotationRef.current = targetRotation;
 
-        // After spin completes
         spinTimeoutRef.current = setTimeout(() => {
             isSpinningRef.current = false;
             setIsSpinning(false);
             setResultIndex(winnerIdx);
 
-            // Decrement spins
             setSpinsLeft(prev => {
                 const newVal = Math.max(0, prev - 1);
                 spinsLeftRef.current = newVal;
@@ -209,14 +190,12 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
             });
 
             const winnerSection = sections[winnerIdx];
-            // Store result globally for placeholder replacement in child containers
             (window as any).__stwResult = winnerSection ? {
                 name: winnerSection.name,
                 rewardId: winnerSection.rewardId,
                 sectionIndex: winnerIdx,
             } : null;
 
-            // WIN = section has a valid rewardId assigned. No reward = LOSE.
             const isWin = !!(winnerSection && winnerSection.rewardId && winnerSection.rewardId !== '' && winnerSection.rewardId !== 'no_reward');
 
             if (isWin) {
@@ -230,12 +209,71 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
             } else {
                 if (content.showBetterLuckScreen) {
                     setShowResult('betterLuck');
-                    // Auto-dismiss after 3 seconds
                     setTimeout(() => setShowResult(null), 3000);
                 }
             }
         }, spinDuration + 200);
-    }, [getWinnerByWeight, degreesPerSlice, sections, content, triggerConfetti]);
+    }, [degreesPerSlice, sections, content, triggerConfetti]);
+
+    const triggerSpin = useCallback(() => {
+        // Use refs to avoid stale closure issues
+        if (isSpinningRef.current) return;
+        if (spinsLeftRef.current <= 0) {
+            console.log('[STW] No spins remaining');
+            return;
+        }
+
+        isSpinningRef.current = true;
+        setIsSpinning(true);
+        setShowResult(null);
+        setResultIndex(null);
+
+        // ── Server-Side Spin: When a simulated User ID is present, call the backend ──
+        // This saves the reward to the user's ledger (wallet) for real persistence
+        if (previewUserId && currentCampaign?.id) {
+            const token = localStorage.getItem('token');
+            console.log('[STW] Server-side spin for user:', previewUserId, 'campaign:', currentCampaign.id);
+
+            fetch(`${API_BASE}/api/v1/game/initiate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    userId: previewUserId,
+                    campaignId: currentCampaign.id,
+                    previewConfig: currentCampaign.spinTheWheelConfig,
+                }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.winningIndex !== undefined) {
+                    console.log('[STW] Server result: winning index', data.winningIndex, '-', data.message);
+                    animateToIndex(data.winningIndex);
+                } else {
+                    // Server rejected (e.g., max attempts reached, no sections)
+                    console.warn('[STW] Server spin rejected:', data.error);
+                    isSpinningRef.current = false;
+                    setIsSpinning(false);
+                    // Show error briefly via betterLuck screen
+                    setShowResult('betterLuck');
+                    setTimeout(() => setShowResult(null), 3000);
+                }
+            })
+            .catch(err => {
+                console.error('[STW] Server spin error:', err);
+                // Fallback to local random on network failure
+                const winnerIdx = getWinnerByWeight();
+                animateToIndex(winnerIdx);
+            });
+            return;
+        }
+
+        // ── Client-Side Spin: No user ID — pure local random (design preview) ──
+        const winnerIdx = getWinnerByWeight();
+        animateToIndex(winnerIdx);
+    }, [getWinnerByWeight, animateToIndex, previewUserId, currentCampaign]);
 
     // ─── Event Listener ───────────────────────────────────────────
     useEffect(() => {

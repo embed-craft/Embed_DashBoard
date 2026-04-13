@@ -48,6 +48,7 @@ export interface LayerContent extends ScratchFoilProps {
   letterSpacing?: number;
   textDecoration?: 'none' | 'underline' | 'line-through';
   textTransform?: 'none' | 'uppercase' | 'lowercase';
+  maxLines?: number;
 
   // Text Stroke (Border)
   textStrokeWidth?: number;
@@ -1091,6 +1092,7 @@ interface EditorStore {
   showEditor: boolean;
   isSaving: boolean;
   saveError: string | null;
+  previewUserId: string | null; // Track current user simulated in preview
 
   // Saved Callbacks (Local Persistence)
   customCallbackIds: string[];
@@ -1147,6 +1149,7 @@ interface EditorStore {
   setActiveTab: (tab: 'design' | 'targeting') => void;
   setPropertyTab: (tab: 'style' | 'actions') => void;
   setShowEditor: (show: boolean) => void;
+  setPreviewUserId: (id: string | null) => void;
 
   // Auto-save
   enableAutoSave: () => void;
@@ -1247,6 +1250,7 @@ export const useEditorStore = create<EditorStore>()(
       showEditor: false,
       isSaving: false,
       saveError: null,
+      previewUserId: null,
       editorMode: 'campaign',
       isTemplateModalOpen: false,
       isSaveTemplateModalOpen: false,
@@ -1327,6 +1331,7 @@ export const useEditorStore = create<EditorStore>()(
         }
       },
 
+      setPreviewUserId: (id: string | null) => set({ previewUserId: id }),
 
       createEvent: async (event) => {
         try {

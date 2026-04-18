@@ -170,9 +170,14 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
         const targetSectionAngle = winnerIdx * degreesPerSlice + degreesPerSlice / 2;
         const extraSpins = (5 + Math.floor(Math.random() * 3)) * 360;
         const requiredAbsoluteRotation = 360 - targetSectionAngle;
+        
+        // Add random scatter offset inside the winning slice bounding box exactly matching Flutter SDK:
+        // final randomOffset = (math.Random().nextDouble() * (sliceAngle * 0.8)) - (sliceAngle * 0.4);
+        const randomOffset = (Math.random() * (degreesPerSlice * 0.8)) - (degreesPerSlice * 0.4);
+
         let delta = requiredAbsoluteRotation - (currentRotation % 360);
         if (delta < 0) delta += 360;
-        const targetRotation = currentRotation + delta + extraSpins;
+        const targetRotation = currentRotation + delta + extraSpins + randomOffset;
         const spinDuration = content.spinDuration || 3000;
 
         setRotation(targetRotation);

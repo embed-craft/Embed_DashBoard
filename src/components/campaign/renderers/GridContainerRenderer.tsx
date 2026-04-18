@@ -117,7 +117,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     display: 'grid',
     gridTemplateColumns: `repeat(${span}, 1fr)`,
     columnGap: `${gridGapX * scale}px`,
-    rowGap: `${gridGapY * scale}px`,
+    rowGap: `${gridGapY * scaleY}px`,
     alignContent: 'start', // Packs rows tightly at the top rather than stretching across 100% height
     overflowY: 'auto',
     overflowX: 'hidden',
@@ -134,8 +134,8 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
         background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 1.5s infinite',
-        borderRadius: '8px',
-        minHeight: '80px',
+        borderRadius: `${8 * scale}px`,
+        minHeight: `${80 * scaleY}px`,
       }}
     />
   );
@@ -193,9 +193,9 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '80px',
-        border: '2px dashed #d1d5db',
-        borderRadius: '8px',
+        minHeight: `${80 * scaleY}px`,
+        border: `${2 * scale}px dashed #d1d5db`,
+        borderRadius: `${8 * scale}px`,
         color: '#9ca3af',
         fontSize: `${12 * scale}px`,
       }}

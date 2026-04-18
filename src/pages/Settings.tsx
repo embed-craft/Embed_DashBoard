@@ -50,14 +50,14 @@ const SidebarNavItem = ({
   <button
     onClick={onClick}
     className={`
-      w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150 cursor-pointer outline-none border-none
+      w-full flex items-center gap-3 px-4 py-2.5 rounded-md text-base font-medium transition-all duration-150 cursor-pointer outline-none border-none
       ${active
-        ? 'bg-indigo-50 text-indigo-700'
-        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 bg-transparent'
+        ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-600/20'
+        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 bg-transparent'
       }
     `}
   >
-    <Icon size={16} className={active ? 'text-indigo-600' : 'text-gray-400'} />
+    <Icon size={18} className={active ? 'text-blue-600' : 'text-gray-500'} />
     {label}
   </button>
 );
@@ -72,44 +72,46 @@ const GeneralContent = ({ user }: { user: any }) => {
   const userEmail = user?.email || '—';
 
   return (
-    <div>
+    <div className="max-w-4xl">
       {/* Tab Title */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900">General</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage general settings for the workspace</p>
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">General Settings</h2>
+        <p className="text-base text-gray-500 mt-2">Manage general workspace configuration and organization details.</p>
       </div>
 
       {/* Organization Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="mb-6">
-          <h3 className="text-base font-semibold text-gray-900">Organization</h3>
-          <p className="text-sm text-gray-500 mt-0.5">Information related to your organization, editable only by admins</p>
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg mb-8 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-900">Organization Information</h3>
+          <p className="text-sm text-gray-500 mt-1">Information related to your organization, editable only by admins.</p>
         </div>
-        <div className="border-t border-gray-100 pt-6 space-y-5">
+        <div className="p-6 space-y-6">
           {/* Client ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Client ID</label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2.5 bg-gray-50 rounded-lg text-sm text-gray-700 font-mono border border-gray-200">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Client ID</label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 px-4 py-3 bg-gray-50 rounded-md text-base text-gray-800 font-mono border border-gray-300 shadow-sm">
                 {orgId}
               </div>
-              <button
+              <Button
+                variant="outline"
                 onClick={() => {
                   navigator.clipboard.writeText(orgId);
                   toast.success('Client ID copied to clipboard');
                 }}
-                className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                className="h-auto py-3 px-4 border-gray-300 text-gray-700 hover:bg-gray-100 text-base font-medium shadow-sm"
                 title="Copy"
               >
-                <Copy size={16} />
-              </button>
+                <Copy size={18} className="mr-2 text-gray-500" />
+                Copy
+              </Button>
             </div>
           </div>
 
           {/* Organization Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Organization Name</label>
-            <div className="px-3 py-2.5 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-200">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Organization Name</label>
+            <div className="px-4 py-3 bg-gray-50 rounded-md text-base text-gray-800 border border-gray-300 shadow-sm">
               {orgName}
             </div>
           </div>
@@ -117,14 +119,14 @@ const GeneralContent = ({ user }: { user: any }) => {
           {/* Name + Email row */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Your Name</label>
-              <div className="px-3 py-2.5 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
+              <div className="px-4 py-3 bg-gray-50 rounded-md text-base text-gray-800 border border-gray-300 shadow-sm">
                 {userName}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
-              <div className="px-3 py-2.5 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+              <div className="px-4 py-3 bg-gray-50 rounded-md text-base text-gray-800 border border-gray-300 shadow-sm">
                 {userEmail}
               </div>
             </div>
@@ -132,20 +134,20 @@ const GeneralContent = ({ user }: { user: any }) => {
         </div>
       </div>
 
-      {/* Account Security Section — inside General */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-lg bg-red-50 text-red-600">
-            <Shield size={20} />
+      {/* Account Security Section */}
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center gap-4">
+          <div className="p-2.5 rounded-md bg-white border border-gray-200 shadow-sm text-gray-700">
+            <Shield size={22} className="text-blue-600" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Account Security</h3>
-            <p className="text-sm text-gray-500 mt-0.5">Manage your password and security settings</p>
+            <h3 className="text-lg font-semibold text-gray-900">Account Security</h3>
+            <p className="text-sm text-gray-500 mt-1">Manage your password and security settings.</p>
           </div>
         </div>
-        <div className="border-t border-gray-100 pt-6">
+        <div className="p-6">
           <form
-            className="space-y-4 max-w-md"
+            className="space-y-6 max-w-md"
             onSubmit={async (e) => {
               e.preventDefault();
               const form = e.target as HTMLFormElement;
@@ -171,19 +173,19 @@ const GeneralContent = ({ user }: { user: any }) => {
               }
             }}
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="currentPassword" className="text-sm font-medium text-gray-700">Current Password</Label>
-              <Input id="currentPassword" name="currentPassword" type="password" required placeholder="Enter current password" className="bg-white" />
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword" className="text-sm font-semibold text-gray-700">Current Password</Label>
+              <Input id="currentPassword" name="currentPassword" type="password" required placeholder="Enter current password" className="bg-white border-gray-300 shadow-sm h-11 text-base px-4 rounded-md focus:ring-blue-500 focus:border-blue-500" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">New Password</Label>
-              <Input id="newPassword" name="newPassword" type="password" required placeholder="Enter new password" className="bg-white" />
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-sm font-semibold text-gray-700">New Password</Label>
+              <Input id="newPassword" name="newPassword" type="password" required placeholder="Enter new password" className="bg-white border-gray-300 shadow-sm h-11 text-base px-4 rounded-md focus:ring-blue-500 focus:border-blue-500" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm New Password</Label>
-              <Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="Confirm new password" className="bg-white" />
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold text-gray-700">Confirm New Password</Label>
+              <Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="Confirm new password" className="bg-white border-gray-300 shadow-sm h-11 text-base px-4 rounded-md focus:ring-blue-500 focus:border-blue-500" />
             </div>
-            <Button type="submit" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button type="submit" className="mt-4 bg-gray-900 hover:bg-black text-white h-11 px-6 text-base font-medium rounded-md shadow-sm">
               Update Password
             </Button>
           </form>
@@ -254,58 +256,56 @@ const TeamContent = ({ user }: { user: any }) => {
   };
 
   return (
-    <div>
+    <div className="max-w-5xl">
       {/* Title */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Team</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage your team here</p>
-        </div>
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Team Management</h2>
+        <p className="text-base text-gray-500 mt-2">Manage roles and permissions for your team members.</p>
       </div>
 
       {/* Team members card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Team members</h3>
-            <p className="text-sm text-gray-500 mt-0.5">These are all your team members.</p>
+            <h3 className="text-lg font-semibold text-gray-900">Active Members</h3>
+            <p className="text-sm text-gray-500 mt-1">Users who have access to this workspace.</p>
           </div>
           {user?.role === 'client_admin' && (
             <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800">
-                  <Plus size={16} />
-                  Add Team Member
+                <Button className="h-10 px-4 bg-gray-900 hover:bg-black text-white text-base font-medium rounded-md shadow-sm">
+                  <Plus size={18} className="mr-2" />
+                  Invite Member
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Invite Team Member</DialogTitle>
-                  <DialogDescription>
-                    Invite a colleague to join your organization.
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader className="mb-4">
+                  <DialogTitle className="text-xl">Invite Team Member</DialogTitle>
+                  <DialogDescription className="text-base mt-2">
+                    Invite a colleague to join your organization and grant them access.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleInvite} className="space-y-4 py-4">
+                <form onSubmit={handleInvite} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="inviteName">Full Name <span className="text-red-500">*</span></Label>
-                    <Input id="inviteName" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" required />
+                    <Label htmlFor="inviteName" className="text-sm font-semibold">Full Name <span className="text-red-500">*</span></Label>
+                    <Input id="inviteName" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" required className="h-11 text-base focus:ring-blue-500 focus:border-blue-500" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="inviteEmail">Email Address <span className="text-red-500">*</span></Label>
-                    <Input id="inviteEmail" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@company.com" required />
+                    <Label htmlFor="inviteEmail" className="text-sm font-semibold">Email Address <span className="text-red-500">*</span></Label>
+                    <Input id="inviteEmail" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@company.com" required className="h-11 text-base focus:ring-blue-500 focus:border-blue-500" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="inviteRole">Role</Label>
+                    <Label htmlFor="inviteRole" className="text-sm font-semibold">Role</Label>
                     <Select value={role} onValueChange={setRole}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-11 text-base focus:ring-blue-500 focus:border-blue-500"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="editor">Editor (Can create campaigns)</SelectItem>
                         <SelectItem value="viewer">Viewer (Read-only)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <DialogFooter>
-                    <Button type="submit" disabled={inviteLoading}>
+                  <DialogFooter className="pt-4">
+                    <Button type="submit" disabled={inviteLoading} className="w-full h-11 text-base bg-blue-600 hover:bg-blue-700">
                       {inviteLoading ? 'Sending...' : 'Send Invitation'}
                     </Button>
                   </DialogFooter>
@@ -316,51 +316,54 @@ const TeamContent = ({ user }: { user: any }) => {
         </div>
 
         {/* Table */}
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-base text-left">
+            <thead className="bg-white border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Name</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Email</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Role</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-200">
               {loading ? (
-                <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400">Loading team...</td></tr>
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500 text-base">Loading team...</td></tr>
               ) : !team || team.length === 0 ? (
-                <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400">No team members yet. Invite someone!</td></tr>
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500 text-base flex flex-col items-center gap-3">
+                    <Users size={32} className="text-gray-300"/>
+                    No team members yet. Invite someone!
+                </td></tr>
               ) : (
                 team.map(member => (
-                  <tr key={member._id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3.5 font-medium text-gray-900">
+                  <tr key={member._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-900">
                       {member.name || member.email?.split('@')[0] || '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-600">{member.email}</td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-6 py-4 text-gray-600 font-mono text-sm">{member.email}</td>
+                    <td className="px-6 py-4">
                       <span className={`
-                        inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wide
-                        ${member.role === 'admin' || member.role === 'client_admin' ? 'text-gray-800' :
-                          member.role === 'editor' ? 'text-gray-600' : 'text-gray-500'}
+                        inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border
+                        ${member.role === 'admin' || member.role === 'client_admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          member.role === 'editor' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200'}
                       `}>
                         {member.role?.replace('client_', '').replace('_', ' ').toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-6 py-4 text-right">
                       {user?.role === 'client_admin' && member._id !== user?.id && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer border-none bg-transparent">
-                              <MoreHorizontal size={16} />
+                            <button className="p-2 rounded-md hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer border border-transparent hover:border-gray-300 bg-transparent">
+                              <MoreHorizontal size={20} />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem
-                              className="text-red-600 focus:text-red-700"
+                              className="text-red-700 focus:text-red-800 focus:bg-red-50 text-base py-2 cursor-pointer"
                               onClick={() => handleRemove(member._id)}
                             >
-                              <Trash2 size={14} className="mr-2" />
+                              <Trash2 size={16} className="mr-3" />
                               Remove Member
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -396,60 +399,62 @@ const KeysContent = ({ user }: { user: any }) => {
     : apiKey;
 
   return (
-    <div>
+    <div className="max-w-5xl">
       {/* Title */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900">Keys</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage all your personal keys and secret keys.</p>
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">API Keys</h2>
+        <p className="text-base text-gray-500 mt-2">Manage your public and private keys for SDK and API integration.</p>
       </div>
 
       {/* Public Keys */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-1">
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg mb-8 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Public Keys</h3>
-            <p className="text-sm text-gray-500 mt-0.5">These are your public keys, use them in the SDK.</p>
+            <h3 className="text-lg font-semibold text-gray-900">Public Client Keys</h3>
+            <p className="text-sm text-gray-500 mt-1">Use these keys strictly in your frontend SDK initialization.</p>
           </div>
-          <Button variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800">
-            <Plus size={16} />
-            Create new public key
+          <Button variant="outline" className="h-10 px-4 border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-base font-medium shadow-sm">
+            <Plus size={18} className="mr-2" />
+            Create Public Key
           </Button>
         </div>
 
-        <div className="border border-gray-200 rounded-lg overflow-hidden mt-4">
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Key</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-base text-left">
+            <thead className="bg-white border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Name</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Key</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-5 py-3.5 font-medium text-gray-900">Client Default Key</td>
-                <td className="px-5 py-3.5 font-mono text-sm text-gray-600">
+            <tbody className="divide-y divide-gray-200">
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 font-medium text-gray-900">Client Default Key</td>
+                <td className="px-6 py-4 font-mono text-base text-gray-700">
                   {showKey ? apiKey : maskedKey}
                 </td>
-                <td className="px-5 py-3.5 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
                       onClick={() => setShowKey(!showKey)}
-                      className="p-2 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer border-none bg-transparent"
+                      className="px-3 border-gray-300 text-gray-600 hover:text-gray-900 shadow-sm bg-white"
                       title={showKey ? "Hide key" : "Show key"}
                     >
-                      {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                    <button
+                      {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         navigator.clipboard.writeText(apiKey);
                         toast.success("API Key copied to clipboard");
                       }}
-                      className="p-2 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer border-none bg-transparent"
+                      className="px-3 border-gray-300 text-blue-600 hover:text-blue-700 hover:bg-blue-50 shadow-sm bg-white"
                       title="Copy key"
                     >
-                      <Copy size={16} />
-                    </button>
+                      <Copy size={18} className="mr-2" /> Copy
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -459,39 +464,37 @@ const KeysContent = ({ user }: { user: any }) => {
       </div>
 
       {/* Secret Keys */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-1">
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Secret Keys</h3>
-            <p className="text-sm text-gray-500 mt-0.5">These are all your private keys. Keep them somewhere safe.</p>
+            <h3 className="text-lg font-semibold text-gray-900">Secret Server Keys</h3>
+            <p className="text-sm text-gray-500 mt-1">Keep these safe. Use only in your backend environments.</p>
           </div>
-          <Button variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800">
-            <Plus size={16} />
-            Create new secret key
+          <Button className="h-10 px-4 bg-gray-900 hover:bg-black text-white text-base font-medium shadow-sm">
+            <Plus size={18} className="mr-2" />
+            Create Secret Key
           </Button>
         </div>
 
-        <div className="border border-gray-200 rounded-lg overflow-hidden mt-4">
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Permissions</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Created At</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Created By</th>
-                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-base text-left">
+            <thead className="bg-white border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Name</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Permissions</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50">Created At</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-widest bg-gray-50/50 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-5 py-3.5 font-medium text-gray-900">webhook key</td>
-                <td className="px-5 py-3.5 text-gray-600">Webhook</td>
-                <td className="px-5 py-3.5 text-gray-600">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                <td className="px-5 py-3.5 text-gray-600">{user?.email || '—'}</td>
-                <td className="px-5 py-3.5 text-right">
-                  <button className="p-2 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer border-none bg-transparent" title="Delete">
-                    <Trash2 size={16} />
-                  </button>
+            <tbody className="divide-y divide-gray-200">
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 font-medium text-gray-900">Backend Automation Key</td>
+                <td className="px-6 py-4 text-gray-600"><span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider">FULL ACCESS</span></td>
+                <td className="px-6 py-4 text-gray-600 font-mono text-sm">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                <td className="px-6 py-4 text-right">
+                  <Button variant="outline" className="px-3 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm bg-white" title="Revoke Key">
+                    <Trash2 size={18} className="mr-2"/> Revoke
+                  </Button>
                 </td>
               </tr>
             </tbody>
@@ -503,46 +506,71 @@ const KeysContent = ({ user }: { user: any }) => {
 };
 
 // ============================================================================
-// Webhooks Tab Content (preserved from original)
+// Webhooks Tab Content
 // ============================================================================
 const WebhooksContent = () => {
   const { webhookUrl, setWebhookUrl } = useStore();
 
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900">Webhooks</h2>
-        <p className="text-sm text-gray-500 mt-1">Receive real-time notifications about campaign events</p>
+    <div className="max-w-4xl">
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Webhooks</h2>
+        <p className="text-base text-gray-500 mt-2">Subscribe to real-time event streams from your workspace.</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="webhookUrl" className="text-sm font-medium text-gray-700">Webhook URL</Label>
-            <div className="flex gap-2">
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-900">Endpoint Configuration</h3>
+          <p className="text-sm text-gray-500 mt-1">Specify where EmbedCraft should send POST requests for events.</p>
+        </div>
+        <div className="p-6 space-y-8">
+          <div className="space-y-3">
+            <Label htmlFor="webhookUrl" className="text-base font-semibold text-gray-900">Primary Delivery URL</Label>
+            <div className="flex gap-4">
               <Input
                 id="webhookUrl"
-                placeholder="https://your-domain.com/webhooks/nudge"
-                className="font-mono text-sm bg-white"
+                placeholder="https://your-domain.com/webhooks/embedcraft"
+                className="font-mono text-base h-12 bg-white border-gray-300 shadow-sm px-4 focus:ring-blue-500 focus:border-blue-500 flex-1"
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
               />
               <Button
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium shadow-sm transition-colors"
                 onClick={() => toast.success("Webhook URL saved successfully")}
               >
-                Save
+                Save Endpoint
               </Button>
             </div>
+            <p className="text-sm text-gray-500">Endpoints must accept incoming HTTPS POST requests securely.</p>
           </div>
 
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm font-semibold mb-2 text-blue-900">Supported Events</p>
-            <ul className="text-xs space-y-2 text-blue-800">
-              <li className="flex items-center gap-2">✓ campaign.impression — When a nudge is shown</li>
-              <li className="flex items-center gap-2">✓ campaign.click — When a user clicks a nudge</li>
-              <li className="flex items-center gap-2">✓ campaign.conversion — When a conversion goal is met</li>
-            </ul>
+          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+               <span className="text-sm font-semibold text-gray-800">Event Catalog</span>
+            </div>
+            <div className="p-4 bg-white font-mono text-sm space-y-3 text-gray-700">
+              <div className="flex items-start gap-3">
+                 <div className="mt-0.5 min-w-[20px]"><div className="w-2 h-2 rounded-full bg-green-500 mt-2"></div></div>
+                 <div>
+                    <span className="font-bold text-gray-900">campaign.impression</span>
+                    <p className="text-gray-500 mt-1">Dispatched whenever a user views a campaign.</p>
+                 </div>
+              </div>
+              <div className="flex items-start gap-3">
+                 <div className="mt-0.5 min-w-[20px]"><div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div></div>
+                 <div>
+                    <span className="font-bold text-gray-900">campaign.click</span>
+                    <p className="text-gray-500 mt-1">Dispatched when a user interacts with a call-to-action button.</p>
+                 </div>
+              </div>
+              <div className="flex items-start gap-3">
+                 <div className="mt-0.5 min-w-[20px]"><div className="w-2 h-2 rounded-full bg-purple-500 mt-2"></div></div>
+                 <div>
+                    <span className="font-bold text-gray-900">campaign.conversion</span>
+                    <p className="text-gray-500 mt-1">Dispatched only when the final conversion goal is met.</p>
+                 </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -554,17 +582,17 @@ const WebhooksContent = () => {
 // Placeholder tabs for future workspace items
 // ============================================================================
 const PlaceholderContent = ({ title, description }: { title: string; description: string }) => (
-  <div>
-    <div className="mb-8">
-      <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
-      <p className="text-sm text-gray-500 mt-1">{description}</p>
+  <div className="max-w-4xl">
+    <div className="mb-8 border-b border-gray-200 pb-5">
+      <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">{title}</h2>
+      <p className="text-base text-gray-500 mt-2">{description}</p>
     </div>
-    <div className="bg-white rounded-xl border border-gray-200 p-12 flex flex-col items-center justify-center text-center">
-      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-4">
-        <Settings2 size={24} className="text-gray-400" />
+    <div className="bg-white rounded-lg border border-gray-300 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+      <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-6 shadow-sm">
+        <Settings2 size={32} className="text-gray-400" />
       </div>
-      <h3 className="text-base font-semibold text-gray-900 mb-1">Coming Soon</h3>
-      <p className="text-sm text-gray-500 max-w-sm">This feature is currently under development and will be available soon.</p>
+      <h3 className="text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
+      <p className="text-base text-gray-500 max-w-md">This enterprise feature module is currently under development and will be rolled out to your workspace shortly.</p>
     </div>
   </div>
 );
@@ -581,14 +609,14 @@ const Settings = () => {
   const accountItems: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
     { id: 'general', label: 'General', icon: Settings2 },
     { id: 'team', label: 'Team', icon: Users },
-    { id: 'keys', label: 'Keys', icon: KeyRound },
+    { id: 'keys', label: 'API Keys', icon: KeyRound },
   ];
 
   const workspaceItems: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
     { id: 'webhooks', label: 'Webhooks', icon: Webhook },
-    { id: 'referral', label: 'Referral Settings', icon: Gift },
+    { id: 'referral', label: 'Referral Engine', icon: Gift },
     { id: 'brand', label: 'Brand Guidelines', icon: Palette },
-    { id: 'prioritization', label: 'Prioritization', icon: ListOrdered },
+    { id: 'prioritization', label: 'Prioritization Rules', icon: ListOrdered },
   ];
 
   const renderContent = () => {
@@ -602,24 +630,24 @@ const Settings = () => {
       case 'webhooks':
         return <WebhooksContent />;
       case 'referral':
-        return <PlaceholderContent title="Referral Settings" description="Configure your referral program settings" />;
+        return <PlaceholderContent title="Referral Settings" description="Configure your global referral program settings." />;
       case 'brand':
-        return <PlaceholderContent title="Brand Guidelines" description="Set up your brand colors, fonts, and assets" />;
+        return <PlaceholderContent title="Brand Guidelines" description="Set up your workspace brand colors, typography, and assets." />;
       case 'prioritization':
-        return <PlaceholderContent title="Prioritization" description="Configure campaign prioritization rules" />;
+        return <PlaceholderContent title="Prioritization" description="Configure global campaign delivery prioritization rules." />;
       default:
         return null;
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: theme.colors.gray[50], display: 'flex' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex' }}>
       {/* Left Sidebar Navigation */}
-      <aside className="w-[200px] min-w-[200px] border-r border-gray-200 bg-white py-6 px-3 flex flex-col gap-6 overflow-y-auto">
+      <aside className="w-[280px] min-w-[280px] border-r border-gray-200 bg-white py-8 px-5 flex flex-col gap-8 shadow-sm z-10 relative">
         {/* ACCOUNT section */}
         <div>
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Account</p>
-          <div className="space-y-0.5">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest px-4 mb-3">Account Setup</p>
+          <div className="space-y-1">
             {accountItems.map(item => (
               <SidebarNavItem
                 key={item.id}
@@ -634,8 +662,8 @@ const Settings = () => {
 
         {/* WORKSPACE section */}
         <div>
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Workspace</p>
-          <div className="space-y-0.5">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest px-4 mb-3">Workspace Setup</p>
+          <div className="space-y-1">
             {workspaceItems.map(item => (
               <SidebarNavItem
                 key={item.id}
@@ -651,7 +679,7 @@ const Settings = () => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-[960px] p-8">
+        <div className="w-full max-w-[1200px] mx-auto p-10 lg:p-14">
           {renderContent()}
         </div>
       </main>

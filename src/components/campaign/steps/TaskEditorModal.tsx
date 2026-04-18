@@ -794,6 +794,11 @@ export const TaskEditorModal: React.FC<TaskEditorModalProps> = ({
                           onValueChange={(val) => {
                             const newGroups = [...draft.reward.rewardGroups];
                             newGroups[gIdx].rewards[rIdx].rewardItemId = val === 'select' ? '' : val;
+                            if (val !== 'select') {
+                              // Inject name for offline SDK rendering
+                              const rwObj = availableRewards.find(r => r.id === val);
+                              if (rwObj) newGroups[gIdx].rewards[rIdx].name = rwObj.name;
+                            }
                             updateReward({ rewardGroups: newGroups });
                           }}
                         >

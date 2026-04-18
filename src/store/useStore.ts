@@ -78,6 +78,7 @@ export interface VariableRewardConfig {
 
 export interface RewardItemConfig {
   rewardItemId: string;
+  name?: string; // Phase 2: Injected during Task Save to allow offline SDK rendering
   amount: number;
   allowVariable: boolean;
   variableConfig?: VariableRewardConfig;

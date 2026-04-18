@@ -274,15 +274,6 @@ export interface LayerContent extends ScratchFoilProps {
   // Rating content
   maxRating?: number;
 
-  // Grid & Data Mapping (Phase Reward Repository)
-  dataSourceUrl?: string;
-  shimmerEnabled?: boolean;
-  span?: number;
-  gridGap?: number;
-  gridPaddingX?: number;
-  mapped_key?: string;
-  rewardIdBindingKey?: string;
-  statusBindingKey?: string;
 
   // Heirarchy
   children?: Layer[];
@@ -466,6 +457,9 @@ export interface LayerStyle {
 
   // Custom CSS (God Mode)
   customCss?: string;
+
+  // Layout Mode (Container flow control)
+  layoutMode?: 'auto' | 'stack' | 'freeform';
 }
 
 export interface Layer {
@@ -789,6 +783,7 @@ export interface SpinTheWheelConfig {
   winningCriteria: 'audience' | 'weight';
   sections: SpinTheWheelSection[];
   sectionWinLimit?: number;
+  maxAttempts?: number;
 }
 
 // Template System (Phase 1)
@@ -1510,7 +1505,7 @@ export const useEditorStore = create<EditorStore>()(
             },
           } : undefined,
           // Initialize spinTheWheelConfig
-          spinTheWheelConfig: type === 'spinthewheel' || nudgeType === 'spinthewheel' ? {
+          spinTheWheelConfig: nudgeType === 'spinthewheel' ? {
              winningCriteria: 'weight',
              sections: [],
           } : undefined,

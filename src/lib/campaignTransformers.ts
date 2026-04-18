@@ -232,11 +232,10 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
         stories: campaign.stories || [], // ✅ FIX: Include stories
         goal: campaign.goal || {}, // ✅ FIX: Include goal
         config,
-        // ✅ FIX: For bottom sheets, exclude the root container layer 
-        // The container is represented by bottomSheetConfig, not as a layer
+        // ✅ FIX: Do NOT completely strip the root container because it contains interactions and actions
+        // set by the user (like clicking the container -> interface). The mobile SDK can handle it as a child.
         layers: campaign.nudgeType === 'bottomsheet'
             ? campaign.layers
-                .filter(l => !(l.type === 'container' && l.name === 'Bottom Sheet'))
                 .map(layer => {
                     // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to Container Layer
                     if (layer.type === 'container' && campaign.bottomSheetConfig) {
@@ -434,6 +433,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             winningCriteria: backendCampaign.config?.winningCriteria || 'weight',
             sections: backendCampaign.config?.sections || [],
             sectionWinLimit: backendCampaign.config?.sectionWinLimit,
+            maxAttempts: backendCampaign.config?.maxAttempts,
         })
         : undefined;
 
@@ -754,10 +754,14 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     // ✅ FIX: Add SpinTheWheel config flattening
     if ((campaign.type === 'spinthewheel' || campaign.nudgeType === 'spinthewheel') && campaign.spinTheWheelConfig) {
         const swc = campaign.spinTheWheelConfig;
+        // Extract maxAttempts from spinthewheel layer content (where SpinTheWheelEditor stores it)
+        const stwLayer = campaign.layers.find(l => l.type === 'spinthewheel');
+        const maxAttempts = (stwLayer?.content as any)?.maxAttempts ?? swc.maxAttempts;
         Object.assign(config, {
             winningCriteria: swc.winningCriteria,
             sections: swc.sections,
             sectionWinLimit: swc.sectionWinLimit,
+            maxAttempts: maxAttempts,
         });
     }
 
@@ -1067,6 +1071,12 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
         config.buttonLetterSpacing = buttonLayer.style?.letterSpacing || 0;
         config.buttonTextTransform = buttonLayer.style?.textTransform; // uppercase, lowercase, etc.
 
+        // Actions
+        config.buttonActionType = buttonLayer.content.action?.type || 'close';
+        config.buttonActionUrl = buttonLayer.content.action?.url;
+        config.buttonActionScreen = buttonLayer.content.action?.screenName;
+        config.buttonActionInterfaceId = buttonLayer.content.action?.interfaceId;
+
         // Button transform (position/rotation)
         if (buttonLayer.style?.transform) {
             config.buttonTranslateX = buttonLayer.style.transform.translateX || 0;
@@ -1107,6 +1117,11 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
         config.secondaryButtonMarginTop = typeof secondaryButtonLayer.style?.margin === 'object'
             ? secondaryButtonLayer.style.margin.top || 12
             : 12;
+
+        config.secondaryButtonActionType = secondaryButtonLayer.content.action?.type || 'close';
+        config.secondaryButtonActionUrl = secondaryButtonLayer.content.action?.url;
+        config.secondaryButtonActionScreen = secondaryButtonLayer.content.action?.screenName;
+        config.secondaryButtonActionInterfaceId = secondaryButtonLayer.content.action?.interfaceId;
 
         // Secondary button padding
         config.secondaryButtonPaddingVertical = typeof secondaryButtonLayer.style?.padding === 'object'
@@ -2024,7 +2039,10 @@ function reconstructLayersFromConfig(config: Record<string, any>, type: string):
                 fontWeight: config.buttonFontWeight,
                 textColor: config.buttonTextColor,
                 action: {
-                    type: 'close',
+                    type: config.buttonActionType || 'none', // ✅ FIX: Don't hardcode 'close', fallback to 'none' if empty
+                    url: config.buttonActionUrl,
+                    screenName: config.buttonActionScreen,
+                    interfaceId: config.buttonActionInterfaceId, // ✅ FIX: Restore interfaceId
                     trackConversion: true,
                     autoDismiss: true,
                 },
@@ -2089,7 +2107,10 @@ function reconstructLayersFromConfig(config: Record<string, any>, type: string):
                 fontWeight: config.secondaryButtonFontWeight,
                 textColor: config.secondaryButtonTextColor,
                 action: {
-                    type: 'close',
+                    type: config.secondaryButtonActionType || 'none',
+                    url: config.secondaryButtonActionUrl,
+                    screenName: config.secondaryButtonActionScreen,
+                    interfaceId: config.secondaryButtonActionInterfaceId,
                     trackConversion: false,
                     autoDismiss: true,
                 },

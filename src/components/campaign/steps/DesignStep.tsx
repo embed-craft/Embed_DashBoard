@@ -1304,24 +1304,6 @@ export const DesignStep: React.FC<any> = () => {
     };
 
     switch (iface.nudgeType) {
-      case 'modal':
-        return interfaceWrapper(
-          <FloaterRenderer
-            layers={interfaceLayers}
-            selectedLayerId={null}
-            onLayerSelect={() => { }}
-            colors={colors}
-            config={iface.modalConfig || {}}
-            onConfigChange={() => { }}
-            onLayerUpdate={() => { }}
-            onDismiss={closePreviewInterface}
-            isInteractive={true}
-            onNavigate={() => { }}
-            onInterfaceAction={handleInterfaceAction}
-            scale={scaleFactor}
-            scaleY={scaleYFactor}
-          />
-        );
       case 'bottomsheet':
         return interfaceWrapper(
           <BottomSheetRenderer
@@ -1378,14 +1360,14 @@ export const DesignStep: React.FC<any> = () => {
             onInterfaceAction={handleInterfaceAction}
           />
         );
-      case 'banner':
+      case 'floater':
         return interfaceWrapper(
           <FloaterRenderer
             layers={interfaceLayers}
             selectedLayerId={null}
             onLayerSelect={() => { }}
             colors={colors}
-            config={iface.bannerConfig || {}}
+            config={iface.floaterConfig || {}}
             onConfigChange={() => { }}
             onLayerUpdate={() => { }}
             isInteractive={true}
@@ -1396,15 +1378,15 @@ export const DesignStep: React.FC<any> = () => {
             scaleY={scaleYFactor}
           />
         );
-      case 'scratchcard':
+      case 'fullscreen':
+      case 'fullpage':
         return interfaceWrapper(
-          <FloaterRenderer
+          <FullScreenRenderer
             layers={interfaceLayers}
             selectedLayerId={null}
             onLayerSelect={() => { }}
             colors={colors}
-            config={iface.scratchCardConfig || {}}
-            onConfigChange={() => { }}
+            config={iface.fullscreenConfig || {}}
             onLayerUpdate={() => { }}
             isInteractive={true}
             onDismiss={closePreviewInterface}

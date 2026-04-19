@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Smartphone, Film, Target, ArrowRight, Sparkles } from 'lucide-react';
+import { MessageSquare, Smartphone, Film, Target, ArrowRight, Sparkles, ClipboardList } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { theme } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -55,6 +55,16 @@ const EXPERIENCE_TYPES = [
         color: '#9333ea', // Purple 600
         bgColor: '#faf5ff', // Purple 50
         borderColor: '#d8b4fe', // Purple 300
+    },
+    {
+        id: 'survey',
+        type: 'survey',
+        title: 'Survey',
+        description: 'Collect actionable user feedback in real-time using highly contextual, natively embedded surveys without interrupting the user journey.',
+        icon: ClipboardList,
+        color: '#ea580c', // Orange 600
+        bgColor: '#fff7ed', // Orange 50
+        borderColor: '#fdba74', // Orange 300
     },
 ];
 

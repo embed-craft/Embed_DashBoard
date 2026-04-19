@@ -43,8 +43,10 @@ import { Film, CheckCircle2 as CheckCircle2Icon } from 'lucide-react';
 import { ChallengeTypeStep } from '@/components/campaign/steps/ChallengeTypeStep';
 import { TasksStep } from '@/components/campaign/steps/TasksStep';
 import SpinWheelRewardsStep from '@/components/campaign/steps/SpinWheelRewardsStep';
+import { SurveyQuestionsStep } from '@/components/campaign/steps/SurveyQuestionsStep';
+import { ClipboardList } from 'lucide-react';
 
-type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks' | 'rewards';
+type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks' | 'rewards' | 'questions';
 
 const CampaignBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -158,6 +160,11 @@ const CampaignBuilder: React.FC = () => {
           if (!currentCampaign || currentCampaign.experienceType !== 'stories') {
             createCampaign('stories' as any, 'fullscreen' as any);
             setActiveStep('stories');
+          }
+        } else if (experienceType === 'survey') {
+          if (!currentCampaign || currentCampaign.experienceType !== 'survey') {
+            createCampaign('survey' as any, 'survey' as any);
+            setActiveStep('questions');
           }
         } else {
           // nudges / messages: reset and show nudge-type picker (design step)
@@ -360,6 +367,7 @@ const CampaignBuilder: React.FC = () => {
   const isStories = currentCampaign?.experienceType === 'stories';
   const isChallenge = currentCampaign?.type === 'challenge';
   const isSpinTheWheel = currentCampaign?.type === 'spinthewheel';
+  const isSurvey = currentCampaign?.experienceType === 'survey' || currentCampaign?.type === 'survey';
 
   const steps = isChallenge ? [
     { id: 'targeting', label: 'Targeting', icon: Target },
@@ -372,6 +380,10 @@ const CampaignBuilder: React.FC = () => {
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
     { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'design', label: 'Wheel Game', icon: Palette },
+  ] : isSurvey ? [
+    { id: 'targeting', label: 'Targeting', icon: Target },
+    { id: 'goals', label: 'Goals & Rollout', icon: Flag },
+    { id: 'questions', label: 'Questions', icon: ClipboardList },
   ] : [
     { id: 'targeting', label: 'Targeting', icon: Target },
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
@@ -783,6 +795,7 @@ const CampaignBuilder: React.FC = () => {
                     <StoriesStep />
                   )
                 )}
+                {activeStep === 'questions' && <SurveyQuestionsStep />}
                 {activeStep === 'design' && <DesignStep />}
               </>
             )}

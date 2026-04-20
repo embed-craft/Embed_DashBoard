@@ -74,12 +74,42 @@ const Campaigns = () => {
             }
           }
 
-          return {
-            id: bc.id || bc._id || bc.nudge_id,
-            name: bc.campaign_name || bc.name || 'Untitled Campaign',
-            status: status as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
-            trigger: bc.trigger_event || bc.trigger,
-            experience: bc.experience === 'stories' ? 'Stories' : bc.experience === 'messages' ? 'Out-of-app Messages' : 'In-App',
+            let inferredExperience = bc.experience;
+            
+            // Smart detection for legacy campaigns that defaulted to 'nudges'
+            if (!inferredExperience || inferredExperience === 'nudges') {
+              if (
+                bc.type === 'spinthewheel' || 
+                bc.campaignType === 'spinthewheel' || 
+                bc.config?.spinTheWheelConfig || 
+                bc.spinTheWheelConfig 
+              ) {
+                inferredExperience = 'spinthewheel';
+              } else if (bc.campaignType === 'challenge' || bc.type === 'challenge') {
+                inferredExperience = 'challenge';
+              } else if (bc.type === 'survey') {
+                inferredExperience = 'survey';
+              } else if (bc.type === 'streaks') {
+                inferredExperience = 'streaks';
+              }
+            }
+
+            return {
+              id: bc.id || bc._id || bc.nudge_id,
+              name: bc.campaign_name || bc.name || 'Untitled Campaign',
+              status: status as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
+              trigger: bc.trigger_event || bc.trigger,
+              experience: (() => {
+                switch (inferredExperience) {
+                  case 'stories': return 'Stories';
+                  case 'messages': return 'Out-of-app Messages';
+                  case 'challenge': return 'Challenges';
+                  case 'spinthewheel': return 'Spin The Wheel';
+                  case 'survey': return 'Survey';
+                  case 'streaks': return 'Streaks';
+                  case 'nudges': default: return 'In-App';
+                }
+              })(),
             events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
             tags: bc.tags || [], // Show actual tags
             segment: 'All Users',
@@ -304,12 +334,24 @@ const Campaigns = () => {
       key: 'experience',
       header: 'Experience',
       width: '15%',
-      render: (row: any) => (
+      render: (row: any) => {
+        const expColorMap: Record<string, string> = {
+          'In-App': '#3b82f6',
+          'Out-of-app Messages': '#ec4899',
+          'Stories': '#8b5cf6',
+          'Challenges': '#f59e0b',
+          'Spin The Wheel': '#ef4444',
+          'Survey': '#06b6d4',
+          'Streaks': '#10b981',
+        };
+        const barColor = expColorMap[row.experience] || '#3b82f6';
+        return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '4px', height: '16px', backgroundColor: row.experience === 'In-App' ? '#3b82f6' : row.experience === 'Stories' ? '#8b5cf6' : '#ec4899', borderRadius: '2px' }} />
+          <div style={{ width: '4px', height: '16px', backgroundColor: barColor, borderRadius: '2px' }} />
           <span style={{ fontSize: '12px', color: theme.colors.text.primary }}>{row.experience || 'In-App'}</span>
         </div>
-      )
+        );
+      }
     },
     {
       key: 'stats', // New Stats Column
@@ -492,7 +534,7 @@ const Campaigns = () => {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <FilterDropdown label="Status" options={['active', 'paused', 'draft', 'scheduled']} selected={statusFilter} onChange={setStatusFilter} />
-              <FilterDropdown label="Experience" options={['In-App', 'Out-of-app Messages', 'Stories']} selected={experienceFilter} onChange={setExperienceFilter} />
+              <FilterDropdown label="Experience" options={['In-App', 'Out-of-app Messages', 'Stories', 'Challenges', 'Spin The Wheel', 'Survey', 'Streaks']} selected={experienceFilter} onChange={setExperienceFilter} />
               <FilterDropdown label="Tags" options={uniqueTags} selected={tagsFilter} onChange={setTagsFilter} />
               <FilterDropdown label="Events" options={uniqueEvents} selected={eventsFilter} onChange={setEventsFilter} />
             </div>

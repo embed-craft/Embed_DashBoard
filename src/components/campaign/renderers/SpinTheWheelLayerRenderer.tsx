@@ -567,7 +567,7 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                             height: innerRadius * 2.5,
                             borderRadius: '50%',
                             backgroundColor: content.accentColor || '#1F2937',
-                            border: '3px solid white',
+                            border: `${3 * scale}px solid white`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',

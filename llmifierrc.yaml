@@ -1,0 +1,68 @@
+# React + Vite Optimization for EmbedCraft Dashboard
+projectType: "js" 
+mode: "full"
+
+# --- Inclusion: Focus on Logic and Renders ---
+include:
+  - "package.json"
+  - "vite.config.ts"
+  - "src/main.tsx"
+  - "src/App.tsx"
+  - "src/components/**/*.tsx" # Sari components aur renderers
+  - "src/lib/**/*.ts"        # Business logic aur transformers
+  - "src/store/**/*.ts"      # Global state (Zustand/Redux)
+
+# --- Strict Cleanup (Removing Noise) ---
+exclude:
+  - "node_modules/**"
+  - "dist/**"
+  - "**.txt"                 # Sari bekar text files out
+  - "**.log"
+  - "**.md"                  # Agar reports nahi chahiye
+  - "!README.md"             # Sirf main README rehne do
+  - "package-lock.json"
+  - "**.backup"              # Backup files hata do
+  - "src/tests/**"           # Tests ko context bachane ke liye hata rahe hain
+  - "public/**"              # Static assets (logo, robots.txt) ki zaroorat nahi
+
+# --- Logic-Driven Ordering (The "Renderer First" Strategy) ---
+fileOrdering:
+  groups:
+    - name: "Project Specs & Entry"
+      patterns:
+        - "package.json"
+        - "vite.config.ts"
+        - "src/main.tsx"
+        - "src/App.tsx"
+      sortBy: "alphabetical"
+
+    - name: "Data Transformers & Design Tokens" # AI pehle logic samjhega
+      patterns:
+        - "src/lib/designTypes.ts"
+        - "src/lib/campaignTransformers.ts"
+        - "src/styles/design-tokens.ts"
+      sortBy: "depthFirst"
+
+    - name: "Core Container Renderers" # Deep detail for Nudge Wrappers
+      patterns:
+        - "src/components/*Renderer.tsx"
+      order:
+        - "BottomSheetRenderer.tsx"
+        - "FloaterRenderer.tsx"
+        - "FullScreenRenderer.tsx"
+        - "TooltipRenderer.tsx"
+
+    - name: "Atomic Layer Renderers (Deep Detail)" # Detailed Layers
+      patterns:
+        - "src/components/campaign/renderers/**"
+      sortBy: "depthFirst"
+
+    - name: "State Management"
+      patterns:
+        - "src/store/**"
+      sortBy: "depthFirst"
+
+    - name: "Other UI Components"
+      patterns:
+        - "src/components/**"
+      sortBy: "depthFirst"

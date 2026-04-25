@@ -73,27 +73,26 @@ export const TargetingStep: React.FC = () => {
                     </div>
                     <TriggerBuilder />
 
-                    {/* Conflict Warning & Priority - Only show when there are conflicts */}
-                    {firstEventName && hasConflicts && (
-                        <div className="mt-6 space-y-6">
+                    {/* Conflict Warning & Priority */}
+                    <div className="mt-8 space-y-6">
+                        {firstEventName && hasConflicts && (
                             <ConflictWarning
                                 triggerEvent={firstEventName}
                                 currentCampaignId={currentCampaign._id}
                                 currentPriority={currentCampaign.priority || 0}
                             />
+                        )}
 
-                            {/* Priority Selector - Only visible when conflicts exist */}
-                            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-4">
-                                    Set Campaign Priority
-                                </h3>
-                                <PrioritySelector
-                                    value={currentCampaign.priority || 0}
-                                    onChange={(priority) => updateCurrentCampaign({ priority })}
-                                />
-                            </div>
+                        <div className="bg-white dark:bg-gray-900 border rounded-xl p-6 shadow-sm">
+                            <h3 className="text-base font-semibold mb-4">
+                                Set Campaign Priority
+                            </h3>
+                            <PrioritySelector
+                                value={currentCampaign.priority || 0}
+                                onChange={(priority) => updateCurrentCampaign({ priority })}
+                            />
                         </div>
-                    )}
+                    </div>
                 </section>
 
                 {/* Section 4: Display Rules */}

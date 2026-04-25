@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { AlertCircle, BarChart3 } from 'lucide-react';
+import React from 'react';
+import { BarChart3 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const PRIORITY_LEVELS = [
     { value: 1, label: 'Low', description: 'General info, surveys', icon: '📊' },
@@ -14,95 +17,79 @@ interface PrioritySelectorProps {
 }
 
 export function PrioritySelector({ value, onChange }: PrioritySelectorProps) {
-    const [customMode, setCustomMode] = useState(
-        !PRIORITY_LEVELS.some(level => level.value === value)
-    );
+    const matchedLevel = PRIORITY_LEVELS.find(level => level.value === value);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        if (val === '') {
+            onChange(0); // Temporary state while clearing input
+            return;
+        }
+        const parsed = parseInt(val, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+            onChange(parsed);
+        }
+    };
 
     return (
-        <div className="space-y-4">
-            <div>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                    Campaign Priority
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    When multiple campaigns match the same event, higher priority shows first in rotation
-                </p>
-            </div>
-
-            <div className="space-y-3">
-                {PRIORITY_LEVELS.map((level) => (
-                    <label
-                        key={level.value}
-                        className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                        <input
-                            type="radio"
-                            name="priority"
-                            value={level.value}
-                            checked={value === level.value && !customMode}
-                            onChange={() => {
-                                setCustomMode(false);
-                                onChange(level.value);
-                            }}
-                            className="text-purple-600 focus:ring-purple-500"
-                        />
-                        <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                                <span className="font-medium text-gray-900 dark:text-white">
-                                    {level.label}
-                                </span>
-                                <span className="text-gray-500 dark:text-gray-400">({level.value})</span>
-                                <span>{level.icon}</span>
-                            </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                {level.description}
-                            </p>
-                        </div>
-                    </label>
-                ))}
-
-                {/* Custom Priority Option */}
-                <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <label className="flex items-center space-x-3">
-                        <input
-                            type="radio"
-                            name="priority"
-                            checked={customMode}
-                            onChange={() => setCustomMode(true)}
-                            className="text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="font-medium text-gray-900 dark:text-white">Custom</span>
-                    </label>
-                    {customMode && (
-                        <div className="mt-3 flex items-center space-x-3">
-                            <input
+        <div className="space-y-6">
+            <div className="flex flex-col space-y-4">
+                <div className="space-y-3">
+                    <Label htmlFor="priority-input" className="text-sm font-medium text-foreground">
+                        Campaign Priority Level
+                    </Label>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                        <div className="relative w-full sm:w-32">
+                            <Input
+                                id="priority-input"
                                 type="number"
-                                min="1"
-                                max="999"
-                                value={value}
-                                onChange={(e) => {
-                                    const newValue = parseInt(e.target.value) || 1;
-                                    setCustomMode(true);
-                                    onChange(newValue);
-                                }}
-                                className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                                placeholder="1-999"
+                                min={1}
+                                max={999}
+                                value={value || ''}
+                                onChange={handleInputChange}
+                                className="w-full h-10 font-medium"
+                                placeholder="e.g. 50"
                             />
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                                Enter custom priority (1-999)
-                            </span>
                         </div>
-                    )}
+                        
+                        <div className="flex flex-wrap gap-2">
+                            {PRIORITY_LEVELS.map(level => (
+                                <Button
+                                    key={level.value}
+                                    type="button"
+                                    variant={value === level.value ? "default" : "outline"}
+                                    size="sm"
+                                    className={`h-10 px-4 transition-colors ${value !== level.value ? 'bg-background hover:bg-muted text-muted-foreground' : ''}`}
+                                    onClick={() => onChange(level.value)}
+                                >
+                                    {level.label}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="min-h-[24px]">
+                        {matchedLevel ? (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5 animate-in fade-in-50">
+                                <span className="text-base leading-none">{matchedLevel.icon}</span>
+                                <span>{matchedLevel.description}</span>
+                            </p>
+                        ) : (
+                            value > 0 ? (
+                                <p className="text-sm text-muted-foreground animate-in fade-in-50">
+                                    Custom priority level set.
+                                </p>
+                            ) : null
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                    <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-blue-800 dark:text-blue-200">
-                        <strong>Round-Robin Display:</strong> Campaigns with the same trigger event
-                        will rotate in order of priority (highest → lowest → repeat).
-                    </div>
+            <div className="flex items-start gap-3 p-3.5 text-sm bg-muted/40 rounded-lg border border-border">
+                <BarChart3 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground font-medium">Round-Robin Display:</strong> Campaigns matching the same event rotate by priority (highest → lowest → repeat).
                 </div>
             </div>
         </div>

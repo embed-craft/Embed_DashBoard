@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, TrendingUp } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Info } from 'lucide-react';
 
 interface ConflictWarningProps {
     triggerEvent: string;
@@ -51,76 +51,65 @@ export function ConflictWarning({ triggerEvent, currentCampaignId, currentPriori
     const willShowFirst = currentPriority > maxPriority;
 
     return (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-3">
-            <div className="flex items-start space-x-2">
-                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                    <h4 className="font-medium text-amber-900 dark:text-amber-100">
-                        {conflicts.length} {conflicts.length === 1 ? 'campaign' : 'campaigns'} also use this event
-                    </h4>
-                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                        These campaigns will rotate in priority order when triggered
-                    </p>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                {conflicts.slice(0, 3).map((campaign, index) => (
-                    <div
-                        key={campaign._id}
-                        className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700"
-                    >
-                        <div className="flex items-center space-x-3">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                #{index + 1}
-                            </span>
-                            <div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {campaign.campaign_name}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {campaign.status}
-                                </p>
+        <div className="relative w-full rounded-lg border p-4 [&>svg]:absolute [&>svg]:text-foreground [&>svg]:left-4 [&>svg]:top-4 [&>svg+div]:translate-y-[-3px] [&:has(svg)]:pl-11 border-amber-500/50 bg-amber-50/50 dark:bg-amber-500/10 dark:border-amber-500/20">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+            <h5 className="mb-1 leading-none tracking-tight text-amber-900 dark:text-amber-200 font-semibold flex items-center gap-2">
+                {conflicts.length} {conflicts.length === 1 ? 'campaign also uses' : 'campaigns also use'} this event
+            </h5>
+            <div className="text-sm [&_p]:leading-relaxed text-amber-800 dark:text-amber-300 mt-3 flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                    {conflicts.slice(0, 3).map((campaign, index) => (
+                        <div
+                            key={campaign._id}
+                            className="flex items-center justify-between py-2 px-3 bg-background/60 rounded-md border border-border/50"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm font-semibold text-muted-foreground">
+                                    #{index + 1}
+                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-foreground">
+                                        {campaign.campaign_name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                                        {campaign.status}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            <span className="text-sm font-medium text-foreground px-2 py-1 bg-muted rounded">
                                 Priority: {campaign.priority || 0}
                             </span>
                         </div>
-                    </div>
-                ))}
-                {conflicts.length > 3 && (
-                    <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-                        +{conflicts.length - 3} more campaigns
-                    </p>
-                )}
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                    <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm">
-                        {willShowFirst ? (
-                            <p className="text-green-700 dark:text-green-300">
-                                <strong>✓ Your campaign will show first</strong> (Priority: {currentPriority} &gt; {maxPriority})
-                            </p>
-                        ) : (
-                            <div className="space-y-1">
-                                <p className="text-amber-700 dark:text-amber-300">
-                                    <strong>Current priority:</strong> {currentPriority || 0}
-                                </p>
-                                <p className="text-amber-700 dark:text-amber-300">
-                                    💡 <strong>Tip:</strong> Set priority to <strong>{suggestedPriority}</strong> or higher to show first
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                    ))}
+                    {conflicts.length > 3 && (
+                        <p className="text-sm text-center text-muted-foreground">
+                            +{conflicts.length - 3} more campaigns
+                        </p>
+                    )}
                 </div>
-            </div>
 
-            <div className="text-xs text-amber-600 dark:text-amber-400">
-                <strong>Display Order:</strong> Campaigns rotate based on priority (highest → lowest → repeat)
+                <div className="bg-background/80 border border-border rounded-lg p-3 flex items-start gap-3 shadow-sm">
+                    {willShowFirst ? (
+                        <>
+                            <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                            <div className="text-sm text-emerald-700 dark:text-emerald-300">
+                                <strong>✓ Your campaign will show first</strong> (Priority: {currentPriority} &gt; {maxPriority})
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                            <div className="text-sm flex flex-col gap-1 text-muted-foreground">
+                                <span>
+                                    <strong>Current priority:</strong> {currentPriority || 0}
+                                </span>
+                                <span className="text-blue-700 dark:text-blue-300 font-medium">
+                                    💡 Tip: Set priority to {suggestedPriority} or higher to show first
+                                </span>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

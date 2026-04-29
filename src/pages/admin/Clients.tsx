@@ -23,6 +23,7 @@ const Clients: React.FC = () => {
     const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [newAppScheme, setNewAppScheme] = useState('');
     const [subscriptionMonths, setSubscriptionMonths] = useState(6); // Default to 6 months
 
     const fetchClients = async () => {
@@ -62,6 +63,7 @@ const Clients: React.FC = () => {
                     name: newName,
                     adminEmail: newEmail,
                     password: newPassword,
+                    app_scheme: newAppScheme,
                     contractEndDate: endDate.toISOString()
                 })
             });
@@ -71,6 +73,7 @@ const Clients: React.FC = () => {
                 setNewName('');
                 setNewEmail('');
                 setNewPassword('');
+                setNewAppScheme('');
                 setSubscriptionMonths(6);
                 fetchClients(); // Refresh list
             } else {
@@ -255,6 +258,15 @@ const Clients: React.FC = () => {
                                     <option value={12}>12 Months</option>
                                     <option value={24}>24 Months</option>
                                 </select>
+                            </div>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>App Scheme (Deep Link)</label>
+                                <input
+                                    value={newAppScheme} onChange={e => setNewAppScheme(e.target.value)} required placeholder="e.g. embedfin"
+                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E5E5', borderRadius: '4px', fontSize: '13px', outline: 'none', transition: 'border-color 0.2s' }}
+                                    onFocus={(e) => e.target.style.borderColor = '#1A1A1A'}
+                                    onBlur={(e) => e.target.style.borderColor = '#E5E5E5'}
+                                />
                             </div>
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Password</label>

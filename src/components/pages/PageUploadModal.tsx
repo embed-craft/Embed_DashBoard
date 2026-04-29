@@ -110,7 +110,7 @@ const PageUploadModal: React.FC<PageUploadModalProps> = ({ open, onOpenChange, o
                                     For now, I'll use a reliable QR API to avoid 'module not found' if I forget to install.
                                 */}
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(deepLink)}`}
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(deepLink)}&t=${Date.now()}`}
                                     alt="Scan QR"
                                     className="w-48 h-48"
                                 />

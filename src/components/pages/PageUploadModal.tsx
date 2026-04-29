@@ -124,6 +124,9 @@ const PageUploadModal: React.FC<PageUploadModalProps> = ({ open, onOpenChange, o
                                 <p className="text-xs text-gray-500 max-w-[200px] mx-auto">
                                     Ensure you are logged in to the same organization on the app.
                                 </p>
+                                <p className="text-[10px] text-gray-400 break-all max-w-[200px] mx-auto">
+                                    {deepLink}
+                                </p>
                             </div>
 
                             <div className="flex items-center gap-2 text-xs text-purple-600 bg-purple-50 px-3 py-1 rounded-full">

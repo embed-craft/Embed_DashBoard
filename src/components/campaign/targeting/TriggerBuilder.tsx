@@ -47,9 +47,8 @@ export const TriggerBuilder: React.FC = () => {
     // Track which rule triggered the event creation
     const [activeRuleIdForEvent, setActiveRuleIdForEvent] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchMetadata();
-    }, [fetchMetadata]);
+    // ✅ BUG-5 FIX: Removed duplicate fetchMetadata() call
+    // TargetingStep (parent) already calls fetchMetadata() on mount
 
     if (!currentCampaign) return null;
 

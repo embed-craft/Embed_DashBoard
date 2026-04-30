@@ -1281,12 +1281,15 @@ export const useEditorStore = create<EditorStore>()(
           ]);
           set({
             availableEvents: events,
-            // FIX: Inject default properties if missing
-            availableProperties: [
-              ...properties,
-              { _id: 'email', name: 'email', type: 'string', isPrivate: true, isPII: true, organization_id: '', createdAt: '', updatedAt: '' },
-              { _id: 'userId', name: 'userId', type: 'string', isPrivate: true, isPII: true, organization_id: '', createdAt: '', updatedAt: '' }
-            ],
+            // ✅ BUG-4 FIX: Deduplicate default properties — only inject if not already present
+            availableProperties: (() => {
+              const existingNames = new Set(properties.map((p: any) => p.name));
+              const defaults = [
+                { _id: 'email', name: 'email', type: 'string', isPrivate: true, isPII: true, organization_id: '', createdAt: '', updatedAt: '' },
+                { _id: 'userId', name: 'userId', type: 'string', isPrivate: true, isPII: true, organization_id: '', createdAt: '', updatedAt: '' }
+              ].filter(d => !existingNames.has(d.name));
+              return [...properties, ...defaults];
+            })(),
             availablePages: pages, // Store pages
           });
         } catch (error) {

@@ -72,6 +72,14 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
                 overlayColor: tc.overlayColor,
                 overlayOpacity: tc.overlayOpacity,
                 dismissEnabled: tc.dismissEnabled,
+                // Fine Tune Position & Size (CRITICAL: must be sent for SDK parity)
+                targetOffsetX: tc.targetOffsetX,
+                targetOffsetY: tc.targetOffsetY,
+                targetWidthAdjustment: tc.targetWidthAdjustment,
+                targetHeightAdjustment: tc.targetHeightAdjustment,
+                // Target styling (needed for highlight padding/roundness in coachmark)
+                targetHighlightPadding: tc.targetHighlightPadding,
+                targetRoundness: tc.targetRoundness,
                 // Wave data ONLY if shape is wave
                 ...(tc.coachmarkShape === 'wave' ? {
                     waveOrigin: tc.waveOrigin,
@@ -752,7 +760,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
     }
 
     // ✅ FIX: Add SpinTheWheel config flattening
-    if ((campaign.type === 'spinthewheel' || campaign.nudgeType === 'spinthewheel') && campaign.spinTheWheelConfig) {
+    if (campaign.nudgeType === 'spinthewheel' && campaign.spinTheWheelConfig) {
         const swc = campaign.spinTheWheelConfig;
         // Extract maxAttempts from spinthewheel layer content (where SpinTheWheelEditor stores it)
         const stwLayer = campaign.layers.find(l => l.type === 'spinthewheel');

@@ -759,6 +759,12 @@ export interface FullScreenConfig {
     tapToDismiss?: boolean;
     doubleTapToDismiss?: boolean;
   };
+  showCloseButton?: boolean;
+  padding?: { top: number; right: number; bottom: number; left: number };
+  alignItems?: string;
+  justifyContent?: string;
+  animation?: Record<string, any>;
+  closeIcon?: Record<string, any>;
   loopStories?: boolean;
 }
 
@@ -1007,7 +1013,7 @@ export interface StoryItem {
 export interface CampaignInterface {
   id: string;
   name: string;
-  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater' | 'spotlight' | 'coachmark';
+  nudgeType: 'modal' | 'bottomsheet' | 'tooltip' | 'pip' | 'scratchcard' | 'banner' | 'floater' | 'spotlight' | 'coachmark' | 'fullscreen' | 'fullpage';
   layers: Layer[];
   // Config based on nudgeType
   bottomSheetConfig?: BottomSheetConfig;
@@ -1019,6 +1025,7 @@ export interface CampaignInterface {
   floaterConfig?: any;
   spotlightConfig?: SpotlightConfig;
   fullscreenConfig?: FullScreenConfig;
+  spinTheWheelConfig?: SpinTheWheelConfig;
   createdAt: string;
   updatedAt: string;
 }

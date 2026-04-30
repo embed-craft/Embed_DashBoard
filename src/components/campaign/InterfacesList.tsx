@@ -418,7 +418,37 @@ export const InterfacesList: React.FC<InterfacesListProps> = ({
                                 )}
                             </div>
 
-                            {/* Removed Trash Icon - using Context Menu instead */}
+                            {!isEditing && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteInterface(iface.id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: theme.colors.gray[400],
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        borderRadius: theme.borderRadius.sm,
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = theme.colors.red[500];
+                                        e.currentTarget.style.backgroundColor = theme.colors.red[50];
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = theme.colors.gray[400];
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                    title="Delete Interface"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            )}
                         </div>
                     );
                 })}

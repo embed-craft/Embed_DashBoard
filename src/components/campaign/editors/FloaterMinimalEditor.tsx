@@ -59,7 +59,7 @@ export const FloaterMinimalEditor = () => {
             });
         } else {
             // ROBUST FIX: If config exists but behavior.snapToCorner is undefined, set it to true default
-            if (config.behavior?.snapToCorner === undefined) {
+            if (config.behavior?.snapToCorner === undefined && config.snapToCorner === undefined) {
                 updateNested('behavior', 'snapToCorner', true);
             }
 
@@ -847,15 +847,15 @@ export const FloaterMinimalEditor = () => {
                         <div className="border rounded-lg p-3 space-y-3 bg-gray-50/50">
                             <div className="flex items-center justify-between">
                                 <Label className="text-xs text-gray-600">Draggable</Label>
-                                <Switch checked={config.behavior?.draggable ?? true} onCheckedChange={c => updateNested('behavior', 'draggable', c)} />
+                                <Switch checked={config.behavior?.draggable ?? config.draggable ?? true} onCheckedChange={c => updateNested('behavior', 'draggable', c)} />
                             </div>
                             <div className="flex items-center justify-between">
                                 <Label className="text-xs text-gray-600">Snap to Corner</Label>
-                                <Switch checked={config.behavior?.snapToCorner ?? true} onCheckedChange={c => updateNested('behavior', 'snapToCorner', c)} />
+                                <Switch checked={config.behavior?.snapToCorner ?? config.snapToCorner ?? true} onCheckedChange={c => updateNested('behavior', 'snapToCorner', c)} />
                             </div>
                             <div className="flex items-center justify-between">
                                 <Label className="text-xs text-gray-600">Double Tap to Close</Label>
-                                <Switch checked={config.behavior?.doubleTapToDismiss ?? false} onCheckedChange={c => updateNested('behavior', 'doubleTapToDismiss', c)} />
+                                <Switch checked={config.behavior?.doubleTapToDismiss ?? config.doubleTapToDismiss ?? false} onCheckedChange={c => updateNested('behavior', 'doubleTapToDismiss', c)} />
                             </div>
                         </div>
                     </div>

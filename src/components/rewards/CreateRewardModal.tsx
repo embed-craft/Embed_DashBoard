@@ -5,31 +5,32 @@ import { X, UploadCloud, Plus } from 'lucide-react';
 
 interface CreateRewardModalProps {
   onClose: () => void;
+  editReward?: RewardItem | null;
 }
 
 
 
-const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
-  const { addReward } = useStore();
+const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose, editReward }) => {
+  const { addReward, updateReward } = useStore();
   
   const [formData, setFormData] = useState<Partial<RewardItem>>({
-    name: '',
-    description: '',
-    type: 'coupon',
-    iconUrl: '',
-    lockedIconUrl: '',
-    customVariables: []
+    name: editReward?.name || '',
+    description: editReward?.description || '',
+    type: editReward?.type || 'coupon',
+    iconUrl: editReward?.iconUrl || '',
+    lockedIconUrl: editReward?.lockedIconUrl || '',
+    customVariables: editReward?.customVariables || []
   });
 
   const [couponConfig, setCouponConfig] = useState({
-    couponType: 'flat',
-    couponValue: '',
-    codeType: 'static',
-    code: '',
-    expiryType: 'never',
-    expiryDate: ''
+    couponType: editReward?.couponConfig?.couponType || 'flat',
+    couponValue: editReward?.couponConfig?.couponValue || '',
+    codeType: editReward?.couponConfig?.codeType || 'static',
+    code: editReward?.couponConfig?.code || '',
+    expiryType: editReward?.couponConfig?.expiryType || 'never',
+    expiryDate: editReward?.couponConfig?.expiryDate || ''
   });
-  const [bulkCodes, setBulkCodes] = useState<string[]>([]);
+  const [bulkCodes, setBulkCodes] = useState<string[]>(editReward?.couponConfig?.bulkCodes || []);
 
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,9 +47,9 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
     reader.readAsText(file);
   };
 
-  const [pointsConfig, setPointsConfig] = useState({ amount: 100 });
-  const [featureConfig, setFeatureConfig] = useState({ featureFlagId: '' });
-  const [inventory, setInventory] = useState<{ total_quantity: string }>({ total_quantity: '' });
+  const [pointsConfig, setPointsConfig] = useState({ amount: editReward?.pointsConfig?.amount || 100 });
+  const [featureConfig, setFeatureConfig] = useState({ featureFlagId: editReward?.featureConfig?.featureFlagId || '' });
+  const [inventory, setInventory] = useState<{ total_quantity: string }>({ total_quantity: editReward?.inventory?.total_quantity !== undefined && editReward?.inventory?.total_quantity !== null ? String(editReward.inventory.total_quantity) : '' });
 
   const [uploadMode, setUploadMode] = useState<'preset' | 'upload'>('preset');
 
@@ -89,7 +90,11 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
     }
 
     try {
-        await addReward(payload);
+        if (editReward) {
+            await updateReward(editReward.id, payload);
+        } else {
+            await addReward(payload);
+        }
         onClose();
     } catch(e) {
         alert("Failed to save reward to database.");
@@ -139,7 +144,7 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
           backdropFilter: 'blur(8px)', zIndex: 10
         }}>
           <div>
-             <h2 style={{ fontSize: '18px', fontWeight: 600, color: theme.colors.text.primary, margin: 0, letterSpacing: '-0.02em' }}>Create Industrial Reward</h2>
+             <h2 style={{ fontSize: '18px', fontWeight: 600, color: theme.colors.text.primary, margin: 0, letterSpacing: '-0.02em' }}>{editReward ? 'Edit Industrial Reward' : 'Create Industrial Reward'}</h2>
              <p style={{ fontSize: '12px', color: theme.colors.text.secondary, margin: '2px 0 0 0' }}>Configure dynamic metadata and visual assets for your gamification engine.</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.colors.text.secondary }}>
@@ -445,7 +450,7 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose }) => {
             onMouseOver={(e) => { if(formData.name) e.currentTarget.style.backgroundColor = theme.colors.primary[700] }}
             onMouseOut={(e) => { if(formData.name) e.currentTarget.style.backgroundColor = theme.colors.primary[600] }}
           >
-            Create Reward
+            {editReward ? 'Save Changes' : 'Create Reward'}
           </button>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from '../styles/design-tokens';
-import { useStore } from '../store/useStore';
+import { useStore, RewardItem } from '../store/useStore';
 import { Plus, Search, MoreHorizontal, LayoutGrid, Clock, Gift } from 'lucide-react';
 import CreateRewardModal from '../components/rewards/CreateRewardModal';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ const Rewards = () => {
   const { rewards, deleteReward, fetchRewards } = useStore();
   const [activeTab, setActiveTab] = useState<'rewards' | 'distribution' | 'delivery'>('rewards');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState<RewardItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -223,7 +224,8 @@ const Rewards = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveDropdown(null);
-                                alert("Edit Reward feature is coming soon!");
+                                setEditingReward(reward);
+                                setIsCreateModalOpen(true);
                               }}
                               style={{
                                 width: '100%', padding: '10px 16px', textAlign: 'left',
@@ -392,8 +394,14 @@ const Rewards = () => {
         </div>
       )}
 
-      {isCreateModalOpen && (
-        <CreateRewardModal onClose={() => setIsCreateModalOpen(false)} />
+      {(isCreateModalOpen || editingReward) && (
+        <CreateRewardModal 
+           onClose={() => {
+              setIsCreateModalOpen(false);
+              setEditingReward(null);
+           }} 
+           editReward={editingReward} 
+        />
       )}
     </div>
   );

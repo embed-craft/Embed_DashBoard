@@ -59,8 +59,6 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
             isClaimed = !!val; // boolean fallback
         }
     }
-    const coverColor = content.coverColor || '#CCCCCC';
-    const coverImage = content.coverImage;
 
     // Image Caching to prevent blinking on resize
     const cachedImageRef = useRef<HTMLImageElement | null>(null);

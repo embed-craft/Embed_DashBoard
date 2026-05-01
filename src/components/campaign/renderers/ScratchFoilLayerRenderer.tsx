@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { useGridElementData } from '@/components/campaign/renderers/GridElementContext';
 
@@ -14,8 +14,36 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
     isInteractive = false
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const content = layer.content || {};
+
+    // Custom Cursor State — JS overlay approach because CSS cursor:url() silently
+    // fails for images > 128×128px and cross-origin images without proper headers.
+    const cursorImageUrl = content.cursorImage || '';
+    const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
+    const [isCursorLoaded, setIsCursorLoaded] = useState(false);
+    
+    // Config defaults
+    const scratchSize = content.scratchSize || 40;
+    const revealThreshold = content.revealThreshold || 50;
+    const coverColor = content.coverColor || '#CCCCCC';
+    const coverImage = content.coverImage;
+
+    const cursorSize = 80 * scale; // Independent, big custom cursor
+
+    // Preload cursor image to verify it's valid
+    useEffect(() => {
+        if (!cursorImageUrl) {
+            setIsCursorLoaded(false);
+            return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = cursorImageUrl;
+        img.onload = () => setIsCursorLoaded(true);
+        img.onerror = () => setIsCursorLoaded(false);
+    }, [cursorImageUrl]);
 
     // Grid Data Binding: check if this reward is already claimed
     const { dataItem } = useGridElementData();
@@ -31,10 +59,6 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
             isClaimed = !!val; // boolean fallback
         }
     }
-
-    // Config defaults
-    const scratchSize = content.scratchSize || 40;
-    const revealThreshold = content.revealThreshold || 50;
     const coverColor = content.coverColor || '#CCCCCC';
     const coverImage = content.coverImage;
 
@@ -162,12 +186,24 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
             isDrawing = true;
             const pos = getPos(e);
             lastX = pos.x; lastY = pos.y;
+            
+            // Manually update cursor position because stopPropagation blocks React events
+            const rect = canvas.getBoundingClientRect();
+            setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         };
 
         const draw = (e: PointerEvent) => {
+            // Even if not drawing, we should update the cursor position when moving over the canvas
+            // if we have captured the pointer. But wait, if not drawing, the mouse might just be hovering.
+            // But if hovering, stopPropagation is NOT called (since we return early).
             if (!isDrawing) return;
+            
             e.preventDefault();
             e.stopPropagation();
+
+            // Manually update cursor position because stopPropagation blocks React events
+            const rect = canvas.getBoundingClientRect();
+            setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
 
             const pos = getPos(e);
 
@@ -208,21 +244,44 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
         };
     }, [isInteractive, isRevealed, scratchSize, scale, revealThreshold]);
 
+    // Custom cursor position tracking — uses the container div so the overlay
+    // image follows the pointer without interfering with canvas scratch events.
+    const handlePointerMoveForCursor = useCallback((e: React.PointerEvent) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        setCursorPos({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+        });
+    }, []);
+
+    const handlePointerLeaveForCursor = useCallback(() => {
+        setCursorPos(null);
+    }, []);
+
+    // Should we show the JS cursor overlay?
+    const showCursorOverlay = isInteractive && !isRevealed && isCursorLoaded && cursorImageUrl;
+
     // If reward is already claimed via grid data binding, hide the foil
     if (isClaimed) {
         return <div style={{ width: '100%', height: '100%' }} />;
     }
 
     return (
-        <div style={{
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-            overflow: 'hidden',
-            pointerEvents: isInteractive ? 'auto' : 'none',
-            touchAction: 'none',
-            borderRadius: content.borderRadius ? `${content.borderRadius * scale}px` : undefined
-        }}>
+        <div
+            ref={containerRef}
+            onPointerMove={showCursorOverlay ? handlePointerMoveForCursor : undefined}
+            onPointerLeave={showCursorOverlay ? handlePointerLeaveForCursor : undefined}
+            style={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                pointerEvents: isInteractive ? 'auto' : 'none',
+                touchAction: 'none',
+                borderRadius: content.borderRadius ? `${content.borderRadius * scale}px` : undefined
+            }}
+        >
             <canvas
                 ref={canvasRef}
                 className="nodrag"
@@ -234,12 +293,36 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
                     transition: 'opacity 0.5s ease',
                     // Interactive only when isInteractive prop is true
                     pointerEvents: isInteractive && !isRevealed ? 'auto' : 'none',
+                    // Use 'none' when JS overlay is active, otherwise crosshair fallback
                     cursor: isInteractive && !isRevealed
-                        ? (content.cursorImage ? `url(${content.cursorImage}) 16 16, auto` : 'url(/cursor-scratch.png) 10 10, crosshair')
+                        ? (showCursorOverlay ? 'none' : 'crosshair')
                         : 'default',
                     touchAction: 'none'
                 }}
             />
+            {/* JS-based custom cursor overlay — renders the cursor image at pointer
+                position. This avoids CSS cursor:url() which silently fails for images
+                larger than 128×128px or cross-origin images without CORS headers. */}
+            {showCursorOverlay && cursorPos && (
+                <img
+                    src={cursorImageUrl}
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                        position: 'absolute',
+                        left: cursorPos.x - cursorSize / 2,
+                        top: cursorPos.y - cursorSize / 2,
+                        width: cursorSize,
+                        height: cursorSize,
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        objectFit: 'contain',
+                        zIndex: 10,
+                        // Subtle drop shadow for visibility on any background
+                        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+                    }}
+                />
+            )}
         </div>
     );
 };

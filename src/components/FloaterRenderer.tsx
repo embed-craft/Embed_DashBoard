@@ -1261,7 +1261,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                                     <video
                                         ref={videoRef}
                                         src={config.media.url}
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: config?.media?.fit || 'cover', zIndex: -1 }}
+                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: config?.media?.fit || 'cover', zIndex: 0 }}
                                         autoPlay={config.media.autoPlay ?? true}
                                         muted={isMuted}
                                         loop={config.media.loop ?? false}

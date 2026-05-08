@@ -450,7 +450,7 @@ export const DesignStep: React.FC<any> = () => {
     imageUrl?: string;
   }[]>([]);
 
-  // Fetch pages on mount
+  // Fetch pages on mountt
   useEffect(() => {
     const fetchPages = async () => {
       try {

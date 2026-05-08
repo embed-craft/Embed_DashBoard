@@ -774,7 +774,7 @@ const CampaignBuilder: React.FC = () => {
                 {activeStep === 'targeting' && <TargetingStep />}
                 {activeStep === 'goals' && <GoalsRolloutStep />}
                 {activeStep === 'challenge_type' && <ChallengeTypeStep />}
-                {activeStep === 'tasks' && <TasksStep />}
+                {activeStep === 'tasks' && <TasksStep onNavigateToDesign={(_interfaceId) => setActiveStep('design')} />}
                 {activeStep === 'rewards' && <SpinWheelRewardsStep />}
                 {activeStep === 'stories' && (
                   activeStoryId ? (

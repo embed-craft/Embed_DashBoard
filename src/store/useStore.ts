@@ -96,6 +96,7 @@ export interface ChallengeTask {
   title: string;
   logic: ChallengeTaskLogic;
   reward: ChallengeTaskReward;
+  completionNudgeId?: string; // References a CampaignInterface.id in campaign.interfaces[] for task completion notification
 }
 
 export interface ChallengeConfig {

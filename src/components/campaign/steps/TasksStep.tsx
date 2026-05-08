@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { useStore, ChallengeTask, ChallengeTaskLogic, ChallengeTaskReward } from '@/store/useStore';
-import { Plus, MoreHorizontal, Pencil, Trash2, Tag, GripVertical } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Tag, GripVertical, Sparkles, Bell, BellOff, ExternalLink } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TaskEditorModal } from './TaskEditorModal';
+import { toast } from 'sonner';
 
 const defaultLogic = (): ChallengeTaskLogic => ({
   eventGroups: [{
@@ -31,10 +32,15 @@ const newTask = (index: number): ChallengeTask => ({
   reward: defaultReward()
 });
 
-export const TasksStep: React.FC = () => {
-  const { currentCampaign, updateCampaign, availableEvents, isLoadingMetadata, fetchMetadata } = useEditorStore();
+interface TasksStepProps {
+  onNavigateToDesign?: (interfaceId: string) => void;
+}
+
+export const TasksStep: React.FC<TasksStepProps> = ({ onNavigateToDesign }) => {
+  const { currentCampaign, updateCampaign, availableEvents, isLoadingMetadata, fetchMetadata, addInterface, deleteInterface, setActiveInterface } = useEditorStore();
   const { rewards } = useStore();
   const [modalTaskIdx, setModalTaskIdx] = useState<number | null>(null);
+  const [modalInitialTab, setModalInitialTab] = useState<'details' | 'logic' | 'reward' | 'nudge'>('details');
 
   React.useEffect(() => {
     fetchMetadata();
@@ -93,19 +99,70 @@ export const TasksStep: React.FC = () => {
 
   const deleteTask = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    const task = tasks[index];
     if (window.confirm('Are you sure you want to delete this task?')) {
+      // Cleanup linked completion nudge interface
+      if (task.completionNudgeId) {
+        const iface = currentCampaign.interfaces?.find(i => i.id === task.completionNudgeId);
+        if (iface) {
+          deleteInterface(task.completionNudgeId);
+        }
+      }
       const newTasks = tasks.filter((_, i) => i !== index);
       updateCampaign({ challengeDetails: { ...challengeDetails, tasks: newTasks } });
     }
   };
 
+  // ── Completion Nudge Helpers ──────────────────────────────────────────
+
+  const handleCreateNudge = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Open the task editor modal on the Nudge tab so user can choose the type
+    setModalTaskIdx(index);
+    setModalInitialTab('nudge');
+  };
+
+  const handleEditNudge = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const task = tasks[index];
+    if (!task.completionNudgeId) return;
+
+    // Navigate to design step with this interface pre-selected
+    if (onNavigateToDesign) {
+      setActiveInterface(task.completionNudgeId);
+      onNavigateToDesign(task.completionNudgeId);
+    }
+  };
+
+  const handleRemoveNudge = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const task = tasks[index];
+    if (!task.completionNudgeId) return;
+
+    if (window.confirm('Remove the completion nudge for this task? The interface design will also be deleted.')) {
+      // Delete the interface
+      deleteInterface(task.completionNudgeId);
+
+      // Clear the reference on the task
+      const newTasks = [...tasks];
+      newTasks[index] = { ...newTasks[index], completionNudgeId: undefined };
+      updateCampaign({ challengeDetails: { ...challengeDetails, tasks: newTasks } });
+      toast.success('Completion nudge removed');
+    }
+  };
+
+  const getNudgeInterface = (task: ChallengeTask) => {
+    if (!task.completionNudgeId) return null;
+    return currentCampaign.interfaces?.find(i => i.id === task.completionNudgeId) || null;
+  };
+
+  // ── Format Helpers ────────────────────────────────────────────────────
+
   const availableRewards = rewards || [];
 
-  // Helper formatting to display logic string roughly mimicking screenshot
   const formatLogic = (logic: ChallengeTaskLogic) => {
     if (!logic.eventGroups || logic.eventGroups.length === 0) return 'No conditions set';
     
-    // We parse the very first group to keep table neat
     const group = logic.eventGroups[0];
     if (!group.events || group.events.length === 0) return 'Empty group';
 
@@ -137,10 +194,8 @@ export const TasksStep: React.FC = () => {
   const formatReward = (reward: ChallengeTaskReward) => {
     if (!reward.rewardGroups || reward.rewardGroups.length === 0) return 'No rewards given';
     
-    // Just parse the first group to keep table neat
     const group = reward.rewardGroups[0];
     if (!group.rewards || group.rewards.length === 0) {
-       // Support legacy flat format map migration visually
        if ((group as any).rewardItemId) {
           return formatRewardItem(group);
        }
@@ -163,10 +218,11 @@ export const TasksStep: React.FC = () => {
         <table className="w-full text-left text-sm text-gray-700">
           <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-medium">
             <tr>
-              <th className="px-6 py-4 w-1/3">Title</th>
-              <th className="px-6 py-4 w-1/3">Logic</th>
-              <th className="px-6 py-4 w-1/3 flex justify-between items-center pr-4">
-                <span>Reward</span>
+              <th className="px-6 py-4 w-[22%]">Title</th>
+              <th className="px-6 py-4 w-[25%]">Logic</th>
+              <th className="px-6 py-4 w-[25%]">Reward</th>
+              <th className="px-6 py-4 w-[22%]">Completion Nudge</th>
+              <th className="px-4 py-4 w-[6%] text-right">
                 <button
                   onClick={addTask}
                   className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded hover:bg-gray-200"
@@ -184,62 +240,109 @@ export const TasksStep: React.FC = () => {
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                 >
-                  {tasks.map((t, idx) => (
-                    <Draggable key={t.id} draggableId={t.id} index={idx}>
-                      {(provided, snapshot) => (
-                        <tr
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={`hover:bg-gray-50 cursor-pointer transition-colors ${snapshot.isDragging ? 'bg-indigo-50 shadow-md ring-1 ring-indigo-200' : ''}`}
-                          onClick={() => setModalTaskIdx(idx)}
-                          style={provided.draggableProps.style}
-                        >
-                          <td className="px-6 py-4 w-1/3">
-                            <div className="flex items-center gap-3">
-                              <div 
-                                {...provided.dragHandleProps} 
-                                className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing p-1 -ml-2 rounded"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <GripVertical size={16} />
+                  {tasks.map((t, idx) => {
+                    const nudgeIface = getNudgeInterface(t);
+                    const hasNudge = !!nudgeIface;
+
+                    return (
+                      <Draggable key={t.id} draggableId={t.id} index={idx}>
+                        {(provided, snapshot) => (
+                          <tr
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`hover:bg-gray-50 cursor-pointer transition-colors ${snapshot.isDragging ? 'bg-indigo-50 shadow-md ring-1 ring-indigo-200' : ''}`}
+                            onClick={() => setModalTaskIdx(idx)}
+                            style={provided.draggableProps.style}
+                          >
+                            {/* Title Column */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  {...provided.dragHandleProps} 
+                                  className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing p-1 -ml-2 rounded"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <GripVertical size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-900">{t.title}</span>
+                                  <span className="text-xs text-gray-500 font-mono mt-0.5" title={t.id}>{t.id.substring(0, 15)}...</span>
+                                </div>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="font-medium text-gray-900">{t.title}</span>
-                                <span className="text-xs text-gray-500 font-mono mt-0.5" title={t.id}>{t.id.substring(0, 15)}...</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-gray-500">
-                            {formatLogic(t.logic)}
-                          </td>
-                          <td className="px-6 py-4 text-gray-500 flex justify-between items-center">
-                            {formatReward(t.reward)}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className="text-gray-400 hover:text-gray-600 px-2 flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
-                                  <MoreHorizontal size={16} />
+                            </td>
+
+                            {/* Logic Column */}
+                            <td className="px-6 py-4 text-gray-500">
+                              {formatLogic(t.logic)}
+                            </td>
+
+                            {/* Reward Column */}
+                            <td className="px-6 py-4 text-gray-500">
+                              {formatReward(t.reward)}
+                            </td>
+
+                            {/* Completion Nudge Column */}
+                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                              {hasNudge ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={(e) => handleEditNudge(idx, e)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition-all group"
+                                    title="Edit completion nudge design"
+                                  >
+                                    <Bell size={12} className="text-emerald-500" />
+                                    <span className="capitalize">{nudgeIface.nudgeType}</span>
+                                    <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-emerald-400" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleRemoveNudge(idx, e)}
+                                    className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    title="Remove nudge"
+                                  >
+                                    <BellOff size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => handleCreateNudge(idx, e)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 bg-gray-50 border border-dashed border-gray-300 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                                  title="Add a nudge that appears when this task is completed"
+                                >
+                                  <Sparkles size={12} className="text-gray-400 group-hover:text-purple-500 transition-colors" />
+                                  Add Nudge
                                 </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-[160px]">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setModalTaskIdx(idx); }}>
-                                  <Pencil className="w-4 h-4 mr-2 text-muted-foreground" /> Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => renameTask(idx, e)}>
-                                  <Tag className="w-4 h-4 mr-2 text-muted-foreground" /> Rename
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => deleteTask(idx, e)} className="text-red-600 focus:bg-red-50 focus:text-red-700">
-                                  <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      )}
-                    </Draggable>
-                  ))}
+                              )}
+                            </td>
+
+                            {/* Actions Column */}
+                            <td className="px-4 py-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="text-gray-400 hover:text-gray-600 px-2 flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
+                                    <MoreHorizontal size={16} />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-[160px]">
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setModalTaskIdx(idx); }}>
+                                    <Pencil className="w-4 h-4 mr-2 text-muted-foreground" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => renameTask(idx, e)}>
+                                    <Tag className="w-4 h-4 mr-2 text-muted-foreground" /> Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => deleteTask(idx, e)} className="text-red-600 focus:bg-red-50 focus:text-red-700">
+                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        )}
+                      </Draggable>
+                    );
+                  })}
                   {provided.placeholder}
                   <tr>
-                    <td colSpan={3} className="px-6 py-4">
+                    <td colSpan={5} className="px-6 py-4">
                       <button
                         onClick={addTask}
                         className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors"
@@ -259,11 +362,13 @@ export const TasksStep: React.FC = () => {
         <TaskEditorModal
           task={tasks[modalTaskIdx]}
           isOpen={true}
-          onClose={() => setModalTaskIdx(null)}
+          onClose={() => { setModalTaskIdx(null); setModalInitialTab('details'); }}
           onSave={(updated) => updateTask(modalTaskIdx, updated)}
           availableEvents={availableEvents || []}
           isLoadingMetadata={isLoadingMetadata}
           availableRewards={availableRewards}
+          onNavigateToDesign={onNavigateToDesign}
+          initialTab={modalInitialTab}
         />
       )}
     </div>

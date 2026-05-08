@@ -446,6 +446,7 @@ export const DesignStep: React.FC<any> = () => {
     pageTag: string;
     elements?: { id: string; rect?: { x: number; y: number; width: number; height: number } }[];
     deviceMetadata?: { width: number; height: number; density?: number };
+    scrollData?: { pageScrollY?: number; pageScrollX?: number; maxScrollExtentY?: number; maxScrollExtentX?: number };
     imageUrl?: string;
   }[]>([]);
 
@@ -2731,6 +2732,18 @@ export const DesignStep: React.FC<any> = () => {
       const config = currentCampaign?.tooltipConfig || {} as Partial<TooltipConfig>;
 
       const handleTooltipUpdate = (field: string, value: any) => {
+        // Auto-populate targetScrollOffset when element is selected
+        if (field === 'targetElementId' && value && selectedPage?.scrollData) {
+          const sd = selectedPage.scrollData;
+          updateTooltipConfig({
+            [field]: value,
+            targetScrollOffset: {
+              scrollY: sd.pageScrollY || 0,
+              scrollX: sd.pageScrollX || 0,
+            },
+          });
+          return;
+        }
         updateTooltipConfig({ [field]: value });
       };
 

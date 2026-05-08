@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, CheckCircle2, Gift, Plus, Loader2, Trash2, Users, Sparkles, Coins, Ticket, FileBadge2 } from 'lucide-react';
+import { X, Settings, CheckCircle2, Gift, Plus, Loader2, Trash2, Users, Sparkles, Coins, Ticket, FileBadge2, Bell, ExternalLink, PanelBottom, Maximize2, MousePointerClick } from 'lucide-react';
 import { theme } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,9 +28,11 @@ interface TaskEditorModalProps {
   availableEvents: EventDefinition[];
   isLoadingMetadata: boolean;
   availableRewards: { id: string; name: string; type: string; iconUrl?: string; description?: string; }[];
+  onNavigateToDesign?: (interfaceId: string) => void;
+  initialTab?: Tab;
 }
 
-type Tab = 'details' | 'logic' | 'reward';
+type Tab = 'details' | 'logic' | 'reward' | 'nudge';
 
 export const TaskEditorModal: React.FC<TaskEditorModalProps> = ({
   task,
@@ -39,9 +41,11 @@ export const TaskEditorModal: React.FC<TaskEditorModalProps> = ({
   onSave,
   availableEvents,
   isLoadingMetadata,
-  availableRewards
+  onNavigateToDesign,
+  availableRewards,
+  initialTab = 'details',
 }) => {
-  const [activeTab, setActiveTab] = useState<Tab>('details');
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [draft, setDraft] = useState<ChallengeTask | null>(null);
 
   const { availableProperties } = useEditorStore();
@@ -1104,6 +1108,153 @@ export const TaskEditorModal: React.FC<TaskEditorModalProps> = ({
     );
   };
 
+  // --- NUDGE TAB RENDER ---
+  const renderNudgeTab = () => {
+    const { currentCampaign, addInterface, deleteInterface, setActiveInterface } = useEditorStore.getState();
+    const nudgeIface = draft.completionNudgeId
+      ? currentCampaign?.interfaces?.find((i: any) => i.id === draft.completionNudgeId)
+      : null;
+    const hasNudge = !!nudgeIface;
+
+    const NUDGE_TYPES = [
+      { id: 'fullpage', label: 'Full Page', shapeColor: '#8B5CF6', bg: '#F5F3FF', description: 'Full screen overlay experience.' },
+      { id: 'bottomsheet', label: 'Bottom Sheet', shapeColor: '#6366F1', bg: '#EEF2FF', description: 'Slides up from the bottom of the screen.' },
+      { id: 'floater', label: 'Floater', shapeColor: '#10B981', bg: '#ECFDF5', description: 'Floating notification widget.' },
+    ];
+
+    const handleCreateNudge = (nudgeType: string) => {
+      const interfaceName = `${draft.title} — Completion`;
+      const newId = addInterface(nudgeType as any, interfaceName);
+      updateDraft({ completionNudgeId: newId } as any);
+      toast.success(`Completion nudge created (${nudgeType})`);
+    };
+
+    const handleRemoveNudge = () => {
+      if (!draft.completionNudgeId) return;
+      if (window.confirm('Remove this completion nudge? The interface design will also be deleted.')) {
+        deleteInterface(draft.completionNudgeId);
+        updateDraft({ completionNudgeId: undefined } as any);
+        toast.success('Nudge removed');
+      }
+    };
+
+    const handleDesignNudge = () => {
+      if (!draft.completionNudgeId) return;
+      // Save current draft first
+      const error = validateDraft();
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      onSave(draft);
+      onClose();
+      // Navigate
+      setActiveInterface(draft.completionNudgeId);
+      if (onNavigateToDesign) {
+        onNavigateToDesign(draft.completionNudgeId);
+      }
+    };
+
+    return (
+      <div className="p-8">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Completion Nudge</h3>
+          <p className="text-sm text-gray-500">Configure a notification that appears when the user completes this task.</p>
+        </div>
+
+        {hasNudge ? (
+          <div className="space-y-6">
+            {/* Status Card */}
+            <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <Bell size={20} className="text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Nudge Active</p>
+                    <p className="text-sm text-gray-500">
+                      Type: <span className="font-medium capitalize text-emerald-700">{nudgeIface.nudgeType}</span>
+                      {' · '}
+                      <span className="text-gray-400">{nudgeIface.name}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDesignNudge}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all"
+                  >
+                    <Sparkles size={14} />
+                    Design Nudge
+                    <ExternalLink size={12} />
+                  </button>
+                  <button
+                    onClick={handleRemoveNudge}
+                    className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-400 italic">
+              This nudge will be displayed to the user immediately when they complete this task.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500 mb-4">Choose a nudge type for the completion notification:</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {NUDGE_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => handleCreateNudge(type.id)}
+                  className="group text-left outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-xl"
+                >
+                  {/* Visual Shape Card — matches DesignStep "Select Nudge Type" dialog */}
+                  <div
+                    className="relative overflow-hidden rounded-xl border border-gray-200 group-hover:border-gray-300 group-hover:shadow-md transition-all duration-200 mb-3"
+                    style={{ aspectRatio: '9/16', backgroundColor: type.bg }}
+                  >
+                    {/* Full Page: full colored fill */}
+                    {type.id === 'fullpage' && (
+                      <div style={{ width: '100%', height: '100%', backgroundColor: type.shapeColor, opacity: 0.35 }} />
+                    )}
+                    {/* Bottom Sheet: colored panel at bottom */}
+                    {type.id === 'bottomsheet' && (
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.shapeColor, borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }} />
+                    )}
+                    {/* Floater: green circle at bottom-right */}
+                    {type.id === 'floater' && (
+                      <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '48px', height: '48px', backgroundColor: type.shapeColor, borderRadius: '50%' }} />
+                    )}
+
+                    {/* Hover "Select" pill */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="bg-white px-4 py-2 rounded-full shadow-md text-xs font-semibold" style={{ color: type.shapeColor }}>
+                        Select
+                      </div>
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900 text-center">{type.label}</h4>
+                </button>
+              ))}
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+              <p className="text-xs text-gray-400">
+                <strong>Tip:</strong> After selecting a type, click "Design Nudge" to customize the visual appearance using the full design editor.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1151,6 +1302,15 @@ export const TaskEditorModal: React.FC<TaskEditorModalProps> = ({
                 Task Reward
               </button>
 
+              <button
+                onClick={() => setActiveTab('nudge')}
+                className={`flex items-center gap-2 px-8 py-3 rounded-lg text-sm font-semibold transition-all flex-1 justify-center ${activeTab === 'nudge' ? 'bg-gray-50 border border-gray-100 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+              >
+                <Bell size={18} className={activeTab === 'nudge' ? 'text-gray-900' : 'text-gray-400'} />
+                Nudge
+              </button>
+
             </div>
           </div>
 
@@ -1160,6 +1320,7 @@ export const TaskEditorModal: React.FC<TaskEditorModalProps> = ({
               {activeTab === 'details' && renderDetailsTab()}
               {activeTab === 'logic' && renderLogicTab()}
               {activeTab === 'reward' && renderRewardTab()}
+              {activeTab === 'nudge' && renderNudgeTab()}
             </div>
           </div>
 

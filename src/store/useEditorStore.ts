@@ -4025,7 +4025,7 @@ export const useEditorStore = create<EditorStore>()(
 
         // Validate nudgeType
         const validTypes: CampaignInterface['nudgeType'][] = [
-          'modal', 'bottomsheet', 'banner', 'tooltip', 'pip', 'floater', 'scratchcard'
+          'modal', 'bottomsheet', 'banner', 'tooltip', 'pip', 'floater', 'scratchcard', 'fullscreen', 'fullpage'
         ];
         if (!validTypes.includes(nudgeType)) {
           console.error(`Invalid nudgeType: ${nudgeType}. Must be one of: ${validTypes.join(', ')}`);

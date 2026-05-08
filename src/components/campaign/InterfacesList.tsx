@@ -412,8 +412,26 @@ export const InterfacesList: React.FC<InterfacesListProps> = ({
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
                                     }}>
-                                        {iface.name}
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{iface.name}</span>
+                                        {iface.name.includes('— Completion') && (
+                                            <span style={{
+                                                padding: '1px 5px',
+                                                background: '#ecfdf5',
+                                                color: '#059669',
+                                                fontSize: '9px',
+                                                fontWeight: 600,
+                                                borderRadius: '3px',
+                                                border: '1px solid #a7f3d0',
+                                                flexShrink: 0,
+                                                lineHeight: '14px',
+                                            }}>
+                                                Task
+                                            </span>
+                                        )}
                                     </div>
                                 )}
                             </div>

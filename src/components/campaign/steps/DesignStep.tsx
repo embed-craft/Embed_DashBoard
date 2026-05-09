@@ -3796,56 +3796,58 @@ export const DesignStep: React.FC<any> = () => {
               <section>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Choose Nudge Type</h2>
                 <p className="text-sm text-gray-500 mb-6">Select the type of nudge you want to create for your campaign</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '32px' }}>
                   {nudgeTypes
                     .filter(type => {
-                      // FIX: Filter based on selected experience mapping
                       if (!selectedExperience) return false;
                       const allowedTypes = EXPERIENCE_MAPPING[selectedExperience];
-                      // If no explicit mapping, show none or all? User requested strict mapping.
-                      // If allowedTypes is undefined (e.g. unknown experience), show nothing.
                       return allowedTypes?.includes(type.id);
                     })
                     .map((type) => (
                       <div
                         key={type.id}
                         onClick={() => handleNudgeTypeSelect(type.id)}
-                        className="group relative bg-white p-6 rounded-2xl border-2 border-gray-100 hover:border-indigo-400 hover:shadow-xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
-                        style={{
-                          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
-                        }}
+                        style={{ cursor: 'pointer' }}
+                        className="group"
                       >
-                        {/* Background decoration */}
-                        <div
-                          className="absolute top-0 right-0 w-24 h-24 opacity-10 group-hover:opacity-20 transition-opacity duration-300 rounded-2xl"
-                          style={{
-                            background: `radial-gradient(circle at top right, ${type.iconColor} 0%, transparent 70%)`
-                          }}
-                        />
-
-                        {/* Icon container with gradient */}
-                        <div
-                          className="relative w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
-                          style={{
-                            background: `linear-gradient(135deg, ${type.bg} 0%, ${type.iconBg} 100%)`,
-                            boxShadow: `0 4px 12px ${type.bg}80`
-                          }}
+                        <div style={{
+                          aspectRatio: '9/16',
+                          backgroundColor: type.bg || colors.primary[50],
+                          borderRadius: '16px',
+                          border: `1px solid ${type.iconBg}80`,
+                          marginBottom: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                        }}
+                          className="group-hover:shadow-xl group-hover:border-indigo-400 group-hover:-translate-y-1"
                         >
-                          <type.Icon size={26} style={{ color: type.iconColor }} />
-                        </div>
+                          {/* Visual representation */}
+                          {(type.id === 'fullpage' || type.id === 'fullscreen') && <div style={{ width: '100%', height: '100%', backgroundColor: type.iconBg }} />}
+                          {type.id === 'bottomsheet' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.iconColor, borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }} />}
+                          {type.id === 'floater' && <div style={{ position: 'absolute', bottom: '24px', right: '24px', width: '64px', height: '64px', backgroundColor: type.iconColor, borderRadius: '50%' }} />}
+                          {type.id === 'tooltip' && (
+                            <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div style={{ width: '120px', height: '80px', backgroundColor: type.iconColor, borderRadius: '16px', position: 'relative', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+                                <div style={{ position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '15px solid transparent', borderRight: '15px solid transparent', borderTop: `15px solid ${type.iconColor}` }} />
+                              </div>
+                              <div style={{ width: '24px', height: '24px', backgroundColor: type.iconColor, borderRadius: '50%', marginTop: '30px' }} />
+                            </div>
+                          )}
 
-                        {/* Text content */}
-                        <h3 className="font-bold text-gray-800 text-lg mb-1.5 group-hover:text-indigo-600 transition-colors">
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', backgroundColor: 'rgba(99, 102, 241, 0.05)' }} className="group-hover:opacity-100">
+                            <div style={{ backgroundColor: 'white', padding: '10px 20px', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '13px', fontWeight: 600, color: type.iconColor }}>
+                              Select {type.label}
+                            </div>
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-gray-800 text-lg text-center group-hover:text-indigo-600 transition-colors">
                           {type.label}
                         </h3>
-                        <p className="text-sm text-gray-400 leading-relaxed">
-                          Create a {type.label.toLowerCase()} campaign
-                        </p>
-
-                        {/* Arrow indicator */}
-                        <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                          <ChevronRight size={20} className="text-indigo-400" />
-                        </div>
                       </div>
                     ))}
                 </div>
@@ -4030,43 +4032,41 @@ export const DesignStep: React.FC<any> = () => {
                       <div className="p-6 max-h-[70vh] overflow-y-auto">
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>
                           {DESIGN_TYPES
-                            .filter(type => ['floater', 'bottomsheet', 'fullpage'].includes(type.id))
+                            .filter(type => ['floater', 'bottomsheet', 'fullpage', 'tooltip'].includes(type.id))
                             .map((type) => {
                               const Icon = type.icon;
                               return (
                                 <div
                                   key={type.id}
                                   onClick={() => handleSafeInterfaceAttach(type.id)}
-                                  style={{ cursor: 'pointer' }}
-                                >
-                                  <div style={{
-                                    aspectRatio: '9/16',
-                                    backgroundColor: type.bg || colors.primary[50],
-                                    borderRadius: '12px',
-                                    border: `1px solid ${type.iconBg || colors.primary[100]}`,
-                                    marginBottom: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    transition: 'all 0.2s'
+                                  className="group relative bg-white p-6 rounded-2xl border-2 border-gray-100 hover:border-indigo-400 hover:shadow-xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
+                                  style={{
+                                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
                                   }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = type.color; e.currentTarget.style.boxShadow = `0 4px 12px ${type.color}20`; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = type.iconBg || colors.primary[100]; e.currentTarget.style.boxShadow = 'none'; }}
+                                >
+                                  {/* Icon container with gradient */}
+                                  <div
+                                    className="relative w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+                                    style={{
+                                      background: `linear-gradient(135deg, ${type.bg || colors.primary[50]} 0%, ${type.iconBg || colors.primary[100]} 100%)`,
+                                      boxShadow: `0 4px 12px ${type.color}30`
+                                    }}
                                   >
-                                    {/* Visual representation based on type */}
-                                    {type.id === 'fullpage' && <div style={{ width: '100%', height: '100%', backgroundColor: type.iconBg }} />}
-                                    {type.id === 'bottomsheet' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: type.color, borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }} />}
-                                    {type.id === 'floater' && <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '48px', height: '48px', backgroundColor: type.color, borderRadius: '50%' }} />}
-
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} className="hover:opacity-100 group">
-                                      <div style={{ backgroundColor: 'white', padding: '8px 16px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 600, color: type.color }}>
-                                        Select
-                                      </div>
-                                    </div>
+                                    <Icon size={26} style={{ color: type.color }} />
                                   </div>
-                                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: colors.text.primary, textAlign: 'center' }}>{type.label}</h4>
+
+                                  {/* Text content */}
+                                  <h4 className="font-bold text-gray-800 text-lg mb-1.5 group-hover:text-indigo-600 transition-colors">
+                                    {type.label}
+                                  </h4>
+                                  <p className="text-xs text-gray-400 leading-relaxed">
+                                    {type.description}
+                                  </p>
+
+                                  {/* Arrow indicator */}
+                                  <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                    <ChevronRight size={18} className="text-indigo-400" />
+                                  </div>
                                 </div>
                               );
                             })}

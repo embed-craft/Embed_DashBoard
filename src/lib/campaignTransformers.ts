@@ -221,7 +221,14 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
         status: campaign.status || 'draft', // ✅ FIX: Pass status directly (active|paused|draft)
         trigger: campaign.trigger || extractTriggerFromTargeting(campaign.targeting), // ✅ FIX: Prefer direct trigger
         rules,
-        targeting: campaign.targeting, // ✅ FIX: Preserve full targeting object
+        // ✅ FIX: Exclude the primary trigger from targeting if count is 1
+        // Otherwise, backend treats the trigger as a strict historical prerequisite
+        // and blocks the campaign from ever reaching the device!
+        targeting: (campaign.targeting || []).filter(r => {
+            const isTrigger = r.type === 'event' && r.event === (campaign.trigger || extractTriggerFromTargeting(campaign.targeting));
+            const isJustTriggering = r.count === 1 && r.countOperator === 'greater_than_or_equal';
+            return !(isTrigger && isJustTriggering);
+        }),
         tags: campaign.tags || [], // ✅ FIX: Include tags in backend payload
         schedule: campaign.schedule ? {
             start_date: campaign.schedule.startDate,

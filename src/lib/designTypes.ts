@@ -10,7 +10,8 @@ import {
     Target,
     Flame,
     ClipboardList,
-    Sparkles
+    Sparkles,
+    LayoutTemplate
 } from 'lucide-react';
 
 export interface ScratchCardConfig {
@@ -125,7 +126,7 @@ export const DESIGN_TYPES: DesignType[] = [
         id: 'fullpage',
         label: 'Full Page',
         description: 'Immersive full-screen experience',
-        icon: LayoutGrid,
+        icon: LayoutTemplate,
         category: 'full-page',
         color: '#8B5CF6',
         bg: '#F5F3FF',
@@ -136,7 +137,7 @@ export const DESIGN_TYPES: DesignType[] = [
         id: 'bottomsheet',
         label: 'Bottom Sheet',
         description: 'Slide-up panel from bottom',
-        icon: ArrowLeft, // We'll rotate this in UI
+        icon: Square,
         category: 'bottom-sheet',
         color: '#6366F1',
         bg: '#EEF2FF',
@@ -158,7 +159,7 @@ export const DESIGN_TYPES: DesignType[] = [
         id: 'floater',
         label: 'Floater',
         description: 'Floating action button or widget',
-        icon: MessageCircle,
+        icon: Film,
         category: 'floater',
         color: '#10B981',
         bg: '#ECFDF5',
@@ -186,6 +187,17 @@ export const DESIGN_TYPES: DesignType[] = [
         bg: '#FEF9C3',
         iconBg: '#FEF08A',
         iconColor: '#CA8A04'
+    },
+    {
+        id: 'tooltip',
+        label: 'Tooltip',
+        description: 'Contextual pop-up for elements',
+        icon: MessageSquare,
+        category: 'modal',
+        color: '#F59E0B',
+        bg: '#FEF3C7',
+        iconBg: '#FDE68A',
+        iconColor: '#F59E0B'
     },
 ];
 

@@ -147,16 +147,27 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                                 ))}
                             </div>
                         )}
-                        <div style={{ position: 'relative', flex: 1, maxWidth: '200px' }}>
-                            <Search size={13} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: theme.colors.gray[400] }} />
-                            <input type="text" placeholder="Search..." value={searchQuery}
+                        <div style={{ position: 'relative', flex: 1, maxWidth: '240px' }}>
+                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                            <input type="text" placeholder="Search assets…" value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
-                                    width: '100%', paddingLeft: '28px', paddingRight: '8px',
-                                    paddingTop: '6px', paddingBottom: '6px', fontSize: '11px',
-                                    border: `1px solid ${theme.colors.border.default}`,
-                                    borderRadius: '6px', outline: 'none',
-                                    backgroundColor: theme.colors.gray[50],
+                                    width: '100%', paddingLeft: '32px', paddingRight: '12px',
+                                    paddingTop: '8px', paddingBottom: '8px', fontSize: '13px',
+                                    border: `1.5px solid #e2e8f0`,
+                                    borderRadius: '12px', outline: 'none',
+                                    backgroundColor: '#f8fafc',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                }}
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = '#6366f1';
+                                    e.currentTarget.style.backgroundColor = '#fff';
+                                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = '#e2e8f0';
+                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                    e.currentTarget.style.boxShadow = 'none';
                                 }}
                             />
                         </div>
@@ -190,56 +201,61 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                                         onClick={() => setSelectedId(asset._id)}
                                         onDoubleClick={() => { onSelect(getAssetUrl(asset.url), asset); onClose(); }}
                                         style={{
-                                            borderRadius: '8px',
-                                            border: `2px solid ${isSelected ? theme.colors.primary[500] : theme.colors.gray[200]}`,
+                                            borderRadius: '16px',
+                                            border: `2px solid ${isSelected ? '#6366f1' : '#e2e8f0'}`,
                                             overflow: 'hidden', cursor: 'pointer',
-                                            transition: 'all 0.1s ease',
-                                            backgroundColor: isSelected ? theme.colors.primary[50] : 'white',
-                                            position: 'relative'
+                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            backgroundColor: '#fff',
+                                            position: 'relative',
+                                            boxShadow: isSelected ? '0 8px 20px -6px rgba(99, 102, 241, 0.25)' : 'none',
+                                            transform: isSelected ? 'scale(1.02)' : 'scale(1)'
                                         }}
                                     >
                                         {/* Thumbnail */}
-                                        <div style={{ aspectRatio: '1', backgroundColor: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                        <div style={{ aspectRatio: '1', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                             {asset.type === 'image' ? (
                                                 <img
                                                     src={getAssetUrl(asset.url)}
                                                     alt={asset.name}
                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                     loading="lazy"
-                                                    onError={(e) => {
-                                                        // Fallback: hide broken img and show icon
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                        const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                                        if (fallback) fallback.style.display = 'flex';
-                                                    }}
                                                 />
-                                            ) : asset.type === 'video' ? (
-                                                <Film size={24} strokeWidth={1.2} style={{ color: theme.colors.gray[300] }} />
                                             ) : (
-                                                <FileText size={24} strokeWidth={1.2} style={{ color: theme.colors.gray[300] }} />
+                                                <div style={{
+                                                    width: '40px', height: '40px', borderRadius: '10px',
+                                                    background: asset.type === 'video' ? 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)' : 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                                }}>
+                                                    {asset.type === 'video' ? <Film size={18} style={{ color: '#fff' }} /> : <FileText size={18} style={{ color: '#fff' }} />}
+                                                </div>
                                             )}
                                         </div>
 
                                         {/* Check Badge */}
                                         {isSelected && (
                                             <div style={{
-                                                position: 'absolute', top: '6px', right: '6px',
-                                                backgroundColor: theme.colors.primary[500],
-                                                borderRadius: '50%', width: '20px', height: '20px',
+                                                position: 'absolute', top: '8px', right: '8px',
+                                                backgroundColor: '#6366f1',
+                                                borderRadius: '50%', width: '22px', height: '22px',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+                                                border: '2px solid #fff',
+                                                zIndex: 10
                                             }}>
                                                 <CheckCircle2 size={14} style={{ color: 'white' }} />
                                             </div>
                                         )}
 
                                         {/* Name */}
-                                        <div style={{ padding: '6px 8px' }}>
+                                        <div style={{ padding: '8px 10px', borderTop: '1px solid #f1f5f9' }}>
                                             <span style={{
-                                                fontSize: '10px', fontWeight: 500, color: theme.colors.text.primary,
+                                                fontSize: '11px', fontWeight: 600, color: '#1e293b',
                                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block'
-                                            }}>{asset.name}</span>
-                                            <span style={{ fontSize: '9px', color: theme.colors.text.tertiary }}>{asset.size}</span>
+                                            }} title={asset.name}>{asset.name}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 500 }}>{asset.size}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 );

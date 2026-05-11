@@ -13,6 +13,7 @@ import { CarouselLayerRenderer } from './CarouselLayerRenderer';
 import { CountdownRenderer } from './CountdownRenderer';
 import { DraggableLayerWrapper } from './DraggableLayerWrapper';
 import { LottieRenderer } from './LottieRenderer';
+import { RiveRenderer } from './RiveRenderer';
 import { Layer, LayerStyle } from '@/store/useEditorStore';
 
 interface SlideContainerRendererProps {
@@ -391,6 +392,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             case 'media':
             case 'image': content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} muted={isMuted} isActive={slideIsActive} />; break;
             case 'lottie': content = <LottieRenderer layer={layer} scale={scale} scaleY={scaleY} isActive={slideIsActive} />; break;
+            case 'rive': content = <RiveRenderer layer={layer} scale={scale} scaleY={scaleY} isActive={slideIsActive} />; break;
             case 'button': content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'input': content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={onInterfaceAction} />; break;
             case 'scratch_foil': content = <ScratchFoilLayerRenderer layer={layer} scale={scale} isInteractive={isInteractive} />; break;

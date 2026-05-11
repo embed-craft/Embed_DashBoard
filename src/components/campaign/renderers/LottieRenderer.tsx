@@ -82,7 +82,6 @@ export const LottieRenderer: React.FC<LottieRendererProps> = ({ layer, scale = 1
                 ...(parsedJson ? { animationData: parsedJson } : { path: lottieUrl }),
                 rendererSettings: {
                     preserveAspectRatio: preserveAspectRatio,
-                    clearCanvas: true,
                 }
             });
 
@@ -132,7 +131,7 @@ export const LottieRenderer: React.FC<LottieRendererProps> = ({ layer, scale = 1
                 animRef.current = null;
             }
         };
-    }, [lottieUrl, preserveAspectRatio, layer.content?.loop, layer.content?.autoPlay, layer.content?.speed]);
+    }, [lottieUrl, layer.content?.lottieJson, preserveAspectRatio, layer.content?.loop, layer.content?.autoPlay, layer.content?.speed]);
 
     // Playback controls based on active state (useful if in a carousel)
     useEffect(() => {

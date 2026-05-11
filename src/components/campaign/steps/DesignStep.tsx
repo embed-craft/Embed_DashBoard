@@ -42,6 +42,7 @@ import { CopyButtonEditor } from '@/components/campaign/editors/layers/CopyButto
 import { ContainerEditor } from '@/components/campaign/editors/layers/ContainerEditor';
 import { MediaEditor } from '@/components/campaign/editors/layers/MediaEditor';
 import { LottieEditor } from '@/components/campaign/editors/layers/LottieEditor';
+import { RiveEditor } from '@/components/campaign/editors/layers/RiveEditor';
 import { ProgressBarEditor } from '@/components/campaign/editors/layers/ProgressBarEditor';
 import { StatisticEditor } from '@/components/campaign/editors/layers/StatisticEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
@@ -3314,6 +3315,21 @@ export const DesignStep: React.FC<any> = () => {
       );
     }
 
+    // Rive properties
+    if (selectedLayerObj.type === 'rive') {
+      return (
+        <RiveEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          handleContentUpdate={handleContentUpdate}
+          onStyleUpdate={handleStyleUpdate}
+          handleTooltipUpdate={handleTooltipUpdate}
+          colors={colors}
+        />
+      );
+    }
+
 
     // Container properties (Generic)
     if (selectedLayerObj.type === 'container') {
@@ -4336,6 +4352,7 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'container', label: 'Container', icon: Layout },
             { id: 'media', label: 'Image', icon: ImageIcon },
             { id: 'lottie', label: 'Lottie Animation', icon: PlaySquare },
+            { id: 'rive', label: 'Rive Animation', icon: PlaySquare },
             { id: 'text', label: 'Text', icon: Type },
             { id: 'button', label: 'Button', icon: Square },
             { id: 'copy_button', label: 'Copy Button', icon: Copy },

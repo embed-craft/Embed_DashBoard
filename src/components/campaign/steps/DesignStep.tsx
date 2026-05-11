@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical, Gamepad2, RotateCw } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical, Gamepad2, RotateCw, PlaySquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -41,6 +41,7 @@ import { InputEditor } from '@/components/campaign/editors/layers/InputEditor';
 import { CopyButtonEditor } from '@/components/campaign/editors/layers/CopyButtonEditor';
 import { ContainerEditor } from '@/components/campaign/editors/layers/ContainerEditor';
 import { MediaEditor } from '@/components/campaign/editors/layers/MediaEditor';
+import { LottieEditor } from '@/components/campaign/editors/layers/LottieEditor';
 import { ProgressBarEditor } from '@/components/campaign/editors/layers/ProgressBarEditor';
 import { StatisticEditor } from '@/components/campaign/editors/layers/StatisticEditor';
 import { GradientEditor } from '@/components/campaign/editors/layers/GradientEditor';
@@ -3298,6 +3299,21 @@ export const DesignStep: React.FC<any> = () => {
       );
     }
 
+    // Lottie properties
+    if (selectedLayerObj.type === 'lottie') {
+      return (
+        <LottieEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          handleContentUpdate={handleContentUpdate}
+          onStyleUpdate={handleStyleUpdate}
+          handleTooltipUpdate={handleTooltipUpdate}
+          colors={colors}
+        />
+      );
+    }
+
 
     // Container properties (Generic)
     if (selectedLayerObj.type === 'container') {
@@ -4319,6 +4335,7 @@ export const DesignStep: React.FC<any> = () => {
             { id: 'input', label: 'Input Field', icon: Type },
             { id: 'container', label: 'Container', icon: Layout },
             { id: 'media', label: 'Image', icon: ImageIcon },
+            { id: 'lottie', label: 'Lottie Animation', icon: PlaySquare },
             { id: 'text', label: 'Text', icon: Type },
             { id: 'button', label: 'Button', icon: Square },
             { id: 'copy_button', label: 'Copy Button', icon: Copy },

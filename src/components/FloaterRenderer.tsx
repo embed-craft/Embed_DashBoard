@@ -12,6 +12,7 @@ import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerR
 import { CarouselLayerRenderer } from './campaign/renderers/CarouselLayerRenderer';
 import { CountdownRenderer } from './campaign/renderers/CountdownRenderer';
 import { SpinTheWheelLayerRenderer } from './campaign/renderers/SpinTheWheelLayerRenderer';
+import { LottieRenderer } from './campaign/renderers/LottieRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -580,6 +581,9 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             case 'media': // Handle 'media' alias
             case 'image':
                 content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />;
+                break;
+            case 'lottie':
+                content = <LottieRenderer layer={layer} scale={scale} scaleY={scaleY} isActive={true} />;
                 break;
             case 'button':
                 content = (

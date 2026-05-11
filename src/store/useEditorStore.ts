@@ -12,7 +12,7 @@ export type { ScratchCardConfig };
 export type LayerType =
   | 'media' | 'text' | 'button' | 'icon' | 'handle' | 'overlay' | 'arrow' | 'video' | 'controls'
   | 'progress-bar' | 'progress-circle' | 'list' | 'input' | 'statistic'
-  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel' | 'grid_container' | 'grid_item';
+  | 'rating' | 'badge' | 'gradient-overlay' | 'checkbox' | 'copy_button' | 'custom_html' | 'container' | 'image' | 'scratch_foil' | 'carousel' | 'countdown' | 'spinthewheel' | 'grid_container' | 'grid_item' | 'lottie';
 
 
 // Scratch Foil Props
@@ -35,6 +35,10 @@ export interface LayerContent extends ScratchFoilProps {
   imageSize?: { width: number; height: number };
   videoUrl?: string;
   iconName?: string;
+  lottieUrl?: string;
+  lottieJson?: string;
+  loop?: boolean;
+  speed?: number;
 
   // Text
   text?: string;

@@ -9,6 +9,7 @@ import { GridContainerRenderer } from './campaign/renderers/GridContainerRendere
 import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
+import { LottieRenderer } from './campaign/renderers/LottieRenderer';
 
 // Helper to scale any string containing "Npx" values (e.g. "1px solid red", "0 4px 10px black")
 // This ensures decorations match the mobile scaling factor
@@ -174,6 +175,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
         switch (layer.type) {
             case 'text': content = <TextRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'media': case 'image': content = <MediaRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
+            case 'lottie': content = <LottieRenderer layer={layer} scale={scale} scaleY={scaleY} isActive={true} />; break;
             case 'button': content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'input': content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={handleAction} />; break;
             case 'copy_button': content = <CopyButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;

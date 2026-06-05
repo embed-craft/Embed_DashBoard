@@ -52,10 +52,54 @@ export const RiveRenderer: React.FC<RiveRendererProps> = ({ layer, scale = 1, sc
     const stateMachineName = layer.content?.stateMachineName;
     const autoPlay = layer.content?.autoPlay ?? true;
 
-    // useRive hook — the core Rive integration
+    const [riveBuffer, setRiveBuffer] = useState<ArrayBuffer | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!riveUrl) {
+            setRiveBuffer(null);
+            setLoadError(null);
+            return;
+        }
+
+        let isCancelled = false;
+        const fetchRive = async () => {
+            setLoadError(null);
+            try {
+                let response = await fetch(riveUrl);
+                
+                // If direct fetch fails (likely CORS), try proxy
+                if (!response.ok || response.type === 'error') {
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(riveUrl)}`;
+                    response = await fetch(proxyUrl);
+                }
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const buffer = await response.arrayBuffer();
+                if (!isCancelled) {
+                    setRiveBuffer(buffer);
+                }
+            } catch (e: any) {
+                console.error("Rive fetch error:", e);
+                if (!isCancelled) {
+                    if (e.message.includes('fetch') || e.name === 'TypeError') {
+                        setLoadError("CORS Blocked: The server hosting this Rive file does not allow direct access. Try moving it to a CORS-enabled host.");
+                    } else {
+                        setLoadError(`Failed to load: ${e.message}`);
+                    }
+                }
+            }
+        };
+
+        fetchRive();
+        return () => { isCancelled = true; };
+    }, [riveUrl]);
+
+    // useRive hook — use buffer if available, fallback to src (though fetch already tried src)
     const { rive, RiveComponent } = useRive(
-        riveUrl ? {
-            src: riveUrl,
+        (riveBuffer || riveUrl) ? {
+            src: riveBuffer ? undefined : riveUrl,
+            buffer: riveBuffer || undefined,
             autoplay: autoPlay && isActive,
             artboard: artboardName,
             stateMachines: stateMachineName ? [stateMachineName] : undefined,
@@ -155,11 +199,20 @@ export const RiveRenderer: React.FC<RiveRendererProps> = ({ layer, scale = 1, sc
                 boxShadow: layer.style?.shadowEnabled
                     ? `${safeScale(0, scale)} ${safeScale(layer.style.shadowOffsetY || 4, scale)} ${safeScale(layer.style.shadowBlur || 0, scale)} ${safeScale(layer.style.shadowSpread || 0, scale)} ${layer.style.shadowColor || '#000000'}`
                     : layer.style?.boxShadow,
+                position: 'relative',
             }}
         >
-            <RiveComponent
-                style={{ width: '100%', height: '100%', display: 'block' }}
-            />
+            {loadError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50 text-red-500 p-4 text-center z-10">
+                    <span className="text-lg mb-2">⚠️</span>
+                    <p className="text-[10px] font-medium leading-tight">{loadError}</p>
+                </div>
+            )}
+            {!loadError && (
+                <RiveComponent
+                    style={{ width: '100%', height: '100%', display: 'block' }}
+                />
+            )}
         </div>
     );
 };

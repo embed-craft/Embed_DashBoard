@@ -93,42 +93,54 @@ export const RiveEditor: React.FC<RiveEditorProps> = ({
         setMetadata(prev => ({ ...prev, loading: true, error: null }));
 
         try {
-            // Dynamically import Rive to introspect the file
             const { Rive } = await import('@rive-app/canvas');
 
-            // Create a temporary offscreen canvas for introspection
+            // Rive needs a renderable canvas — use off-screen positioning (NOT display:none)
             const canvas = document.createElement('canvas');
-            canvas.width = 100;
-            canvas.height = 100;
-            canvas.style.display = 'none';
+            canvas.width = 1;
+            canvas.height = 1;
+            canvas.style.position = 'fixed';
+            canvas.style.left = '-9999px';
+            canvas.style.top = '-9999px';
+            canvas.style.opacity = '0';
+            canvas.style.pointerEvents = 'none';
             document.body.appendChild(canvas);
 
-            const rive = new Rive({
+            let riveInstance: any = null;
+
+            const cleanup = () => {
+                try {
+                    if (riveInstance) {
+                        riveInstance.stop?.();
+                        riveInstance.cleanup?.();
+                    }
+                } catch (_) { /* ignore cleanup errors */ }
+                try { canvas.remove(); } catch (_) { }
+            };
+
+            // Use `src` — Rive's WASM runtime handles CORS/fetching internally
+            riveInstance = new Rive({
                 src: url,
                 canvas: canvas,
                 autoplay: false,
                 onLoad: () => {
                     try {
-                        const artboards = (rive as any).artboardNames || [];
-                        const stateMachines = (rive as any).stateMachineNames || [];
+                        const artboards: string[] = riveInstance?.artboardNames || [];
+                        const stateMachines: string[] = riveInstance?.stateMachineNames || [];
 
-                        // Discover inputs from the active or first state machine
                         const smName = layer?.content?.stateMachineName || stateMachines[0];
                         let inputs: DiscoveredInput[] = [];
 
                         if (smName) {
                             try {
-                                const smInputs = (rive as any).stateMachineInputs(smName) || [];
+                                const smInputs = riveInstance?.stateMachineInputs(smName) || [];
                                 inputs = smInputs.map((input: any) => {
                                     let type: RiveInputType = 'number';
-                                    // Rive input types: 56 = bool, 57 = number, 58 = trigger
                                     if (input.type === 56) type = 'bool';
                                     else if (input.type === 58) type = 'trigger';
                                     return { name: input.name, type };
                                 });
-                            } catch (e) {
-                                // State machine may not have inputs
-                            }
+                            } catch (_) { }
                         }
 
                         setMetadata({
@@ -139,20 +151,20 @@ export const RiveEditor: React.FC<RiveEditorProps> = ({
                             error: null,
                         });
                     } catch (e) {
+                        console.error('Rive metadata parse error:', e);
                         setMetadata(prev => ({ ...prev, loading: false, error: 'Failed to read .riv metadata' }));
                     }
-
-                    // Clean up
-                    rive.cleanup();
-                    canvas.remove();
+                    cleanup();
                 },
-                onLoadError: () => {
-                    setMetadata(prev => ({ ...prev, loading: false, error: 'Failed to load .riv file' }));
-                    canvas.remove();
+                onLoadError: (e: any) => {
+                    console.error('Rive onLoadError:', e);
+                    setMetadata(prev => ({ ...prev, loading: false, error: 'Failed to load .riv file. Check if the URL is valid and accessible.' }));
+                    cleanup();
                 },
             });
-        } catch (e) {
-            setMetadata(prev => ({ ...prev, loading: false, error: 'Rive runtime error' }));
+        } catch (e: any) {
+            console.error('Rive discovery error:', e);
+            setMetadata(prev => ({ ...prev, loading: false, error: e?.message || 'Rive runtime error' }));
         }
     }, [layer?.content?.stateMachineName]);
 
@@ -218,13 +230,19 @@ export const RiveEditor: React.FC<RiveEditorProps> = ({
                         </div>
 
                         {metadata.error && (
-                            <div className="text-xs text-red-500 bg-red-50 p-2 rounded-md mb-3">{metadata.error}</div>
+                            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md mb-3 flex items-start gap-1.5">
+                                <span className="shrink-0 mt-0.5">⚠️</span>
+                                <div>
+                                    <span>{metadata.error}</span>
+                                    <p className="text-[10px] text-amber-500 mt-0.5">Auto-discovery unavailable. You can still enter artboard/state machine names manually below.</p>
+                                </div>
+                            </div>
                         )}
 
-                        {/* Auto-discovered Artboard selector */}
-                        {metadata.artboards.length > 0 && (
-                            <div className="space-y-1.5 mb-3">
-                                <Label>Artboard</Label>
+                        {/* Artboard selector — dropdown if auto-discovered, text input as fallback */}
+                        <div className="space-y-1.5 mb-3">
+                            <Label>Artboard Name</Label>
+                            {metadata.artboards.length > 0 ? (
                                 <div className="relative">
                                     <select
                                         value={layer.content?.artboardName || ''}
@@ -238,19 +256,26 @@ export const RiveEditor: React.FC<RiveEditorProps> = ({
                                     </select>
                                     <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={layer.content?.artboardName || ''}
+                                    onChange={(e) => handleContentUpdate('artboardName', e.target.value || undefined)}
+                                    placeholder="Leave empty for default"
+                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-violet-500 transition-colors"
+                                />
+                            )}
+                        </div>
 
-                        {/* Auto-discovered State Machine selector */}
-                        {metadata.stateMachines.length > 0 && (
-                            <div className="space-y-1.5 mb-3">
-                                <Label>State Machine</Label>
+                        {/* State Machine selector — dropdown if auto-discovered, text input as fallback */}
+                        <div className="space-y-1.5 mb-3">
+                            <Label>State Machine</Label>
+                            {metadata.stateMachines.length > 0 ? (
                                 <div className="relative">
                                     <select
                                         value={layer.content?.stateMachineName || ''}
                                         onChange={(e) => {
                                             handleContentUpdate('stateMachineName', e.target.value || undefined);
-                                            // Re-discover inputs when state machine changes
                                             setTimeout(() => discoverMetadata(riveUrl), 100);
                                         }}
                                         className="w-full px-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-violet-500 appearance-none bg-white pr-8"
@@ -262,8 +287,16 @@ export const RiveEditor: React.FC<RiveEditorProps> = ({
                                     </select>
                                     <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={layer.content?.stateMachineName || ''}
+                                    onChange={(e) => handleContentUpdate('stateMachineName', e.target.value || undefined)}
+                                    placeholder="Leave empty for default"
+                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-violet-500 transition-colors"
+                                />
+                            )}
+                        </div>
 
                         {/* Auto-discovered Inputs */}
                         {metadata.inputs.length > 0 && (

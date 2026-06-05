@@ -10,6 +10,8 @@ interface Organization {
     plan_limit: number;
     contract_end_date?: string;
     api_key: string;
+    tier: 'starter' | 'growth' | 'enterprise';
+    dedicated_mongo_uri?: string;
 }
 
 const Clients: React.FC = () => {
@@ -25,6 +27,69 @@ const Clients: React.FC = () => {
     const [newPassword, setNewPassword] = useState('');
     const [newAppScheme, setNewAppScheme] = useState('');
     const [subscriptionMonths, setSubscriptionMonths] = useState(6); // Default to 6 months
+    const [newTier, setNewTier] = useState('starter');
+    const [newDedicatedMongoUri, setNewDedicatedMongoUri] = useState('');
+    const [newAutoProvision, setNewAutoProvision] = useState(true);
+
+    // Edit Form State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTier, setEditTier] = useState('starter');
+    const [editDedicatedMongoUri, setEditDedicatedMongoUri] = useState('');
+    const [editPlanLimit, setEditPlanLimit] = useState(100000);
+    const [editContractEndDate, setEditContractEndDate] = useState('');
+    const [editAutoProvision, setEditAutoProvision] = useState(true);
+
+    const handleOpenDetails = (client: Organization) => {
+        setSelectedClient(client);
+        setEditTier(client.tier || 'starter');
+        setEditDedicatedMongoUri(client.dedicated_mongo_uri || '');
+        setEditPlanLimit(client.plan_limit || 100000);
+        setEditAutoProvision(!client.dedicated_mongo_uri || client.dedicated_mongo_uri.includes('embedcraft.z923ska.mongodb.net'));
+        if (client.contract_end_date) {
+            const dateObj = new Date(client.contract_end_date);
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            setEditContractEndDate(`${yyyy}-${mm}-${dd}`);
+        } else {
+            setEditContractEndDate('');
+        }
+        setIsEditing(false);
+    };
+
+    const handleUpdateContract = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedClient) return;
+
+        try {
+            const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
+            const res = await fetch(`${apiUrl}/api/admin/client/${selectedClient._id}/contract`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    tier: editTier,
+                    dedicated_mongo_uri: (editTier === 'enterprise' && !editAutoProvision) ? editDedicatedMongoUri : null,
+                    auto_provision: editTier === 'enterprise' ? editAutoProvision : false,
+                    planLimit: editPlanLimit,
+                    contractEndDate: editContractEndDate ? new Date(editContractEndDate).toISOString() : null
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                fetchClients(); // Refresh list
+                setIsEditing(false);
+                setSelectedClient(data.organization); // Refresh details view
+            } else {
+                alert('Failed to update contract');
+            }
+        } catch (error) {
+            console.error('Error updating contract', error);
+        }
+    };
 
     const fetchClients = async () => {
         try {
@@ -33,9 +98,15 @@ const Clients: React.FC = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
-            setClients(data);
+            if (res.ok && Array.isArray(data)) {
+                setClients(data);
+            } else {
+                setClients([]);
+                console.error('Failed to fetch clients: expected array, got', data);
+            }
         } catch (error) {
             console.error('Failed to fetch clients', error);
+            setClients([]);
         } finally {
             setLoading(false);
         }
@@ -64,7 +135,10 @@ const Clients: React.FC = () => {
                     adminEmail: newEmail,
                     password: newPassword,
                     app_scheme: newAppScheme,
-                    contractEndDate: endDate.toISOString()
+                    contractEndDate: endDate.toISOString(),
+                    tier: newTier,
+                    dedicated_mongo_uri: (newTier === 'enterprise' && !newAutoProvision) ? newDedicatedMongoUri : null,
+                    auto_provision: newTier === 'enterprise' ? newAutoProvision : false
                 })
             });
 
@@ -75,6 +149,8 @@ const Clients: React.FC = () => {
                 setNewPassword('');
                 setNewAppScheme('');
                 setSubscriptionMonths(6);
+                setNewTier('starter');
+                setNewDedicatedMongoUri('');
                 fetchClients(); // Refresh list
             } else {
                 alert('Failed to create client');
@@ -148,6 +224,7 @@ const Clients: React.FC = () => {
                         <tr>
                             <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '10px', color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Company Name</th>
                             <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '10px', color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Admin Contact</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '10px', color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tier</th>
                             <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '10px', color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Status</th>
                             <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '10px', color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Plan Limit</th>
                             <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '10px', color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>API Key</th>
@@ -159,6 +236,21 @@ const Clients: React.FC = () => {
                             <tr key={client._id} style={{ borderBottom: '1px solid #F0F0F0', transition: 'background-color 0.1s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#FAFAFA'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
                                 <td style={{ padding: '14px 16px', fontSize: '13px', color: '#1A1A1A', fontWeight: 500, fontFamily: '"Playfair Display", Georgia, serif' }}>{client.name}</td>
                                 <td style={{ padding: '14px 16px', fontSize: '12px', color: '#444' }}>{client.admin_email}</td>
+                                <td style={{ padding: '14px 16px' }}>
+                                    <span style={{
+                                        padding: '3px 8px',
+                                        borderRadius: '100px',
+                                        fontSize: '10px',
+                                        fontWeight: 600,
+                                        backgroundColor: client.tier === 'enterprise' ? '#F3E8FF' : client.tier === 'growth' ? '#EFF6FF' : '#F3F4F6',
+                                        color: client.tier === 'enterprise' ? '#7C3AED' : client.tier === 'growth' ? '#1D4ED8' : '#374151',
+                                        border: `1px solid ${client.tier === 'enterprise' ? '#E9D5FF' : client.tier === 'growth' ? '#BFDBFE' : '#E5E7EB'}`,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.05em'
+                                    }}>
+                                        {client.tier || 'starter'}
+                                    </span>
+                                </td>
                                 <td style={{ padding: '14px 16px' }}>
                                     <span style={{
                                         padding: '3px 8px',
@@ -180,7 +272,7 @@ const Clients: React.FC = () => {
                                 </td>
                                 <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                                     <button
-                                        onClick={() => setSelectedClient(client)}
+                                        onClick={() => handleOpenDetails(client)}
                                         style={{
                                             backgroundColor: 'transparent',
                                             border: '1px solid #E5E5E5',
@@ -260,6 +352,48 @@ const Clients: React.FC = () => {
                                 </select>
                             </div>
                             <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Client Tier</label>
+                                <select
+                                    value={newTier} onChange={e => setNewTier(e.target.value)}
+                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E5E5', borderRadius: '4px', fontSize: '13px', outline: 'none', transition: 'border-color 0.2s', backgroundColor: 'white' }}
+                                    onFocus={(e) => e.target.style.borderColor = '#1A1A1A'}
+                                    onBlur={(e) => e.target.style.borderColor = '#E5E5E5'}
+                                >
+                                    <option value="starter">Starter (Shared Cluster)</option>
+                                    <option value="growth">Growth (Shared Cluster)</option>
+                                    <option value="enterprise">Enterprise (Dedicated Cluster)</option>
+                                </select>
+                            </div>
+                            {newTier === 'enterprise' && (
+                                <>
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Database Mode</label>
+                                        <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#444' }}>
+                                                <input type="radio" name="new_db_mode" checked={newAutoProvision} onChange={() => setNewAutoProvision(true)} style={{ accentColor: '#1A1A1A' }} />
+                                                System Auto-Provision (Managed)
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#444' }}>
+                                                <input type="radio" name="new_db_mode" checked={!newAutoProvision} onChange={() => setNewAutoProvision(false)} style={{ accentColor: '#1A1A1A' }} />
+                                                Own Custom URI
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {!newAutoProvision && (
+                                        <div style={{ marginBottom: '16px' }}>
+                                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B91C1C', fontWeight: 600 }}>Dedicated MongoDB URI</label>
+                                            <input
+                                                value={newDedicatedMongoUri} onChange={e => setNewDedicatedMongoUri(e.target.value)} required placeholder="mongodb+srv://..."
+                                                style={{ width: '100%', padding: '8px 10px', border: '1px solid #FECACA', borderRadius: '4px', fontSize: '13px', outline: 'none', transition: 'border-color 0.2s' }}
+                                                onFocus={(e) => e.target.style.borderColor = '#B91C1C'}
+                                                onBlur={(e) => e.target.style.borderColor = '#FECACA'}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>App Scheme (Deep Link)</label>
                                 <input
                                     value={newAppScheme} onChange={e => setNewAppScheme(e.target.value)} required placeholder="e.g. embedfin"
@@ -286,7 +420,7 @@ const Clients: React.FC = () => {
                 </div>
             )}
 
-            {/* Client Details Modal */}
+            {/* Client Details / Edit Modal */}
             {selectedClient && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -313,45 +447,159 @@ const Clients: React.FC = () => {
                             </span>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                        {isEditing ? (
+                            <form onSubmit={handleUpdateContract}>
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Client Tier</label>
+                                    <select
+                                        value={editTier} onChange={e => setEditTier(e.target.value)}
+                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E5E5', borderRadius: '4px', fontSize: '13px', outline: 'none', backgroundColor: 'white' }}
+                                    >
+                                        <option value="starter">Starter (Shared Cluster)</option>
+                                        <option value="growth">Growth (Shared Cluster)</option>
+                                        <option value="enterprise">Enterprise (Dedicated Cluster)</option>
+                                    </select>
+                                </div>
+
+                                {editTier === 'enterprise' && (
+                                    <>
+                                        <div style={{ marginBottom: '16px' }}>
+                                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Database Mode</label>
+                                            <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#444' }}>
+                                                    <input type="radio" name="edit_db_mode" checked={editAutoProvision} onChange={() => setEditAutoProvision(true)} style={{ accentColor: '#1A1A1A' }} />
+                                                    System Auto-Provision (Managed)
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#444' }}>
+                                                    <input type="radio" name="edit_db_mode" checked={!editAutoProvision} onChange={() => setEditAutoProvision(false)} style={{ accentColor: '#1A1A1A' }} />
+                                                    Own Custom URI
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {!editAutoProvision && (
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B91C1C', fontWeight: 600 }}>Dedicated MongoDB URI</label>
+                                                <input
+                                                    value={editDedicatedMongoUri} onChange={e => setEditDedicatedMongoUri(e.target.value)} required placeholder="mongodb+srv://..."
+                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #FECACA', borderRadius: '4px', fontSize: '13px', outline: 'none' }}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Plan Limit</label>
+                                        <input
+                                            type="number" value={editPlanLimit} onChange={e => setEditPlanLimit(Number(e.target.value))} required
+                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E5E5', borderRadius: '4px', fontSize: '13px', outline: 'none', fontFamily: 'monospace' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', fontWeight: 600 }}>Contract End Date</label>
+                                        <input
+                                            type="date" value={editContractEndDate} onChange={e => setEditContractEndDate(e.target.value)} required
+                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E5E5', borderRadius: '4px', fontSize: '13px', outline: 'none' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid #E5E5E5', paddingTop: '20px' }}>
+                                    <button type="button" onClick={() => setIsEditing(false)} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', color: '#666', fontSize: '12px', fontWeight: 500 }}>Cancel</button>
+                                    <button type="submit" style={{ padding: '8px 20px', backgroundColor: '#1A1A1A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Save Changes</button>
+                                </div>
+                            </form>
+                        ) : (
                             <div>
-                                <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>Plan Limit</label>
-                                <div style={{ fontSize: '14px', color: '#1A1A1A', fontFamily: 'monospace' }}>{selectedClient.plan_limit.toLocaleString()}</div>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>Contract End</label>
-                                <div style={{ fontSize: '14px', color: '#1A1A1A' }}>
-                                    {selectedClient.contract_end_date ? new Date(selectedClient.contract_end_date).toLocaleDateString() : 'No Expiry'}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>Plan Limit</label>
+                                        <div style={{ fontSize: '14px', color: '#1A1A1A', fontFamily: 'monospace' }}>{selectedClient.plan_limit.toLocaleString()}</div>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>Contract End</label>
+                                        <div style={{ fontSize: '14px', color: '#1A1A1A' }}>
+                                            {selectedClient.contract_end_date ? new Date(selectedClient.contract_end_date).toLocaleDateString() : 'No Expiry'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>Client Tier</label>
+                                        <span style={{
+                                            padding: '3px 8px',
+                                            borderRadius: '100px',
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                            backgroundColor: selectedClient.tier === 'enterprise' ? '#F3E8FF' : selectedClient.tier === 'growth' ? '#EFF6FF' : '#F3F4F6',
+                                            color: selectedClient.tier === 'enterprise' ? '#7C3AED' : selectedClient.tier === 'growth' ? '#1D4ED8' : '#374151',
+                                            border: `1px solid ${selectedClient.tier === 'enterprise' ? '#E9D5FF' : selectedClient.tier === 'growth' ? '#BFDBFE' : '#E5E7EB'}`,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em'
+                                        }}>
+                                            {selectedClient.tier || 'starter'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {selectedClient.tier === 'enterprise' && (
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B91C1C', marginBottom: '4px', fontWeight: 600 }}>Dedicated MongoDB Cluster Connection</label>
+                                        <div style={{ backgroundColor: '#FFF5F5', padding: '10px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace', color: '#B91C1C', border: '1px solid #FEE2E2', wordBreak: 'break-all' }}>
+                                            {selectedClient.dedicated_mongo_uri || 'No custom connection configured (using shared cluster fallback)'}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>API Key</label>
+                                    <div style={{ backgroundColor: '#F9F9F7', padding: '10px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace', color: '#444', border: '1px solid #E5E5E5', wordBreak: 'break-all' }}>
+                                        {selectedClient.api_key}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E5E5', paddingTop: '20px' }}>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            onClick={() => handleUpdateStatus(selectedClient._id, selectedClient.status === 'active' ? 'inactive' : 'active')}
+                                            style={{
+                                                backgroundColor: selectedClient.status === 'active' ? '#FEF2F2' : '#F0FDF4',
+                                                color: selectedClient.status === 'active' ? '#B91C1C' : '#15803D',
+                                                border: 'none',
+                                                padding: '8px 16px',
+                                                borderRadius: '4px',
+                                                fontSize: '12px',
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {selectedClient.status === 'active' ? 'Pause' : 'Resume'}
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            style={{
+                                                backgroundColor: '#F3F4F6',
+                                                color: '#374151',
+                                                border: '1px solid #E5E7EB',
+                                                padding: '8px 16px',
+                                                borderRadius: '4px',
+                                                fontSize: '12px',
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Edit / Renew
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setSelectedClient(null)} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', color: '#666', fontSize: '12px', fontWeight: 500 }}>Close</button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', marginBottom: '4px' }}>API Key</label>
-                            <div style={{ backgroundColor: '#F9F9F7', padding: '10px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace', color: '#444', border: '1px solid #E5E5E5', wordBreak: 'break-all' }}>
-                                {selectedClient.api_key}
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E5E5', paddingTop: '20px' }}>
-                            <button
-                                onClick={() => handleUpdateStatus(selectedClient._id, selectedClient.status === 'active' ? 'inactive' : 'active')}
-                                style={{
-                                    backgroundColor: selectedClient.status === 'active' ? '#FEF2F2' : '#F0FDF4',
-                                    color: selectedClient.status === 'active' ? '#B91C1C' : '#15803D',
-                                    border: 'none',
-                                    padding: '8px 16px',
-                                    borderRadius: '4px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {selectedClient.status === 'active' ? 'Pause Subscription' : 'Resume Subscription'}
-                            </button>
-                            <button onClick={() => setSelectedClient(null)} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', color: '#666', fontSize: '12px', fontWeight: 500 }}>Close</button>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -37,9 +37,6 @@ jobs:
           npm install
 
       - name: Build Vite App
-        env:
-          # Inject the new AWS Backend Load Balancer URL
-          VITE_API_URL: http://embedcraft-production-alb-1048571436.us-east-1.elb.amazonaws.com
         run: |
           npm run build
 

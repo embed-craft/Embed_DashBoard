@@ -111,20 +111,52 @@ export const LottieEditor: React.FC<LottieEditorProps> = ({
                         </div>
 
                         {inputMode === 'url' ? (
-                            <div className="flex gap-2 items-center">
-                                <div className="relative flex-1">
-                                    <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={lottieUrl}
-                                        onChange={(e) => {
-                                            handleContentUpdate('lottieUrl', e.target.value);
-                                            handleContentUpdate('lottieJson', ''); // Clear json when url is set
+                            <div className="space-y-2">
+                                <div className="flex gap-2 items-center">
+                                    <div className="relative flex-1">
+                                        <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={lottieUrl}
+                                            onChange={(e) => handleContentUpdate('lottieUrl', e.target.value)}
+                                            placeholder="https://assets.lottiefiles.com/example.json"
+                                            className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 transition-colors"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            if (!lottieUrl) return;
+                                            try {
+                                                let response = await fetch(lottieUrl);
+                                                if (!response.ok) {
+                                                    // Try proxy as fallback
+                                                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(lottieUrl)}`;
+                                                    const proxyRes = await fetch(proxyUrl);
+                                                    const data = await proxyRes.json();
+                                                    if (data.contents) {
+                                                        handleContentUpdate('lottieJson', data.contents);
+                                                        handleContentUpdate('lottieUrl', '');
+                                                        setInputMode('json');
+                                                        return;
+                                                    }
+                                                    throw new Error("Failed to fetch");
+                                                }
+                                                const json = await response.text();
+                                                handleContentUpdate('lottieJson', json);
+                                                handleContentUpdate('lottieUrl', '');
+                                                setInputMode('json');
+                                            } catch (e) {
+                                                alert("Could not fetch Lottie JSON. The server might be blocking access. Try downloading the file and pasting its content in 'JSON Data' mode.");
+                                            }
                                         }}
-                                        placeholder="https://assets.lottiefiles.com/example.json"
-                                        className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 transition-colors"
-                                    />
+                                        className="px-3 py-2 text-xs bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors border border-indigo-100 font-medium whitespace-nowrap"
+                                    >
+                                        Fetch & Embed
+                                    </button>
                                 </div>
+                                <p className="text-[9px] text-gray-400 italic">
+                                    Tip: Use 'Fetch & Embed' if the animation doesn't show up due to CORS.
+                                </p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-2">

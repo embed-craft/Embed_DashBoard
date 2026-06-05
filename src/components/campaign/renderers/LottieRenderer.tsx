@@ -53,76 +53,130 @@ export const LottieRenderer: React.FC<LottieRendererProps> = ({ layer, scale = 1
     }
 
     // Core lottie-web integration
+    const [loadError, setLoadError] = useState<string | null>(null);
+
     useEffect(() => {
         if (!containerRef.current || (!lottieUrl && !layer.content?.lottieJson)) return;
 
-        // Clean up previous instance
-        if (animRef.current) {
-            animRef.current.destroy();
-            animRef.current = null;
-        }
+        let isCancelled = false;
 
-        try {
-            let parsedJson = null;
-            if (layer.content?.lottieJson) {
-                try {
-                    parsedJson = typeof layer.content.lottieJson === 'string'
-                        ? JSON.parse(layer.content.lottieJson)
-                        : layer.content.lottieJson;
-                } catch (e) {
-                    console.error("Invalid Lottie JSON");
-                }
+        const loadAnim = async () => {
+            // Clean up previous instance
+            if (animRef.current) {
+                animRef.current.destroy();
+                animRef.current = null;
             }
+            setLoadError(null);
 
-            const anim = lottie.loadAnimation({
-                container: containerRef.current,
-                renderer: 'svg',
-                loop: layer.content?.loop ?? true,
-                autoplay: layer.content?.autoPlay ?? true,
-                ...(parsedJson ? { animationData: parsedJson } : { path: lottieUrl }),
-                rendererSettings: {
-                    preserveAspectRatio: preserveAspectRatio,
+            try {
+                let animationData = null;
+
+                // 1. Handle JSON data directly
+                if (layer.content?.lottieJson) {
+                    try {
+                        animationData = typeof layer.content.lottieJson === 'string'
+                            ? JSON.parse(layer.content.lottieJson)
+                            : layer.content.lottieJson;
+                    } catch (e) {
+                        console.error("Invalid Lottie JSON");
+                        setLoadError("Invalid Lottie JSON data");
+                        return;
+                    }
+                } 
+                // 2. Handle URL - manual fetch with proxy fallback
+                else if (lottieUrl) {
+                    try {
+                        let response = await fetch(lottieUrl);
+                        
+                        // If direct fetch fails (likely CORS), try proxy
+                        if (!response.ok || response.type === 'error') {
+                            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(lottieUrl)}`;
+                            const proxyRes = await fetch(proxyUrl);
+                            const data = await proxyRes.json();
+                            if (data.contents) {
+                                animationData = typeof data.contents === 'string' 
+                                    ? JSON.parse(data.contents) 
+                                    : data.contents;
+                            } else {
+                                throw new Error("Proxy failed to return content");
+                            }
+                        } else {
+                            animationData = await response.json();
+                        }
+                    } catch (e: any) {
+                        console.error("Lottie fetch error:", e);
+                        
+                        // Last ditch effort: try proxy directly if fetch threw TypeError (common for CORS)
+                        if (e.name === 'TypeError') {
+                            try {
+                                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(lottieUrl)}`;
+                                const proxyRes = await fetch(proxyUrl);
+                                animationData = await proxyRes.json();
+                            } catch (proxyError) {
+                                console.error("Lottie proxy error:", proxyError);
+                            }
+                        }
+
+                        if (!animationData) {
+                            setLoadError("CORS Blocked: The server hosting this Lottie file does not allow direct access. Try pasting the JSON data instead.");
+                            return;
+                        }
+                    }
                 }
-            });
 
-            animRef.current = anim;
-            anim.setSpeed(layer.content?.speed ?? 1);
+                if (isCancelled || !animationData) return;
 
-            anim.addEventListener('DOMLoaded', () => {
-                if (!containerRef.current) return;
+                const anim = lottie.loadAnimation({
+                    container: containerRef.current!,
+                    renderer: 'svg',
+                    loop: layer.content?.loop ?? true,
+                    autoplay: layer.content?.autoPlay ?? true,
+                    animationData: animationData,
+                    rendererSettings: {
+                        preserveAspectRatio: preserveAspectRatio,
+                    }
+                });
 
-                // Store native aspect ratio in React state so it survives re-renders.
-                // DOM-set styles get wiped by React reconciliation on phone changes.
-                const animData = (anim as any).animationData;
-                if (animData?.w && animData?.h) {
-                    setAnimAspectRatio(`${animData.w} / ${animData.h}`);
-                }
+                animRef.current = anim;
+                anim.setSpeed(layer.content?.speed ?? 1);
 
-                // Force SVG to always fill 100% of our container.
-                const svg = containerRef.current.querySelector('svg');
-                if (svg) {
-                    svg.setAttribute('preserveAspectRatio', preserveAspectRatio);
-                    svg.style.width = '100%';
-                    svg.style.height = '100%';
-                    svg.style.display = 'block';
-                }
-                anim.resize();
-            });
+                anim.addEventListener('DOMLoaded', () => {
+                    if (isCancelled || !containerRef.current) return;
 
-            // ResizeObserver: recalculate lottie-web internal matrices on container resize
-            const resizeObserver = new ResizeObserver(() => {
-                if (animRef.current) {
-                    animRef.current.resize();
-                }
-            });
-            resizeObserver.observe(containerRef.current);
-            (anim as any)._resizeObserver = resizeObserver;
+                    const animData = (anim as any).animationData;
+                    if (animData?.w && animData?.h) {
+                        setAnimAspectRatio(`${animData.w} / ${animData.h}`);
+                    }
 
-        } catch (error) {
-            console.error('Error loading lottie animation:', error);
-        }
+                    const svg = containerRef.current.querySelector('svg');
+                    if (svg) {
+                        svg.setAttribute('preserveAspectRatio', preserveAspectRatio);
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        svg.style.display = 'block';
+                    }
+                    anim.resize();
+                });
+
+                // ResizeObserver
+                const resizeObserver = new ResizeObserver(() => {
+                    if (animRef.current) {
+                        animRef.current.resize();
+                    }
+                });
+                resizeObserver.observe(containerRef.current);
+                (anim as any)._resizeObserver = resizeObserver;
+
+            } catch (error) {
+                console.error('Error initializing lottie:', error);
+                setLoadError("Initialization failed");
+            }
+        };
+
+        loadAnim();
 
         return () => {
+            isCancelled = true;
             if (animRef.current) {
                 if ((animRef.current as any)._resizeObserver) {
                     (animRef.current as any)._resizeObserver.disconnect();
@@ -199,7 +253,15 @@ export const LottieRenderer: React.FC<LottieRendererProps> = ({ layer, scale = 1
                 boxShadow: layer.style?.shadowEnabled
                     ? `${safeScale(0, scale)} ${safeScale(layer.style.shadowOffsetY || 4, scale)} ${safeScale(layer.style.shadowBlur || 0, scale)} ${safeScale(layer.style.shadowSpread || 0, scale)} ${layer.style.shadowColor || '#000000'}`
                     : layer.style?.boxShadow,
+                position: 'relative',
             }}
-        />
+        >
+            {loadError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50 text-red-500 p-4 text-center z-10">
+                    <span className="text-lg mb-2">⚠️</span>
+                    <p className="text-[10px] font-medium leading-tight">{loadError}</p>
+                </div>
+            )}
+        </div>
     );
 };

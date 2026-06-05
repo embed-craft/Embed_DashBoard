@@ -607,7 +607,7 @@ export const DesignStep: React.FC<any> = () => {
     }
   };
 
-  // Image upload handler — uploads to Asset Library (Cloudinary) instead of base64
+  // Image upload handler — uploads to Asset Library (S3/CloudFront) instead of base64
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'layer' | 'background' | 'tooltip_image_only') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -624,10 +624,10 @@ export const DesignStep: React.FC<any> = () => {
       return;
     }
 
-    // Try API upload first (saves to Asset Library + Cloudinary)
+    // Try API upload first (saves to Asset Library + AWS S3)
     try {
       const asset = await apiClient.uploadAsset(file);
-      const imageUrl = asset.url; // Cloudinary secure_url
+      const imageUrl = asset.url; // S3 secure URL (CloudFront)
 
       if (target === 'layer') {
         handleContentUpdate('imageUrl', imageUrl);

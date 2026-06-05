@@ -9,7 +9,8 @@ interface CarouselLayerRendererProps {
     scale?: number;
     scaleY?: number;
     isInteractive?: boolean;
-    renderChild?: (layer: Layer) => React.ReactNode;
+    isActive?: boolean;
+    renderChild?: (layer: Layer, slideIsActive?: boolean) => React.ReactNode;
 }
 
 export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
@@ -17,6 +18,7 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
     scale = 1,
     scaleY = scale,
     isInteractive = false,
+    isActive = true,
     renderChild
 }) => {
     // --- 1. CONFIG & STATE ---
@@ -181,7 +183,7 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
 
 
     // --- 3. SAFE RENDER CHILD ---
-    const renderSafe = (slide: Layer) => {
+    const renderSafe = (slide: Layer, slideIsActive: boolean) => {
         if (!renderChild) return null;
         try {
             // FIX: Enforce 100% width/height for slides so they fit the track perfectly
@@ -208,7 +210,7 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
                     boxSizing: 'border-box'
                 }
             };
-            const result = renderChild(safeSlide);
+            const result = renderChild(safeSlide, slideIsActive);
 
             // Critical Safety Check: Ensure we have a valid React Element
             if (result !== null && typeof result === 'object' && !isValidElement(result)) {
@@ -391,6 +393,8 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
                         }
 
                         const isNear = Math.abs(offset) <= 2; // Lazy Load Range
+                        const realIdx = isSeamless ? (idx === 0 ? count - 1 : idx === count + 1 ? 0 : idx - 1) : idx;
+                        const isSlideActive = isActive && realIdx === activeDotsIndex;
 
                         return (
                             <div
@@ -426,7 +430,7 @@ export const CarouselLayerRenderer: React.FC<CarouselLayerRendererProps> = ({
                                 }}
                             >
                                 {/* Render Container (Lazy Loaded) */}
-                                {isNear ? renderSafe(slide) : <div className="w-full h-full" />}
+                                {isNear ? renderSafe(slide, isSlideActive) : <div className="w-full h-full" />}
                             </div>
                         );
                     })}

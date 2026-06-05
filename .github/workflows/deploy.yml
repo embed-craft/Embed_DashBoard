@@ -1,0 +1,52 @@
+name: Deploy Dashboard to S3 & CloudFront
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install Dependencies
+        run: |
+          # Use npm install to prevent strict lockfile mismatches across platforms
+          npm install
+
+      - name: Build Vite App
+        env:
+          # Inject the new AWS Backend Load Balancer URL
+          VITE_API_URL: http://embedcraft-production-alb-1048571436.us-east-1.elb.amazonaws.com
+        run: |
+          npm run build
+
+      - name: Deploy static assets to S3
+        run: |
+          aws s3 sync dist/ s3://embedcraft-production-dashboard-bucket --delete --region us-east-1
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id E223HYC0WMN655 --paths "/*" --region us-east-1

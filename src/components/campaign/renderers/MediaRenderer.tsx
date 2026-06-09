@@ -130,6 +130,54 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
         );
     }
 
+    const cleanUrl = imageUrl.split('?')[0].toLowerCase();
+    const isLottie = cleanUrl.endsWith('.json');
+    const isRive = cleanUrl.endsWith('.riv');
+    const isPdf = cleanUrl.endsWith('.pdf');
+    const isCsv = cleanUrl.endsWith('.csv');
+    const isTxt = cleanUrl.endsWith('.txt');
+
+    if (isLottie || isRive || isPdf || isCsv || isTxt) {
+        let extLabel = "DOC";
+        if (isLottie) extLabel = "LOTTIE";
+        else if (isRive) extLabel = "RIVE";
+        else if (isPdf) extLabel = "PDF";
+        else if (isCsv) extLabel = "CSV";
+        else if (isTxt) extLabel = "TXT";
+
+        return (
+            <div
+                style={{
+                    width: hasExplicitWidth ? '100%' : 120,
+                    height: hasExplicitHeight ? '100%' : 120,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                    borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
+                        ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
+                        : safeScale(layer.style?.borderRadius || 0, scale),
+                    border: '1px solid #cbd5e1',
+                    padding: '8px',
+                    boxSizing: 'border-box',
+                    gap: '4px',
+                    color: '#475569',
+                    fontFamily: 'sans-serif',
+                }}
+            >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px' }}>{extLabel} FILE</span>
+                <span style={{ fontSize: '8px', color: '#94a3b8', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={imageUrl.split('/').pop()}>
+                    {imageUrl.split('/').pop()?.split('?')[0]}
+                </span>
+            </div>
+        );
+    }
+
     return (
         <img
             src={layer.content?.imageUrl}

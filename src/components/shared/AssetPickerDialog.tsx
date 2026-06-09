@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
     Search, Upload, Image as ImageIcon, Film, FileText,
-    CheckCircle2, Loader2, FolderOpen, X
+    CheckCircle2, Loader2, FolderOpen, X, Link as LinkIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -51,6 +51,32 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<FilterType>(accept === 'all' ? 'all' : accept);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [isUrlInputOpen, setIsUrlInputOpen] = useState(false);
+    const [urlInput, setUrlInput] = useState('');
+    const [urlNameInput, setUrlNameInput] = useState('');
+    const [urlUploading, setUrlUploading] = useState(false);
+
+    const handleUrlUpload = async () => {
+        if (!urlInput.trim()) { toast.error('Please enter a URL'); return; }
+        setUrlUploading(true);
+        try {
+            const newAsset = await apiClient.createAssetFromUrl({
+                name: urlNameInput.trim() || urlInput.split('/').pop()?.split('?')[0] || 'Untitled',
+                url: urlInput.trim()
+            });
+            setAssets(prev => [newAsset, ...prev]);
+            setSelectedId(newAsset._id);
+            setIsUrlInputOpen(false);
+            setUrlInput('');
+            setUrlNameInput('');
+            toast.success('Asset added successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to add asset from URL');
+        } finally {
+            setUrlUploading(false);
+        }
+    };
 
     // Fetch assets
     const fetchAssets = useCallback(async () => {
@@ -110,7 +136,7 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
         }
     };
 
-    const acceptStr = accept === 'image' ? 'image/*' : accept === 'video' ? 'video/*' : 'image/*,video/*,.pdf';
+    const acceptStr = accept === 'image' ? 'image/*,image/gif,image/svg+xml' : accept === 'video' ? 'video/*,video/mp4,video/webm' : 'image/*,video/*,.pdf,.json,.riv,.csv,.txt';
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -133,7 +159,7 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                         {accept === 'all' && (
                             <div style={{ display: 'flex', gap: '1px', backgroundColor: theme.colors.gray[100], padding: '2px', borderRadius: '6px' }}>
-                                {(['all', 'image', 'video'] as FilterType[]).map(f => (
+                                {(['all', 'image', 'video', 'file'] as FilterType[]).map(f => (
                                     <button key={f} onClick={() => setFilterType(f)}
                                         style={{
                                             padding: '4px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 500, border: 'none',
@@ -142,7 +168,7 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                                             backgroundColor: filterType === f ? 'white' : 'transparent',
                                             boxShadow: filterType === f ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
                                         }}>
-                                        {f === 'all' ? 'All' : f === 'image' ? 'Images' : 'Videos'}
+                                        {f === 'all' ? 'All' : f === 'image' ? 'Images' : f === 'video' ? 'Videos' : 'Files'}
                                     </button>
                                 ))}
                             </div>
@@ -173,15 +199,81 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                         </div>
                     </div>
                     {/* Upload */}
-                    <div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
                         <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleUpload} accept={acceptStr} />
                         <Button variant="outline" className="gap-1.5 h-7 text-[11px]"
-                            onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                            onClick={() => setIsUrlInputOpen(true)} disabled={uploading || urlUploading}>
+                            <LinkIcon size={12} />
+                            From URL
+                        </Button>
+                        <Button variant="outline" className="gap-1.5 h-7 text-[11px]"
+                            onClick={() => fileInputRef.current?.click()} disabled={uploading || urlUploading}>
                             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                             Upload
                         </Button>
                     </div>
                 </div>
+
+                {/* Inline URL Form */}
+                {isUrlInputOpen && (
+                    <div style={{
+                        padding: '10px 20px',
+                        borderBottom: `1px solid ${theme.colors.border.default}`,
+                        backgroundColor: '#f8fafc',
+                        display: 'flex',
+                        gap: '8px',
+                        alignItems: 'center',
+                        flexShrink: 0
+                    }}>
+                        <input
+                            type="text"
+                            placeholder="Paste asset URL..."
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            style={{
+                                flex: 1,
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                outline: 'none'
+                            }}
+                        />
+                        <input
+                            type="text"
+                            placeholder="Optional Name"
+                            value={urlNameInput}
+                            onChange={(e) => setUrlNameInput(e.target.value)}
+                            style={{
+                                width: '120px',
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                outline: 'none'
+                            }}
+                        />
+                        <Button
+                            size="sm"
+                            className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                            onClick={handleUrlUpload}
+                            disabled={urlUploading}
+                        >
+                            {urlUploading ? <Loader2 size={12} className="animate-spin" /> : 'Add'}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="h-7 px-2"
+                            onClick={() => {
+                                setIsUrlInputOpen(false);
+                                setUrlInput('');
+                                setUrlNameInput('');
+                            }}
+                        >
+                            <X size={14} />
+                        </Button>
+                    </div>
+                )}
 
                 {/* Grid */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>

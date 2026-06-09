@@ -54,13 +54,7 @@ const NudgePreviews: Record<string, React.ReactNode> = {
             <div className="absolute inset-1 border border-white/20 rounded-[2px]" />
         </PreviewWrapper>
     ),
-    scratchcard: (
-        <PreviewWrapper bg="bg-yellow-50">
-            <div className="m-auto w-6 h-6 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-sm shadow-sm flex items-center justify-center">
-                <Sparkles size={10} className="text-white" />
-            </div>
-        </PreviewWrapper>
-    ),
+
     spinthewheel: (
         <PreviewWrapper bg="bg-purple-50">
             <div className="m-auto w-6 h-6 bg-gradient-to-br from-purple-400 to-fuchsia-500 rounded-full shadow-sm flex items-center justify-center relative overflow-hidden">
@@ -79,7 +73,6 @@ const NUDGE_TYPES = [
     { id: 'tooltip',     label: 'Tooltip',       desc: 'Anchor to any element' },
     { id: 'floater',     label: 'Floater',       desc: 'Floating corner widget' },
     { id: 'fullscreen',  label: 'Full Screen',   desc: 'Immersive full coverage' },
-    { id: 'scratchcard', label: 'Scratch Card',  desc: 'Interactive reveal' },
     { id: 'spinthewheel',label: 'Spin The Wheel',desc: 'Gamified reward wheel' },
 ];
 

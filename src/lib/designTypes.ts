@@ -177,17 +177,7 @@ export const DESIGN_TYPES: DesignType[] = [
         iconBg: '#FFE4E6',
         iconColor: '#E11D48'
     },
-    {
-        id: 'scratchcard',
-        label: 'Scratch Card',
-        description: 'Scratch to reveal prize',
-        icon: Sparkles,
-        category: 'scratchcard',
-        color: '#EAB308', // Yellow/Gold
-        bg: '#FEF9C3',
-        iconBg: '#FEF08A',
-        iconColor: '#CA8A04'
-    },
+
     {
         id: 'tooltip',
         label: 'Tooltip',

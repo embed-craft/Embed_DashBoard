@@ -40,7 +40,6 @@ const NUDGE_TYPES = [
     { id: 'tooltip',     label: 'Tooltip' },
     { id: 'floater',     label: 'Floater' },
     { id: 'fullscreen',  label: 'Full Screen' },
-    { id: 'scratchcard', label: 'Scratch Card' },
     { id: 'spinthewheel',label: 'Spin The Wheel' },
 ];
 
@@ -51,7 +50,6 @@ const typeGradients: Record<string, string> = {
     floater:     'from-teal-500 to-emerald-600',
     fullscreen:  'from-slate-600 to-gray-800',
     banner:      'from-sky-400 to-blue-500',
-    scratchcard: 'from-yellow-400 to-amber-500',
     spinthewheel: 'from-purple-400 to-fuchsia-500',
 };
 
@@ -62,7 +60,6 @@ const typeDots: Record<string, string> = {
     floater:     'bg-teal-500',
     fullscreen:  'bg-slate-600',
     banner:      'bg-sky-500',
-    scratchcard: 'bg-yellow-500',
     spinthewheel: 'bg-purple-500',
 };
 
@@ -73,7 +70,6 @@ const nudgeTypeLabel: Record<string, string> = {
     floater:     'Floater',
     fullscreen:  'Full Screen',
     banner:      'Banner',
-    scratchcard: 'Scratch Card',
     spinthewheel: 'Spin The Wheel',
 };
 
@@ -142,14 +138,6 @@ const NudgeTypePreview: React.FC<{ type: string }> = ({ type }) => {
                         <div className="w-[50%] h-[5px] rounded-[2px] bg-white/40" />
                     </div>
                 )}
-                {type === 'scratchcard' && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="w-[60%] aspect-square bg-white/90 rounded-[3px] shadow-lg flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/80 to-amber-300/80" />
-                            <Sparkles size={10} className="text-amber-600 relative z-10" />
-                        </div>
-                    </div>
-                )}
                 {type === 'spinthewheel' && (
                     <div className="flex-1 flex items-center justify-center">
                         <div className="w-[60%] aspect-square bg-white/90 rounded-full shadow-lg flex items-center justify-center relative overflow-hidden border border-purple-200/50">
@@ -161,7 +149,7 @@ const NudgeTypePreview: React.FC<{ type: string }> = ({ type }) => {
                         </div>
                     </div>
                 )}
-                {!['bottomsheet','modal','banner','tooltip','floater','fullscreen','scratchcard','spinthewheel'].includes(type) && (
+                {!['bottomsheet','modal','banner','tooltip','floater','fullscreen','spinthewheel'].includes(type) && (
                     <div className="flex-1 flex items-center justify-center">
                         <LayoutTemplate size={12} className="text-white/40" />
                     </div>

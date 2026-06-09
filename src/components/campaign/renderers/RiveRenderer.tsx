@@ -54,11 +54,14 @@ export const RiveRenderer: React.FC<RiveRendererProps> = ({ layer, scale = 1, sc
 
     const [riveBuffer, setRiveBuffer] = useState<ArrayBuffer | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [artboardAspectRatio, setArtboardAspectRatio] = useState<string | undefined>(undefined);
+    const prevInputsRef = useRef<Record<string, any>>({});
 
     useEffect(() => {
         if (!riveUrl) {
             setRiveBuffer(null);
             setLoadError(null);
+            setArtboardAspectRatio(undefined);
             return;
         }
 
@@ -107,6 +110,19 @@ export const RiveRenderer: React.FC<RiveRendererProps> = ({ layer, scale = 1, sc
                 fit: riveFit,
                 alignment: Alignment.Center,
             }),
+            onLoad: (riveInstance) => {
+                if (riveInstance.artboard) {
+                    const width = riveInstance.artboard.width || (riveInstance.artboard.bounds?.maxX - riveInstance.artboard.bounds?.minX);
+                    const height = riveInstance.artboard.height || (riveInstance.artboard.bounds?.maxY - riveInstance.artboard.bounds?.minY);
+                    if (width && height) {
+                        setArtboardAspectRatio(`${width} / ${height}`);
+                    }
+                }
+            },
+            onLoadError: (err) => {
+                console.error("Rive load error:", err);
+                setLoadError(`Failed to parse Rive file: ${err || 'unknown error'}`);
+            },
         } : null as any,
         { fitCanvasToArtboardHeight: !hasExplicitHeight }
     );
@@ -115,21 +131,38 @@ export const RiveRenderer: React.FC<RiveRendererProps> = ({ layer, scale = 1, sc
     useEffect(() => {
         if (!rive || !layer.content?.riveInputs) return;
         const inputs = layer.content.riveInputs;
+        const prevInputs = prevInputsRef.current;
+
         Object.entries(inputs).forEach(([name, value]) => {
             try {
+                // Prevent infinite triggering loops by only applying inputs that changed
+                if (prevInputs[name] === value) return;
+
                 const smName = stateMachineName || rive.stateMachineNames?.[0];
                 if (!smName) return;
                 const smInputs = rive.stateMachineInputs(smName);
                 const input = smInputs?.find((i: any) => i.name === name);
                 if (input) {
-                    if (typeof value === 'boolean') {
+                    if (typeof input.fire === 'function') {
+                        if (value === true) {
+                            input.fire();
+                        }
+                    } else if (typeof value === 'boolean') {
                         input.value = value;
                     } else if (typeof value === 'number') {
                         input.value = value;
                     }
+                    prevInputs[name] = value;
                 }
             } catch (e) {
                 // Input not found or not yet loaded
+            }
+        });
+
+        // Clean up keys that are no longer in inputs
+        Object.keys(prevInputs).forEach(key => {
+            if (!(key in inputs)) {
+                delete prevInputs[key];
             }
         });
     }, [rive, layer.content?.riveInputs, stateMachineName]);
@@ -187,7 +220,7 @@ export const RiveRenderer: React.FC<RiveRendererProps> = ({ layer, scale = 1, sc
                 borderRadius: typeof layer.style?.borderRadius === 'object' && layer.style?.borderRadius !== null
                     ? `${safeScale(layer.style.borderRadius.topLeft, scale)} ${safeScale(layer.style.borderRadius.topRight, scale)} ${safeScale(layer.style.borderRadius.bottomRight, scale)} ${safeScale(layer.style.borderRadius.bottomLeft, scale)}`
                     : safeScale(layer.style?.borderRadius || 0, scale),
-                aspectRatio: layer.style?.aspectRatio,
+                aspectRatio: (!hasExplicitWidth || !hasExplicitHeight) ? (artboardAspectRatio || layer.style?.aspectRatio) : layer.style?.aspectRatio,
                 filter: typeof layer.style?.filter === 'object'
                     ? [
                         layer.style.filter.blur ? `blur(${safeScale(layer.style.filter.blur, scale)})` : '',

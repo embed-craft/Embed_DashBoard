@@ -10,7 +10,9 @@ import {
     Link as LinkIcon,
     Maximize,
     Square,
-    FolderOpen
+    FolderOpen,
+    FileText,
+    PlaySquare
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AssetPickerDialog } from '@/components/shared/AssetPickerDialog';
@@ -94,19 +96,70 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
                         <div className="relative w-full h-[180px] bg-gray-100 rounded-lg overflow-hidden border border-gray-200 mb-4 group">
                             {imageUrl ? (
                                 <>
-                                    <img
-                                        src={imageUrl}
-                                        alt="Preview"
-                                        className="w-full h-full"
-                                        style={{
-                                            objectFit: layer.style?.objectFit || 'contain',
-                                            filter: `brightness(${filter.brightness}%) contrast(${filter.contrast}%) blur(${filter.blur}px) grayscale(${filter.grayscale}%)`
-                                        }}
-                                    />
+                                    {(() => {
+                                        const cleanUrl = imageUrl.split('?')[0].toLowerCase();
+                                        const isVideo = cleanUrl.match(/\.(mp4|webm|mov|avi|ogg)$/);
+                                        const isLottie = cleanUrl.endsWith('.json');
+                                        const isRive = cleanUrl.endsWith('.riv');
+                                        const isPdf = cleanUrl.endsWith('.pdf');
+                                        const isCsv = cleanUrl.endsWith('.csv');
+                                        const isTxt = cleanUrl.endsWith('.txt');
+
+                                        if (isVideo) {
+                                            return (
+                                                <video
+                                                    src={imageUrl}
+                                                    autoPlay
+                                                    muted
+                                                    loop
+                                                    playsInline
+                                                    className="w-full h-full object-contain"
+                                                    style={{
+                                                        filter: `brightness(${filter.brightness}%) contrast(${filter.contrast}%) blur(${filter.blur}px) grayscale(${filter.grayscale}%)`
+                                                    }}
+                                                />
+                                            );
+                                        }
+
+                                        if (isLottie || isRive || isPdf || isCsv || isTxt) {
+                                            let label = "Document File";
+                                            let details = "Generic File";
+                                            if (isLottie) { label = "Lottie Animation"; details = ".json Vector Animation"; }
+                                            else if (isRive) { label = "Rive Animation"; details = ".riv Interactive Animation"; }
+                                            else if (isPdf) { label = "PDF Document"; details = "Adobe PDF Document"; }
+                                            else if (isCsv) { label = "CSV Spreadsheet"; details = "Comma Separated Values"; }
+                                            else if (isTxt) { label = "Text File"; details = "Plain Text Document"; }
+
+                                            return (
+                                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/30 gap-2 p-4 text-center">
+                                                    <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100/50">
+                                                        {isLottie || isRive ? <PlaySquare size={22} /> : <FileText size={22} />}
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-slate-700">{label}</span>
+                                                    <span className="text-[10px] text-slate-400 font-medium">{details}</span>
+                                                    <span className="text-[9px] text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full font-mono font-semibold max-w-[90%] truncate mt-1">
+                                                        {imageUrl.split('/').pop()?.split('?')[0] || "File"}
+                                                    </span>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <img
+                                                src={imageUrl}
+                                                alt="Preview"
+                                                className="w-full h-full"
+                                                style={{
+                                                    objectFit: layer.style?.objectFit || 'contain',
+                                                    filter: `brightness(${filter.brightness}%) contrast(${filter.contrast}%) blur(${filter.blur}px) grayscale(${filter.grayscale}%)`
+                                                }}
+                                            />
+                                        );
+                                    })()}
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <label className="cursor-pointer px-3 py-1.5 bg-white/90 hover:bg-white text-gray-900 rounded-md text-xs font-medium shadow-lg backdrop-blur-sm">
                                             Replace
-                                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
+                                            <input type="file" accept="image/*,video/*,.pdf,.json,.riv,.csv,.txt" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
                                         </label>
                                         <button
                                             onClick={() => setIsAssetPickerOpen(true)}
@@ -119,11 +172,11 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-3">
                                     <ImageIcon size={28} strokeWidth={1.2} />
-                                    <span className="text-xs">No image selected</span>
+                                    <span className="text-xs">No asset selected</span>
                                     <div className="flex gap-2">
                                         <label className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-md text-xs font-medium cursor-pointer hover:border-gray-300">
                                             Upload
-                                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
+                                            <input type="file" accept="image/*,video/*,.pdf,.json,.riv,.csv,.txt" onChange={(e) => handleImageUpload(e, 'layer')} className="hidden" />
                                         </label>
                                         <button
                                             onClick={() => setIsAssetPickerOpen(true)}
@@ -157,7 +210,7 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
                         onSelect={(url) => {
                             handleContentUpdate(layer.type === 'video' ? 'videoUrl' : 'imageUrl', url);
                         }}
-                        accept={layer.type === 'video' ? 'video' : 'image'}
+                        accept="all"
                     />
                 </TabsContent>
 

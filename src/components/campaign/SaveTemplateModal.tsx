@@ -29,7 +29,6 @@ const typeGradients: Record<string, string> = {
     floater:     'from-teal-500 to-emerald-600',
     fullscreen:  'from-slate-600 to-gray-800',
     banner:      'from-sky-400 to-blue-500',
-    scratchcard: 'from-yellow-400 to-amber-500',
 };
 
 const nudgeTypeLabel: Record<string, string> = {
@@ -39,7 +38,6 @@ const nudgeTypeLabel: Record<string, string> = {
     floater:     'Floater',
     fullscreen:  'Full Screen',
     banner:      'Banner',
-    scratchcard: 'Scratch Card',
 };
 
 export const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({ isOpen, onClose }) => {

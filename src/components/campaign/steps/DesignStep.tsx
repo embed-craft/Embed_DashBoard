@@ -613,14 +613,18 @@ export const DesignStep: React.FC<any> = () => {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    const isOtherSupported = file.name.endsWith('.pdf') || file.name.endsWith('.json') || file.name.endsWith('.riv') || file.name.endsWith('.csv') || file.name.endsWith('.txt');
+
+    if (!isImage && !isVideo && !isOtherSupported) {
+      toast.error('Unsupported file format. Please select an image, video, PDF, Lottie (.json), Rive (.riv), CSV, or TXT file.');
       return;
     }
 
     // Validate file size (10MB max — matches Asset Library limit)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image size must be less than 10MB');
+      toast.error('File size must be less than 10MB');
       return;
     }
 
@@ -631,13 +635,13 @@ export const DesignStep: React.FC<any> = () => {
 
       if (target === 'layer') {
         handleContentUpdate('imageUrl', imageUrl);
-        toast.success('Image uploaded to Asset Library');
+        toast.success('File uploaded to Asset Library');
       } else if (target === 'tooltip_image_only') {
         updateTooltipConfig({ imageUrl });
-        toast.success('Tooltip image uploaded');
+        toast.success('Tooltip media uploaded');
       } else {
         handleStyleUpdate('backgroundImage', `url('${imageUrl}')`);
-        toast.success('Background image uploaded');
+        toast.success('Background media uploaded');
       }
     } catch (err) {
       // Fallback to base64 if API fails
@@ -652,9 +656,9 @@ export const DesignStep: React.FC<any> = () => {
         } else {
           handleStyleUpdate('backgroundImage', `url('${base64}')`);
         }
-        toast.success('Image uploaded (local)');
+        toast.success('File uploaded (local)');
       };
-      reader.onerror = () => toast.error('Failed to upload image');
+      reader.onerror = () => toast.error('Failed to upload file');
       reader.readAsDataURL(file);
     }
   };
@@ -4138,7 +4142,6 @@ export const DesignStep: React.FC<any> = () => {
                           'banner': 'Banner Container',
                           'tooltip': 'Tooltip Container',
                           'pip': 'PIP Container',
-                          'scratchcard': 'Scratch Card Container',
                           'fullscreen': 'Fullscreen Layout',
                           'fullpage': 'Fullscreen Layout',
                         };

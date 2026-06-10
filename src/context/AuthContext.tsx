@@ -19,19 +19,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const [token, setToken] = useState<string | null>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('token');
+        }
+        return null;
+    });
+
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch {
+                    return null;
+                }
+            }
+        }
+        return null;
+    });
 
     useEffect(() => {
-        // Load from localStorage on mount
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-            setApiKey(storedToken); // Sync with API Client
+        // Synchronize api key with apiClient if token exists
+        if (token) {
+            setApiKey(token);
         }
-    }, []);
+    }, [token]);
 
     const login = (newToken: string, newUser: User) => {
         localStorage.setItem('token', newToken);

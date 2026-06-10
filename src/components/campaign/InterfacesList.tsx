@@ -34,7 +34,6 @@ const NUDGE_TYPE_ICONS: Record<string, React.ReactNode> = {
     bottomsheet: <PanelBottom size={14} />,
     tooltip: <MessageCircle size={14} />,
     pip: <PictureInPicture2 size={14} />,
-    scratchcard: <Gift size={14} />,
     banner: <LayoutPanelTop size={14} />,
 };
 

@@ -35,32 +35,34 @@ interface Template {
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const NUDGE_TYPES = [
-    { id: 'all',         label: 'All Types' },
-    { id: 'bottomsheet', label: 'Bottom Sheet' },
-    { id: 'tooltip',     label: 'Tooltip' },
-    { id: 'floater',     label: 'Floater' },
-    { id: 'fullscreen',  label: 'Full Screen' },
-    { id: 'spinthewheel',label: 'Spin The Wheel' },
+    { id: 'all',          label: 'All Templates' },
+    { id: 'bottomsheet',  label: 'Bottom Sheet' },
+    { id: 'modal',        label: 'Modal' },
+    { id: 'tooltip',      label: 'Tooltip' },
+    { id: 'floater',      label: 'Floater' },
+    { id: 'fullscreen',   label: 'Full Screen' },
+    { id: 'banner',       label: 'Banner' },
+    { id: 'spinthewheel',  label: 'Spin The Wheel' }
 ];
 
 const typeGradients: Record<string, string> = {
-    bottomsheet: 'from-indigo-500 to-violet-600',
-    modal:       'from-blue-500 to-cyan-500',
-    tooltip:     'from-amber-400 to-orange-500',
-    floater:     'from-teal-500 to-emerald-600',
-    fullscreen:  'from-slate-600 to-gray-800',
-    banner:      'from-sky-400 to-blue-500',
-    spinthewheel: 'from-purple-400 to-fuchsia-500',
+    bottomsheet: 'from-blue-600 to-slate-900',
+    modal:       'from-slate-850 to-slate-950',
+    tooltip:     'from-slate-700 to-slate-900',
+    floater:     'from-blue-500 to-slate-850',
+    fullscreen:  'from-slate-900 to-black',
+    banner:      'from-slate-400 to-slate-600',
+    spinthewheel: 'from-blue-700 to-slate-950',
 };
 
 const typeDots: Record<string, string> = {
-    bottomsheet: 'bg-indigo-500',
-    modal:       'bg-blue-500',
-    tooltip:     'bg-amber-500',
-    floater:     'bg-teal-500',
-    fullscreen:  'bg-slate-600',
-    banner:      'bg-sky-500',
-    spinthewheel: 'bg-purple-500',
+    bottomsheet: 'bg-blue-600',
+    modal:       'bg-slate-900',
+    tooltip:     'bg-slate-600',
+    floater:     'bg-blue-500',
+    fullscreen:  'bg-slate-950',
+    banner:      'bg-slate-400',
+    spinthewheel: 'bg-blue-750',
 };
 
 const nudgeTypeLabel: Record<string, string> = {
@@ -73,91 +75,326 @@ const nudgeTypeLabel: Record<string, string> = {
     spinthewheel: 'Spin The Wheel',
 };
 
-// Mini phone preview wireframes for each nudge type (inline SVG-like CSS art)
-const NudgeTypePreview: React.FC<{ type: string }> = ({ type }) => {
-    const phone = (
-        <div className="w-full h-full rounded-[6px] border border-white/20 bg-white/10 relative overflow-hidden">
-            {/* Status bar */}
-            <div className="h-[6px] flex items-center justify-between px-1.5 bg-white/5">
-                <div className="w-2 h-[2px] rounded-full bg-white/30" />
-                <div className="w-3 h-[2px] rounded-full bg-white/30" />
-            </div>
-            {/* Content area */}
-            <div className="absolute inset-x-0 top-[6px] bottom-0 flex flex-col">
-                {type === 'bottomsheet' && (
-                    <>
-                        <div className="flex-1" />
-                        <div className="mx-1 mb-1 rounded-t-[4px] bg-white/90 p-1 shadow-lg">
-                            <div className="w-4 h-[2px] rounded-full bg-gray-300 mx-auto mb-1" />
-                            <div className="w-full h-[3px] rounded-full bg-indigo-300 mb-0.5" />
-                            <div className="w-3/4 h-[2px] rounded-full bg-gray-200" />
-                        </div>
-                    </>
-                )}
-                {type === 'modal' && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="w-[70%] bg-white/90 rounded-[3px] p-1.5 shadow-lg">
-                            <div className="w-full h-[3px] rounded-full bg-blue-300 mb-1" />
-                            <div className="w-3/4 h-[2px] rounded-full bg-gray-200 mb-1" />
-                            <div className="w-full h-[5px] rounded-[2px] bg-blue-400" />
-                        </div>
+// A premium, dynamic wireframe mockup preview representing the template's layer-based structure.
+const MiniTemplatePreview: React.FC<{ type: string; layers?: any[]; config?: any }> = ({ type, layers = [], config }) => {
+    const normalizedType = (type || 'modal').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Extract root container background styling
+    const containerLayer = layers.find(l => l.type === 'container' && !l.parent) || layers[0];
+    const containerStyle: React.CSSProperties = {};
+
+    // 1. Apply from config first (which holds editor customizations)
+    if (config) {
+        if (config.backgroundColor) {
+            containerStyle.backgroundColor = config.backgroundColor;
+        }
+        if (config.backgroundImageUrl) {
+            containerStyle.backgroundImage = `url(${config.backgroundImageUrl})`;
+            containerStyle.backgroundSize = config.backgroundSize || 'cover';
+            containerStyle.backgroundPosition = config.backgroundPosition || 'center';
+            containerStyle.backgroundRepeat = 'no-repeat';
+        }
+    }
+
+    // 2. Override/supplement with containerLayer style
+    if (containerLayer && containerLayer.style) {
+        if (containerLayer.style.backgroundColor) {
+            containerStyle.backgroundColor = containerLayer.style.backgroundColor;
+        }
+        if (containerLayer.style.backgroundImage) {
+            const bgImage = containerLayer.style.backgroundImage;
+            containerStyle.backgroundImage = bgImage.includes('url(') ? bgImage : `url(${bgImage})`;
+            containerStyle.backgroundSize = containerLayer.style.backgroundSize || 'cover';
+            containerStyle.backgroundPosition = containerLayer.style.backgroundPosition || 'center';
+            containerStyle.backgroundRepeat = 'no-repeat';
+        } else if (containerLayer.style.backgroundImageUrl) {
+            containerStyle.backgroundImage = `url(${containerLayer.style.backgroundImageUrl})`;
+            containerStyle.backgroundSize = 'cover';
+            containerStyle.backgroundPosition = 'center';
+            containerStyle.backgroundRepeat = 'no-repeat';
+        }
+    }
+
+    const getMiniStyle = (style: any) => {
+        if (!style) return {};
+        const res: React.CSSProperties = {
+            position: 'absolute',
+        };
+        
+        const parseToPercent = (val: any, isHeight: boolean) => {
+            if (val == null) return undefined;
+            const str = val.toString().trim();
+            if (str.endsWith('%')) return str;
+            const num = parseFloat(str);
+            if (isNaN(num)) return undefined;
+            
+            // Reference design sizes: 393 x 852
+            const refSize = isHeight ? 852 : 393;
+            return `${(num / refSize) * 100}%`;
+        };
+
+        if (style.left !== undefined) res.left = parseToPercent(style.left, false);
+        else if (style.x !== undefined) res.left = parseToPercent(style.x, false);
+
+        if (style.top !== undefined) res.top = parseToPercent(style.top, true);
+        else if (style.y !== undefined) res.top = parseToPercent(style.y, true);
+
+        if (style.width !== undefined) res.width = parseToPercent(style.width, false);
+        if (style.height !== undefined) res.height = parseToPercent(style.height, true);
+
+        return res;
+    };
+
+    const renderWireframeLayers = () => {
+        const drawableLayers = layers.filter(l => l.type && l.type !== 'container');
+
+        if (drawableLayers.length === 0) {
+            return (
+                <div className="flex flex-col gap-0.5 w-full h-full justify-center p-1.5">
+                    <div className="h-1 w-2/3 bg-slate-900 rounded-full" />
+                    <div className="h-0.5 w-full bg-slate-350 rounded-full" />
+                    <div className="h-0.5 w-4/5 bg-slate-200 rounded-full" />
+                    <div className="h-2 w-full bg-blue-600 rounded-[2px] flex items-center justify-center mt-0.5">
+                        <div className="h-[0.5px] w-1/3 bg-white rounded-full opacity-60" />
                     </div>
-                )}
-                {type === 'banner' && (
-                    <>
-                        <div className="mx-0 bg-white/90 p-1 shadow-sm">
-                            <div className="w-full h-[3px] rounded-full bg-sky-300 mb-0.5" />
-                            <div className="w-2/3 h-[2px] rounded-full bg-gray-200" />
-                        </div>
-                        <div className="flex-1" />
-                    </>
-                )}
-                {type === 'tooltip' && (
-                    <div className="flex-1 flex items-start justify-center pt-3">
-                        <div className="flex flex-col items-center">
-                            <div className="bg-white/90 rounded-[3px] px-1.5 py-1 shadow-lg">
-                                <div className="w-6 h-[2px] rounded-full bg-amber-300 mb-0.5" />
-                                <div className="w-4 h-[2px] rounded-full bg-gray-200" />
+                </div>
+            );
+        }
+
+        return (
+            <div className="relative w-full h-full overflow-hidden">
+                {drawableLayers.map((layer, index) => {
+                    const lType = (layer.type || '').toLowerCase();
+                    const parsedStyle = getMiniStyle(layer.style);
+
+                    if (lType === 'text') {
+                        const textColor = layer.content?.textColor || layer.style?.color || '#0f172a';
+                        return (
+                            <div key={layer.id || index} style={parsedStyle} className="flex flex-col gap-0.5 justify-center overflow-hidden">
+                                <div className="h-[1.5px] w-full rounded-full" style={{ backgroundColor: textColor }} />
+                                <div className="h-[1px] w-3/4 rounded-full opacity-60" style={{ backgroundColor: textColor }} />
                             </div>
-                            <div className="w-[5px] h-[5px] bg-white/90 rotate-45 -mt-[3px]" />
+                        );
+                    }
+
+                    if (lType === 'button') {
+                        const btnBg = layer.style?.backgroundColor || '#2563eb';
+                        const btnColor = layer.style?.color || '#ffffff';
+                        const borderRadius = layer.style?.borderRadius || 2;
+                        return (
+                            <div
+                                key={layer.id || index}
+                                style={{
+                                    ...parsedStyle,
+                                    backgroundColor: btnBg,
+                                    borderRadius: `${borderRadius}px`
+                                }}
+                                className="flex items-center justify-center border border-slate-700/5 shadow-sm"
+                            >
+                                <div className="h-[1px] w-1/4 rounded-full opacity-60" style={{ backgroundColor: btnColor }} />
+                            </div>
+                        );
+                    }
+
+                    if (lType === 'media' || lType === 'image') {
+                        const imgUrl = layer.content?.imageUrl;
+                        return (
+                            <div
+                                key={layer.id || index}
+                                style={parsedStyle}
+                                className="rounded-[2px] bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden"
+                            >
+                                {imgUrl ? (
+                                    <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <svg className="w-2 h-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    if (lType === 'spinthewheel') {
+                        return (
+                            <div
+                                key={layer.id || index}
+                                className="absolute rounded-full border border-slate-800 bg-white flex items-center justify-center overflow-hidden"
+                                style={{
+                                    left: '20%',
+                                    top: '20%',
+                                    width: '60%',
+                                    height: '60%',
+                                }}
+                            >
+                                <svg viewBox="0 0 100 100" className="w-full h-full animate-spin [animation-duration:20s]">
+                                    <circle cx="50" cy="50" r="48" fill="#ffffff" stroke="#0f172a" strokeWidth="3" />
+                                    <path d="M50,50 L50,2 A48,48 0 0,1 91.5,26 Z" fill="#2563eb" />
+                                    <path d="M50,50 L91.5,26 A48,48 0 0,1 91.5,74 Z" fill="#1e293b" />
+                                    <path d="M50,50 L91.5,74 A48,48 0 0,1 50,98 Z" fill="#3b82f6" />
+                                    <path d="M50,50 L50,98 A48,48 0 0,1 8.5,74 Z" fill="#0f172a" />
+                                    <path d="M50,50 L8.5,74 A48,48 0 0,1 8.5,26 Z" fill="#60a5fa" />
+                                    <path d="M50,50 L8.5,26 A48,48 0 0,1 50,2 Z" fill="#475569" />
+                                    <circle cx="50" cy="50" r="10" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+                                </svg>
+                            </div>
+                        );
+                    }
+
+                    return null;
+                })}
+            </div>
+        );
+    };
+
+    return (
+        <div className="w-full h-full relative bg-slate-900 flex flex-col overflow-hidden">
+            {/* Status Bar */}
+            <div className="h-2 w-full bg-slate-950 border-b border-slate-800/10 px-1 flex items-center justify-between shrink-0">
+                <div className="w-3 h-0.5 bg-slate-700 rounded-full" />
+                <div className="flex gap-0.5 items-center">
+                    <div className="w-0.5 h-0.5 bg-slate-700 rounded-full" />
+                    <div className="w-1 h-0.5 bg-slate-700 rounded-full" />
+                    <div className="w-1.5 h-0.5 bg-blue-500 rounded-full" />
+                </div>
+            </div>
+
+            {/* Device Screen Body */}
+            <div className="flex-1 w-full relative p-1 flex flex-col justify-between"
+                 style={{
+                     backgroundImage: 'radial-gradient(circle, rgba(148,163,184,0.04) 0.5px, transparent 0.5px)',
+                     backgroundSize: '4px 4px',
+                     backgroundColor: '#0f172a'
+                 }}>
+                
+                {/* Background Content Mockup (Text Lines) */}
+                {normalizedType !== 'fullscreen' && normalizedType !== 'banner' && (
+                    <div className="w-full space-y-0.5 opacity-[0.15] pointer-events-none mt-0.5">
+                        <div className="h-0.5 w-1/4 bg-slate-400 rounded" />
+                        <div className="h-2.5 w-full bg-slate-800 rounded border border-slate-700/20" />
+                        <div className="h-0.5 w-full bg-slate-500 rounded" />
+                        <div className="h-0.5 w-5/6 bg-slate-500 rounded" />
+                    </div>
+                )}
+
+                {/* Conditional Mockup layouts */}
+                {normalizedType === 'bottomsheet' && (
+                    <div style={containerStyle} className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl rounded-t-md p-1.5 flex flex-col gap-1 z-10 max-h-[58%] min-h-[48%]">
+                        <div className="w-4 h-0.5 bg-slate-200 rounded-full mx-auto shrink-0 mb-0.5" />
+                        {renderWireframeLayers()}
+                    </div>
+                )}
+
+                {normalizedType === 'modal' && (
+                    <div style={containerStyle} className="m-auto w-[85%] bg-white border border-slate-200 shadow-lg rounded p-1.5 flex flex-col gap-1 z-10 min-h-[52%] justify-center relative">
+                        <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-slate-50 flex items-center justify-center">
+                            <div className="w-1 h-1 bg-slate-300 rounded-full scale-75" />
+                        </div>
+                        {renderWireframeLayers()}
+                    </div>
+                )}
+
+                {normalizedType === 'fullscreen' && (
+                    <div style={containerStyle} className="absolute inset-0 bg-white flex flex-col z-10 p-2 justify-between">
+                        <div className="flex justify-between items-center mb-0.5 shrink-0">
+                            <div className="w-6 h-1 bg-slate-200 rounded" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-slate-50 flex items-center justify-center">
+                                <div className="w-1 h-1 bg-slate-300 rounded-full scale-75" />
+                            </div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-center">
+                            {renderWireframeLayers()}
                         </div>
                     </div>
                 )}
-                {type === 'floater' && (
-                    <>
-                        <div className="flex-1" />
-                        <div className="absolute bottom-1.5 right-1.5 w-[14px] h-[14px] rounded-full bg-white/90 shadow-lg flex items-center justify-center">
-                            <div className="w-[6px] h-[6px] rounded-full bg-teal-400" />
+
+                {normalizedType === 'banner' && (
+                    <div style={containerStyle} className="absolute top-0 left-0 right-0 bg-white border-b border-slate-200 shadow-sm p-1 flex items-center justify-between gap-1 z-10">
+                        <div className="flex-1 flex flex-col gap-0.5">
+                            <div className="h-0.5 w-2/3 bg-slate-900 rounded-full" />
+                            <div className="h-[0.5px] w-full bg-slate-300 rounded-full" />
                         </div>
-                    </>
-                )}
-                {type === 'fullscreen' && (
-                    <div className="flex-1 bg-white/10 flex flex-col items-center justify-center p-1">
-                        <div className="w-[60%] h-[8px] rounded-[2px] bg-white/25 mb-1" />
-                        <div className="w-[45%] h-[2px] rounded-full bg-white/20 mb-1" />
-                        <div className="w-[50%] h-[5px] rounded-[2px] bg-white/40" />
-                    </div>
-                )}
-                {type === 'spinthewheel' && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="w-[60%] aspect-square bg-white/90 rounded-full shadow-lg flex items-center justify-center relative overflow-hidden border border-purple-200/50">
-                             <div className="absolute inset-x-0 h-0.5 bg-gray-200 rotate-45" />
-                             <div className="absolute inset-y-0 w-0.5 bg-gray-200 rotate-45" />
-                             <div className="absolute inset-x-0 h-0.5 bg-gray-200" />
-                             <div className="absolute inset-y-0 w-0.5 bg-gray-200" />
-                             <div className="w-1.5 h-1.5 bg-purple-500 rounded-full z-10 shadow-sm border border-white" />
+                        <div className="bg-blue-600 rounded-[2px] px-1 py-0.5 flex items-center shrink-0">
+                            <div className="w-3 h-0.5 bg-white rounded-full opacity-80" />
                         </div>
                     </div>
                 )}
-                {!['bottomsheet','modal','banner','tooltip','floater','fullscreen','spinthewheel'].includes(type) && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <LayoutTemplate size={12} className="text-white/40" />
+
+                {normalizedType === 'tooltip' && (
+                    <div className="m-auto relative flex flex-col items-center">
+                        {/* Anchor element */}
+                        <div className="px-1.5 py-0.5 bg-slate-800 border border-slate-700/50 rounded text-[5px] text-slate-500 font-semibold mb-0.5 shadow flex items-center gap-0.5">
+                            <div className="w-0.5 h-0.5 bg-blue-500 rounded-full" />
+                            Anchor
+                        </div>
+                        {/* Tooltip bubble */}
+                        <div style={containerStyle} className="bg-slate-900 text-white border border-slate-800 shadow-md rounded p-1 flex flex-col gap-0.5 max-w-[80px] relative">
+                            <div className="absolute -top-[2px] left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-900 border-l border-t border-slate-800 rotate-45" />
+                            <div className="h-[1.5px] w-2/3 bg-white rounded-full" />
+                            <div className="h-[1px] w-full bg-slate-400 rounded-full" />
+                            <div className="h-1.5 w-full bg-blue-600 rounded-[1px] flex items-center justify-center mt-0.5">
+                                <div className="h-[0.5px] w-1/4 bg-white rounded-full opacity-60" />
+                            </div>
+                        </div>
                     </div>
                 )}
+
+                {normalizedType === 'floater' && (
+                    <div style={containerStyle} className="absolute bottom-1 right-1 bg-white border border-slate-200 shadow-md rounded p-1 flex flex-col gap-0.5 z-10 w-[70%] max-w-[80px]">
+                        <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-slate-50 flex items-center justify-center">
+                            <div className="w-1 h-1 bg-slate-300 rounded-full scale-75" />
+                        </div>
+                        <div className="h-1.5 w-1/2 bg-slate-900 rounded-full mb-0.5" />
+                        <div className="h-0.5 w-full bg-slate-300 rounded-full" />
+                        <div className="h-1.5 w-full bg-blue-600 rounded-[1.5px] flex items-center justify-center mt-0.5">
+                            <div className="h-[0.5px] w-1/4 bg-white rounded-full opacity-60" />
+                        </div>
+                    </div>
+                )}
+
+                {normalizedType === 'spinthewheel' && (
+                    <div style={containerStyle} className="m-auto w-[85%] bg-white border border-slate-200 shadow-md rounded p-1.5 flex flex-col items-center justify-center gap-1 z-10">
+                        <div className="h-1 w-1/2 bg-slate-900 rounded-full mb-0.5" />
+                        <div className="w-10 h-10 rounded-full border border-slate-800 bg-white relative flex items-center justify-center shadow-inner overflow-hidden shrink-0">
+                            <svg viewBox="0 0 100 100" className="w-full h-full animate-spin [animation-duration:15s] shrink-0">
+                                <circle cx="50" cy="50" r="48" fill="#ffffff" stroke="#0f172a" strokeWidth="2" />
+                                <path d="M50,50 L50,2 A48,48 0 0,1 91.5,26 Z" fill="#2563eb" />
+                                <path d="M50,50 L91.5,26 A48,48 0 0,1 91.5,74 Z" fill="#1e293b" />
+                                <path d="M50,50 L91.5,74 A48,48 0 0,1 50,98 Z" fill="#3b82f6" />
+                                <path d="M50,50 L50,98 A48,48 0 0,1 8.5,74 Z" fill="#0f172a" />
+                                <path d="M50,50 L8.5,74 A48,48 0 0,1 8.5,26 Z" fill="#60a5fa" />
+                                <path d="M50,50 L8.5,26 A48,48 0 0,1 50,2 Z" fill="#475569" />
+                                <circle cx="50" cy="50" r="10" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+                            </svg>
+                            <svg viewBox="0 0 10 10" className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-2 h-2.5 z-20">
+                                <path d="M0,0 L10,0 L5,10 Z" fill="#2563eb" />
+                            </svg>
+                        </div>
+                        <div className="h-1.5 w-full bg-blue-600 rounded-[1.5px] flex items-center justify-center shrink-0">
+                            <div className="h-[0.5px] w-1/4 bg-white rounded-full opacity-60" />
+                        </div>
+                    </div>
+                )}
+                
+                {/* Fallback layout */}
+                {['bottomsheet', 'modal', 'fullscreen', 'banner', 'tooltip', 'floater', 'spinthewheel'].indexOf(normalizedType) === -1 && (
+                    <div className="m-auto w-[85%] bg-white border border-slate-200 shadow-md rounded p-1.5 flex flex-col gap-1">
+                        {renderWireframeLayers()}
+                    </div>
+                )}
+
+                {/* Bottom Nav Bar mockup */}
+                {normalizedType !== 'fullscreen' && (
+                    <div className="h-2 w-full bg-slate-950 border-t border-slate-800/10 flex items-center justify-around shrink-0 mt-auto">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full" />
+                        <div className="w-1 h-1 bg-slate-700 rounded-full" />
+                        <div className="w-1 h-1 bg-slate-700 rounded-full" />
+                    </div>
+                )}
+
             </div>
         </div>
     );
-    return phone;
 };
 
 // ─── Delete Confirm Dialog ──────────────────────────────────────────────────────
@@ -205,50 +442,26 @@ const TemplateCard: React.FC<{
     const nudgeType = template.type || template.config?.type || 'bottomsheet';
     const gradient = typeGradients[nudgeType] || typeGradients.bottomsheet;
     const dot = typeDots[nudgeType] || typeDots.bottomsheet;
-    const hasThumbnail = template.thumbnail && (
-        template.thumbnail.startsWith('data:') || template.thumbnail.startsWith('http')
-    );
+    const hasThumbnail = template.thumbnail && template.thumbnail.startsWith('data:');
     const timeAgo = template.updatedAt
         ? formatDistanceToNow(new Date(template.updatedAt), { addSuffix: true })
         : null;
 
     return (
         <div
-            className="group relative bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer
-                transition-all duration-300 hover:shadow-xl hover:shadow-indigo-100/50 hover:border-indigo-300 flex flex-col"
+            className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden cursor-pointer
+                transition-all duration-300 hover:shadow-xl hover:shadow-blue-50 hover:border-blue-500 flex flex-col"
             style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
         >
             {/* Thumbnail — Phone Preview */}
-            <div className="aspect-video relative overflow-hidden">
-                <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-
-                {hasThumbnail ? (
-                    /* Show actual captured screenshot in a phone frame */
-                    <div className="absolute inset-0 flex items-center justify-center p-3">
-                        <div className="relative h-full aspect-[9/19.5] rounded-[8px] border-[2.5px] border-gray-800 bg-gray-900 overflow-hidden shadow-2xl">
-                            {/* Notch */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[5px] bg-gray-800 rounded-b-[4px] z-10" />
-                            <img
-                                src={template.thumbnail}
-                                alt={template.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
-                        </div>
+            <div className="aspect-[4/3] relative overflow-hidden bg-slate-50 border-b border-slate-100 flex items-center justify-center p-1.5 select-none">
+                <div className="absolute inset-0 flex items-center justify-center p-1.5">
+                    <div className="relative h-full aspect-[9/19.5] rounded-[8px] border-[2.5px] border-slate-800 bg-slate-950 overflow-hidden shadow-2xl">
+                        {/* Notch */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[5px] bg-slate-800 rounded-b-[4px] z-10" />
+                        <MiniTemplatePreview type={nudgeType} layers={template.layers} config={template.config} />
                     </div>
-                ) : (
-                    /* CSS wireframe phone preview */
-                    <div className="absolute inset-0 flex items-center justify-center p-3">
-                        <div className="relative h-full aspect-[9/19.5] rounded-[8px] border-[2.5px] border-white/25 bg-white/10 overflow-hidden shadow-2xl backdrop-blur-sm">
-                            {/* Notch */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[5px] bg-black/20 rounded-b-[4px] z-10" />
-                            {/* Inner phone preview */}
-                            <div className="absolute inset-[2px] top-[6px] rounded-[4px] overflow-hidden">
-                                <NudgeTypePreview type={nudgeType} />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                </div>
 
                 {/* Badges container */}
                 <div className="absolute top-2 left-2 right-2 flex justify-between items-start pointer-events-none z-20">
@@ -257,7 +470,7 @@ const TemplateCard: React.FC<{
                         {nudgeTypeLabel[nudgeType] || nudgeType}
                     </span>
                     {template.is_system && (
-                        <span className="bg-amber-100/90 backdrop-blur-sm text-amber-800 border border-amber-200/50 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        <span className="bg-slate-900 text-white border border-slate-800 text-[10px] font-medium px-2 py-0.5 rounded-full shadow-sm">
                             System
                         </span>
                     )}
@@ -297,14 +510,14 @@ const TemplateCard: React.FC<{
                 <div className="flex items-center gap-0.5 pt-2.5 border-t border-gray-100">
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors"
                         title="Edit Design"
                     >
                         <Edit3 size={11} /> Edit
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors"
                         title="Duplicate"
                     >
                         <Copy size={11} /> Copy
@@ -373,8 +586,10 @@ const Templates: React.FC = () => {
     }, [search]);
 
     const filtered = templates.filter((t) => {
-        const tType = t.type || t.config?.type || '';
-        // Filtering all templates independent of is_system flag
+        const tType = (t.type || t.config?.type || '').toLowerCase();
+        // Scratch card is not a nudge, filter it out completely
+        if (tType === 'scratchcard' || tType === 'scratch_card') return false;
+        
         if (typeFilter !== 'all' && tType !== typeFilter) return false;
         if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
         return true;
@@ -424,13 +639,13 @@ const Templates: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full bg-gray-50/50 overflow-hidden">
+        <div className="flex h-full bg-slate-50/30 overflow-hidden">
             {/* ── Left Sidebar ────────────────────────────────────────────── */}
-            <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden">
+            <aside className="w-52 shrink-0 bg-white border-r border-slate-100 flex flex-col overflow-hidden">
                 {/* Sidebar Header */}
-                <div className="px-4 pt-5 pb-3 border-b border-gray-100">
+                <div className="px-4 pt-5 pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2 mb-1">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center">
                             <LayoutTemplate size={14} className="text-white" />
                         </div>
                         <span className="font-bold text-gray-900 text-sm">Templates</span>
@@ -443,22 +658,25 @@ const Templates: React.FC = () => {
                     <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Nudge Type</p>
                         <div className="space-y-0.5">
-                            {NUDGE_TYPES.map((nt) => (
-                                <button
-                                    key={nt.id}
-                                    onClick={() => setTypeFilter(nt.id)}
-                                    className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
-                                        ${typeFilter === nt.id
-                                            ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                                        }`}
-                                >
-                                    {nt.id !== 'all' && (
-                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${typeDots[nt.id] || 'bg-gray-400'}`} />
-                                    )}
-                                    {nt.label}
-                                </button>
-                            ))}
+                            {NUDGE_TYPES.map((nt) => {
+                                const active = typeFilter === nt.id;
+                                return (
+                                    <button
+                                        key={nt.id}
+                                        onClick={() => setTypeFilter(nt.id)}
+                                        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                                            ${active
+                                                ? 'bg-slate-100 text-slate-900 font-semibold border-l-2 border-blue-600 rounded-r-lg rounded-l-none shadow-sm'
+                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent'
+                                            }`}
+                                    >
+                                        {nt.id !== 'all' && (
+                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${typeDots[nt.id] || 'bg-gray-400'}`} />
+                                        )}
+                                        {nt.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -467,7 +685,7 @@ const Templates: React.FC = () => {
             {/* ── Main Content ─────────────────────────────────────────────── */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top bar */}
-                <div className="h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between gap-4 shrink-0">
+                <div className="h-16 bg-white border-b border-slate-100 px-6 flex items-center justify-between gap-4 shrink-0">
                     <div className="flex items-center gap-3">
                         {/* Search */}
                         <div className="relative w-64">
@@ -476,10 +694,10 @@ const Templates: React.FC = () => {
                                 placeholder="Search templates…"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9 h-9 text-sm bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-9 h-9 text-sm bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:bg-white"
                             />
                             {search && (
-                                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-650">
                                     <X size={13} />
                                 </button>
                             )}
@@ -487,9 +705,9 @@ const Templates: React.FC = () => {
 
                         <div className="flex items-center gap-1.5">
                             {typeFilter !== 'all' && (
-                                <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                <span className="text-xs bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
                                     {nudgeTypeLabel[typeFilter]}
-                                    <button onClick={() => setTypeFilter('all')}><X size={10} /></button>
+                                    <button onClick={() => setTypeFilter('all')} className="hover:text-slate-900"><X size={10} /></button>
                                 </span>
                             )}
                         </div>
@@ -503,7 +721,7 @@ const Templates: React.FC = () => {
 
                     <Button
                         onClick={() => setCreateDialogOpen(true)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm gap-2 shadow-sm shadow-indigo-200 hover:shadow-indigo-300 transition-all"
+                        className="bg-slate-900 hover:bg-slate-800 text-white text-sm gap-2 shadow-sm transition-all"
                     >
                         <Plus size={15} />
                         New Template
@@ -511,7 +729,7 @@ const Templates: React.FC = () => {
                 </div>
 
                 {/* Grid */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50/20">
                     {loading ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
                             {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -519,10 +737,10 @@ const Templates: React.FC = () => {
                     ) : filtered.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center py-24">
                             <div className="relative mb-6">
-                                <div className="w-20 h-20 rounded-3xl bg-indigo-50 border-2 border-dashed border-indigo-200 flex items-center justify-center">
-                                    <Sparkles size={30} className="text-indigo-300" />
+                                <div className="w-20 h-20 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center">
+                                    <Sparkles size={30} className="text-slate-400 animate-pulse" />
                                 </div>
-                                <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg">
+                                <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center shadow-lg">
                                     <Plus size={14} className="text-white" />
                                 </div>
                             </div>
@@ -530,7 +748,7 @@ const Templates: React.FC = () => {
                             <p className="text-sm text-gray-400 mb-6 max-w-xs">
                                 Create your first template, or save a campaign design as a template from the Campaign Builder.
                             </p>
-                            <Button onClick={() => setCreateDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                            <Button onClick={() => setCreateDialogOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white gap-2 shadow-sm">
                                 <Plus size={15} />
                                 Create First Template
                             </Button>

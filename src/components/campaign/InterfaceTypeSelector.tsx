@@ -36,24 +36,24 @@ const INTERFACE_TYPES: Array<{
         id: 'bottomsheet',
         label: 'Bottom Sheet / Banner',
         icon: <PanelBottom className="w-5 h-5" />,
-        color: 'text-indigo-600',
-        bg: 'bg-indigo-50',
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
         description: 'Slides up or down from the edge of the screen.',
     },
     {
         id: 'tooltip',
         label: 'Tooltip',
         icon: <MessageSquare className="w-5 h-5" />,
-        color: 'text-sky-600',
-        bg: 'bg-sky-50',
+        color: 'text-slate-700',
+        bg: 'bg-slate-100',
         description: 'Contextual pop-up pointing to a specific element.',
     },
     {
         id: 'floater',
         label: 'Floater',
         icon: <MousePointerClick className="w-5 h-5" />,
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
+        color: 'text-blue-500',
+        bg: 'bg-blue-50/60',
         description: 'Floating action button or sticky widget.',
     },
 ];
@@ -115,7 +115,7 @@ export const InterfaceTypeSelector: React.FC<InterfaceTypeSelectorProps> = ({
                             value={interfaceName}
                             onChange={(e) => setInterfaceName(e.target.value)}
                             placeholder={`Interface ${existingInterfaceCount + 1}`}
-                            className="w-full h-11 text-base border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 transition-shadow"
+                            className="w-full h-11 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-shadow"
                         />
                         <p className="text-xs text-gray-400 mt-2 font-medium">
                             e.g., promotionalBanner, userOnboardingTooltip
@@ -136,9 +136,9 @@ export const InterfaceTypeSelector: React.FC<InterfaceTypeSelectorProps> = ({
                                         onClick={() => setSelectedType(type.id)}
                                         className={`
                                             relative flex flex-col items-start p-5 rounded-xl border-[1.5px] text-left
-                                            transition-all duration-200 group outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                                            transition-all duration-200 group outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
                                             ${isSelected
-                                                ? 'border-indigo-600 bg-indigo-50/50 shadow-[0_0_0_1px_rgba(79,70,229,1)]'
+                                                ? 'border-slate-900 bg-slate-50/50 shadow-[0_0_0_1px_rgba(15,23,42,1)]'
                                                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
                                             }
                                         `}
@@ -150,16 +150,16 @@ export const InterfaceTypeSelector: React.FC<InterfaceTypeSelectorProps> = ({
                                         >
                                             {type.icon}
                                         </div>
-                                        <h4 className={`text-sm font-bold mb-1.5 transition-colors ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}>
+                                        <h4 className={`text-sm font-bold mb-1.5 transition-colors ${isSelected ? 'text-slate-900' : 'text-gray-900'}`}>
                                             {type.label}
                                         </h4>
-                                        <p className={`text-[13px] leading-relaxed transition-colors ${isSelected ? 'text-indigo-700/80' : 'text-gray-500'}`}>
+                                        <p className={`text-[13px] leading-relaxed transition-colors ${isSelected ? 'text-slate-700' : 'text-gray-500'}`}>
                                             {type.description}
                                         </p>
                                         
                                         {/* Selection indicator checkmark */}
                                         <div className={`absolute top-4 right-4 transition-all duration-200 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-                                            <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                                            <CheckCircle2 className="w-5 h-5 text-slate-900" />
                                         </div>
                                     </button>
                                 );
@@ -179,7 +179,7 @@ export const InterfaceTypeSelector: React.FC<InterfaceTypeSelectorProps> = ({
                         <Button
                             onClick={handleCreate}
                             disabled={!selectedType}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             Create Interface
                         </Button>

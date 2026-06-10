@@ -2134,6 +2134,48 @@ export const useEditorStore = create<EditorStore>()(
           // FIX: Handle temporary IDs for new templates
           const isTempId = currentCampaign.id && currentCampaign.id.startsWith('campaign_');
 
+          // Detect thumbnail from root container background image or first image layer
+          let detectedThumbnail = currentCampaign.thumbnail;
+          
+          // Try to capture phone preview screenshot using html2canvas
+          try {
+              const el = document.getElementById('phone-preview-content');
+              if (el) {
+                  const { default: html2canvas } = await import('html2canvas');
+                  const canvas = await html2canvas(el, {
+                      useCORS: true,
+                      allowTaint: true,
+                      scale: 1.5, // High resolution
+                      backgroundColor: '#ffffff',
+                      logging: false,
+                  });
+                  detectedThumbnail = canvas.toDataURL('image/png');
+              }
+          } catch (err) {
+              console.warn('saveTemplate: Thumbnail capture failed, using fallback:', err);
+          }
+
+          // Fallbacks if screenshot capture fails or returned empty
+          if (!detectedThumbnail) {
+              const containerLayer = currentCampaign.layers?.find(l => l.type === 'container' && !l.parent) || currentCampaign.layers?.[0];
+              if (containerLayer?.style?.backgroundImage) {
+                  const bgVal = containerLayer.style.backgroundImage;
+                  const match = bgVal.match(/url\(['"]?([^'"]+)['"]?\)/);
+                  if (match && match[1]) {
+                      detectedThumbnail = match[1];
+                  } else if (bgVal.startsWith('http') || bgVal.startsWith('data:')) {
+                      detectedThumbnail = bgVal;
+                  }
+              }
+          }
+          
+          if (!detectedThumbnail) {
+              const imgLayer = currentCampaign.layers?.find(l => (l.type === 'image' || l.type === 'media') && l.content?.imageUrl);
+              if (imgLayer?.content?.imageUrl) {
+                  detectedThumbnail = imgLayer.content.imageUrl;
+              }
+          }
+
           const templatePayload = {
             ...currentCampaign, // Spread other props
             id: isTempId ? undefined : currentCampaign.id,
@@ -2141,6 +2183,7 @@ export const useEditorStore = create<EditorStore>()(
             name: currentCampaign.name,
             type: currentCampaign.nudgeType,
             layers: currentCampaign.layers,
+            thumbnail: detectedThumbnail || null,
             config: { ...config, type: currentCampaign.nudgeType }, // ✅ FIX: Ensure type is persisted in config for backend
             updatedAt: new Date().toISOString()
           };

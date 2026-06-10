@@ -504,11 +504,6 @@ export const DesignStep: React.FC<any> = () => {
   const handleNudgeTypeSelect = (id: string) => {
     setSelectedNudgeType(id);
 
-    // Show template selection for bottom sheets
-    if (id === 'bottomsheet') {
-      useEditorStore.getState().setTemplateModalOpen(true);
-    }
-
     // Create new campaign with selected nudge type
     createCampaign(
       (selectedExperience || selectedExperienceType) as any || 'nudges',
@@ -567,9 +562,6 @@ export const DesignStep: React.FC<any> = () => {
         overlay: { enabled: true, opacity: 0.5, blur: 0, color: '#000000', dismissOnClick: true },
         animation: { type: 'slide', duration: 300, easing: 'ease-out' },
       };
-      
-      // Auto open template modal for bottomsheet
-      useEditorStore.getState().setTemplateModalOpen(true);
     } else if (id === 'fullpage' && !currentCampaign?.fullscreenConfig) {
        updates.fullscreenConfig = {
         backgroundColor: '#FFFFFF',

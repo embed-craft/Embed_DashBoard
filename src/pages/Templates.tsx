@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
     Search, Plus, MoreVertical, Trash2, Copy, Edit3,
     Globe, Building2, LayoutTemplate, Layers, Clock,
-    Sparkles, Loader2, Rocket, X, AlertTriangle
+    Sparkles, Loader2, Rocket, X, AlertTriangle,
+    PanelBottom, MessageSquare, PictureInPicture, Maximize
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,12 +38,9 @@ interface Template {
 const NUDGE_TYPES = [
     { id: 'all',          label: 'All Templates' },
     { id: 'bottomsheet',  label: 'Bottom Sheet' },
-    { id: 'modal',        label: 'Modal' },
     { id: 'tooltip',      label: 'Tooltip' },
     { id: 'floater',      label: 'Floater' },
-    { id: 'fullscreen',   label: 'Full Screen' },
-    { id: 'banner',       label: 'Banner' },
-    { id: 'spinthewheel',  label: 'Spin The Wheel' }
+    { id: 'fullscreen',   label: 'Full Screen' }
 ];
 
 const typeGradients: Record<string, string> = {
@@ -67,12 +65,16 @@ const typeDots: Record<string, string> = {
 
 const nudgeTypeLabel: Record<string, string> = {
     bottomsheet: 'Bottom Sheet',
-    modal:       'Modal',
     tooltip:     'Tooltip',
     floater:     'Floater',
     fullscreen:  'Full Screen',
-    banner:      'Banner',
-    spinthewheel: 'Spin The Wheel',
+};
+
+const NudgeTypeIcon: Record<string, React.ComponentType<any>> = {
+    bottomsheet: PanelBottom,
+    tooltip:     MessageSquare,
+    floater:     PictureInPicture,
+    fullscreen:  Maximize,
 };
 
 // A premium, dynamic wireframe mockup preview representing the template's layer-based structure.
@@ -465,8 +467,11 @@ const TemplateCard: React.FC<{
 
                 {/* Badges container */}
                 <div className="absolute top-2 left-2 right-2 flex justify-between items-start pointer-events-none z-20">
-                    <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm shadow-sm text-[10px] font-semibold px-2 py-0.5 rounded-full text-gray-700">
-                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                    <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm shadow-sm text-[10px] font-semibold px-2.5 py-1 rounded-full text-gray-700">
+                        {(() => {
+                            const IconComponent = NudgeTypeIcon[nudgeType];
+                            return IconComponent ? <IconComponent size={10} className="text-gray-500" /> : null;
+                        })()}
                         {nudgeTypeLabel[nudgeType] || nudgeType}
                     </span>
                     {template.is_system && (
@@ -588,7 +593,7 @@ const Templates: React.FC = () => {
     const filtered = templates.filter((t) => {
         const tType = (t.type || t.config?.type || '').toLowerCase();
         // Scratch card is not a nudge, filter it out completely
-        if (tType === 'scratchcard' || tType === 'scratch_card') return false;
+        if (tType === 'scratchcard' || tType === 'scratch_card' || tType === 'spinthewheel' || tType === 'spin_the_wheel' || tType === 'modal' || tType === 'banner') return false;
         
         if (typeFilter !== 'all' && tType !== typeFilter) return false;
         if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -670,8 +675,15 @@ const Templates: React.FC = () => {
                                                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent'
                                             }`}
                                     >
-                                        {nt.id !== 'all' && (
-                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${typeDots[nt.id] || 'bg-gray-400'}`} />
+                                        {nt.id !== 'all' ? (
+                                            (() => {
+                                                const IconComponent = NudgeTypeIcon[nt.id];
+                                                return IconComponent ? (
+                                                    <IconComponent size={14} className={`shrink-0 ${active ? 'text-slate-850' : 'text-slate-400 group-hover:text-slate-650'}`} />
+                                                ) : null;
+                                            })()
+                                        ) : (
+                                            <LayoutTemplate size={14} className={`shrink-0 ${active ? 'text-slate-850' : 'text-slate-400 group-hover:text-slate-655'}`} />
                                         )}
                                         {nt.label}
                                     </button>

@@ -54,6 +54,9 @@ const CampaignBuilder: React.FC = () => {
   // Local state for tags input
   const [tagInput, setTagInput] = useState('');
 
+  // Track template pre-application to prevent infinite loops / duplicate application
+  const hasAppliedTemplate = React.useRef(false);
+
   const {
     currentCampaign,
     loadCampaign,
@@ -184,13 +187,17 @@ const CampaignBuilder: React.FC = () => {
   // Apply template after campaign is created (from "Use in Campaign" flow)
   useEffect(() => {
     const templateId = searchParams.get('template');
-    if (!templateId || !currentCampaign) return;
+    if (!templateId || !currentCampaign || hasAppliedTemplate.current) return;
 
     // Only apply once — check if already applied by comparing source
-    if ((currentCampaign as any)._sourceTemplateId === templateId) return;
+    if ((currentCampaign as any)._sourceTemplateId === templateId) {
+      hasAppliedTemplate.current = true;
+      return;
+    }
 
     const apply = async () => {
       try {
+        hasAppliedTemplate.current = true;
         const api = await import('@/lib/api');
         const transformers = await import('@/lib/campaignTransformers');
         const rawTemplate = await api.apiClient.getTemplate(templateId);
@@ -198,6 +205,7 @@ const CampaignBuilder: React.FC = () => {
         applyTemplate({ ...fullTemplate, _sourceTemplateId: templateId } as any);
         toast.success(`Template "${rawTemplate.name}" applied!`);
       } catch {
+        hasAppliedTemplate.current = false;
         console.warn('Failed to pre-apply template from URL param');
       }
     };

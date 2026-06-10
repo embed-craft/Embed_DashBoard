@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
     Search, X, Layers, Globe, Building2, ChevronRight,
-    Sparkles, Loader2, ArrowLeft
+    Sparkles, Loader2, ArrowLeft, PanelBottom, MessageSquare, PictureInPicture, Maximize, LayoutTemplate
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -378,12 +378,16 @@ const typeDots: Record<string, string> = {
 
 const nudgeTypeLabel: Record<string, string> = {
     bottomsheet: 'Bottom Sheet',
-    modal:       'Modal',
     tooltip:     'Tooltip',
     floater:     'Floater',
     fullscreen:  'Full Screen',
-    banner:      'Banner',
-    spinthewheel: 'Spin The Wheel',
+};
+
+const NudgeTypeIcon: Record<string, React.ComponentType<any>> = {
+    bottomsheet: PanelBottom,
+    tooltip:     MessageSquare,
+    floater:     PictureInPicture,
+    fullscreen:  Maximize,
 };
 
 const CATEGORIES = ['All', 'Marketing', 'Onboarding', 'Feedback', 'Announcement', 'Support', 'Other'];
@@ -393,7 +397,6 @@ const NUDGE_TYPES = [
     { id: 'tooltip', label: 'Tooltip' },
     { id: 'floater', label: 'Floater' },
     { id: 'fullscreen', label: 'Full Screen' },
-    { id: 'spinthewheel', label: 'Spin The Wheel' },
 ];
 
 const TemplateCard: React.FC<{
@@ -422,7 +425,10 @@ const TemplateCard: React.FC<{
                 {/* Type badge */}
                 <div className="absolute top-2.5 left-2.5 z-20">
                     <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm border border-slate-100">
-                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                        {(() => {
+                            const IconComponent = NudgeTypeIcon[nudgeType];
+                            return IconComponent ? <IconComponent size={10} className="text-gray-500" /> : null;
+                        })()}
                         {nudgeTypeLabel[nudgeType] || nudgeType}
                     </span>
                 </div>
@@ -517,7 +523,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
     const filtered = templates.filter((t) => {
         const tType = (t.type || t.config?.type || '').toLowerCase();
-        if (tType === 'scratchcard' || tType === 'scratch_card') return false;
+        if (tType === 'scratchcard' || tType === 'scratch_card' || tType === 'spinthewheel' || tType === 'spin_the_wheel') return false;
         if (source === 'system' && !t.is_system) return false;
         if (source === 'mine' && t.is_system) return false;
         if (categoryFilter !== 'All' && t.category?.toLowerCase() !== categoryFilter.toLowerCase()) return false;
@@ -650,8 +656,15 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                                                     : 'text-slate-600 hover:bg-slate-105 hover:text-slate-900 border-l-2 border-transparent'
                                                 }`}
                                         >
-                                            {nt.id !== 'all' && (
-                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${typeDots[nt.id] || 'bg-gray-400'}`} />
+                                            {nt.id !== 'all' ? (
+                                                (() => {
+                                                    const IconComponent = NudgeTypeIcon[nt.id];
+                                                    return IconComponent ? (
+                                                        <IconComponent size={14} className={`shrink-0 ${active ? 'text-slate-855' : 'text-slate-400 group-hover:text-slate-650'}`} />
+                                                    ) : null;
+                                                })()
+                                            ) : (
+                                                <LayoutTemplate size={14} className={`shrink-0 ${active ? 'text-slate-855' : 'text-slate-400 group-hover:text-slate-655'}`} />
                                             )}
                                             {nt.label}
                                         </button>

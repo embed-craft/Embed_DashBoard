@@ -1792,7 +1792,6 @@ export const useEditorStore = create<EditorStore>()(
       setTemplateModalOpen: (open) => set({ isTemplateModalOpen: open }),
       setSaveTemplateModalOpen: (open) => set({ isSaveTemplateModalOpen: open }),
 
-      // Apply Template Logic (Moved from DesignStep)
       applyTemplate: (template) => {
         const { currentCampaign, loadCampaign } = get();
         if (!currentCampaign) return;
@@ -1803,7 +1802,13 @@ export const useEditorStore = create<EditorStore>()(
         const { id, _id, createdAt, updatedAt, userId, ...templateData } = template;
 
         // Determine nudge type
-        const nudgeType = template.type || template.typeId || template.config?.nudgeType || currentCampaign.nudgeType;
+        const nudgeType = (
+          (template.nudgeType && template.nudgeType !== 'nudge' && template.nudgeType !== 'challenge') ? template.nudgeType :
+          (template.type && template.type !== 'nudge' && template.type !== 'challenge') ? template.type :
+          template.typeId ||
+          template.config?.nudgeType ||
+          currentCampaign.nudgeType
+        );
 
         // Map backend template structure
         const mappedData: any = {
@@ -1816,7 +1821,7 @@ export const useEditorStore = create<EditorStore>()(
 
         // Map config dynamically
         if (template.config) {
-          const type = template.type || currentCampaign.nudgeType;
+          const type = nudgeType;
           let configKey = `${type}Config`;
           if (type === 'bottomsheet') configKey = 'bottomSheetConfig'; // Special case for casing
           if (type === 'scratchcard') configKey = 'scratchCardConfig';
@@ -1830,6 +1835,7 @@ export const useEditorStore = create<EditorStore>()(
           ...mappedData,
           id: currentCampaign.id || `campaign_${Date.now()}`,
           _id: currentCampaign._id,
+          _sourceTemplateId: template._sourceTemplateId || templateData._sourceTemplateId,
           isDirty: true,
         };
 

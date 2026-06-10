@@ -642,6 +642,10 @@ export interface ModalConfig {
     duration: number;
     easing: string;
   };
+  timing?: {
+    delay?: number;
+    duration?: number;
+  };
 }
 
 // Banner Configuration (Copied from Modal, adapted for top/bottom positioning)
@@ -680,6 +684,10 @@ export interface BannerConfig {
     type: 'slide' | 'fade';
     duration: number;
     easing?: string;
+  };
+  timing?: {
+    delay?: number;
+    duration?: number;
   };
 }
 
@@ -799,6 +807,10 @@ export interface SpinTheWheelConfig {
   sections: SpinTheWheelSection[];
   sectionWinLimit?: number;
   maxAttempts?: number;
+  timing?: {
+    delay?: number;
+    duration?: number;
+  };
 }
 
 // Template System (Phase 1)

@@ -91,12 +91,15 @@ export interface ScratchCardConfig {
     // Editor State
     previewRevealed?: boolean;
 
-    // Logic/Area
     scratchArea?: {
         x: number;
         y: number;
         width: number;
         height: number;
+    };
+    timing?: {
+        delay?: number;
+        duration?: number;
     };
 }
 

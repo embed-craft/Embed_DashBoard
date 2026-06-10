@@ -117,6 +117,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
                 // Behavior
                 closeOnOutsideClick: tc.closeOnOutsideClick,
                 closeOnTargetClick: tc.closeOnTargetClick,
+                // Timing
+                timing: tc.timing,
             };
         } else {
             // TOOLTIP MODE: Only send tooltip-related fields (no coachmark data - saves space)
@@ -185,6 +187,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
                 closeOnTargetClick: tc.closeOnTargetClick,
                 autoScrollToTarget: tc.autoScrollToTarget,
                 timelineMode: tc.timelineMode,
+                // Timing
+                timing: tc.timing,
             };
         }
     }
@@ -444,83 +448,82 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
 
     const isSpinTheWheel = backendCampaign.campaignType === 'spinthewheel' || backendCampaign.type === 'spinthewheel' || backendCampaign.config?.campaignType === 'spinthewheel';
     const spinTheWheelConfig = isSpinTheWheel
-        ? (backendCampaign.config?.spinTheWheelConfig || backendCampaign.spinTheWheelConfig || {
-            winningCriteria: backendCampaign.config?.winningCriteria || 'weight',
-            sections: backendCampaign.config?.sections || [],
-            sectionWinLimit: backendCampaign.config?.sectionWinLimit,
-            maxAttempts: backendCampaign.config?.maxAttempts,
-        })
+        ? (() => {
+            const rawConfig = backendCampaign.config?.spinTheWheelConfig || backendCampaign.spinTheWheelConfig || {};
+            return {
+                winningCriteria: rawConfig.winningCriteria ?? backendCampaign.config?.winningCriteria ?? 'weight',
+                sections: rawConfig.sections ?? backendCampaign.config?.sections ?? [],
+                sectionWinLimit: rawConfig.sectionWinLimit ?? backendCampaign.config?.sectionWinLimit,
+                maxAttempts: rawConfig.maxAttempts ?? backendCampaign.config?.maxAttempts,
+                timing: rawConfig.timing ?? backendCampaign.config?.timing ?? { delay: 0, duration: 0 },
+            };
+        })()
         : undefined;
 
     const fullscreenConfig = (campaignType === 'fullscreen' || campaignType === 'fullpage')
-        ? (backendCampaign.config?.fullscreenConfig || backendCampaign.fullscreenConfig || {
-            showCloseButton: backendCampaign.config?.showCloseButton ?? true,
-            backgroundColor: backendCampaign.config?.backgroundColor || '#ffffff',
-            media: backendCampaign.config?.media || { type: 'none', url: '' },
-            padding: backendCampaign.config?.padding || { top: 0, right: 0, bottom: 0, left: 0 },
-            alignItems: backendCampaign.config?.alignItems || 'center',
-            justifyContent: backendCampaign.config?.justifyContent || 'flex-end',
-            animation: backendCampaign.config?.animation,
-            closeIcon: backendCampaign.config?.closeIcon,
-        })
+        ? (() => {
+            const rawConfig = backendCampaign.config?.fullscreenConfig || backendCampaign.fullscreenConfig || {};
+            return {
+                showCloseButton: rawConfig.showCloseButton ?? backendCampaign.config?.showCloseButton ?? true,
+                backgroundColor: rawConfig.backgroundColor ?? backendCampaign.config?.backgroundColor ?? '#ffffff',
+                media: rawConfig.media ?? backendCampaign.config?.media ?? { type: 'none', url: '' },
+                padding: rawConfig.padding ?? backendCampaign.config?.padding ?? { top: 0, right: 0, bottom: 0, left: 0 },
+                alignItems: rawConfig.alignItems ?? backendCampaign.config?.alignItems ?? 'center',
+                justifyContent: rawConfig.justifyContent ?? backendCampaign.config?.justifyContent ?? 'flex-end',
+                animation: rawConfig.animation ?? backendCampaign.config?.animation,
+                closeIcon: rawConfig.closeIcon ?? backendCampaign.config?.closeIcon,
+                timing: rawConfig.timing ?? backendCampaign.config?.timing ?? { delay: 0, duration: 0 },
+            };
+        })()
         : undefined;
 
     // ✅ FIX: Add floaterConfig extraction (FULL PARITY - must match buildConfigFromLayers)
     const floaterConfig = campaignType === 'floater'
-        ? (backendCampaign.config?.floaterConfig || backendCampaign.floaterConfig || {
-            // Dimensions
-            width: backendCampaign.config?.width || 280,
-            height: backendCampaign.config?.height || 180,
-
-            // Background
-            backgroundColor: backendCampaign.config?.backgroundColor || '#000000',
-            backgroundImageUrl: backendCampaign.config?.backgroundImageUrl,
-            backgroundSize: backendCampaign.config?.backgroundSize || 'cover',
-
-            // Border & Shape
-            borderRadius: backendCampaign.config?.borderRadius || 0,
-            shape: backendCampaign.config?.shape,
-
-            // Position
-            position: backendCampaign.config?.position || 'bottom-right',
-            offsetX: backendCampaign.config?.offsetX ?? 20,
-            offsetY: backendCampaign.config?.offsetY ?? 20,
-
-            // Controls (close button, expand, mute, etc.)
-            showCloseButton: backendCampaign.config?.showCloseButton ?? false,
-            controls: backendCampaign.config?.controls,
-
-            // Media/Video (critical for PIP)
-            media: backendCampaign.config?.media,
-
-            // Animation
-            animation: backendCampaign.config?.animation,
-
-            // Behavior
-            draggable: backendCampaign.config?.draggable ?? true,
-            snapToCorner: backendCampaign.config?.snapToCorner ?? true,
-            dismissOnTapOutside: backendCampaign.config?.dismissOnTapOutside,
-            doubleTapToDismiss: backendCampaign.config?.doubleTapToDismiss ?? false,
-
-            // Backdrop/Overlay
-            backdrop: backendCampaign.config?.backdrop,
-            overlay: backendCampaign.config?.overlay,
-
-            // Shadow
-            backdropFilter: backendCampaign.config?.backdropFilter, glassmorphism: backendCampaign.config?.glassmorphism, shadow: backendCampaign.config?.shadow,
-        })
+        ? (() => {
+            const rawConfig = backendCampaign.config?.floaterConfig || backendCampaign.floaterConfig || {};
+            return {
+                width: rawConfig.width ?? backendCampaign.config?.width ?? 280,
+                height: rawConfig.height ?? backendCampaign.config?.height ?? 180,
+                backgroundColor: rawConfig.backgroundColor ?? backendCampaign.config?.backgroundColor ?? '#000000',
+                backgroundImageUrl: rawConfig.backgroundImageUrl ?? backendCampaign.config?.backgroundImageUrl,
+                backgroundSize: rawConfig.backgroundSize ?? backendCampaign.config?.backgroundSize ?? 'cover',
+                borderRadius: rawConfig.borderRadius ?? backendCampaign.config?.borderRadius ?? 0,
+                shape: rawConfig.shape ?? backendCampaign.config?.shape,
+                position: rawConfig.position ?? backendCampaign.config?.position ?? 'bottom-right',
+                offsetX: rawConfig.offsetX ?? backendCampaign.config?.offsetX ?? 20,
+                offsetY: rawConfig.offsetY ?? backendCampaign.config?.offsetY ?? 20,
+                showCloseButton: rawConfig.showCloseButton ?? backendCampaign.config?.showCloseButton ?? false,
+                controls: rawConfig.controls ?? backendCampaign.config?.controls,
+                media: rawConfig.media ?? backendCampaign.config?.media,
+                animation: rawConfig.animation ?? backendCampaign.config?.animation,
+                draggable: rawConfig.draggable ?? backendCampaign.config?.draggable ?? true,
+                snapToCorner: rawConfig.snapToCorner ?? backendCampaign.config?.snapToCorner ?? true,
+                dismissOnTapOutside: rawConfig.dismissOnTapOutside ?? backendCampaign.config?.dismissOnTapOutside,
+                doubleTapToDismiss: rawConfig.doubleTapToDismiss ?? backendCampaign.config?.doubleTapToDismiss ?? false,
+                backdrop: rawConfig.backdrop ?? backendCampaign.config?.backdrop,
+                overlay: rawConfig.overlay ?? backendCampaign.config?.overlay,
+                backdropFilter: rawConfig.backdropFilter ?? backendCampaign.config?.backdropFilter,
+                glassmorphism: rawConfig.glassmorphism ?? backendCampaign.config?.glassmorphism,
+                shadow: rawConfig.shadow ?? backendCampaign.config?.shadow,
+                timing: rawConfig.timing ?? backendCampaign.config?.timing ?? { delay: 0, duration: 0 },
+            };
+        })()
         : undefined;
 
     // ✅ FIX: Add pipConfig extraction
     const pipConfig = campaignType === 'pip'
-        ? (backendCampaign.config?.pipConfig || backendCampaign.pipConfig || {
-            width: backendCampaign.config?.width || 160,
-            height: backendCampaign.config?.height || 220,
-            backgroundColor: backendCampaign.config?.backgroundColor || 'black',
-            cornerRadius: backendCampaign.config?.cornerRadius || 12,
-            position: backendCampaign.config?.position || 'bottom-right',
-            showCloseButton: backendCampaign.config?.showCloseButton ?? true,
-        })
+        ? (() => {
+            const rawConfig = backendCampaign.config?.pipConfig || backendCampaign.pipConfig || {};
+            return {
+                width: rawConfig.width ?? backendCampaign.config?.width ?? 160,
+                height: rawConfig.height ?? backendCampaign.config?.height ?? 220,
+                backgroundColor: rawConfig.backgroundColor ?? backendCampaign.config?.backgroundColor ?? 'black',
+                cornerRadius: rawConfig.cornerRadius ?? backendCampaign.config?.cornerRadius ?? 12,
+                position: rawConfig.position ?? backendCampaign.config?.position ?? 'bottom-right',
+                showCloseButton: rawConfig.showCloseButton ?? backendCampaign.config?.showCloseButton ?? true,
+                timing: rawConfig.timing ?? backendCampaign.config?.timing ?? { delay: 0, duration: 0 },
+            };
+        })()
         : undefined;
 
     const result = {
@@ -548,15 +551,20 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
         spinTheWheelConfig,
         fullscreenConfig,
 
-        tooltipConfig: campaignType === 'tooltip' ? (backendCampaign.config?.tooltipConfig || {
-            // Fallback/Legacy migration: check if properties exist on root config
-            targetPageId: backendCampaign.config?.targetPageId,
-            targetElementId: backendCampaign.config?.targetElementId,
-            position: backendCampaign.config?.position,
-            maxWidth: backendCampaign.config?.maxWidth,
-            width: backendCampaign.config?.width,
-            height: backendCampaign.config?.height,
-        }) : undefined,
+        tooltipConfig: campaignType === 'tooltip' ? (() => {
+            const tc = backendCampaign.config?.tooltipConfig || {};
+            return {
+                ...tc,
+                // Fallback/Legacy migration: check if properties exist on root config
+                targetPageId: tc.targetPageId ?? backendCampaign.config?.targetPageId,
+                targetElementId: tc.targetElementId ?? backendCampaign.config?.targetElementId,
+                position: tc.position ?? backendCampaign.config?.position,
+                maxWidth: tc.maxWidth ?? backendCampaign.config?.maxWidth,
+                width: tc.width ?? backendCampaign.config?.width,
+                height: tc.height ?? backendCampaign.config?.height,
+                timing: tc.timing ?? backendCampaign.config?.timing ?? { delay: 0, duration: 0 },
+            };
+        })() : undefined,
         // Store other configs dynamically if needed in future
         // ✅ FIX: Restore Display Rules, Stories, and Goals from Backend
         // Robust merging with defaults to prevent crashes if nested fields are missing
@@ -696,7 +704,8 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             // Flatten some for legacy SDK support if needed
             dismissOnClick: mc.overlay?.dismissOnClick,
             overlayColor: mc.overlay?.color,
-            overlayOpacity: mc.overlay?.opacity
+            overlayOpacity: mc.overlay?.opacity,
+            timing: mc.timing,
         });
     }
 
@@ -724,7 +733,8 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             overlay: bsc.overlay,
             dismissOnClick: bsc.overlay?.dismissOnClick ?? true,
             overlayColor: bsc.overlay?.color,
-            overlayOpacity: bsc.overlay?.opacity
+            overlayOpacity: bsc.overlay?.opacity,
+            timing: bsc.timing,
         });
     }
 
@@ -741,6 +751,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             borderRadius: bc.borderRadius,
             elevation: bc.elevation,
             position: bc.position,
+            timing: bc.timing,
         });
     }
 
@@ -763,6 +774,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             position: sc.position,
             completionAnimation: sc.completionAnimation,
             overlay: sc.overlay,
+            timing: sc.timing,
         });
     }
 
@@ -777,6 +789,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             sections: swc.sections,
             sectionWinLimit: swc.sectionWinLimit,
             maxAttempts: maxAttempts,
+            timing: swc.timing,
         });
     }
 
@@ -793,6 +806,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             justifyContent: fc.justifyContent,
             animation: fc.animation,
             closeIcon: fc.closeIcon,
+            timing: fc.timing,
         });
     }
 
@@ -851,6 +865,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
 
             // Shadow (NEW)
             backdropFilter: fc.backdropFilter, glassmorphism: fc.glassmorphism, shadow: fc.shadow, // { enabled, blur, spread }
+            timing: fc.timing,
         });
     }
 
@@ -1555,6 +1570,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             config.backgroundColor = campaign.pipConfig.backgroundColor || 'black';
             config.cornerRadius = campaign.pipConfig.cornerRadius || 12;
             config.showCloseButton = campaign.pipConfig.showCloseButton !== false;
+            config.timing = campaign.pipConfig.timing;
         } else {
             // Defaults if config is missing
             config.position = 'bottom-right';
@@ -1563,6 +1579,7 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             config.backgroundColor = 'black';
             config.cornerRadius = 12;
             config.showCloseButton = true;
+            config.timing = { delay: 0, duration: 0 };
         }
     }
 
@@ -2319,6 +2336,7 @@ function extractBottomSheetConfig(config: Record<string, any>): BottomSheetConfi
             duration: config.animationDuration || 300,
             easing: 'ease-out',
         },
+        timing: config.timing || { delay: 0, duration: 0 },
     };
 }
 
@@ -2349,6 +2367,7 @@ function extractModalConfig(config: Record<string, any>): ModalConfig {
             duration: config.animationDuration || 300,
             easing: config.animationEasing || 'ease-out',
         },
+        timing: config.timing || { delay: 0, duration: 0 },
     } as ModalConfig;
 }
 
@@ -2388,7 +2407,8 @@ function extractBannerConfig(config: Record<string, any>): BannerConfig {
             blur: 12,
             spread: 0,
             opacity: 0.1
-        }
+        },
+        timing: config.timing || { delay: 0, duration: 0 },
     } as BannerConfig;
 }
 
@@ -2423,7 +2443,8 @@ function extractScratchCardConfig(config: Record<string, any>): ScratchCardConfi
             blur: config.overlay?.blur ?? 0,
             color: config.overlay?.color ?? '#000000',
             dismissOnClick: config.overlay?.dismissOnClick ?? true
-        }
+        },
+        timing: config.timing || { delay: 0, duration: 0 }
     };
 }
 

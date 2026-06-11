@@ -34,6 +34,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const Campaigns = () => {
   const navigate = useNavigate();
@@ -50,6 +60,13 @@ const Campaigns = () => {
   const [tagsFilter, setTagsFilter] = useState<string[]>([]);
   const [eventsFilter, setEventsFilter] = useState<string[]>([]);
 
+  // Schedule Modal State
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [selectedCampaignForSchedule, setSelectedCampaignForSchedule] = useState<any>(null);
+  const [schedStartDate, setSchedStartDate] = useState('');
+  const [schedEndDate, setSchedEndDate] = useState('');
+  const [schedTimeZone, setSchedTimeZone] = useState('UTC');
+
   // Fetch campaigns from backend on mount
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -64,8 +81,10 @@ const Campaigns = () => {
           // Apply smart status for filtering
           if (status === 'active' && bc.schedule) {
             const now = new Date();
-            const startDate = bc.schedule.start_date ? new Date(bc.schedule.start_date) : null;
-            const endDate = bc.schedule.end_date ? new Date(bc.schedule.end_date) : null;
+            const start = bc.schedule.start_date || bc.schedule.startDate;
+            const end = bc.schedule.end_date || bc.schedule.endDate;
+            const startDate = start ? new Date(start) : null;
+            const endDate = end ? new Date(end) : null;
 
             if (startDate && now < startDate) {
               status = 'scheduled';
@@ -77,7 +96,7 @@ const Campaigns = () => {
             let inferredExperience = bc.experience;
             
             // Smart detection for legacy campaigns that defaulted to 'nudges'
-            if (!inferredExperience || inferredExperience === 'nudges') {
+            if (!inferredExperience || inferredExperience === 'nudges' || inferredExperience === 'nudge') {
               if (
                 bc.type === 'spinthewheel' || 
                 bc.campaignType === 'spinthewheel' || 
@@ -85,11 +104,11 @@ const Campaigns = () => {
                 bc.spinTheWheelConfig 
               ) {
                 inferredExperience = 'spinthewheel';
-              } else if (bc.campaignType === 'challenge' || bc.type === 'challenge') {
+              } else if (bc.campaignType === 'challenge' || bc.type === 'challenge' || bc.campaignType === 'challenges' || bc.type === 'challenges') {
                 inferredExperience = 'challenge';
-              } else if (bc.type === 'survey') {
+              } else if (bc.type === 'survey' || bc.type === 'surveys') {
                 inferredExperience = 'survey';
-              } else if (bc.type === 'streaks') {
+              } else if (bc.type === 'streaks' || bc.type === 'streak') {
                 inferredExperience = 'streaks';
               }
             }
@@ -101,13 +120,20 @@ const Campaigns = () => {
               trigger: bc.trigger_event || bc.trigger,
               experience: (() => {
                 switch (inferredExperience) {
+                  case 'story':
                   case 'stories': return 'Stories';
-                  case 'messages': return 'Out-of-app Messages';
-                  case 'challenge': return 'Challenges';
-                  case 'spinthewheel': return 'Spin The Wheel';
-                  case 'survey': return 'Survey';
+                  case 'message':
+                  case 'messages': return 'In-app messages';
+                  case 'challenge':
+                  case 'challenges': return 'Challenges';
+                  case 'spinthewheel':
+                  case 'gamification': return 'SPIN THE WHEEL';
+                  case 'survey':
+                  case 'surveys': return 'Survey';
+                  case 'streak':
                   case 'streaks': return 'Streaks';
-                  case 'nudges': default: return 'In-App';
+                  case 'nudge':
+                  case 'nudges': default: return 'In-app nudges';
                 }
               })(),
             events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
@@ -168,7 +194,90 @@ const Campaigns = () => {
   };
 
   const handleSetStatus = (id: string, status: string) => {
-    updateStatusApi(id, status);
+    if (status === 'scheduled') {
+      const camp = campaigns.find(c => c.id === id);
+      if (camp) {
+        setSelectedCampaignForSchedule(camp);
+        // Load existing schedule if present
+        const start = camp.schedule?.startDate || camp.schedule?.start_date || '';
+        const end = camp.schedule?.endDate || camp.schedule?.end_date || '';
+        const tz = camp.schedule?.timeZone || camp.schedule?.timezone || 'UTC';
+        
+        // Format dates if they are ISO strings (datetime-local needs 'YYYY-MM-DDTHH:MM')
+        const formatDateForInput = (dateStr: string) => {
+          if (!dateStr) return '';
+          try {
+            const date = new Date(dateStr);
+            return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          } catch {
+            return '';
+          }
+        };
+
+        setSchedStartDate(formatDateForInput(start));
+        setSchedEndDate(formatDateForInput(end));
+        setSchedTimeZone(tz);
+        setScheduleModalOpen(true);
+      }
+    } else {
+      updateStatusApi(id, status);
+    }
+  };
+
+  const handleSaveSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCampaignForSchedule) return;
+
+    try {
+      const api = await import('@/lib/api');
+      const schedulePayload = {
+        start_date: schedStartDate ? new Date(schedStartDate).toISOString() : undefined,
+        end_date: schedEndDate ? new Date(schedEndDate).toISOString() : undefined,
+        timezone: schedTimeZone || 'UTC'
+      };
+
+      // Set backend status to active (scheduled campaigns are active under the hood with a future start date)
+      await api.updateCampaign(selectedCampaignForSchedule.id, {
+        status: 'active',
+        schedule: schedulePayload
+      } as any);
+
+      // Optimistically update the store list
+      const updatedCampaigns = campaigns.map(c => {
+        if (c.id === selectedCampaignForSchedule.id) {
+          let displayStatus = 'scheduled';
+          const now = new Date();
+          const startDate = schedulePayload.start_date ? new Date(schedulePayload.start_date) : null;
+          const endDate = schedulePayload.end_date ? new Date(schedulePayload.end_date) : null;
+
+          if (startDate && now >= startDate) {
+            if (endDate && now > endDate) {
+              displayStatus = 'completed';
+            } else {
+              displayStatus = 'active';
+            }
+          }
+
+          return {
+            ...c,
+            status: displayStatus as any,
+            schedule: {
+              startDate: schedulePayload.start_date,
+              endDate: schedulePayload.end_date,
+              timeZone: schedulePayload.timezone
+            }
+          };
+        }
+        return c;
+      });
+
+      syncCampaigns(updatedCampaigns);
+      toast.success('Campaign schedule saved successfully');
+      setScheduleModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save campaign schedule:', error);
+      toast.error('Failed to save campaign schedule');
+    }
   };
 
 
@@ -281,7 +390,9 @@ const Campaigns = () => {
       width: '15%',
       render: (row: any) => {
         const schedule = row.schedule;
-        const hasSchedule = schedule && (schedule.start_date || schedule.end_date);
+        const start = schedule?.start_date || schedule?.startDate;
+        const end = schedule?.end_date || schedule?.endDate;
+        const hasSchedule = schedule && (start || end);
 
         const formatDate = (dateStr: string) => {
           if (!dateStr) return '';
@@ -295,21 +406,21 @@ const Campaigns = () => {
 
         if (hasSchedule) {
           const now = new Date();
-          const startDate = schedule.start_date ? new Date(schedule.start_date) : null;
-          const endDate = schedule.end_date ? new Date(schedule.end_date) : null;
+          const startDate = start ? new Date(start) : null;
+          const endDate = end ? new Date(end) : null;
 
           if (startDate && now < startDate) {
             // Campaign hasn't started yet
             displayStatus = 'scheduled';
-            scheduleInfo = { label: `Starts ${formatDate(schedule.start_date)}`, color: '#3b82f6' };
+            scheduleInfo = { label: `Starts ${formatDate(start)}`, color: '#3b82f6' };
           } else if (endDate && now > endDate) {
             // Campaign has ended
             displayStatus = 'completed';
-            scheduleInfo = { label: `Ended ${formatDate(schedule.end_date)}`, color: '#6b7280' };
+            scheduleInfo = { label: `Ended ${formatDate(end)}`, color: '#6b7280' };
           } else if (startDate || endDate) {
             // Campaign is in schedule period
             scheduleInfo = {
-              label: `${startDate ? formatDate(schedule.start_date) : 'Now'} - ${endDate ? formatDate(schedule.end_date) : '∞'}`,
+              label: `${startDate ? formatDate(start) : 'Now'} - ${endDate ? formatDate(end) : '∞'}`,
               color: '#22c55e'
             };
           }
@@ -336,10 +447,13 @@ const Campaigns = () => {
       width: '15%',
       render: (row: any) => {
         const expColorMap: Record<string, string> = {
+          'In-app nudges': '#3b82f6',
           'In-App': '#3b82f6',
+          'In-app messages': '#ec4899',
           'Out-of-app Messages': '#ec4899',
           'Stories': '#8b5cf6',
           'Challenges': '#f59e0b',
+          'SPIN THE WHEEL': '#ef4444',
           'Spin The Wheel': '#ef4444',
           'Survey': '#06b6d4',
           'Streaks': '#10b981',
@@ -348,7 +462,7 @@ const Campaigns = () => {
         return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ width: '4px', height: '16px', backgroundColor: barColor, borderRadius: '2px' }} />
-          <span style={{ fontSize: '12px', color: theme.colors.text.primary }}>{row.experience || 'In-App'}</span>
+          <span style={{ fontSize: '12px', color: theme.colors.text.primary }}>{row.experience || 'In-app nudges'}</span>
         </div>
         );
       }
@@ -534,7 +648,7 @@ const Campaigns = () => {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <FilterDropdown label="Status" options={['active', 'paused', 'draft', 'scheduled']} selected={statusFilter} onChange={setStatusFilter} />
-              <FilterDropdown label="Experience" options={['In-App', 'Out-of-app Messages', 'Stories', 'Challenges', 'Spin The Wheel', 'Survey', 'Streaks']} selected={experienceFilter} onChange={setExperienceFilter} />
+              <FilterDropdown label="Experience" options={['In-app nudges', 'In-app messages', 'Stories', 'Challenges', 'SPIN THE WHEEL', 'Survey', 'Streaks']} selected={experienceFilter} onChange={setExperienceFilter} />
               <FilterDropdown label="Tags" options={uniqueTags} selected={tagsFilter} onChange={setTagsFilter} />
               <FilterDropdown label="Events" options={uniqueEvents} selected={eventsFilter} onChange={setEventsFilter} />
             </div>
@@ -562,6 +676,100 @@ const Campaigns = () => {
           </div>
         </div>
       </div>
+
+      {/* Schedule Modal */}
+      <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
+        <DialogContent className="sm:max-w-[450px] bg-white border border-slate-200 rounded-2xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontWeight: 600, fontSize: '18px', color: theme.colors.text.primary }}>Set Campaign Schedule</DialogTitle>
+            <DialogDescription style={{ fontSize: '13px', color: theme.colors.text.secondary }}>
+              Configure when this campaign should start and end. The campaign will go live automatically once the start time is reached.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveSchedule} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="startDate" style={{ fontSize: '13px', fontWeight: 500 }}>Start Date & Time</Label>
+              <Input
+                id="startDate"
+                type="datetime-local"
+                required
+                value={schedStartDate}
+                onChange={(e) => setSchedStartDate(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="endDate" style={{ fontSize: '13px', fontWeight: 500 }}>End Date & Time (Optional)</Label>
+              <Input
+                id="endDate"
+                type="datetime-local"
+                value={schedEndDate}
+                onChange={(e) => setSchedEndDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="timezone" style={{ fontSize: '13px', fontWeight: 500 }}>Time Zone</Label>
+                <button
+                  type="button"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                  onClick={() => {
+                    let detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    if (detectedTz === 'Asia/Calcutta') {
+                      detectedTz = 'Asia/Kolkata';
+                    }
+                    setSchedTimeZone(detectedTz);
+                    const displayName = detectedTz === 'Asia/Kolkata' ? 'India (IST)' : detectedTz;
+                    toast.success(`Timezone set to ${displayName}`);
+                  }}
+                >
+                  Detect my timezone
+                </button>
+              </div>
+              <select
+                id="timezone"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                value={schedTimeZone}
+                onChange={(e) => setSchedTimeZone(e.target.value)}
+              >
+                {(() => {
+                  const commonTzs = [
+                    'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+                    'Europe/London', 'Europe/Paris', 'Asia/Kolkata', 'Asia/Calcutta', 'Asia/Dubai', 'Asia/Singapore',
+                    'Asia/Tokyo', 'Australia/Sydney'
+                  ];
+                  if (schedTimeZone && !commonTzs.includes(schedTimeZone)) {
+                    return <option value={schedTimeZone}>{schedTimeZone}</option>;
+                  }
+                  return null;
+                })()}
+                <option value="UTC">UTC (Coordinated Universal Time)</option>
+                <option value="America/New_York">Eastern Time (US & Canada)</option>
+                <option value="America/Chicago">Central Time (US & Canada)</option>
+                <option value="America/Denver">Mountain Time (US & Canada)</option>
+                <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="Europe/Paris">Paris (CET/CEST)</option>
+                <option value="Asia/Kolkata">India (IST)</option>
+                <option value="Asia/Dubai">Dubai (GST)</option>
+                <option value="Asia/Singapore">Singapore (SGT)</option>
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+              </select>
+            </div>
+
+            <DialogFooter className="pt-4 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setScheduleModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                Save Schedule
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

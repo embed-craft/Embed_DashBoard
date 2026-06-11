@@ -638,12 +638,16 @@ const CampaignBuilder: React.FC = () => {
                           type="button"
                           className="text-xs text-primary hover:underline"
                           onClick={() => {
-                            const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                            let detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                            if (detectedTz === 'Asia/Calcutta') {
+                              detectedTz = 'Asia/Kolkata';
+                            }
                             updateSchedule({
                               ...currentCampaign?.schedule,
                               timeZone: detectedTz
                             });
-                            toast.success(`Timezone set to ${detectedTz}`);
+                            const displayName = detectedTz === 'Asia/Kolkata' ? 'India (IST)' : detectedTz;
+                            toast.success(`Timezone set to ${displayName}`);
                           }}
                         >
                           Detect my timezone
@@ -657,6 +661,23 @@ const CampaignBuilder: React.FC = () => {
                           timeZone: e.target.value
                         })}
                       >
+                        {(() => {
+                          const tzVal = currentCampaign?.schedule?.timeZone || '';
+                          const commonTzs = [
+                            'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+                            'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Kolkata', 'Asia/Calcutta',
+                            'Asia/Dubai', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Hong_Kong',
+                            'Asia/Seoul', 'Asia/Bangkok', 'Asia/Jakarta', 'Australia/Sydney', 'Australia/Melbourne',
+                            'Pacific/Auckland', 'America/Toronto', 'America/Vancouver', 'America/Mexico_City',
+                            'America/Sao_Paulo', 'America/Buenos_Aires', 'Europe/Madrid', 'Europe/Rome',
+                            'Europe/Amsterdam', 'Europe/Moscow', 'Europe/Istanbul', 'Africa/Cairo',
+                            'Africa/Johannesburg', 'Asia/Jerusalem', 'Asia/Riyadh'
+                          ];
+                          if (tzVal && !commonTzs.includes(tzVal)) {
+                            return <option value={tzVal}>{tzVal}</option>;
+                          }
+                          return null;
+                        })()}
                         <option value="">Select timezone...</option>
                         <optgroup label="Common">
                           <option value="UTC">UTC (Coordinated Universal Time)</option>

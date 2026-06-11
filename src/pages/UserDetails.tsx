@@ -119,6 +119,83 @@ const UserDetails = () => {
         );
     }
 
+    const claimedRewards = user.rewards ? user.rewards.filter((r: any) => ['claimed', 'redeemed'].includes(r.status)) : [];
+    const unclaimedRewards = user.rewards ? user.rewards.filter((r: any) => !['claimed', 'redeemed'].includes(r.status)) : [];
+
+    const renderRewardRow = (r: any, idx: number) => {
+        const reward = r.reward_id;
+        const hasRewardObj = reward && typeof reward === 'object';
+        const rewardName = hasRewardObj ? reward.name : (reward || 'Unnamed Reward');
+        const rewardType = hasRewardObj ? reward.type : 'N/A';
+        const iconUrl = hasRewardObj ? reward.iconUrl : null;
+        
+        // Status Badges mapping
+        let badgeStyles = "bg-gray-100 text-gray-700 border-gray-200";
+        if (r.status === 'claimed' || r.status === 'redeemed') {
+            badgeStyles = "bg-emerald-50 text-emerald-700 border-emerald-200";
+        } else if (r.status === 'unlocked') {
+            badgeStyles = "bg-indigo-50 text-indigo-700 border-indigo-200";
+        } else if (r.status === 'pending') {
+            badgeStyles = "bg-amber-50 text-amber-700 border-amber-200";
+        } else if (r.status === 'locked') {
+            badgeStyles = "bg-slate-100 text-slate-600 border-slate-200";
+        } else if (r.status === 'expired') {
+            badgeStyles = "bg-rose-50 text-rose-700 border-rose-200";
+        }
+
+        return (
+            <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                        {iconUrl ? (
+                            <img src={iconUrl} alt={rewardName} className="w-9 h-9 rounded-lg object-contain bg-gray-50 border border-gray-100 p-1" />
+                        ) : (
+                            <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
+                                <Gift size={18} />
+                            </div>
+                        )}
+                        <div>
+                            <div className="font-semibold text-gray-900 text-sm">{rewardName}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                {hasRewardObj && (
+                                    <span className="text-[11px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded capitalize font-medium">
+                                        {rewardType.replace('_', ' ')}
+                                    </span>
+                                )}
+                                {hasRewardObj && reward.couponConfig?.code && (
+                                    <span className="font-mono text-[11px] bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded font-medium select-all">
+                                        Code: {reward.couponConfig.code}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900 font-medium">{r.campaign_name || r.campaign_id}</div>
+                    <div className="text-xs text-gray-400 mt-0.5 font-mono">ID: {r.campaign_id}</div>
+                </td>
+                <td className="px-4 py-4">
+                    <div className="text-xs text-gray-700">
+                        <span className="text-gray-400 font-medium mr-1">Issued:</span>
+                        {r.issued_at ? new Date(r.issued_at).toLocaleString() : 'N/A'}
+                    </div>
+                    {r.claimed_at && (
+                        <div className="text-xs text-gray-500 mt-1">
+                            <span className="text-gray-400 font-medium mr-1">Claimed:</span>
+                            {new Date(r.claimed_at).toLocaleString()}
+                        </div>
+                    )}
+                </td>
+                <td className="px-4 py-4">
+                    <Badge className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${badgeStyles} hover:${badgeStyles} shadow-sm capitalize`}>
+                        {r.status}
+                    </Badge>
+                </td>
+            </tr>
+        );
+    };
+
     return (
         <div style={{ minHeight: '100vh', backgroundColor: theme.colors.gray[50], display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
@@ -234,39 +311,64 @@ const UserDetails = () => {
                         </TabsContent>
 
                         <TabsContent value="rewards" className="flex-1 p-6 m-0 overflow-auto">
-                            <div className="space-y-4 max-w-4xl">
-                                <h3 className="text-sm font-semibold text-gray-900">Claimed Rewards</h3>
-                                {user.rewards && user.rewards.length > 0 ? (
-                                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                        <table className="w-full text-left text-sm">
-                                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-4 py-3 font-medium">Reward ID</th>
-                                                    <th className="px-4 py-3 font-medium">Campaign</th>
-                                                    <th className="px-4 py-3 font-medium">Claimed At</th>
-                                                    <th className="px-4 py-3 font-medium">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                                {user.rewards.map((r: any, idx: number) => (
-                                                    <tr key={idx} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-3 font-mono text-gray-900">{r.reward_id}</td>
-                                                        <td className="px-4 py-3">{r.campaign_id}</td>
-                                                        <td className="px-4 py-3 text-gray-500">{new Date(r.claimed_at).toLocaleString()}</td>
-                                                        <td className="px-4 py-3">
-                                                            <Badge variant={r.status === 'redeemed' ? 'default' : 'secondary'}>{r.status}</Badge>
-                                                        </td>
+                            <div className="space-y-8 max-w-4xl">
+                                {/* Unclaimed Rewards Section */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                        <Gift size={16} className="text-purple-600" />
+                                        Unclaimed & Active Rewards
+                                    </h3>
+                                    {unclaimedRewards.length > 0 ? (
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-gray-50/70 text-gray-500 uppercase text-[10px] tracking-wider border-b border-gray-200">
+                                                    <tr>
+                                                        <th className="px-4 py-3 font-semibold">Reward Details</th>
+                                                        <th className="px-4 py-3 font-semibold">Campaign</th>
+                                                        <th className="px-4 py-3 font-semibold">Timeline</th>
+                                                        <th className="px-4 py-3 font-semibold">Status</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 border border-dashed border-gray-200 rounded-lg">
-                                        <Gift className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-                                        <p className="text-sm text-gray-500 font-medium">No rewards claimed yet</p>
-                                    </div>
-                                )}
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {unclaimedRewards.map((r: any, idx: number) => renderRewardRow(r, idx))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 border border-dashed border-gray-200 rounded-lg bg-gray-50/30">
+                                            <p className="text-xs text-gray-400 font-medium">No unclaimed rewards found</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Claimed Rewards Section */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                        <Gift size={16} className="text-emerald-600" />
+                                        Claimed / Redeemed Rewards
+                                    </h3>
+                                    {claimedRewards.length > 0 ? (
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-gray-50/70 text-gray-500 uppercase text-[10px] tracking-wider border-b border-gray-200">
+                                                    <tr>
+                                                        <th className="px-4 py-3 font-semibold">Reward Details</th>
+                                                        <th className="px-4 py-3 font-semibold">Campaign</th>
+                                                        <th className="px-4 py-3 font-semibold">Timeline</th>
+                                                        <th className="px-4 py-3 font-semibold">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {claimedRewards.map((r: any, idx: number) => renderRewardRow(r, idx))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 border border-dashed border-gray-200 rounded-lg bg-gray-50/30">
+                                            <p className="text-xs text-gray-400 font-medium">No claimed rewards yet</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </TabsContent>
 

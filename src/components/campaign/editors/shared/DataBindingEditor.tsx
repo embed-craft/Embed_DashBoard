@@ -59,7 +59,12 @@ export const DataBindingEditor: React.FC<DataBindingEditorProps> = ({
             setIsLoadingSources(true);
             try {
                 const baseUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
-                const res = await fetch(`${baseUrl}/v1/admin/datasources`);
+                const token = sessionStorage.getItem('embeddedcraft_api_key');
+                const headers: Record<string, string> = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                const res = await fetch(`${baseUrl}/v1/admin/datasources`, { headers });
                 if (res.ok) {
                     const data = await res.json();
                     

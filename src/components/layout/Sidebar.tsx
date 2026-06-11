@@ -13,7 +13,8 @@ import {
   HelpCircle,
   ChevronDown,
   LogOut,
-  Gift
+  Gift,
+  BookOpen
 } from 'lucide-react';
 import { theme } from '../../styles/design-tokens';
 import { cn } from '@/lib/utils';
@@ -151,6 +152,31 @@ const Sidebar = () => {
         gap: '4px'
       }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <li>
+            <a
+              href="https://docs.embedcraft.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              title={isCollapsed ? "Documentation" : ""}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: theme.colors.text.secondary,
+                backgroundColor: 'transparent',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'all 0.15s ease'
+              }}
+              className="hover:bg-slate-50 text-slate-700"
+            >
+              <BookOpen size={20} style={{ marginRight: isCollapsed ? '0' : '12px', flexShrink: 0, color: theme.colors.gray[400] }} />
+              {!isCollapsed && <span>Documentation</span>}
+            </a>
+          </li>
           <li>
             <NavLink
               to="/settings"

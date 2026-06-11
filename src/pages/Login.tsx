@@ -1,60 +1,459 @@
-import React, { useState } from 'react';
-import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Zap, ArrowRight, Loader2, PlayCircle, Target, Sparkles, LayoutPanelLeft, Code2, BarChart } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles, Sun, Gift, MessageSquare, Flame, ShoppingBag, User, Search, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
+import { motion } from 'framer-motion';
 
-const TypewriterText = ({ text, className, delay = 0, speed = 0.05 }: { text: string, className?: string, delay?: number, speed?: number }) => {
-    return (
-        <motion.p
-            className={className}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                    opacity: 1,
-                    transition: {
-                        staggerChildren: speed,
-                        delayChildren: delay
-                    }
-                }
+// Background Floating Icon Component
+const FloatingBgIcon = ({ children, top, left, delay }: { children: React.ReactNode, top: string, left: string, delay: number }) => (
+  <motion.div
+    animate={{ y: [0, -12, 0] }}
+    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay }}
+    style={{
+      position: 'absolute',
+      top,
+      left,
+      zIndex: 1,
+      color: '#cbd5e1',
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      borderRadius: '16px',
+      padding: '12px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.02)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: 0.35,
+      pointerEvents: 'none'
+    }}
+  >
+    {children}
+  </motion.div>
+);
+
+// Phone Mockup Component for background decoration
+const PhoneMockup = ({ style, className, nudgeType }: { style: React.CSSProperties, className?: string, nudgeType: 'live_story' | 'nudge_sheet' | 'scratch_win' | 'spin_wheel' }) => {
+  return (
+    <div 
+      className={className}
+      style={{
+        position: 'absolute',
+        width: '180px',
+        height: '360px',
+        borderRadius: '24px',
+        border: '6px solid #0f172a',
+        backgroundColor: '#ffffff',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.06), inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        pointerEvents: 'none',
+        userSelect: 'none',
+        zIndex: 1,
+        transition: 'all 0.3s ease',
+        ...style
+      }}
+    >
+      {/* Notch / Dynamic Island */}
+      <div style={{
+        width: '70px',
+        height: '12px',
+        backgroundColor: '#0f172a',
+        borderBottomLeftRadius: '8px',
+        borderBottomRightRadius: '8px',
+        margin: '0 auto',
+        flexShrink: 0,
+        zIndex: 10
+      }} />
+
+      {/* Phone Status Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px 2px 12px', fontSize: '8px', fontWeight: 600, color: '#000000', flexShrink: 0 }}>
+        <span>9:41</span>
+        <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+          <span>5G</span>
+          <div style={{ width: '10px', height: '5px', border: '1px solid #000000', borderRadius: '1px', position: 'relative', padding: '0.5px' }}>
+            <div style={{ width: '6px', height: '100%', backgroundColor: '#000000', borderRadius: '0.5px' }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Screen Content */}
+      <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, position: 'relative', overflow: 'hidden' }}>
+        
+        {/* Mock App Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px', marginBottom: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '7px', fontWeight: 'bold' }}>
+              E
+            </div>
+            <span style={{ fontSize: '8px', fontWeight: 800, color: '#000000', letterSpacing: '-0.02em' }}>EMBEDCRAFTAPP</span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px', color: '#64748b' }}>
+            <Search size={8} />
+            <Bell size={8} />
+          </div>
+        </div>
+
+        {/* Stories Row */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', paddingBottom: '4px', borderBottom: '1px solid #f1f5f9' }}>
+          {/* Story 1 (With Ring) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', position: 'relative' }}>
+            <div style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: nudgeType === 'live_story' ? 'none' : '1px solid #cbd5e1',
+              padding: '1px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative'
+            }}>
+              {nudgeType === 'live_story' && (
+                <svg style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                  <motion.circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#000000"
+                    strokeWidth="1.5"
+                    fill="transparent"
+                    strokeDasharray={2 * Math.PI * 10}
+                    animate={{ strokeDashoffset: [2 * Math.PI * 10, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                  />
+                </svg>
+              )}
+              <div style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                backgroundColor: '#000000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff'
+              }}>
+                <Sparkles size={8} />
+              </div>
+            </div>
+            <span style={{ fontSize: '6px', fontWeight: 600, color: '#000000' }}>Live Offer</span>
+          </div>
+
+          {/* Placeholders */}
+          {[
+            { label: "New In", icon: ShoppingBag },
+            { label: "Sale", icon: Gift },
+            { label: "Account", icon: User }
+          ].map((s, idx) => (
+            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', opacity: 0.35 }}>
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                <s.icon size={8} />
+              </div>
+              <span style={{ fontSize: '6px', color: '#64748b' }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Content Feed Card */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          padding: '6px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          flex: 1,
+          opacity: 0.3
+        }}>
+          <div style={{ height: '36px', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
+          <div style={{ width: '80%', height: '6px', backgroundColor: '#cbd5e1', borderRadius: '3px' }} />
+          <div style={{ width: '50%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px' }} />
+        </div>
+
+        {/* Dynamic Tooltip Nudge (for Live Story) */}
+        {nudgeType === 'live_story' && (
+          <motion.div
+            animate={{ y: [0, -4, 0] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute',
+              top: '74px',
+              left: '8px',
+              backgroundColor: '#000000',
+              color: '#ffffff',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              fontSize: '8px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              zIndex: 10,
+              whiteSpace: 'nowrap'
             }}
-        >
-            {text.split("").map((char, index) => (
-                <motion.span
-                    key={`${char}-${index}`}
-                    variants={{
-                        hidden: { opacity: 0, scale: 0.8 },
-                        visible: { opacity: 1, scale: 1 }
-                    }}
-                >
-                    {char}
-                </motion.span>
-            ))}
-        </motion.p>
-    );
+          >
+            <div style={{
+              position: 'absolute',
+              top: '-4px',
+              left: '12px',
+              width: '8px',
+              height: '8px',
+              backgroundColor: '#000000',
+              transform: 'rotate(45deg)'
+            }} />
+            <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} className="animate-ping" />
+            Live Story Nudge
+          </motion.div>
+        )}
+
+        {/* Bottom Sheet Nudge (nudge_sheet) */}
+        {nudgeType === 'nudge_sheet' && (
+          <motion.div
+            animate={{ y: [80, 0, 0, 80] }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              times: [0, 0.08, 0.92, 1],
+              ease: 'easeOut'
+            }}
+            style={{
+              position: 'absolute',
+              left: '8px',
+              right: '8px',
+              bottom: '8px',
+              backgroundColor: '#ffffff',
+              border: '1.5px solid #000000',
+              borderRadius: '12px',
+              padding: '8px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.15)',
+              zIndex: 20
+            }}
+          >
+            <div style={{ width: '20px', height: '3px', backgroundColor: '#e2e8f0', borderRadius: '1.5px', margin: '0 auto 6px auto' }} />
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'start' }}>
+              <div style={{ width: '18px', height: '18px', borderRadius: '4px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', shrink: 0 }}>
+                <Sparkles size={10} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '9px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Welcome Reward!</h4>
+                <p style={{ fontSize: '7px', color: '#64748b', margin: '1px 0 0 0', lineHeight: '1.2' }}>Get 15% off code <strong>HELLO15</strong> instantly.</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+              <div style={{ flex: 1, border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '8px', fontWeight: 600, padding: '3px 0', textAlign: 'center', color: '#64748b' }}>Dismiss</div>
+              <div style={{ flex: 1, backgroundColor: '#000000', borderRadius: '4px', fontSize: '8px', fontWeight: 700, padding: '3px 0', textAlign: 'center', color: '#ffffff' }}>Apply</div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Scratch Card Nudge (scratch_win) */}
+        {nudgeType === 'scratch_win' && (
+          <div style={{
+            position: 'absolute',
+            inset: '8px',
+            backgroundColor: '#ffffff',
+            border: '1.5px solid #0f172a',
+            borderRadius: '12px',
+            padding: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: '0 15px 20px -5px rgba(0, 0, 0, 0.1)',
+            zIndex: 20
+          }}>
+            {/* Cutouts */}
+            <div style={{ position: 'absolute', left: '-1px', top: '50%', transform: 'translateY(-50%)', width: '6px', height: '12px', backgroundColor: '#ffffff', borderRight: '1.5px solid #0f172a', borderTopRightRadius: '6px', borderBottomRightRadius: '6px', zIndex: 10 }} />
+            <div style={{ position: 'absolute', right: '-1px', top: '50%', transform: 'translateY(-50%)', width: '6px', height: '12px', backgroundColor: '#ffffff', borderLeft: '1.5px solid #0f172a', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px', zIndex: 10 }} />
+
+            <div style={{ textAlign: 'center', borderBottom: '1px dashed #e2e8f0', paddingBottom: '4px' }}>
+              <span style={{ fontSize: '6px', fontWeight: 900, color: '#94a3b8', backgroundColor: '#f1f5f9', padding: '1px 4px', borderRadius: '8px' }}>EXCLUSIVE GIFT</span>
+              <h4 style={{ fontSize: '9px', fontWeight: 900, margin: '2px 0 0 0', color: '#0f172a' }}>SCRATCH & WIN</h4>
+            </div>
+
+            {/* Scratch Container */}
+            <div style={{ height: '70px', border: '1px dashed #cbd5e1', borderRadius: '8px', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa', margin: '4px 0' }}>
+              {/* Revealed Offer */}
+              <div style={{ textAlign: 'center', padding: '4px' }}>
+                <div style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 700 }}>YOUR MYSTERY REWARD</div>
+                <div style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a', margin: '1px 0' }}>70% DISCOUNT</div>
+                <div style={{ fontSize: '7px', fontWeight: 'bold', border: '1px dashed #94a3b8', borderRadius: '2px', padding: '1px 3px', display: 'inline-block', backgroundColor: '#ffffff' }}>CODE: NINJA70</div>
+              </div>
+
+              {/* Scratch Cover */}
+              <motion.div
+                animate={{ opacity: [1, 1, 0, 0, 1] }}
+                transition={{ duration: 7, repeat: Infinity, times: [0, 0.3, 0.45, 0.85, 0.95], ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(135deg, #e2e8f0, #cbd5e1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 5
+                }}
+              >
+                <span style={{ fontSize: '6px', fontWeight: 900, color: '#64748b', letterSpacing: '0.05em' }}>★ SCRATCH ★</span>
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} viewBox="0 0 100 100">
+                  <motion.path
+                    d="M 15,25 C 25,65 30,20 45,75 T 75,25 S 85,80 90,40"
+                    fill="transparent"
+                    stroke="#94a3b8"
+                    strokeWidth="12"
+                    strokeLinecap="round"
+                    animate={{ pathLength: [0, 1, 1, 0] }}
+                    transition={{ duration: 7, repeat: Infinity, times: [0, 0.25, 0.85, 0.95] }}
+                  />
+                </svg>
+              </motion.div>
+
+              {/* Scratching Coin */}
+              <motion.div
+                animate={{
+                  x: [-35, 35, -25, 25, -10, 10, 0],
+                  y: [-8, 8, -4, 4, 0, 0, 0],
+                  rotate: [0, 360, 720, 1080],
+                  opacity: [0, 1, 1, 0, 0]
+                }}
+                transition={{ duration: 7, repeat: Infinity, times: [0, 0.05, 0.35, 0.45, 1] }}
+                style={{
+                  position: 'absolute',
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  border: '1px solid #0f172a',
+                  backgroundColor: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '7px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 3px 5px rgba(0,0,0,0.1)',
+                  zIndex: 6
+                }}
+              >
+                ¢
+              </motion.div>
+            </div>
+
+            <button style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '8px', fontWeight: 700, padding: '4px 0', cursor: 'default' }}>
+              Claim 70% Discount
+            </button>
+          </div>
+        )}
+
+        {/* Spin the Wheel Nudge (spin_wheel) */}
+        {nudgeType === 'spin_wheel' && (
+          <div style={{
+            position: 'absolute',
+            inset: '8px',
+            backgroundColor: '#ffffff',
+            border: '1.5px solid #0f172a',
+            borderRadius: '12px',
+            padding: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 15px 20px -5px rgba(0, 0, 0, 0.1)',
+            zIndex: 20
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <h4 style={{ fontSize: '9px', fontWeight: 900, color: '#0f172a', margin: 0 }}>SPIN THE WHEEL</h4>
+              <p style={{ fontSize: '7px', color: '#64748b', margin: '1px 0 0 0' }}>Try your luck for a reward!</p>
+            </div>
+
+            {/* Wheel SVG */}
+            <div style={{ width: '100px', height: '100px', position: 'relative', margin: '4px 0' }}>
+              {/* Pointer */}
+              <motion.div
+                animate={{ rotate: [0, -15, 10, -15, 10, -10, 5, 0, 0, 0] }}
+                transition={{ duration: 7, repeat: Infinity, times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.45, 1] }}
+                style={{
+                  position: 'absolute',
+                  top: '-3px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '0',
+                  height: '0',
+                  borderLeft: '4px solid transparent',
+                  borderRight: '4px solid transparent',
+                  borderTop: '8px solid #0f172a',
+                  zIndex: 30,
+                  originX: 0.5,
+                  originY: 0
+                }}
+              />
+
+              {/* Rotating Wheel SVG */}
+              <motion.div
+                animate={{ rotate: [0, 1440 + 135, 1440 + 135, 0] }}
+                transition={{ duration: 7, repeat: Infinity, times: [0, 0.4, 0.85, 0.95], ease: [0.15, 0.85, 0.35, 1] }}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', transform: 'rotate(22.5deg)' }}>
+                  <path d="M 50 50 L 98 50 A 48 48 0 0 1 83.94 83.94 Z" fill="#0f172a" stroke="#ffffff" strokeWidth="0.5" />
+                  <path d="M 50 50 L 83.94 83.94 A 48 48 0 0 1 50 98 Z" fill="#f1f5f9" stroke="#0f172a" strokeWidth="0.5" />
+                  <path d="M 50 50 L 50 98 A 48 48 0 0 1 16.06 83.94 Z" fill="#0f172a" stroke="#ffffff" strokeWidth="0.5" />
+                  <path d="M 50 50 L 16.06 83.94 A 48 48 0 0 1 2 50 Z" fill="#f1f5f9" stroke="#0f172a" strokeWidth="0.5" />
+                  <path d="M 50 50 L 2 50 A 48 48 0 0 1 16.06 16.06 Z" fill="#0f172a" stroke="#ffffff" strokeWidth="0.5" />
+                  <path d="M 50 50 L 16.06 16.06 A 48 48 0 0 1 50 2 Z" fill="#f1f5f9" stroke="#0f172a" strokeWidth="0.5" />
+                  <path d="M 50 50 L 50 2 A 48 48 0 0 1 83.94 16.06 Z" fill="#0f172a" stroke="#ffffff" strokeWidth="0.5" />
+                  <path d="M 50 50 L 83.94 16.06 A 48 48 0 0 1 98 50 Z" fill="#f1f5f9" stroke="#0f172a" strokeWidth="0.5" />
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="#0f172a" strokeWidth="1" />
+                </svg>
+              </motion.div>
+
+              {/* Center Rivet */}
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#0f172a', border: '1.5px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#ffffff' }} />
+              </div>
+            </div>
+
+            {/* Claim/Unlock message */}
+            <div style={{ height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <motion.div
+                animate={{ scale: [0.3, 1, 1, 0.3], opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 7, repeat: Infinity, times: [0, 0.45, 0.85, 0.95] }}
+              >
+                <span style={{ fontSize: '7px', fontWeight: 900, color: '#ffffff', backgroundColor: '#0f172a', padding: '1.5px 6px', borderRadius: '4px' }}>50% OFF UNLOCKED!</span>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Home Indicator */}
+      <div style={{ position: 'absolute', bottom: '2px', left: '50%', transform: 'translateX(-50%)', width: '60px', height: '2px', backgroundColor: '#0f172a', borderRadius: '1px', zIndex: 20 }} />
+    </div>
+  );
 };
 
+// Main Login Component
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth(); // Assuming useAuth is the correct hook, not useAuthStore as in the instruction snippet
+    const [rememberMe, setRememberMe] = useState(false);
+    const { login } = useAuth();
     const navigate = useNavigate();
 
-    // Mouse position for spotlight effect (start at center of screen)
-    const mouseX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
-    const mouseY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        const { left, top } = e.currentTarget.getBoundingClientRect();
-        mouseX.set(e.clientX - left);
-        mouseY.set(e.clientY - top);
-    };
+    useEffect(() => {
+        const savedEmail = localStorage.getItem('remember_email');
+        if (savedEmail) {
+            setEmail(savedEmail);
+            setRememberMe(true);
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,12 +461,6 @@ const Login: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // The original code had a direct fetch call. The instruction snippet implies the login function
-            // from useAuthStore (or useAuth) now handles the API call and token/user storage.
-            // I'm adapting the original logic to fit the new structure implied by the instruction's handleSubmit.
-            // If the `login` function from `useAuth` already handles navigation and error, this can be simplified.
-            // For now, I'll keep the original `login` call and adapt the error/loading handling.
-
             const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
             const response = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
@@ -79,6 +472,12 @@ const Login: React.FC = () => {
 
             if (!response.ok) {
                 throw new Error(data.error || 'Login failed');
+            }
+
+            if (rememberMe) {
+                localStorage.setItem('remember_email', email);
+            } else {
+                localStorage.removeItem('remember_email');
             }
 
             login(data.token, data.user);
@@ -95,709 +494,370 @@ const Login: React.FC = () => {
         }
     };
 
-    // Generate random particles - increased density and intensity
-    const particles = Array.from({ length: 200 }).map((_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: Math.random() * 3 + 1.2, // Larger range for more noticeable snow
-        duration: Math.random() * 10 + 5, // Slower fall (10-25s)
-        delay: Math.random() * 5
-    }));
-
     return (
-        <div
-            className="min-h-screen w-full bg-black text-white selection:bg-white selection:text-black font-sans overflow-x-hidden overflow-y-auto relative group scrollbar-hide"
-            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
-            onMouseMove={handleMouseMove}
-        >
+        <div style={{
+            height: '100vh',
+            width: '100%',
+            backgroundColor: '#fafafa',
+            backgroundImage: `
+              linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px)
+            `,
+            backgroundSize: '30px 30px',
+            fontFamily: "'Inter', sans-serif",
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            {/* Responsive display and spacing styles to prevent overlaps */}
             <style>{`
-                ::-webkit-scrollbar {
-                    display: none !important;
-                    width: 0 !important;
-                    height: 0 !important;
+              .bg-phone {
+                display: block;
+                transition: all 0.3s ease;
+              }
+
+              /* Hide edge phones on medium screens where container margins shrink */
+              @media (max-width: 1530px) {
+                .bg-phone-left-edge, .bg-phone-right-edge {
+                  display: none !important;
                 }
-                * {
-                    -ms-overflow-style: none !important;
-                    scrollbar-width: none !important;
+              }
+
+              /* Hide center phone on narrower screens to prevent overlap between text and card */
+              @media (max-width: 1200px) {
+                .bg-phone-center {
+                  display: none !important;
                 }
+              }
+
+              /* Hide bottom phone on short screens to avoid vertical crowding */
+              @media (max-height: 850px) {
+                .bg-phone-left-bottom {
+                  display: none !important;
+                }
+              }
             `}</style>
-            {/* Interactive Spotlight Background - Global Fixed */}
-            <motion.div
-                className="fixed inset-0 pointer-events-none z-0"
-                style={{
-                    background: useMotionTemplate`radial-gradient(1200px circle at ${mouseX}px ${mouseY}px, rgba(39, 39, 42, 0.4), transparent 80%)`
-                }}
-            />
-            {/* Grid Pattern Overlay - Global Fixed */}
-            <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0" />
 
-            {/* Snowfall Particles - Global Fixed */}
-            <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-                {particles.map((particle) => (
-                    <motion.div
-                        key={particle.id}
-                        initial={{
-                            x: `${particle.x}vw`,
-                            y: -20,
-                            opacity: 0
-                        }}
-                        animate={{
-                            y: '100vh',
-                            opacity: [0, 1, 1, 0],
-                            x: [`${particle.x}vw`, `${particle.x + (Math.random() * 12 - 6)}vw`]
-                        }}
-                        transition={{
-                            duration: particle.duration,
-                            repeat: Infinity,
-                            delay: particle.delay,
-                            ease: "linear"
-                        }}
-                        className="absolute rounded-full bg-white/60"
-                        style={{
-                            width: particle.size,
-                            height: particle.size,
-                            boxShadow: `0 0 ${particle.size * 2}px rgba(255, 255, 255, 0.4)`
-                        }}
-                    />
-                ))}
-            </div>
-
-            {/* Hero Section Container */}
-            <div className="min-h-screen w-full flex flex-col lg:flex-row relative z-10">
-                {/* Left Side - Abstract Visuals */}
-                <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-transparent items-center justify-center z-10 pointer-events-none">
-                    {/* Animated Abstract Shapes */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="relative z-10 w-full max-w-lg"
+            {/* Header */}
+            <header style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 48px',
+                borderBottom: '1px solid rgba(226, 232, 240, 0.5)',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 20
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <img src={logo} alt="EmbedCraft" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
+                    <span style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em' }}>EmbedCraft</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <a 
+                        href="https://docs.embedcraft.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{ fontSize: '13px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}
                     >
-                        <motion.div
-                            animate={{
-                                rotate: [0, 360],
-                                scale: [1, 1.1, 1]
-                            }}
-                            transition={{
-                                duration: 20,
-                                repeat: Infinity,
-                                ease: "linear"
-                            }}
-                            className="w-[400px] h-[400px] border border-zinc-800 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        />
-                        <motion.div
-                            animate={{
-                                rotate: [360, 0],
-                                scale: [1, 1.2, 1]
-                            }}
-                            transition={{
-                                duration: 25,
-                                repeat: Infinity,
-                                ease: "linear"
-                            }}
-                            className="w-[300px] h-[300px] border border-zinc-700/50 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        />
-                        <div className="relative z-20 flex flex-col items-center text-center p-12">
-                            <motion.div
-                                initial={{ y: 20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: 0.5 }}
-                                className="mb-8"
-                            >
-                                <motion.div
-                                    className="h-32 w-32 rounded-3xl flex items-center justify-center mb-8 mx-auto overflow-hidden"
-                                    whileHover={{ scale: 1.1, rotate: 5 }}
-                                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
-                                >
-                                    <img
-                                        src={logo}
-                                        alt="EmbedCraft Logo"
-                                        className="w-full h-full object-contain scale-125 mix-blend-screen filter invert grayscale contrast-200"
-                                    />
-                                </motion.div>
-                                <motion.h1
-                                    className="text-5xl font-bold tracking-tighter mb-4"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.8 }}
-                                >
-                                    EmbedCraft
-                                </motion.h1>
-                                <TypewriterText
-                                    text="Intelligent nudges for modern apps. Create beautiful, engaging in-app experiences without writing code."
-                                    className="text-xl text-zinc-400 font-light mb-8 max-w-sm mx-auto leading-relaxed"
-                                    delay={1.2}
-                                />
+                        Documentation
+                    </a>
+                </div>
+            </header>
 
+            {/* Main Content */}
+            <main style={{
+                flex: 1,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(12, 1fr)',
+                gap: '40px',
+                alignItems: 'center',
+                width: '100%',
+                maxWidth: '1200px',
+                margin: '0 auto',
+                padding: '20px 48px',
+                zIndex: 10,
+                position: 'relative'
+            }}>
+                {/* Background phone mockups positioned relative to the main container, fully visible and clear of content */}
+                {/* Phone 1: Far Left Margin (Live Story) */}
+                <PhoneMockup 
+                    nudgeType="live_story" 
+                    className="bg-phone bg-phone-left-edge"
+                    style={{
+                        left: '-160px',
+                        top: '5%',
+                        transform: 'rotate(-10deg)',
+                        opacity: 0.16
+                    }} 
+                />
+                
+                {/* Phone 2: Below Welcome Text (Spin the Wheel) */}
+                <PhoneMockup 
+                    nudgeType="spin_wheel" 
+                    className="bg-phone bg-phone-left-bottom"
+                    style={{
+                        left: '20px',
+                        bottom: '-40px',
+                        transform: 'rotate(8deg)',
+                        opacity: 0.16
+                    }} 
+                />
 
-                            </motion.div>
-                        </div>
+                {/* Phone 3: Center Gutter (Bottom Sheet Nudge) */}
+                <PhoneMockup 
+                    nudgeType="nudge_sheet" 
+                    className="bg-phone bg-phone-center"
+                    style={{
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%) rotate(8deg)',
+                        opacity: 0.16
+                    }} 
+                />
 
+                {/* Phone 4: Far Right Margin (Scratch & Win) */}
+                <PhoneMockup 
+                    nudgeType="scratch_win" 
+                    className="bg-phone bg-phone-right-edge"
+                    style={{
+                        right: '-160px',
+                        bottom: '5%',
+                        transform: 'rotate(10deg)',
+                        opacity: 0.16
+                    }} 
+                />
 
-                    </motion.div>
+                {/* Background floating icons relative to the container */}
+                <FloatingBgIcon top="5%" left="38%" delay={0.2}>
+                    <Gift size={18} />
+                </FloatingBgIcon>
+                <FloatingBgIcon bottom="15%" left="35%" delay={0.6}>
+                    <MessageSquare size={18} />
+                </FloatingBgIcon>
+                <FloatingBgIcon bottom="5%" right="38%" delay={1.0}>
+                    <Flame size={18} />
+                </FloatingBgIcon>
+                <FloatingBgIcon top="8%" right="35%" delay={1.4}>
+                    <Sparkles size={18} />
+                </FloatingBgIcon>
+                {/* Left Side: Brand Text */}
+                <div style={{ gridColumn: 'span 7', display: 'flex', flexDirection: 'column', gap: '24px', zIndex: 10 }}>
+                    <div>
+                        <h1 style={{ fontSize: '96px', fontWeight: 800, color: '#0f172a', lineHeight: '0.96', letterSpacing: '-0.04em', margin: 0 }}>
+                            Welcome<br />
+                            <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 400 }}>back.</span>
+                        </h1>
+                        <p style={{ fontSize: '18px', color: '#64748b', lineHeight: '1.6', maxWidth: '520px', marginTop: '24px', margin: 0 }}>
+                            Tailored app experiences in minutes. Sign in to launch nudges, stories and rich in-app widgets — straight into your Flutter app.
+                        </p>
+                    </div>
                 </div>
 
-                {/* Global Footer - Contact Info */}
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center text-center pointer-events-auto">
-                    <p className="text-zinc-600 text-[10px] uppercase tracking-widest mb-1">Need Assistance?</p>
-                    <p className="text-zinc-400 font-mono text-sm hover:text-white transition-colors cursor-pointer bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-zinc-800/50">
-                        +91 7624945805
-                    </p>
-                </div>
+                {/* Right Side: Sign In Card */}
+                <div style={{ gridColumn: 'span 5', display: 'flex', justifyContent: 'center', zIndex: 10 }}>
+                    <div style={{
+                        width: '100%',
+                        maxWidth: '500px',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '16px',
+                        padding: '48px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 10px 10px -5px rgba(0, 0, 0, 0.01)',
+                        position: 'relative'
+                    }}>
+                        {/* Technical L-brackets in the corners */}
+                        <div style={{ position: 'absolute', top: '-6px', left: '-6px', width: '12px', height: '12px', borderTop: '2px solid #94a3b8', borderLeft: '2px solid #94a3b8' }} />
+                        <div style={{ position: 'absolute', top: '-6px', right: '-6px', width: '12px', height: '12px', borderTop: '2px solid #94a3b8', borderRight: '2px solid #94a3b8' }} />
+                        <div style={{ position: 'absolute', bottom: '-6px', left: '-6px', width: '12px', height: '12px', borderBottom: '2px solid #94a3b8', borderLeft: '2px solid #94a3b8' }} />
+                        <div style={{ position: 'absolute', bottom: '-6px', right: '-6px', width: '12px', height: '12px', borderBottom: '2px solid #94a3b8', borderRight: '2px solid #94a3b8' }} />
 
-                {/* Right Side - Login Form */}
-                <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-transparent relative z-10">
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="w-full max-w-md space-y-8 bg-zinc-950/50 p-10 rounded-3xl border border-zinc-900 backdrop-blur-xl"
-                    >
-                        <div className="text-center">
-                            <div className="flex items-center gap-4 justify-center mb-8 group cursor-default">
-                                <motion.div
-                                    className="h-14 w-14 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 overflow-hidden"
-                                    whileHover={{ rotate: 180 }}
-                                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                                >
-                                    <img
-                                        src={logo}
-                                        alt="EmbedCraft Logo"
-                                        className="w-full h-full object-contain scale-150 mix-blend-screen filter invert grayscale contrast-200"
-                                    />
-                                </motion.div>
-                                <span className="text-3xl font-bold tracking-tight text-white group-hover:text-zinc-300 transition-colors duration-300">EmbedCraft</span>
-                            </div>    <p className="mt-2 text-sm text-zinc-500">
-                                Enter your credentials to access the dashboard
-                            </p>
+                        {/* Card Title Header with Large Logo (No Black Box) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '32px' }}>
+                            <img src={logo} alt="EmbedCraft Logo" style={{ height: '100px', width: '100px', objectFit: 'contain' }} />
+                            <div>
+                                <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Sign in</h2>
+                                <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0 0 0' }}>Access your EmbedCraft console</p>
+                            </div>
                         </div>
 
                         {error && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
-                            >
-                                <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                            <div style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                color: '#ef4444',
+                                padding: '10px 14px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                marginBottom: '20px'
+                            }}>
+                                <div style={{ height: '6px', width: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
                                 {error}
-                            </motion.div>
+                            </div>
                         )}
 
-                        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                            <div className="space-y-5">
-                                <motion.div
-                                    className="group relative"
-                                    whileHover="hover"
-                                    initial="initial"
-                                >
-                                    <label htmlFor="email" className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wider group-hover:text-white transition-colors duration-300">
-                                        Email address
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                                            <Mail className="h-5 w-5 text-zinc-600 group-focus-within:text-white group-hover:text-white transition-colors duration-300" />
-                                        </div>
-                                        <motion.input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            autoComplete="email"
-                                            required
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            variants={{
-                                                initial: { scale: 1 },
-                                                hover: { scale: 1.02 }
-                                            }}
-                                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                            className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-white placeholder-zinc-600 focus:outline-none focus:bg-zinc-900 focus:border-white/50 transition-all duration-300 sm:text-sm relative z-0 group-hover:border-zinc-600 group-hover:bg-zinc-900/80"
-                                            placeholder="name@company.com"
-                                        />
-                                        {/* Animated bottom border glow */}
-                                        <motion.div
-                                            className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent w-full"
-                                            initial={{ scaleX: 0, opacity: 0 }}
-                                            variants={{
-                                                hover: { scaleX: 1, opacity: 1 }
-                                            }}
-                                            transition={{ duration: 0.4 }}
-                                        />
-                                    </div>
-                                </motion.div>
-
-                                <motion.div
-                                    className="group relative"
-                                    whileHover="hover"
-                                    initial="initial"
-                                >
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <label htmlFor="password" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider group-hover:text-white transition-colors duration-300">
-                                            Password
-                                        </label>
-                                        <div className="text-sm"></div>
-                                    </div>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                                            <Lock className="h-5 w-5 text-zinc-600 group-focus-within:text-white group-hover:text-white transition-colors duration-300" />
-                                        </div>
-                                        <motion.input
-                                            id="password"
-                                            name="password"
-                                            type="password"
-                                            autoComplete="current-password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            variants={{
-                                                initial: { scale: 1 },
-                                                hover: { scale: 1.02 }
-                                            }}
-                                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                            className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-white placeholder-zinc-600 focus:outline-none focus:bg-zinc-900 focus:border-white/50 transition-all duration-300 sm:text-sm relative z-0 group-hover:border-zinc-600 group-hover:bg-zinc-900/80"
-                                            placeholder="••••••••"
-                                        />
-                                        {/* Animated bottom border glow */}
-                                        <motion.div
-                                            className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent w-full"
-                                            initial={{ scaleX: 0, opacity: 0 }}
-                                            variants={{
-                                                hover: { scaleX: 1, opacity: 1 }
-                                            }}
-                                            transition={{ duration: 0.4 }}
-                                        />
-                                    </div>
-                                </motion.div>
+                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* Email field */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label htmlFor="email" style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Email Address
+                                </label>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <Mail size={18} style={{ position: 'absolute', left: '14px', color: '#94a3b8' }} />
+                                    <input 
+                                        id="email"
+                                        type="email"
+                                        placeholder="name@company.com"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px 14px 12px 42px',
+                                            border: `1.5px solid ${focusedField === 'email' ? '#6366f1' : '#cbd5e1'}`,
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            color: '#0f172a',
+                                            outline: 'none',
+                                            backgroundColor: '#ffffff',
+                                            transition: 'all 0.2s',
+                                            boxShadow: focusedField === 'email' ? '0 0 0 3px rgba(99, 102, 241, 0.12)' : 'none',
+                                            fontFamily: 'inherit'
+                                        }}
+                                        onFocus={() => setFocusedField('email')}
+                                        onBlur={() => setFocusedField(null)}
+                                    />
+                                </div>
                             </div>
 
-                            <motion.button
+                            {/* Password field */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label htmlFor="password" style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Password
+                                </label>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <Lock size={18} style={{ position: 'absolute', left: '14px', color: '#94a3b8' }} />
+                                    <input 
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px 42px 12px 42px',
+                                            border: `1.5px solid ${focusedField === 'password' ? '#6366f1' : '#cbd5e1'}`,
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            color: '#0f172a',
+                                            outline: 'none',
+                                            backgroundColor: '#ffffff',
+                                            transition: 'all 0.2s',
+                                            boxShadow: focusedField === 'password' ? '0 0 0 3px rgba(99, 102, 241, 0.12)' : 'none',
+                                            fontFamily: 'inherit'
+                                        }}
+                                        onFocus={() => setFocusedField('password')}
+                                        onBlur={() => setFocusedField(null)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '14px',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            color: '#94a3b8',
+                                            padding: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Checkbox */}
+                            <div style={{ display: 'flex', alignItems: 'center', marginTop: '4px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        style={{ accentColor: '#000000', borderRadius: '4px', cursor: 'pointer' }} 
+                                    />
+                                    Remember me
+                                </label>
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
                                 type="submit"
                                 disabled={isLoading}
-                                whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(255,255,255,0.2)" }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                                className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-black bg-white hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden"
-                            >
-                                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-zinc-300/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1s_infinite] content-['']" />
-                                {isLoading ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <span className="flex items-center gap-2 relative z-10">
-                                        Sign in
-                                        <motion.div
-                                            animate={{ x: [0, 4, 0] }}
-                                            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut", repeatDelay: 1 }}
-                                        >
-                                            <ArrowRight className="h-4 w-4" />
-                                        </motion.div>
-                                    </span>
-                                )}
-                            </motion.button>
-
-
-                        </form>
-                    </motion.div>
-
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-zinc-600 hidden lg:block">
-                        © 2026 EmbedCraft Inc. All rights reserved.
-                    </div>
-                </div> {/* End Right Side */}
-            </div> {/* End Hero Section Container */}
-
-            {/* Premium Z-Pattern Features Section */}
-            <div className="relative z-10 w-full max-w-[1400px] mx-auto py-32 px-4 sm:px-8 lg:px-16 pb-48 space-y-40">
-                {/* Structural Architectural Side Lines */}
-                <div className="absolute inset-y-0 left-8 lg:left-16 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent pointer-events-none hidden md:block" />
-                <div className="absolute inset-y-0 right-8 lg:right-16 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent pointer-events-none hidden md:block" />
-                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-zinc-900/40 to-transparent pointer-events-none hidden lg:block" />
-
-                {/* Ambient Side Glows */}
-                <div className="absolute top-1/4 -left-32 w-96 h-96 bg-zinc-800/20 rounded-full blur-[120px] pointer-events-none" />
-                <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-zinc-800/20 rounded-full blur-[120px] pointer-events-none" />
-
-                {/* Header */}
-                <div className="text-center max-w-3xl mx-auto mb-20">
-                    <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="text-4xl md:text-5xl font-medium tracking-tight mb-6 text-white"
-                    >
-                        Precision control. <br /> Maximum impact.
-                    </motion.h2>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.1 }}
-                        className="text-lg text-zinc-400 font-light"
-                    >
-                        Launch growth loops that feel natively integrated, land perfectly on target, and drive user engagement—unblocking you from engineering dependencies.
-                    </motion.p>
-                </div>
-
-                {/* Feature 1 - Native UI (Text Left, Image Right) */}
-                <div className="flex flex-col md:flex-row items-center gap-16 md:gap-24 relative">
-                    {/* Background Number */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/4 text-[16rem] md:text-[24rem] font-bold text-white/[0.02] pointer-events-none select-none z-0 hidden md:block leading-none tracking-tighter">
-                        01
-                    </div>
-                    <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative z-10 w-full md:w-1/2 space-y-6"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
-                            <LayoutPanelLeft className="w-6 h-6 text-white" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-3xl font-medium tracking-tight text-white">Multiple Native UI Patterns</h3>
-                        <TypewriterText
-                            speed={0.005}
-                            text="Deploy Tooltips, Floater menus, Bottom Sheets, and full-screen modals. Design beautiful in-app experiences that seamlessly blend with your application's native architecture, maintaining complete brand consistency."
-                            className="text-zinc-400 font-light text-lg leading-relaxed"
-                        />
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="w-full md:w-1/2 relative min-h-[400px] flex items-center justify-center bg-zinc-950/40 rounded-3xl border border-zinc-900 overflow-hidden"
-                    >
-                        {/* Animated Empty Space Grid */}
-                        <motion.div
-                            className="absolute inset-0 z-0 opacity-20"
-                            style={{ backgroundImage: 'linear-gradient(to right, #ffffff10 1px, transparent 1px), linear-gradient(to bottom, #ffffff10 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-                            animate={{ backgroundPosition: ['0px 0px', '32px 32px'] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/10 to-zinc-950/80 z-0 pointer-events-none" />
-
-                        {/* Abstract Mock UI */}
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, margin: "-100px" }}
-                            variants={{
-                                visible: { transition: { staggerChildren: 0.2 } },
-                                hidden: {}
-                            }}
-                            className="absolute inset-x-8 inset-y-8 border border-zinc-800 rounded-2xl bg-zinc-900/40 p-6 flex flex-col gap-4 shadow-2xl backdrop-blur-sm"
-                        >
-                            <motion.div
-                                variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                                className="w-1/3 h-4 bg-zinc-800 rounded"
-                            />
-                            <motion.div
-                                variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                                className="w-2/3 h-4 bg-zinc-800/60 rounded"
-                            />
-                            <div className="w-full flex-1 flex items-center justify-center">
-                                {/* Tooltip mock */}
-                                <motion.div
-                                    variants={{ hidden: { opacity: 0, scale: 0.8, y: 20 }, visible: { opacity: 1, scale: 1, y: 0 } }}
-                                    animate={{ y: [0, -10, 0] }}
-                                    transition={{
-                                        y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-                                    }}
-                                    className="bg-zinc-800 border border-zinc-700/50 p-4 rounded-xl shadow-2xl relative"
-                                >
-                                    <div className="w-32 h-3 bg-white/20 rounded mb-2" />
-                                    <div className="w-24 h-3 bg-white/10 rounded" />
-                                    {/* Arrow */}
-                                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-zinc-800 border-b border-r border-zinc-700/50 rotate-45" />
-                                </motion.div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                </div>
-
-                {/* Feature 2 - Targeting (Image Left, Text Right) */}
-                <div className="flex flex-col md:flex-row-reverse items-center gap-16 md:gap-24 relative">
-                    {/* Background Number */}
-                    <div className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/4 text-[16rem] md:text-[24rem] font-bold text-white/[0.02] pointer-events-none select-none z-0 hidden md:block leading-none tracking-tighter">
-                        02
-                    </div>
-                    <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative z-10 w-full md:w-1/2 space-y-6"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
-                            <Target className="w-6 h-6 text-white" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-3xl font-medium tracking-tight text-white">Targeted Delivery</h3>
-                        <TypewriterText
-                            speed={0.005}
-                            text="Define granular cohorts and trigger logic based on real-time user events and precise behavioral attributes. Ensure every single user receives the most relevant and contextual nudge at the exact right moment they need it."
-                            className="text-zinc-400 font-light text-lg leading-relaxed"
-                        />
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="w-full md:w-1/2 relative min-h-[400px] flex items-center justify-center bg-zinc-950/40 rounded-3xl border border-zinc-900 overflow-hidden"
-                    >
-                        {/* Animated Empty Space Grid */}
-                        <motion.div
-                            className="absolute inset-0 z-0 opacity-20"
-                            style={{ backgroundImage: 'linear-gradient(to right, #ffffff10 1px, transparent 1px), linear-gradient(to bottom, #ffffff10 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-                            animate={{ backgroundPosition: ['0px 0px', '-32px 32px'] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/10 to-zinc-950/80 z-0 pointer-events-none" />
-
-                        {/* Abstract Analytics/Targeting Mock */}
-                        <div className="relative w-64 h-64 border border-zinc-800/50 rounded-full flex items-center justify-center group">
-                            <motion.div
-                                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                className="absolute inset-0 bg-white/5 rounded-full"
-                            />
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                className="absolute w-48 h-48 border border-zinc-700/30 rounded-full border-dashed"
-                            />
-                            <motion.div
-                                animate={{ rotate: -360 }}
-                                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                                className="absolute w-56 h-56 border border-zinc-800/40 rounded-full border-dotted"
-                            />
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                whileInView={{ scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.3 }}
-                                className="absolute w-32 h-32 border border-zinc-700/50 rounded-full flex items-center justify-center bg-zinc-900/80 backdrop-blur-md transition-shadow duration-500 group-hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]"
-                            >
-                                <Target className="w-8 h-8 text-white/80 transition-transform duration-500 group-hover:scale-125" />
-                            </motion.div>
-                        </div>
-                    </motion.div>
-                </div>
-
-                {/* Feature 3 - Gamification (Text Left, Image Right) */}
-                <div className="flex flex-col md:flex-row items-center gap-16 md:gap-24 relative">
-                    {/* Background Number */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/4 text-[16rem] md:text-[24rem] font-bold text-white/[0.02] pointer-events-none select-none z-0 hidden md:block leading-none tracking-tighter">
-                        03
-                    </div>
-                    <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative z-10 w-full md:w-1/2 space-y-6"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
-                            <PlayCircle className="w-6 h-6 text-white" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-3xl font-medium tracking-tight text-white">Gamification & Rewards</h3>
-                        <TypewriterText
-                            speed={0.005}
-                            text="Capture absolute attention to drastically improve repeat conversions. Instantly deploy precision scratch cards, immersive full-page experiences, and addictive streak mechanics directly into your critical funnels."
-                            className="text-zinc-400 font-light text-lg leading-relaxed"
-                        />
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="w-full md:w-1/2 relative min-h-[400px] flex items-center justify-center bg-zinc-950/40 rounded-3xl border border-zinc-900 overflow-hidden"
-                    >
-                        {/* Animated Empty Space Grid */}
-                        <motion.div
-                            className="absolute inset-0 z-0 opacity-20"
-                            style={{ backgroundImage: 'linear-gradient(to right, #ffffff10 1px, transparent 1px), linear-gradient(to bottom, #ffffff10 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-                            animate={{ backgroundPosition: ['0px 0px', '32px -32px'] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/10 to-zinc-950/80 z-0 pointer-events-none" />
-
-                        {/* Mock Gamification UI */}
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, margin: "-100px" }}
-                            variants={{
-                                visible: { transition: { staggerChildren: 0.2 } },
-                                hidden: {}
-                            }}
-                            className="w-64 h-80 bg-zinc-900 border border-zinc-800 rounded-2xl relative shadow-2xl overflow-hidden flex flex-col pt-8 items-center"
-                        >
-                            <motion.div
-                                variants={{ hidden: { opacity: 0, scale: 0.5, rotate: -20 }, visible: { opacity: 1, scale: 1, rotate: 0 } }}
-                                animate={{ y: [0, -15, 0], rotate: [0, 5, -5, 0] }}
-                                transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut" }, rotate: { duration: 6, repeat: Infinity, ease: "easeInOut" } }}
-                                className="w-24 h-24 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded-xl border border-zinc-600 mb-6 flex items-center justify-center transform hover:scale-110 cursor-pointer shadow-xl transition-transform"
-                            >
-                                <Sparkles className="w-8 h-8 text-white/50" />
-                            </motion.div>
-                            <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} className="w-3/4 h-3 bg-zinc-800 rounded mb-3" />
-                            <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} className="w-1/2 h-3 bg-zinc-800 rounded" />
-                        </motion.div>
-                    </motion.div>
-                </div>
-
-                {/* Feature 4 - Analytics / A/B Testing (Image Left, Text Right) */}
-                <div className="flex flex-col md:flex-row-reverse items-center gap-16 md:gap-24 relative">
-                    {/* Background Number */}
-                    <div className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/4 text-[16rem] md:text-[24rem] font-bold text-white/[0.02] pointer-events-none select-none z-0 hidden md:block leading-none tracking-tighter">
-                        04
-                    </div>
-                    <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative z-10 w-full md:w-1/2 space-y-6"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
-                            <BarChart className="w-6 h-6 text-white" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-3xl font-medium tracking-tight text-white">Experiment & Analyze</h3>
-                        <TypewriterText
-                            speed={0.005}
-                            text="Stop guessing. Rapidly A/B test different copy, designs, and triggers to determine statistically significant winners. Monitor impressions, clicks, dismissals, and ultimate conversion goals in real-time dashboards."
-                            className="text-zinc-400 font-light text-lg leading-relaxed"
-                        />
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="w-full md:w-1/2 relative min-h-[400px] flex items-end justify-center bg-zinc-950/40 rounded-3xl border border-zinc-900 overflow-hidden px-12 pt-16"
-                    >
-                        {/* Animated Empty Space Grid */}
-                        <motion.div
-                            className="absolute inset-0 z-0 opacity-20"
-                            style={{ backgroundImage: 'linear-gradient(to right, #ffffff10 1px, transparent 1px), linear-gradient(to bottom, #ffffff10 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-                            animate={{ backgroundPosition: ['0px 0px', '-32px -32px'] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/10 to-zinc-950/80 z-0 pointer-events-none" />
-
-                        {/* Mock Chart UI */}
-                        <div className="w-full flex items-end justify-between gap-4 h-48 border-b border-zinc-800/50 pb-0 group">
-                            {[40, 65, 30, 85, 55, 100].map((height, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ height: 0 }}
-                                    whileInView={{ height: `${height}%` }}
-                                    viewport={{ once: true, margin: "-100px" }}
-                                    transition={{ duration: 1, delay: i * 0.1, type: "spring", stiffness: 50 }}
-                                    whileHover={{ opacity: 1, filter: "brightness(1.5)" }}
-                                    className="w-full bg-zinc-700 rounded-t-sm relative cursor-pointer"
-                                    style={{ opacity: 0.5 + (height / 200) }}
-                                >
-                                    {/* Hover tooltip for chart */}
-                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-medium whitespace-nowrap z-10">
-                                        {height}% Lift
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                </div>
-
-                {/* Feature 5 - No Code (Text Left, Image Right) */}
-                <div className="flex flex-col md:flex-row items-center gap-16 md:gap-24 relative">
-                    {/* Background Number */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/4 text-[16rem] md:text-[24rem] font-bold text-white/[0.02] pointer-events-none select-none z-0 hidden md:block leading-none tracking-tighter">
-                        05
-                    </div>
-                    <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative z-10 w-full md:w-1/2 space-y-6"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
-                            <Code2 className="w-6 h-6 text-white" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-3xl font-medium tracking-tight text-white">Zero Engineering Required</h3>
-                        <TypewriterText
-                            speed={0.005}
-                            text="Integrate the ultra-lightweight SDK once, and never wait on a release cycle again. Product, Marketing, and Growth teams can autonomously craft and deploy experiences instantly over-the-air."
-                            className="text-zinc-400 font-light text-lg leading-relaxed"
-                        />
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.8 }}
-                        className="w-full md:w-1/2 relative min-h-[400px] flex items-center justify-center bg-zinc-950/40 rounded-3xl border border-zinc-900 overflow-hidden"
-                    >
-                        {/* Animated Empty Space Grid */}
-                        <motion.div
-                            className="absolute inset-0 z-0 opacity-20"
-                            style={{ backgroundImage: 'linear-gradient(to right, #ffffff10 1px, transparent 1px), linear-gradient(to bottom, #ffffff10 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-                            animate={{ backgroundPosition: ['0px 0px', '32px 32px'] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/10 to-zinc-950/80 z-0 pointer-events-none" />
-
-                        {/* Terminal/Code Mock */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-100px" }}
-                            transition={{ duration: 0.8 }}
-                            className="w-64 md:w-80 border border-zinc-800 rounded-xl bg-[#0d0d0d] p-5 font-mono text-xs text-zinc-500 shadow-2xl relative overflow-hidden"
-                        >
-                            {/* Terminal Header */}
-                            <div className="flex gap-2 mb-4 border-b border-zinc-800/50 pb-4">
-                                <div className="w-3 h-3 rounded-full bg-zinc-800 hover:bg-red-500/50 transition-colors cursor-pointer" />
-                                <div className="w-3 h-3 rounded-full bg-zinc-800 hover:bg-yellow-500/50 transition-colors cursor-pointer" />
-                                <div className="w-3 h-3 rounded-full bg-zinc-800 hover:bg-green-500/50 transition-colors cursor-pointer" />
-                            </div>
-
-                            {/* Staggered Code Lines */}
-                            <motion.div
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true }}
-                                variants={{
-                                    visible: { transition: { staggerChildren: 0.1 } },
-                                    hidden: {}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    backgroundColor: '#000000',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    marginTop: '8px',
+                                    transition: 'opacity 0.2s',
                                 }}
-                                className="space-y-2"
+                                onMouseOver={(e) => { if(!isLoading) e.currentTarget.style.opacity = '0.9' }}
+                                onMouseOut={(e) => { if(!isLoading) e.currentTarget.style.opacity = '1' }}
                             >
-                                <motion.p variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}><span className="text-zinc-600">{"//"} Initialize SDK once</span></motion.p>
-                                <motion.p variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}><span className="text-blue-400">EmbedCraft</span>.<span className="text-purple-400">init</span>({"{"}</motion.p>
-                                <motion.p variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }} className="pl-4">apiKey: <span className="text-green-400">"ec_live_..."</span>,</motion.p>
-                                <motion.p variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }} className="pl-4">userId: <span className="text-white">user.id</span></motion.p>
-                                <motion.p variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}>{"});"}</motion.p>
-                                <br />
-                                <motion.p variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}><span className="text-zinc-600">{"//"} Done. Never touch code again.</span></motion.p>
-                                {/* Cursor blink */}
-                                <motion.div
-                                    animate={{ opacity: [1, 0, 1] }}
-                                    transition={{ repeat: Infinity, duration: 1 }}
-                                    className="w-2 h-4 bg-white/50 mt-4"
-                                />
-                            </motion.div>
-                        </motion.div>
-                    </motion.div>
+                                {isLoading ? (
+                                    <Loader2 size={18} className="animate-spin" />
+                                ) : (
+                                    <>
+                                        Sign in <ArrowRight size={18} />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            </div>
+            </main>
 
+            {/* Footer */}
+            <footer style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 48px',
+                borderTop: '1px solid rgba(226, 232, 240, 0.5)',
+                color: '#94a3b8',
+                fontSize: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 20
+            }}>
+                <div>
+                    © 2026 EmbedCraft Inc. All rights reserved.
+                </div>
+                <div style={{ display: 'flex', gap: '16px', fontWeight: 500 }}>
+                    <a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>Privacy</a>
+                    <a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>Terms</a>
+                    <a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>Support</a>
+                </div>
+            </footer>
         </div>
     );
 };

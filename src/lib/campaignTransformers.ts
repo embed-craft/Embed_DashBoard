@@ -230,7 +230,9 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
         // and blocks the campaign from ever reaching the device!
         targeting: (campaign.targeting || []).filter(r => {
             const isTrigger = r.type === 'event' && r.event === (campaign.trigger || extractTriggerFromTargeting(campaign.targeting));
-            const isJustTriggering = r.count === 1 && r.countOperator === 'greater_than_or_equal';
+            const isJustTriggering = r.count === 1 && 
+                                     r.countOperator === 'greater_than_or_equal' &&
+                                     (!r.properties || r.properties.length === 0);
             return !(isTrigger && isJustTriggering);
         }),
         tags: campaign.tags || [], // ✅ FIX: Include tags in backend payload

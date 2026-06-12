@@ -91,7 +91,7 @@ const MiniTemplatePreview: React.FC<{ type: string; layers?: any[]; config?: any
             containerStyle.backgroundColor = config.backgroundColor;
         }
         if (config.backgroundImageUrl) {
-            containerStyle.backgroundImage = `url(${config.backgroundImageUrl})`;
+            containerStyle.backgroundImage = `url('${config.backgroundImageUrl}')`;
             containerStyle.backgroundSize = config.backgroundSize || 'cover';
             containerStyle.backgroundPosition = config.backgroundPosition || 'center';
             containerStyle.backgroundRepeat = 'no-repeat';
@@ -105,12 +105,12 @@ const MiniTemplatePreview: React.FC<{ type: string; layers?: any[]; config?: any
         }
         if (containerLayer.style.backgroundImage) {
             const bgImage = containerLayer.style.backgroundImage;
-            containerStyle.backgroundImage = bgImage.includes('url(') ? bgImage : `url(${bgImage})`;
+            containerStyle.backgroundImage = bgImage.includes('url(') ? bgImage : `url('${bgImage}')`;
             containerStyle.backgroundSize = containerLayer.style.backgroundSize || 'cover';
             containerStyle.backgroundPosition = containerLayer.style.backgroundPosition || 'center';
             containerStyle.backgroundRepeat = 'no-repeat';
         } else if (containerLayer.style.backgroundImageUrl) {
-            containerStyle.backgroundImage = `url(${containerLayer.style.backgroundImageUrl})`;
+            containerStyle.backgroundImage = `url('${containerLayer.style.backgroundImageUrl}')`;
             containerStyle.backgroundSize = 'cover';
             containerStyle.backgroundPosition = 'center';
             containerStyle.backgroundRepeat = 'no-repeat';

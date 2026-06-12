@@ -393,8 +393,11 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                                         value={content.expiryUrl || ''}
                                         onChange={(e) => handleContentUpdate('expiryUrl', e.target.value)}
                                         placeholder="https://..."
-                                        className="h-8 text-xs"
+                                        className={`h-8 text-xs ${content.expiryUrl && content.expiryUrl.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                     />
+                                    {content.expiryUrl && content.expiryUrl.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium mt-1">URL cannot contain spaces</p>
+                                    )}
                                 </div>
                             )}
                         </div>

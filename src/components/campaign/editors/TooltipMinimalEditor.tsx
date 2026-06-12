@@ -640,11 +640,14 @@ export const TooltipMinimalEditor = () => {
                                                 </div>
                                             </div>
                                             <Input
-                                                className="h-8 text-xs"
+                                                className={`h-8 text-xs ${config.backgroundImageUrl && config.backgroundImageUrl.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                                 placeholder="https://..."
                                                 value={config.backgroundImageUrl || ''}
                                                 onChange={(e) => updateConfig('backgroundImageUrl', e.target.value)}
                                             />
+                                            {config.backgroundImageUrl && config.backgroundImageUrl.includes(' ') && (
+                                                <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                            )}
                                         </div>
                                     </div>
 

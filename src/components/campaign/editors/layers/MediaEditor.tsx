@@ -197,8 +197,11 @@ export const MediaEditor: React.FC<MediaEditorProps> = ({
                                     value={imageUrl}
                                     onChange={(e) => handleContentUpdate(layer.type === 'video' ? 'videoUrl' : 'imageUrl', e.target.value)}
                                     placeholder="https://example.com/image.png"
-                                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className={`w-full pl-9 pr-3 py-2 text-xs border rounded-md focus:outline-none transition-colors ${imageUrl && imageUrl.includes(' ') ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'}`}
                                 />
+                                {imageUrl && imageUrl.includes(' ') && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-1">URL cannot contain spaces</p>
+                                )}
                             </div>
                         </div>
                     </div>

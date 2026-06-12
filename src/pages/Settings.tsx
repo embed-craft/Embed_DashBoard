@@ -510,6 +510,20 @@ const KeysContent = ({ user }: { user: any }) => {
 // ============================================================================
 const WebhooksContent = () => {
   const { webhookUrl, setWebhookUrl } = useStore();
+  const [webhookUrlError, setWebhookUrlError] = React.useState<string | null>(null);
+
+  const handleSaveWebhook = () => {
+    if (!webhookUrl.trim()) {
+      toast.error("Please enter a URL");
+      return;
+    }
+    if (webhookUrl.includes(" ")) {
+      toast.error("Webhook URL cannot contain spaces");
+      setWebhookUrlError("Webhook URL cannot contain spaces");
+      return;
+    }
+    toast.success("Webhook URL saved successfully");
+  };
 
   return (
     <div className="max-w-4xl">
@@ -527,16 +541,31 @@ const WebhooksContent = () => {
           <div className="space-y-3">
             <Label htmlFor="webhookUrl" className="text-base font-semibold text-gray-900">Primary Delivery URL</Label>
             <div className="flex gap-4">
-              <Input
-                id="webhookUrl"
-                placeholder="https://your-domain.com/webhooks/embedcraft"
-                className="font-mono text-base h-12 bg-white border-gray-300 shadow-sm px-4 focus:ring-blue-500 focus:border-blue-500 flex-1"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-              />
+              <div className="flex-1 flex flex-col gap-1.5">
+                <Input
+                  id="webhookUrl"
+                  placeholder="https://your-domain.com/webhooks/embedcraft"
+                  className={`font-mono text-base h-12 bg-white shadow-sm px-4 focus:ring-blue-500 focus:border-blue-500 ${webhookUrlError ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' : 'border-gray-300'}`}
+                  value={webhookUrl}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setWebhookUrl(val);
+                    if (val.includes(" ")) {
+                      setWebhookUrlError("Webhook URL cannot contain spaces");
+                    } else {
+                      setWebhookUrlError(null);
+                    }
+                  }}
+                />
+                {webhookUrlError && (
+                  <span className="text-sm text-red-500 font-medium">{webhookUrlError}</span>
+                )}
+              </div>
               <Button
                 className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium shadow-sm transition-colors"
-                onClick={() => toast.success("Webhook URL saved successfully")}
+                onClick={handleSaveWebhook}
+                disabled={!!webhookUrlError}
+                style={{ backgroundColor: webhookUrlError ? '#cbd5e1' : undefined }}
               >
                 Save Endpoint
               </Button>

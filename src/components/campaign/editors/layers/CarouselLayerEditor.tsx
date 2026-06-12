@@ -606,11 +606,14 @@ export const CarouselLayerEditor: React.FC<CarouselLayerEditorProps> = ({ layer,
                                             </button>
                                         </div>
                                         <Input
-                                            className="h-7 text-xs bg-white"
+                                            className={`h-7 text-xs bg-white ${config.arrowImageUrl && config.arrowImageUrl.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                             placeholder="https://..."
                                             value={config.arrowImageUrl || ''}
                                             onChange={(e) => updateConfig('arrowImageUrl', e.target.value)}
                                         />
+                                        {config.arrowImageUrl && config.arrowImageUrl.includes(' ') && (
+                                            <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                        )}
                                         <p className="text-[9px] text-gray-400 mt-1 italic">
                                             *Image rotates 180° for the left arrow automatically.
                                         </p>

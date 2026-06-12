@@ -9,6 +9,15 @@ interface ActionsEditorProps {
 
 export const ActionsEditor: React.FC<ActionsEditorProps> = ({ action, onChange }) => {
     const activeType = action?.type || 'none';
+    const [urlError, setUrlError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (action?.url && action.url.includes(' ')) {
+            setUrlError('URL cannot contain spaces');
+        } else {
+            setUrlError(null);
+        }
+    }, [action?.url]);
 
     const handleTypeChange = (type: string) => {
         if (type === 'none') {
@@ -55,8 +64,11 @@ export const ActionsEditor: React.FC<ActionsEditorProps> = ({ action, onChange }
                             value={action?.url || ''}
                             onChange={(e) => updateField('url', e.target.value)}
                             placeholder="e.g. /product/123"
-                            className="w-full text-xs p-2 border border-gray-200 rounded focus:border-indigo-500 focus:outline-none"
+                            className={`w-full text-xs p-2 border rounded focus:outline-none ${urlError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'}`}
                         />
+                        {urlError && (
+                            <span className="text-[10px] text-red-500 font-medium mt-1 block">{urlError}</span>
+                        )}
                     </div>
                 </div>
             )}
@@ -70,8 +82,11 @@ export const ActionsEditor: React.FC<ActionsEditorProps> = ({ action, onChange }
                             value={action?.url || ''}
                             onChange={(e) => updateField('url', e.target.value)}
                             placeholder="https://example.com"
-                            className="w-full text-xs p-2 border border-gray-200 rounded focus:border-indigo-500 focus:outline-none"
+                            className={`w-full text-xs p-2 border rounded focus:outline-none ${urlError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'}`}
                         />
+                        {urlError && (
+                            <span className="text-[10px] text-red-500 font-medium mt-1 block">{urlError}</span>
+                        )}
                     </div>
                 </div>
             )}

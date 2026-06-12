@@ -313,8 +313,13 @@ export const SpinTheWheelEditor = () => {
                                 <span className="text-[10px] text-gray-500">Add URL</span>
                             </div>
                             {wheelUrlMode && (
-                                <Input placeholder="https://..." className="h-7 text-xs mt-1"
-                                    value={content.wheelImage || ''} onChange={(e) => updateContent({ wheelImage: e.target.value })} />
+                                <>
+                                    <Input placeholder="https://..." className={`h-7 text-xs mt-1 ${content.wheelImage && content.wheelImage.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                        value={content.wheelImage || ''} onChange={(e) => updateContent({ wheelImage: e.target.value })} />
+                                    {content.wheelImage && content.wheelImage.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                    )}
+                                </>
                             )}
                             {content.wheelImage && (
                                 <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded p-2 mt-2 leading-relaxed">
@@ -354,8 +359,13 @@ export const SpinTheWheelEditor = () => {
                                 <span className="text-[10px] text-gray-500">Add URL</span>
                             </div>
                             {pointerUrlMode && (
-                                <Input placeholder="https://..." className="h-7 text-xs mt-1"
-                                    value={content.pointerImage || ''} onChange={(e) => updateContent({ pointerImage: e.target.value })} />
+                                <>
+                                    <Input placeholder="https://..." className={`h-7 text-xs mt-1 ${content.pointerImage && content.pointerImage.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                        value={content.pointerImage || ''} onChange={(e) => updateContent({ pointerImage: e.target.value })} />
+                                    {content.pointerImage && content.pointerImage.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                    )}
+                                </>
                             )}
                         </div>
 
@@ -404,8 +414,13 @@ export const SpinTheWheelEditor = () => {
                                 <span className="text-[10px] text-gray-500">Add URL</span>
                             </div>
                             {spinButtonUrlMode && (
-                                <Input placeholder="https://..." className="h-7 text-xs mt-1"
-                                    value={content.spinButtonImage || ''} onChange={(e) => updateContent({ spinButtonImage: e.target.value })} />
+                                <>
+                                    <Input placeholder="https://..." className={`h-7 text-xs mt-1 ${content.spinButtonImage && content.spinButtonImage.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                        value={content.spinButtonImage || ''} onChange={(e) => updateContent({ spinButtonImage: e.target.value })} />
+                                    {content.spinButtonImage && content.spinButtonImage.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                    )}
+                                </>
                             )}
                         </div>
 
@@ -495,8 +510,13 @@ export const SpinTheWheelEditor = () => {
                                         <span className="text-[10px] text-gray-500">Add URL</span>
                                     </div>
                                     {confettiUrlMode && (
-                                        <Input placeholder="https://..." className="h-7 text-xs mt-1"
-                                            value={content.confettiImage || ''} onChange={(e) => updateContent({ confettiImage: e.target.value })} />
+                                        <>
+                                            <Input placeholder="https://..." className={`h-7 text-xs mt-1 ${content.confettiImage && content.confettiImage.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                                value={content.confettiImage || ''} onChange={(e) => updateContent({ confettiImage: e.target.value })} />
+                                            {content.confettiImage && content.confettiImage.includes(' ') && (
+                                                <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
@@ -607,14 +627,19 @@ export const SpinTheWheelEditor = () => {
                                                             <span className="text-[10px] text-gray-500">Add URL</span>
                                                         </div>
                                                         {sectionUrlMode[sec.id] && (
-                                                            <Input placeholder="https://..." className="h-7 text-xs mt-1"
-                                                                value={sec.image || ''} onChange={(e) => {
-                                                                    const newSections = sections.map((s: any) =>
-                                                                        s.id === sec.id ? { ...s, image: e.target.value } : s
-                                                                    );
-                                                                    updateSpinTheWheelConfig({ sections: newSections });
-                                                                }}
-                                                            />
+                                                            <>
+                                                                <Input placeholder="https://..." className={`h-7 text-xs mt-1 ${sec.image && sec.image.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                                                    value={sec.image || ''} onChange={(e) => {
+                                                                        const newSections = sections.map((s: any) =>
+                                                                            s.id === sec.id ? { ...s, image: e.target.value } : s
+                                                                        );
+                                                                        updateSpinTheWheelConfig({ sections: newSections });
+                                                                    }}
+                                                                />
+                                                                {sec.image && sec.image.includes(' ') && (
+                                                                    <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
 

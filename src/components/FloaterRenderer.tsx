@@ -1181,8 +1181,8 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         ? 'transparent'
                         : (config?.backgroundColor || floaterLayer.style?.backgroundColor || '#000000'),
 
-                    backgroundImage: (config?.media?.url ? `url(${config.media.url})` : undefined) ||
-                        (config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined) ||
+                    backgroundImage: (config?.media?.url ? `url('${config.media.url}')` : undefined) ||
+                        (config?.backgroundImageUrl ? `url('${config.backgroundImageUrl}')` : undefined) ||
                         (floaterLayer.style?.backgroundImage && floaterLayer.style?.backgroundImage !== 'none' ? floaterLayer.style?.backgroundImage : undefined),
                     backgroundSize: isExpanded ? 'contain' : (config?.media?.fit === 'contain' ? 'contain' : (config?.media?.fit === 'cover' ? 'cover' : '100% 100%')),
                     backgroundPosition: 'center',

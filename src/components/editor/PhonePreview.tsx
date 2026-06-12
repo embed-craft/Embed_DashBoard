@@ -94,7 +94,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                         position: 'absolute',
                         inset: 0,
                         zIndex: 1,
-                        backgroundImage: backgroundUrl.startsWith('http') ? `url(${backgroundUrl})` : `url(${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')}${backgroundUrl})`,
+                        backgroundImage: backgroundUrl.startsWith('http') ? `url('${backgroundUrl}')` : `url('${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')}${backgroundUrl}')`,
                         backgroundSize: '100% 100%', // FIX: Stretch to fill device frame so coordinates align
                         backgroundPosition: 'top left', // Match standard coordinate system origin
                         backgroundRepeat: 'no-repeat',

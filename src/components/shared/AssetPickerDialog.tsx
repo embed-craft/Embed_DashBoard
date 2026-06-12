@@ -56,9 +56,15 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
     const [urlInput, setUrlInput] = useState('');
     const [urlNameInput, setUrlNameInput] = useState('');
     const [urlUploading, setUrlUploading] = useState(false);
+    const [urlError, setUrlError] = useState<string | null>(null);
 
     const handleUrlUpload = async () => {
         if (!urlInput.trim()) { toast.error('Please enter a URL'); return; }
+        if (urlInput.includes(' ')) {
+            toast.error('URL cannot contain spaces');
+            setUrlError('URL cannot contain spaces');
+            return;
+        }
         setUrlUploading(true);
         try {
             const newAsset = await apiClient.createAssetFromUrl({
@@ -70,6 +76,7 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
             setIsUrlInputOpen(false);
             setUrlInput('');
             setUrlNameInput('');
+            setUrlError(null);
             toast.success('Asset added successfully');
         } catch (err: any) {
             toast.error(err?.message || 'Failed to add asset from URL');
@@ -202,7 +209,7 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                     <div style={{ display: 'flex', gap: '6px' }}>
                         <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleUpload} accept={acceptStr} />
                         <Button variant="outline" className="gap-1.5 h-7 text-[11px]"
-                            onClick={() => setIsUrlInputOpen(true)} disabled={uploading || urlUploading}>
+                            onClick={() => { setIsUrlInputOpen(true); setUrlError(null); }} disabled={uploading || urlUploading}>
                             <LinkIcon size={12} />
                             From URL
                         </Button>
@@ -221,57 +228,71 @@ export const AssetPickerDialog: React.FC<AssetPickerDialogProps> = ({
                         borderBottom: `1px solid ${theme.colors.border.default}`,
                         backgroundColor: '#f8fafc',
                         display: 'flex',
-                        gap: '8px',
-                        alignItems: 'center',
+                        flexDirection: 'column',
+                        gap: '6px',
                         flexShrink: 0
                     }}>
-                        <input
-                            type="text"
-                            placeholder="Paste asset URL..."
-                            value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
-                            style={{
-                                flex: 1,
-                                padding: '6px 12px',
-                                fontSize: '12px',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
-                                outline: 'none'
-                            }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Optional Name"
-                            value={urlNameInput}
-                            onChange={(e) => setUrlNameInput(e.target.value)}
-                            style={{
-                                width: '120px',
-                                padding: '6px 12px',
-                                fontSize: '12px',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
-                                outline: 'none'
-                            }}
-                        />
-                        <Button
-                            size="sm"
-                            className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                            onClick={handleUrlUpload}
-                            disabled={urlUploading}
-                        >
-                            {urlUploading ? <Loader2 size={12} className="animate-spin" /> : 'Add'}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="h-7 px-2"
-                            onClick={() => {
-                                setIsUrlInputOpen(false);
-                                setUrlInput('');
-                                setUrlNameInput('');
-                            }}
-                        >
-                            <X size={14} />
-                        </Button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                            <input
+                                type="text"
+                                placeholder="Paste asset URL..."
+                                value={urlInput}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setUrlInput(val);
+                                    if (val.includes(' ')) {
+                                        setUrlError('URL cannot contain spaces');
+                                    } else {
+                                        setUrlError(null);
+                                    }
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    border: urlError ? '1px solid #ef4444' : '1px solid #cbd5e1',
+                                    borderRadius: '6px',
+                                    outline: 'none'
+                                }}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Optional Name"
+                                value={urlNameInput}
+                                onChange={(e) => setUrlNameInput(e.target.value)}
+                                style={{
+                                    width: '120px',
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '6px',
+                                    outline: 'none'
+                                }}
+                            />
+                            <Button
+                                size="sm"
+                                className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                                onClick={handleUrlUpload}
+                                disabled={urlUploading || !!urlError}
+                            >
+                                {urlUploading ? <Loader2 size={12} className="animate-spin" /> : 'Add'}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                className="h-7 px-2"
+                                onClick={() => {
+                                    setIsUrlInputOpen(false);
+                                    setUrlInput('');
+                                    setUrlNameInput('');
+                                    setUrlError(null);
+                                }}
+                            >
+                                <X size={14} />
+                            </Button>
+                        </div>
+                        {urlError && (
+                            <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 500, alignSelf: 'flex-start' }}>{urlError}</span>
+                        )}
                     </div>
                 )}
 

@@ -214,7 +214,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 backgroundColor: (config?.backgroundColor === 'transparent' || config?.backgroundColor === '#00000000')
                     ? 'transparent'
                     : (config?.backgroundColor || '#FFFFFF'),
-                backgroundImage: config?.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
+                backgroundImage: config?.backgroundImageUrl ? `url('${config.backgroundImageUrl}')` : undefined,
                 backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center',

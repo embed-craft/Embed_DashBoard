@@ -216,7 +216,7 @@ export const FullScreenMinimalEditor = () => {
                                     </div>
                                     <Input
                                         placeholder="https://..."
-                                        className="text-xs mb-1"
+                                        className={`text-xs mb-1 ${config.media?.url && config.media.url.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                         value={config.media?.url || ''}
                                         onChange={(e) => {
                                             const url = e.target.value;
@@ -232,6 +232,9 @@ export const FullScreenMinimalEditor = () => {
                                             });
                                         }}
                                     />
+                                    {config.media?.url && config.media.url.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                    )}
                                     <p className="text-[10px] text-gray-500 mt-1">Supports Images, MP4 Video, and YouTube</p>
                                 </div>
 
@@ -293,11 +296,14 @@ export const FullScreenMinimalEditor = () => {
                                     <div className="space-y-1">
                                         <Label className="text-[10px] text-gray-500">Icon Image URL (Optional)</Label>
                                         <Input
-                                            className="h-8 text-xs"
+                                            className={`h-8 text-xs ${config.controls?.closeButton?.iconUrl && config.controls.closeButton.iconUrl.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                             placeholder="https://... (Default: 'X' icon)"
                                             value={config.controls?.closeButton?.iconUrl || ''}
                                             onChange={e => updateNested('controls', 'closeButton', { ...(config.controls?.closeButton || {}), iconUrl: e.target.value })}
                                         />
+                                        {config.controls?.closeButton?.iconUrl && config.controls.closeButton.iconUrl.includes(' ') && (
+                                            <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">

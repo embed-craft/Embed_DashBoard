@@ -523,7 +523,7 @@ export const FloaterMinimalEditor = () => {
                                     </div>
                                     <Input
                                         placeholder="https://..."
-                                        className="text-xs mb-1"
+                                        className={`text-xs mb-1 ${config.media?.url && config.media.url.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                         value={config.media?.url || ''}
                                         onChange={(e) => {
                                             const url = e.target.value;
@@ -533,6 +533,9 @@ export const FloaterMinimalEditor = () => {
                                             updateFloaterConfig({ media: { ...config.media, url, type } });
                                         }}
                                     />
+                                    {config.media?.url && config.media.url.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                    )}
                                     <p className="text-[10px] text-gray-500 mt-1">Supports Images, MP4 Video, and YouTube</p>
                                 </div>
 

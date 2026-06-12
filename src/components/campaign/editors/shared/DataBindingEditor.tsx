@@ -318,8 +318,11 @@ export const DataBindingEditor: React.FC<DataBindingEditorProps> = ({
                             onChange={(e) => updateLayer(selectedLayerId, {
                                 content: { ...layer.content, dataSourceUrl: e.target.value }
                             })}
-                            className="h-8 text-xs bg-white"
+                            className={`h-8 text-xs bg-white ${content.dataSourceUrl && content.dataSourceUrl.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                         />
+                        {content.dataSourceUrl && content.dataSourceUrl.includes(' ') && (
+                            <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                        )}
                         <span className="text-[9px] text-gray-400 block leading-tight">Use {"`{{variable}}`"} for dynamic user properties.</span>
                     </div>
 

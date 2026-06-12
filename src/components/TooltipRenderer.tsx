@@ -149,7 +149,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             borderRadius: (layer.type === 'input' || layer.type === 'copy_button') ? undefined : safeScale(layer.style?.borderRadius, scale),
             opacity: layer.style?.opacity,
             backgroundColor: layer.style?.backgroundColor,
-            backgroundImage: layer.style?.backgroundImage ? (layer.style.backgroundImage.startsWith('http') || layer.style.backgroundImage.startsWith('/') ? `url(${layer.style.backgroundImage})` : layer.style.backgroundImage) : undefined,
+            backgroundImage: layer.style?.backgroundImage ? (layer.style.backgroundImage.startsWith('http') || layer.style.backgroundImage.startsWith('/') ? `url('${layer.style.backgroundImage}')` : layer.style.backgroundImage) : undefined,
             backgroundSize: layer.style?.backgroundSize || 'cover',
             backgroundPosition: layer.style?.backgroundPosition || 'center',
             backgroundRepeat: layer.style?.backgroundRepeat || 'no-repeat',
@@ -725,7 +725,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                             }
                             return `rgba(${r}, ${g}, ${b}, ${opacity})`;
                         })() : 'transparent',
-                        backgroundImage: isBodyVisible && config.backgroundImageUrl ? `url(${config.backgroundImageUrl})` : undefined,
+                        backgroundImage: isBodyVisible && config.backgroundImageUrl ? `url('${config.backgroundImageUrl}')` : undefined,
                         backgroundSize: config.backgroundSize === 'fill' ? '100% 100%' : (config.backgroundSize || 'cover'),
                         backgroundPosition: config.backgroundPosition || 'center',
                         backgroundRepeat: 'no-repeat',

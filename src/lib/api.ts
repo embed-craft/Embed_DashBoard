@@ -219,8 +219,13 @@ class ApiClient {
     return this.request(`/v1/admin/analytics/users?limit=${limit}&offset=${offset}`);
   }
 
-  public async getUser(userId: string, limit = 50, offset = 0): Promise<{ user: any; events: any[]; totalEvents?: number }> {
-    return this.request(`/v1/admin/analytics/users/${encodeURIComponent(userId)}?limit=${limit}&offset=${offset}`);
+  public async getUser(userId: string, limit = 50, offset = 0, range = '3months', startDate?: string, endDate?: string): Promise<{ user: any; events: any[]; totalEvents?: number }> {
+    let url = `/v1/admin/analytics/users/${encodeURIComponent(userId)}?limit=${limit}&offset=${offset}&range=${range}`;
+    if (range === 'custom') {
+      if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
+      if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
+    }
+    return this.request(url);
   }
 
   public async getDashboardStats(): Promise<{ activeCampaigns: number; totals: any; daily: any[] }> {

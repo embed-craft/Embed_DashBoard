@@ -300,13 +300,16 @@ export const BottomSheetMinimalEditor = () => {
                                     Asset Library
                                 </button>
                             </div>
-                            <Input
-                                type="text"
-                                className="h-8 text-xs"
-                                value={config.backgroundImageUrl || ''}
-                                onChange={(e) => updateConfig('backgroundImageUrl', e.target.value)}
-                                placeholder="https://..."
-                            />
+                             <Input
+                                 type="text"
+                                 className={`h-8 text-xs ${config.backgroundImageUrl && config.backgroundImageUrl.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                 value={config.backgroundImageUrl || ''}
+                                 onChange={(e) => updateConfig('backgroundImageUrl', e.target.value)}
+                                 placeholder="https://..."
+                             />
+                             {config.backgroundImageUrl && config.backgroundImageUrl.includes(' ') && (
+                                 <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                             )}
 
                             {/* Background Size - Added per user request */}
                             {config.backgroundImageUrl && (

@@ -122,8 +122,11 @@ export const StylesEditor: React.FC<StylesEditorProps> = ({
                                             onStyleUpdate('backgroundImage', val ? `url(${val})` : 'none');
                                         }}
                                         placeholder="https://..."
-                                        className="w-full pl-8 p-1.5 text-xs border border-gray-200 rounded outline-none focus:border-indigo-500"
+                                        className={`w-full pl-8 p-1.5 text-xs border rounded outline-none transition-colors ${hasBgImage && bgImage.includes(' ') ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'}`}
                                     />
+                                    {hasBgImage && bgImage.includes(' ') && (
+                                        <p className="text-[10px] text-red-500 font-medium mt-1">URL cannot contain spaces</p>
+                                    )}
                                 </div>
                             </div>
                             {hasBgImage && (

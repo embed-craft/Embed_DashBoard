@@ -134,10 +134,13 @@ export const SlideMinimalEditor = () => {
                             <Label className="text-[10px] text-gray-500 mb-1.5 block">Image / Video URL</Label>
                             <Input
                                 placeholder="https://..."
-                                className="text-xs"
+                                className={`text-xs ${content.url && content.url.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                 value={content.url || ''}
                                 onChange={(e) => updateSlideContent('url', e.target.value)}
                             />
+                            {content.url && content.url.includes(' ') && (
+                                <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                            )}
                             <p className="text-[9px] text-gray-400 mt-1">Paste any image URL or MP4 link</p>
                         </div>
 

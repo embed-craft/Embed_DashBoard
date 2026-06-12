@@ -120,8 +120,11 @@ export const LottieEditor: React.FC<LottieEditorProps> = ({
                                             value={lottieUrl}
                                             onChange={(e) => handleContentUpdate('lottieUrl', e.target.value)}
                                             placeholder="https://assets.lottiefiles.com/example.json"
-                                            className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 transition-colors"
+                                            className={`w-full pl-9 pr-3 py-2 text-xs border rounded-md focus:outline-none transition-colors ${lottieUrl && lottieUrl.includes(' ') ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'}`}
                                         />
+                                        {lottieUrl && lottieUrl.includes(' ') && (
+                                            <p className="text-[10px] text-red-500 font-medium mt-1">URL cannot contain spaces</p>
+                                        )}
                                     </div>
                                     <button
                                         onClick={async () => {

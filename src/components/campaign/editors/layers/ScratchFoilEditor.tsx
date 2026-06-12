@@ -128,8 +128,11 @@ export const ScratchFoilEditor: React.FC<ScratchFoilEditorProps> = ({
                                             value={content.coverImage === 'https://' ? '' : (content.coverImage || '')}
                                             onChange={(e) => updateContent('coverImage', e.target.value)}
                                             placeholder="https://example.com/foil.png"
-                                            className="h-8 text-xs bg-white"
+                                            className={`h-8 text-xs bg-white ${content.coverImage && content.coverImage !== 'https://' && content.coverImage.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                         />
+                                        {content.coverImage && content.coverImage !== 'https://' && content.coverImage.includes(' ') && (
+                                            <p className="text-[10px] text-red-500 font-medium">URL cannot contain spaces</p>
+                                        )}
                                         {content.coverImage && content.coverImage !== 'https://' && (
                                             <div className="w-full h-24 rounded-md border border-gray-200 overflow-hidden bg-gray-50 relative group">
                                                 <img src={content.coverImage} className="w-full h-full object-cover" alt="Preview" />

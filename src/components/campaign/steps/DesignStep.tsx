@@ -3049,7 +3049,7 @@ export const DesignStep: React.FC<any> = () => {
                         width: '100%',
                         height: '100px',
                         borderRadius: '6px',
-                        background: `url(${config.imageUrl}) center/cover no-repeat`,
+                        background: `url('${config.imageUrl}') center/cover no-repeat`,
                         border: `1px solid ${colors.gray[200]}`
                       }} />
                     )}

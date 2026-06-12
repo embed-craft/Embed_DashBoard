@@ -418,6 +418,7 @@ const AssetsPage = () => {
     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
     const [urlInput, setUrlInput] = useState('');
     const [nameInput, setNameInput] = useState('');
+    const [urlError, setUrlError] = useState<string | null>(null);
     const [previewAsset, setPreviewAsset] = useState<Asset | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -427,6 +428,14 @@ const AssetsPage = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => { setMounted(true); }, []);
+
+    useEffect(() => {
+        if (!isUrlDialogOpen) {
+            setUrlInput('');
+            setNameInput('');
+            setUrlError(null);
+        }
+    }, [isUrlDialogOpen]);
 
     const fetchAssets = useCallback(async () => {
         setLoading(true);
@@ -478,10 +487,15 @@ const AssetsPage = () => {
 
     const handleAddUrl = async () => {
         if (!urlInput.trim()) { toast.error('Enter a URL'); return; }
+        if (urlInput.includes(' ')) {
+            toast.error('URL cannot contain spaces');
+            setUrlError('URL cannot contain spaces');
+            return;
+        }
         try {
             await apiClient.createAssetFromUrl({ name: nameInput.trim() || urlInput.split('/').pop()?.split('?')[0] || 'Untitled', url: urlInput.trim() });
             toast.success('Asset added');
-            setIsUrlDialogOpen(false); setUrlInput(''); setNameInput('');
+            setIsUrlDialogOpen(false); setUrlInput(''); setNameInput(''); setUrlError(null);
             await fetchAssets();
         } catch { toast.error('Failed to add asset'); }
     };
@@ -841,10 +855,25 @@ const AssetsPage = () => {
                             <Input
                                 placeholder="https://example.com/image.png"
                                 value={urlInput}
-                                onChange={(e) => setUrlInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
-                                className="h-9 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setUrlInput(val);
+                                    if (val.includes(' ')) {
+                                        setUrlError('URL cannot contain spaces');
+                                    } else {
+                                        setUrlError(null);
+                                    }
+                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && !urlError && handleAddUrl()}
+                                className={`h-9 text-xs rounded-lg ${
+                                    urlError 
+                                    ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' 
+                                    : 'border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500'
+                                }`}
                             />
+                            {urlError && (
+                                <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 500, marginTop: '2px' }}>{urlError}</span>
+                            )}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <Label className="text-xs font-semibold text-gray-700">Name <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></Label>
@@ -864,7 +893,7 @@ const AssetsPage = () => {
                     </div>
                     <div style={{ padding: '14px 24px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                         <Button variant="ghost" size="sm" onClick={() => setIsUrlDialogOpen(false)} className="h-8 text-xs">Cancel</Button>
-                        <Button size="sm" onClick={handleAddUrl} className="h-8 text-xs gap-1.5" style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', border: 'none' }}>
+                        <Button size="sm" onClick={handleAddUrl} disabled={!!urlError} className="h-8 text-xs gap-1.5" style={{ background: urlError ? '#cbd5e1' : 'linear-gradient(135deg,#6366f1,#4f46e5)', border: 'none' }}>
                             <Plus size={12} /> Add Asset
                         </Button>
                     </div>
@@ -887,7 +916,7 @@ const AssetsPage = () => {
                                 {previewAsset.type === 'image' && (
                                     <div style={{
                                         position: 'absolute', inset: 0,
-                                        backgroundImage: `url(${getAssetUrl(previewAsset.url)})`,
+                                        backgroundImage: `url('${getAssetUrl(previewAsset.url)}')`,
                                         backgroundSize: 'cover', backgroundPosition: 'center',
                                         filter: 'blur(40px) brightness(0.3) saturate(2)',
                                         transform: 'scale(1.2)'

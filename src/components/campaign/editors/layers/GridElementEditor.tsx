@@ -544,8 +544,11 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                                                     onStyleUpdate('backgroundImage', val ? `url(${val})` : 'none');
                                                 }}
                                                 placeholder="https://..."
-                                                className="pl-8 h-8 text-xs"
+                                                className={`pl-8 h-8 text-xs ${hasBgImage && bgImage.includes(' ') ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                             />
+                                            {hasBgImage && bgImage.includes(' ') && (
+                                                <p className="text-[10px] text-red-500 font-medium mt-1">URL cannot contain spaces</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div>

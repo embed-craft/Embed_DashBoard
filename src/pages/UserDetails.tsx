@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const UserDetails = () => {
     const { id } = useParams();
@@ -31,6 +32,14 @@ const UserDetails = () => {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [range, setRange] = useState<string>('3months');
+
+    // Default dates for custom date picker: today and 7 days ago
+    const todayStr = new Date().toISOString().split('T')[0];
+    const sevenDaysAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const [startDate, setStartDate] = useState<string>(sevenDaysAgoStr);
+    const [endDate, setEndDate] = useState<string>(todayStr);
+
     const LIMIT = 20;
 
     React.useEffect(() => {
@@ -40,7 +49,7 @@ const UserDetails = () => {
             try {
                 const api = await import('@/lib/api');
                 const offset = (page - 1) * LIMIT;
-                const data = await api.apiClient.getUser(id, LIMIT, offset);
+                const data = await api.apiClient.getUser(id, LIMIT, offset, range, startDate, endDate);
 
                 // Format User Data
                 const formattedUser = {
@@ -86,9 +95,33 @@ const UserDetails = () => {
                     items: groupedEvents[date]
                 }));
 
-                setEvents(formattedEvents);
+                setEvents(prev => {
+                    if (page === 1) {
+                        return formattedEvents;
+                    } else {
+                        // Append to the list, merging same dates
+                        const newEvents = [...prev];
+                        Object.keys(groupedEvents).forEach(date => {
+                            const existingGroup = newEvents.find(g => g.date === date);
+                            if (existingGroup) {
+                                const existingIds = new Set(existingGroup.items.map((i: any) => i.id));
+                                const newItems = groupedEvents[date].filter((i: any) => !existingIds.has(i.id));
+                                existingGroup.items = [...existingGroup.items, ...newItems];
+                            } else {
+                                newEvents.push({
+                                    date,
+                                    items: groupedEvents[date]
+                                });
+                            }
+                        });
+                        return newEvents;
+                    }
+                });
+
                 if (data.totalEvents) {
                     setTotalPages(Math.ceil(data.totalEvents / LIMIT));
+                } else {
+                    setTotalPages(1);
                 }
             } catch (error) {
                 console.error("Failed to fetch user details:", error);
@@ -98,9 +131,9 @@ const UserDetails = () => {
         };
 
         fetchUser();
-    }, [id, page]);
+    }, [id, page, range, startDate, endDate]);
 
-    if (loading) {
+    if (loading && !user) {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -197,12 +230,13 @@ const UserDetails = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: theme.colors.gray[50], display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', backgroundColor: theme.colors.gray[50], display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
             <div style={{
                 backgroundColor: 'white',
                 borderBottom: `1px solid ${theme.colors.border.default}`,
                 padding: '16px 24px',
+                flexShrink: 0,
             }}>
                 <Button
                     variant="ghost"
@@ -250,8 +284,8 @@ const UserDetails = () => {
 
             {/* Content */}
             <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 flex flex-col min-w-0 bg-white">
-                    <Tabs defaultValue="events" className="w-full flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
+                    <Tabs defaultValue="events" className="w-full flex-1 flex flex-col overflow-hidden">
                         <div className="px-6 border-b border-gray-200">
                             <TabsList className="bg-transparent w-full justify-start h-auto p-0 rounded-none">
                                 <TabsTrigger
@@ -374,11 +408,46 @@ const UserDetails = () => {
 
                         <TabsContent value="events" className="flex-1 m-0 flex overflow-hidden">
                             {/* Timeline */}
-                            <div className="flex-1 overflow-auto border-r border-gray-200 flex flex-col">
+                            <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-200">
                                 <div className="flex-1 overflow-auto">
-                                    <div className="grid grid-cols-[1fr_200px] border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider sticky top-0 z-10">
-                                        <div className="px-6 py-3">Events</div>
-                                        <div className="px-6 py-3">Date and Time</div>
+                                    <div className="grid grid-cols-[1fr_200px] border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider sticky top-0 z-10 items-center">
+                                        <div className="px-6 py-2 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <span>Events</span>
+                                                <Select value={range} onValueChange={(val) => { setRange(val); setPage(1); }}>
+                                                    <SelectTrigger className="w-[140px] h-8 text-[11px] bg-white normal-case">
+                                                        <SelectValue placeholder="Select Range" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="3days">Last 3 Days</SelectItem>
+                                                        <SelectItem value="1week">Last 1 Week</SelectItem>
+                                                        <SelectItem value="3months">Last 3 Months</SelectItem>
+                                                        <SelectItem value="custom">Custom Range</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+
+                                                {range === 'custom' && (
+                                                    <div className="flex items-center gap-2 normal-case">
+                                                        <input
+                                                            type="date"
+                                                            value={startDate}
+                                                            max={todayStr}
+                                                            onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                                                            className="border border-gray-200 rounded px-2 py-1 text-[11px] h-8 bg-white focus:outline-none focus:ring-1 focus:ring-purple-600"
+                                                        />
+                                                        <span className="text-[10px] text-gray-400">to</span>
+                                                        <input
+                                                            type="date"
+                                                            value={endDate}
+                                                            max={todayStr}
+                                                            onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                                                            className="border border-gray-200 rounded px-2 py-1 text-[11px] h-8 bg-white focus:outline-none focus:ring-1 focus:ring-purple-600"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="px-6 py-3 text-right">Date and Time</div>
                                     </div>
 
                                     {events.map((group, groupIndex) => (
@@ -407,41 +476,31 @@ const UserDetails = () => {
                                             ))}
                                         </div>
                                     ))}
-                                </div>
 
-                                {/* Pagination Controls */}
-                                <div className="p-4 border-t border-gray-200 flex items-center justify-between bg-white">
-                                    <div className="text-sm text-gray-500">
-                                        Page {page} of {totalPages}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                                            disabled={page === 1 || loading}
-                                        >
-                                            Previous
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                            disabled={page === totalPages || loading}
-                                        >
-                                            Next
-                                        </Button>
-                                    </div>
+                                    {/* Show More Controls inside scroll area */}
+                                    {page < totalPages && (
+                                        <div className="p-4 border-t border-gray-200 flex justify-center bg-white">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setPage(p => p + 1)}
+                                                disabled={loading}
+                                                className="w-full max-w-xs"
+                                            >
+                                                {loading ? 'Loading...' : 'Show More'}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Event Details Panel */}
-                            <div className="w-[400px] bg-white flex flex-col border-l border-gray-200">
-                                <div className="p-4 border-b border-gray-200 font-medium text-sm text-gray-900">
+                            <div className="w-[400px] bg-white flex flex-col border-l border-gray-200 overflow-hidden">
+                                <div className="p-4 border-b border-gray-200 font-medium text-sm text-gray-900 flex-shrink-0">
                                     Event details
                                 </div>
                                 {selectedEvent ? (
-                                    <div className="p-6">
+                                    <div className="p-6 flex-1 overflow-auto">
                                         <div className="mb-6">
                                             <div className="text-sm text-gray-500 mb-1">Event Name</div>
                                             <div className="text-lg font-medium text-gray-900">{selectedEvent.name}</div>

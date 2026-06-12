@@ -285,7 +285,7 @@ const UserDetails = () => {
                             <div className="grid grid-cols-2 gap-6 max-w-4xl">
                                 {Object.entries(user.properties).map(([key, value]) => (
                                     <div key={key} className="flex flex-col gap-1">
-                                        <span className="text-sm text-gray-500 capitalize">{key.replace('_', ' ')}</span>
+                                        <span className="text-sm text-gray-500">{key}</span>
                                         <span className="text-sm font-medium text-gray-900">{String(value)}</span>
                                         <Separator className="mt-2" />
                                     </div>
@@ -450,7 +450,7 @@ const UserDetails = () => {
                                         <div className="space-y-4">
                                             {Object.entries(selectedEvent.properties).map(([key, value]) => (
                                                 <div key={key}>
-                                                    <div className="text-xs text-gray-500 mb-1 capitalize">{key}</div>
+                                                    <div className="text-xs text-gray-500 mb-1">{key}</div>
                                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded border border-gray-100">
                                                         {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
                                                     </div>

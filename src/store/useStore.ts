@@ -230,6 +230,8 @@ interface Store {
   fetchFlows: () => Promise<void>;
   addFlow: (flow: Omit<Flow, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<void>;
   deleteFlow: (id: string) => Promise<void>;
+
+  resetStore: () => void;
 }
 
 export interface Page {
@@ -539,6 +541,23 @@ export const useStore = create<Store>()(
           set((state) => ({ flows: state.flows.filter((f) => f._id !== id) }));
         } catch (e) { console.error(e); }
       },
+
+      resetStore: () => set({
+        campaigns: [],
+        rewards: [],
+        segments: [],
+        pages: [],
+        templates: [],
+        flows: [],
+        analyticsData: [],
+        dashboardStats: {
+          activeCampaigns: 0,
+          impressions: 0,
+          clicks: 0,
+          conversions: 0
+        },
+        eventPreferences: {},
+      }),
     }),
     {
       name: 'nudge-platform-storage',

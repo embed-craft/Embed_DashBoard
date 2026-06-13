@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
+import type { Environment } from '../../context/EnvironmentContext';
 import {
   Megaphone,
   Zap,
@@ -25,6 +27,20 @@ const Sidebar = () => {
   const { logout } = useAuth();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { currentEnv, switchEnvironment, environments, organizationName } = useEnvironment();
+  const [envDropdownOpen, setEnvDropdownOpen] = useState(false);
+  const envDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (envDropdownRef.current && !envDropdownRef.current.contains(e.target as Node)) {
+        setEnvDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Monitor width to determine collapsed state (Icon Mode)
   useEffect(() => {
@@ -63,41 +79,153 @@ const Sidebar = () => {
       className="flex flex-col h-full bg-white w-full transition-all duration-300 ease-in-out z-50 overflow-hidden"
     // Removed border-right to prevent double border with resize handle
     >
-      {/* Logo Area */}
+      {/* Logo + Org Name + Environment Switcher */}
       <div style={{
-        height: '64px',
+        padding: isCollapsed ? '16px 0' : '16px 20px',
+        borderBottom: `1px solid ${theme.colors.border.default}`,
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: isCollapsed ? 'center' : 'space-between',
-        padding: isCollapsed ? '0' : '0 24px',
-        borderBottom: `1px solid ${theme.colors.border.default}`
+        flexDirection: 'column',
+        gap: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+        {/* Logo + Org Name Row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
           <img
             src="/logo.png"
             alt="EmbedCraft Logo"
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
+              width: '28px',
+              height: '28px',
+              borderRadius: '6px',
               objectFit: 'contain',
-              marginRight: isCollapsed ? '0' : '12px',
-              flexShrink: 0
+              flexShrink: 0,
             }}
           />
           {!isCollapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              <span style={{
-                fontSize: '16px',
-                fontWeight: 600,
-                color: theme.colors.text.primary,
-              }}>
-                EmbedCraft
-              </span>
-              <ChevronDown size={16} color={theme.colors.text.secondary} />
-            </div>
+            <span style={{
+              marginLeft: '10px',
+              fontSize: '16px',
+              fontWeight: 700,
+              color: '#000000',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {organizationName || 'EmbedCraft'}
+            </span>
           )}
         </div>
+
+        {/* Environment Switcher */}
+        {!isCollapsed && environments && (
+          <div ref={envDropdownRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setEnvDropdownOpen(!envDropdownOpen)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#000000',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+            >
+              <span>{currentEnv === 'staging' ? 'Staging Environment' : 'Production Environment'}</span>
+              <ChevronDown size={14} style={{
+                transform: envDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                color: '#64748B',
+              }} />
+            </button>
+
+            {/* Dropdown Popover */}
+            {envDropdownOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: '6px',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+                zIndex: 100,
+                overflow: 'hidden',
+                padding: '4px',
+              }}>
+                {(['production', 'staging'] as Environment[]).map((env) => (
+                  <button
+                    key={env}
+                    onClick={() => {
+                      if (env !== currentEnv) {
+                        switchEnvironment(env);
+                      }
+                      setEnvDropdownOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      backgroundColor: env === currentEnv ? '#F1F5F9' : '#FFFFFF',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: env === currentEnv ? 600 : 400,
+                      color: '#000000',
+                      textAlign: 'left',
+                      transition: 'background-color 0.1s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      if (env !== currentEnv) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                    }}
+                    onMouseOut={(e) => {
+                      if (env !== currentEnv) e.currentTarget.style.backgroundColor = '#FFFFFF';
+                    }}
+                  >
+                    <span>{env === 'staging' ? 'Staging Environment' : 'Production Environment'}</span>
+                    {env === currentEnv && (
+                      <span style={{ fontSize: '12px', color: '#000000', fontWeight: 'bold' }}>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Collapsed env indicator */}
+        {isCollapsed && (
+          <div
+            title={currentEnv === 'staging' ? 'Staging Environment' : 'Production Environment'}
+            style={{
+              width: '16px',
+              height: '16px',
+              borderRadius: '4px',
+              backgroundColor: currentEnv === 'staging' ? '#E2E8F0' : '#000000',
+              color: currentEnv === 'staging' ? '#000000' : '#FFFFFF',
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '10px',
+              fontWeight: 'bold',
+            }}
+          >
+            {currentEnv === 'staging' ? 'S' : 'P'}
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

@@ -16,10 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { useEnvironment } from "@/context/EnvironmentContext";
 
 const ApiPage = () => {
   const { user } = useAuth();
-  const apiKey = user?.organization?.api_key || "pk_live_placeholder_key";
+  const { currentEnv, environments } = useEnvironment();
+  const apiKey = (currentEnv === 'staging'
+    ? (environments?.staging?.apiKey || user?.organization?.staging_api_key)
+    : (environments?.production?.apiKey || user?.organization?.api_key)
+  ) || 'pk_live_placeholder_key';
   const [activeTab, setActiveTab] = useState("api");
 
   const copyToClipboard = () => {
@@ -252,7 +257,7 @@ const ApiPage = () => {
 
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="apiKey">Production API Key</Label>
+                    <Label htmlFor="apiKey">{currentEnv === 'staging' ? 'Staging' : 'Production'} API Key</Label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Input
@@ -268,6 +273,10 @@ const ApiPage = () => {
                         Copy
                       </Button>
                     </div>
+                    <p style={{ fontSize: '12px', color: currentEnv === 'staging' ? '#F97316' : '#22C55E', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: currentEnv === 'staging' ? '#F97316' : '#22C55E', display: 'inline-block' }} />
+                      {currentEnv === 'staging' ? 'You are viewing the Staging API key. Data sent with this key goes to your staging environment.' : 'You are viewing the Production API key. Data sent with this key goes to your live environment.'}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Use this key to authenticate API requests from your backend. Keep it secret!
                     </p>

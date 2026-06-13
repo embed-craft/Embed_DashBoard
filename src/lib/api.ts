@@ -76,6 +76,12 @@ class ApiClient {
       headers.set('Authorization', `Bearer ${this.apiKey}`);
     }
 
+    // Send the active environment with every request for data isolation
+    const activeEnv = typeof window !== 'undefined' ? localStorage.getItem('embedcraft_active_environment') : null;
+    if (activeEnv) {
+      headers.set('X-Environment', activeEnv);
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), options.timeout || DEFAULT_TIMEOUT_MS);
 
@@ -454,6 +460,10 @@ class ApiClient {
     return this.request(`/v1/admin/flows/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
+  }
+
+  public async getEnvironmentConfig(): Promise<{ organizationName: string; environments: Record<string, { apiKey: string; label: string }> }> {
+    return this.request('/api/auth/environment');
   }
 }
 

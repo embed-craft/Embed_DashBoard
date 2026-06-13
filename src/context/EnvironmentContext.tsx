@@ -43,6 +43,10 @@ export const EnvironmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return;
         }
 
+        // Ensure apiClient has the token. EnvironmentProvider's useEffect runs before 
+        // AuthProvider's useEffect, meaning the token isn't in apiClient yet.
+        apiClient.setApiKey(token);
+
         const data = await apiClient.getEnvironmentConfig();
         
         setOrganizationName(data.organizationName || '');

@@ -43,27 +43,16 @@ export const EnvironmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return;
         }
 
-        const response = await fetch(
-          `${(import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'}/api/auth/environment`.replace(/\/\/$/, '/'),
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const data = await apiClient.getEnvironmentConfig();
+        
+        setOrganizationName(data.organizationName || '');
+        setEnvironments(data.environments || null);
 
-        if (response.ok) {
-          const data = await response.json();
-          setOrganizationName(data.organizationName || '');
-          setEnvironments(data.environments || null);
-
-          // Set the API key for the current environment
-          const envConfig = data.environments?.[currentEnv];
-          if (envConfig?.apiKey) {
-            // We don't overwrite the JWT auth key - the environment API key is for SDK use
-            // The dashboard always uses JWT for its own API calls
-          }
+        // Set the API key for the current environment
+        const envConfig = data.environments?.[currentEnv];
+        if (envConfig?.apiKey) {
+          // We don't overwrite the JWT auth key - the environment API key is for SDK use
+          // The dashboard always uses JWT for its own API calls
         }
       } catch (error) {
         console.error('Failed to fetch environment config:', error);

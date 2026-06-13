@@ -297,8 +297,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
         layers: campaign.nudgeType === 'bottomsheet'
             ? campaign.layers
                 .map(layer => {
-                    // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to Container Layer
-                    if (layer.type === 'container' && campaign.bottomSheetConfig) {
+                    // ✅ FIX: Sync ALL visual properties from BottomSheetConfig to ROOT Container Layer
+                    if (layer.type === 'container' && !layer.parent && campaign.bottomSheetConfig) {
                         const bsConfig = campaign.bottomSheetConfig;
 
                         return {
@@ -343,8 +343,8 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
                     return layer;
                 })
             : campaign.layers.map(layer => {
-                // ✅ FIX: Sync ALL visual properties from Config to Container Layer
-                if (layer.type === 'container') {
+                // ✅ FIX: Sync ALL visual properties from Config to ROOT Container Layer
+                if (layer.type === 'container' && !layer.parent) {
                     // 1. Bottom Sheet Config Sync
                     if (campaign.bottomSheetConfig) {
                         const bsConfig = campaign.bottomSheetConfig;
@@ -566,9 +566,9 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             };
         })()
         : undefined;
-    // Sync configurations back to container layer style so ContainerEditor displays them correctly
+    // Sync configurations back to root container layer style so ContainerEditor displays them correctly
     layers = layers.map(layer => {
-        if (layer.type === 'container') {
+        if (layer.type === 'container' && !layer.parent) {
             const conf: any = campaignType === 'bottomsheet' ? bottomSheetConfig : (campaignType === 'banner' ? bannerConfig : modalConfig);
             if (conf) {
                 let normalizedRadius = layer.style?.borderRadius;

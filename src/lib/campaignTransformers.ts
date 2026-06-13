@@ -53,6 +53,45 @@ export interface BackendRule {
 export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
     const trigger = extractTriggerFromTargeting(campaign.targeting);
     const rules = transformTargetingRules(campaign.targeting);
+
+    // SYNC LAYER STYLES TO CONFIGS BEFORE SAVING
+    // ContainerEditor updates layer.style directly but doesn't update the nudge-specific configs.
+    // We must ensure the configs get the latest background/colors from the root container layer!
+    const rootLayer = campaign.layers?.find(l => l.type === 'container') || campaign.layers?.[0];
+    if (rootLayer && rootLayer.style) {
+        let bgImage = rootLayer.style.backgroundImage;
+        let extractedBgUrl: string | undefined = undefined;
+        
+        if (bgImage) {
+            if (bgImage === 'none') {
+                extractedBgUrl = '';
+            } else if (bgImage.startsWith('url(')) {
+                extractedBgUrl = bgImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+            } else if (!bgImage.includes('gradient')) {
+                extractedBgUrl = bgImage;
+            }
+        }
+
+        if (campaign.modalConfig) {
+            if (rootLayer.style.backgroundColor) campaign.modalConfig.backgroundColor = rootLayer.style.backgroundColor;
+            if (extractedBgUrl !== undefined) campaign.modalConfig.backgroundImageUrl = extractedBgUrl;
+            if (rootLayer.style.backgroundSize) campaign.modalConfig.backgroundSize = rootLayer.style.backgroundSize;
+            if (rootLayer.style.borderRadius) campaign.modalConfig.borderRadius = rootLayer.style.borderRadius as any;
+        }
+        if (campaign.bottomSheetConfig) {
+            if (rootLayer.style.backgroundColor) campaign.bottomSheetConfig.backgroundColor = rootLayer.style.backgroundColor;
+            if (extractedBgUrl !== undefined) campaign.bottomSheetConfig.backgroundImageUrl = extractedBgUrl;
+            if (rootLayer.style.backgroundSize) campaign.bottomSheetConfig.backgroundSize = rootLayer.style.backgroundSize;
+            if (rootLayer.style.borderRadius) campaign.bottomSheetConfig.borderRadius = rootLayer.style.borderRadius as any;
+        }
+        if (campaign.bannerConfig) {
+            if (rootLayer.style.backgroundColor) campaign.bannerConfig.backgroundColor = rootLayer.style.backgroundColor;
+            if (extractedBgUrl !== undefined) campaign.bannerConfig.backgroundImageUrl = extractedBgUrl;
+            if (rootLayer.style.backgroundSize) campaign.bannerConfig.backgroundSize = rootLayer.style.backgroundSize;
+            if (rootLayer.style.borderRadius) campaign.bannerConfig.borderRadius = rootLayer.style.borderRadius as any;
+        }
+    }
+
     const config = buildConfigFromLayers(campaign);
 
     config.displayRules = campaign.displayRules;

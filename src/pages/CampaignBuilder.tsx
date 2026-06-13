@@ -97,10 +97,7 @@ const CampaignBuilder: React.FC = () => {
     const mode = searchParams.get('mode');
 
     if (campaignId) {
-      // Don't reload if already loaded
-      if (currentCampaign?.id === campaignId || currentCampaign?._id === campaignId) return;
-      // In template mode, load via loadCampaign with the template ID
-      // The API endpoint /admin/templates/:id returns the template which backendToEditor can handle
+      // Force reload from server to prevent stale data from local storage
       loadCampaign(campaignId);
     }
   }, [searchParams, loadCampaign]);

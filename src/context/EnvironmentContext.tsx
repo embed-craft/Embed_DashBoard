@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/api';
+import { useAuth } from './AuthContext';
 
 export type Environment = 'staging' | 'production';
 
@@ -23,6 +24,8 @@ const EnvironmentContext = createContext<EnvironmentContextType | undefined>(und
 const ENV_STORAGE_KEY = 'embedcraft_active_environment';
 
 export const EnvironmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token } = useAuth();
+  
   const [currentEnv, setCurrentEnv] = useState<Environment>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem(ENV_STORAGE_KEY) as Environment) || 'production';
@@ -37,8 +40,8 @@ export const EnvironmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     const fetchEnvConfig = async () => {
       try {
-        const token = localStorage.getItem('token');
         if (!token) {
+          setEnvironments(null);
           setIsLoading(false);
           return;
         }
@@ -66,7 +69,7 @@ export const EnvironmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
 
     fetchEnvConfig();
-  }, []);
+  }, [token, currentEnv]);
 
   const switchEnvironment = useCallback((env: Environment) => {
     setCurrentEnv(env);

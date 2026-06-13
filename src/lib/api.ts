@@ -80,11 +80,18 @@ class ApiClient {
     const timeoutId = setTimeout(() => controller.abort(), options.timeout || DEFAULT_TIMEOUT_MS);
 
     try {
-      const response = await fetch(url, {
+      const fetchOptions: RequestInit = {
         ...options,
         headers,
         signal: controller.signal,
-      });
+      };
+      
+      // Prevent browser caching for GET requests
+      if (!options.method || options.method.toUpperCase() === 'GET') {
+        fetchOptions.cache = 'no-store';
+      }
+
+      const response = await fetch(url, fetchOptions);
 
       clearTimeout(timeoutId);
       return await this.handleResponse<T>(response);

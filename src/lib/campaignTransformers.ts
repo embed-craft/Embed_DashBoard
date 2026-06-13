@@ -566,6 +566,36 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             };
         })()
         : undefined;
+    // Sync configurations back to container layer style so ContainerEditor displays them correctly
+    layers = layers.map(layer => {
+        if (layer.type === 'container') {
+            const conf: any = campaignType === 'bottomsheet' ? bottomSheetConfig : (campaignType === 'banner' ? bannerConfig : modalConfig);
+            if (conf) {
+                let normalizedRadius = layer.style?.borderRadius;
+                if (typeof conf.borderRadius === 'object') {
+                    normalizedRadius = conf.borderRadius.topLeft ?? conf.borderRadius.bottomLeft ?? conf.borderRadius.topRight ?? conf.borderRadius.bottomRight ?? 0;
+                } else if (conf.borderRadius !== undefined) {
+                    normalizedRadius = conf.borderRadius;
+                }
+                
+                return {
+                    ...layer,
+                    style: {
+                        ...layer.style,
+                        backgroundColor: conf.backgroundColor || layer.style?.backgroundColor,
+                        ...((conf.backgroundImageUrl) && {
+                            backgroundImage: conf.backgroundImageUrl.startsWith('url(') ? conf.backgroundImageUrl : `url(${conf.backgroundImageUrl})`,
+                            backgroundSize: conf.backgroundSize || 'cover',
+                        }),
+                        borderRadius: normalizedRadius,
+                        ...(conf.height && { height: conf.height }),
+                        ...(conf.width && { width: conf.width }),
+                    }
+                };
+            }
+        }
+        return layer;
+    });
 
     const result = {
         id: campaignId,

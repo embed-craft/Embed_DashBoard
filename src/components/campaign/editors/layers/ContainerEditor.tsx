@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SizeControls } from '@/components/campaign/editors/shared/SizeControls';
 // import { PaddingEditor } from '@/components/editor/style/PaddingEditor'; // Direct import - REMOVED
 import { PositionEditor } from '@/components/editor/style/PositionEditor'; // Direct import
@@ -58,7 +58,11 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
     const bgColor = style.backgroundColor || '#ffffff';
     const bgSize = style.backgroundSize || 'cover';
     const hasBgImage = bgImage && bgImage !== 'none';
-    const mode = hasBgImage ? 'media' : 'color';
+    const [mode, setMode] = useState<'color' | 'media'>(hasBgImage ? 'media' : 'color');
+
+    useEffect(() => {
+        setMode(hasBgImage ? 'media' : 'color');
+    }, [selectedLayerId]);
 
     // Shadow Helpers
     const boxShadow = style.boxShadow || 'none';
@@ -448,13 +452,19 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                             {/* Type Toggle */}
                             <div className="flex p-1 bg-gray-100 rounded-md mb-3">
                                 <button
-                                    onClick={() => onStyleUpdate('backgroundImage', 'none')}
+                                    onClick={() => {
+                                        setMode('color');
+                                        onStyleUpdate('backgroundImage', 'none');
+                                    }}
                                     className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-all ${mode === 'color' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
                                 >
                                     Solid Color
                                 </button>
                                 <button
-                                    onClick={() => onStyleUpdate('backgroundImage', 'url(https://placehold.co/600x400)')}
+                                    onClick={() => {
+                                        setMode('media');
+                                        if (!hasBgImage) onStyleUpdate('backgroundImage', 'url(https://placehold.co/600x400)');
+                                    }}
                                     className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-all ${mode === 'media' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
                                 >
                                     Image

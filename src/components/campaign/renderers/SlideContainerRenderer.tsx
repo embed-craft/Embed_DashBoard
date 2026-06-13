@@ -28,6 +28,7 @@ interface SlideContainerRendererProps {
     onDismiss?: () => void;
     onNavigate?: (url: string) => void;
     onInterfaceAction?: (action: any) => void;
+    onAction?: (action: any) => void;
     config?: any;
 }
 
@@ -134,6 +135,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
     isInteractive = false,
     onNavigate,
     onInterfaceAction,
+    onAction,
 }) => {
     const { goToNextStory, goToPrevStory, selectLayer, setActiveStory, currentCampaign } = useEditorStore();
     const [isMuted, setIsMuted] = useState(true);
@@ -407,7 +409,12 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
                 key={layer.id} layer={layer} isSelected={selectedLayerId === layer.id} 
                 isInteractive={isInteractive} scale={scale} 
                 onLayerUpdate={onLayerUpdate} onLayerSelect={onLayerSelect}
-                onLayerAction={(l) => isInteractive && onInterfaceAction?.(l.content?.action)}
+                onLayerAction={(l) => {
+                    if (isInteractive) {
+                        onInterfaceAction?.(l.content?.action);
+                        onAction?.(l.content?.action);
+                    }
+                }}
                 style={{ ...baseStyle, outline: selectedLayerId === layer.id ? `2px solid ${colors.primary[500]}` : 'none', outlineOffset: '2px' }}
             >
                 {isValidElement(content) ? content : null}

@@ -170,6 +170,7 @@ interface FloaterRendererProps {
     onDismiss?: () => void;
     onNavigate?: (screenName: string) => void;
     onInterfaceAction?: (interfaceId: string) => void;
+    onAction?: (action: any) => void;
     scale?: number;
     scaleY?: number;
 }
@@ -187,6 +188,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
     onDismiss,
     onNavigate,
     onInterfaceAction,
+    onAction,
     scale = 1,
     scaleY = 1
 }) => {
@@ -274,6 +276,10 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         if (!isInteractive || !action) return;
 
         console.log('Action triggered:', action);
+
+        if (onAction) {
+            onAction(action);
+        }
 
         switch (action.type) {
             case 'close':

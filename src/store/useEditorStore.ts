@@ -1660,7 +1660,7 @@ export const useEditorStore = create<EditorStore>()(
           historyIndex: 0,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          isDirty: false,
+          isDirty: true, // Auto-save immediately to create backend record
         };
 
         set({ currentCampaign: newCampaign, showEditor: true, activeInterfaceId: null });

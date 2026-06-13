@@ -69,6 +69,7 @@ interface TooltipRendererProps {
     isInteractive?: boolean;
     onDismiss?: () => void;
     onInterfaceAction?: (interfaceId: string) => void;
+    onAction?: (action: any) => void;
 }
 
 export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
@@ -83,6 +84,7 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
     isInteractive = false,
     onDismiss,
     onInterfaceAction,
+    onAction,
     onLayerUpdate
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -128,6 +130,11 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
 
     const handleAction = (action: any) => {
         if (!isInteractive || !action) return;
+        
+        if (onAction) {
+            onAction(action);
+        }
+
         switch (action.type) {
             case 'close': case 'dismiss': if (onDismiss) onDismiss(); break;
             case 'deeplink': case 'link': if (action.url) window.open(action.url, '_blank'); break;

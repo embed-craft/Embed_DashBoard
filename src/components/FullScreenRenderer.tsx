@@ -24,6 +24,7 @@ interface FullScreenRendererProps {
     scale?: number;
     scaleY?: number;
     onInterfaceAction?: (interfaceId: string) => void;
+    onAction?: (action: any) => void;
 }
 
 export const FullScreenRenderer: React.FC<FullScreenRendererProps> = ({
@@ -36,9 +37,10 @@ export const FullScreenRenderer: React.FC<FullScreenRendererProps> = ({
     onDismiss,
     isInteractive = false,
     onNavigate,
-    onInterfaceAction,
     scale = 1,
-    scaleY = 1
+    scaleY = 1,
+    onInterfaceAction,
+    onAction,
 }) => {
 
     // Determine position (Always center for fullscreen conceptually, but fills)
@@ -214,6 +216,7 @@ export const FullScreenRenderer: React.FC<FullScreenRendererProps> = ({
                     onDismiss={onDismiss}
                     onNavigate={onNavigate}
                     onInterfaceAction={onInterfaceAction}
+                    onAction={onAction}
                     scale={scale}
                     scaleY={scaleY}
                 />

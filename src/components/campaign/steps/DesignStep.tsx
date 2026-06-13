@@ -1315,7 +1315,7 @@ export const DesignStep: React.FC<any> = () => {
             onDismiss={closePreviewInterface}
             isInteractive={true}
             onNavigate={() => { }}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
             scale={scaleFactor}
             scaleY={scaleYFactor}
           />
@@ -1356,7 +1356,7 @@ export const DesignStep: React.FC<any> = () => {
             scaleY={scaleYFactor}
             isInteractive={true}
             onDismiss={closePreviewInterface}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
           />
         );
       case 'floater':
@@ -1372,7 +1372,7 @@ export const DesignStep: React.FC<any> = () => {
             isInteractive={true}
             onDismiss={closePreviewInterface}
             onNavigate={() => { }}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
             scale={scaleFactor}
             scaleY={scaleYFactor}
           />
@@ -1390,7 +1390,7 @@ export const DesignStep: React.FC<any> = () => {
             isInteractive={true}
             onDismiss={closePreviewInterface}
             onNavigate={() => { }}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
             scale={scaleFactor}
             scaleY={scaleYFactor}
           />
@@ -1504,7 +1504,7 @@ export const DesignStep: React.FC<any> = () => {
             }}
             isInteractive={isInteractive}
             onNavigate={handlePreviewNavigate}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
 
 
             scale={scaleFactor}
@@ -1557,7 +1557,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
-              onInterfaceAction={handleInterfaceAction}
+              onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
               scale={scaleFactorModal}
               scaleY={scaleYFactorModal}
             />
@@ -1590,7 +1590,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
-              onInterfaceAction={handleInterfaceAction}
+              onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
               scale={scaleFactorBanner}
               scaleY={scaleYFactorBanner}
             />
@@ -1636,7 +1636,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
-              onInterfaceAction={handleInterfaceAction}
+              onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
               scale={scaleFactorFloater}
               scaleY={scaleYFactorFloater}
             />
@@ -1674,7 +1674,7 @@ export const DesignStep: React.FC<any> = () => {
                     }
                   }}
                   onNavigate={handlePreviewNavigate}
-                  onInterfaceAction={handleInterfaceAction}
+                  onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
                 />
               </StoryCubeTransition>
             </ErrorBoundary>
@@ -1700,7 +1700,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
-              onInterfaceAction={handleInterfaceAction}
+              onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
               scale={scaleFactorFs}
               scaleY={scaleYFactorFs}
             />
@@ -1730,7 +1730,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
-              onInterfaceAction={handleInterfaceAction}
+              onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
               scale={scaleFactorStw}
               scaleY={scaleYFactorStw}
             />
@@ -1844,7 +1844,7 @@ export const DesignStep: React.FC<any> = () => {
                 toast.info('Enable "Interact" mode to test dismiss');
               }
             }}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
           />
         );
 
@@ -1874,7 +1874,7 @@ export const DesignStep: React.FC<any> = () => {
               }
             }}
             onNavigate={handleNavigate}
-            onInterfaceAction={handleInterfaceAction}
+            onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
             scale={scaleFactorPip}
             scaleY={scaleYFactorPip}
           />
@@ -1913,7 +1913,7 @@ export const DesignStep: React.FC<any> = () => {
               }}
               isInteractive={isInteractive}
               onNavigate={handlePreviewNavigate}
-              onInterfaceAction={handleInterfaceAction}
+              onInterfaceAction={handleInterfaceAction} onAction={handleInterfaceAction}
             />
           </ErrorBoundary>
         );

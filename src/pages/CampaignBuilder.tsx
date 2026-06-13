@@ -97,6 +97,12 @@ const CampaignBuilder: React.FC = () => {
     const mode = searchParams.get('mode');
 
     if (campaignId) {
+      const state = useEditorStore.getState();
+      if (state.currentCampaign?.id === campaignId && state.currentCampaign?.isDirty) {
+        console.log('Skipping backend fetch for freshly created local campaign');
+        return;
+      }
+      
       // Force reload from server to prevent stale data from local storage
       loadCampaign(campaignId);
     }

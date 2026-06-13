@@ -24,6 +24,7 @@ interface BottomSheetRendererProps {
     scale?: number;
     scaleY?: number;
     onInterfaceAction?: (interfaceId: string) => void;
+    onAction?: (action: any) => void;
 }
 
 export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
@@ -36,9 +37,10 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     onDismiss,
     isInteractive = false,
     onNavigate,
-    onInterfaceAction,
     scale = 1,
-    scaleY = 1
+    scaleY = 1,
+    onInterfaceAction,
+    onAction,
 }) => {
     // Determine Position (Fix Phase 2: Support legacy 'top-center')
     const position = config?.position || 'bottom';
@@ -282,6 +284,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                         onDismiss={onDismiss}
                         onNavigate={onNavigate}
                         onInterfaceAction={onInterfaceAction}
+                        onAction={onAction}
                         scale={scale}
                         scaleY={scaleY}
                     />

@@ -89,13 +89,9 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
                                     {options.map((option) => (
                                         <CommandItem
                                             key={option.value}
+                                            value={option.value}
                                             onSelect={() => handleSelect(option.value)}
                                             className="cursor-pointer"
-                                            onClick={() => handleSelect(option.value)} // Explicit click handler for safety
-                                            onMouseDown={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                            }}
                                         >
                                             {option.label}
                                         </CommandItem>

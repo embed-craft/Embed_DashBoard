@@ -627,6 +627,93 @@ const PlaceholderContent = ({ title, description }: { title: string; description
 );
 
 // ============================================================================
+// Prioritization Rules Content
+// ============================================================================
+const PrioritizationContent = () => {
+  const [globalSessionLimit, setGlobalSessionLimit] = React.useState<number | ''>('');
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await apiClient.getOrganizationSettings();
+        if (res.settings && res.settings.global_session_limit !== null) {
+          setGlobalSessionLimit(res.settings.global_session_limit);
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization settings', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const limitToSave = globalSessionLimit === '' ? null : Number(globalSessionLimit);
+      await apiClient.updateOrganizationSettings({ global_session_limit: limitToSave });
+      toast.success('Global session limit updated successfully');
+    } catch (error) {
+      console.error('Failed to update organization settings', error);
+      toast.error('Failed to update global session limit');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl">
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Prioritization Rules</h2>
+        <p className="text-base text-gray-500 mt-2">Configure global campaign delivery prioritization rules to avoid overwhelming users.</p>
+      </div>
+
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Global Session Limits</h3>
+            <p className="text-sm text-gray-500 mt-1">Maximum number of campaigns any user will see in a single session across your entire app.</p>
+          </div>
+        </div>
+        <div className="p-6">
+          {loading ? (
+            <div className="text-gray-500">Loading settings...</div>
+          ) : (
+            <div className="space-y-6 max-w-md">
+              <div className="space-y-2">
+                <Label htmlFor="globalSessionLimit" className="text-sm font-semibold text-gray-700">Campaigns Per Session</Label>
+                <div className="flex gap-4">
+                  <Input 
+                    id="globalSessionLimit" 
+                    type="number" 
+                    min="1"
+                    placeholder="e.g. 2"
+                    value={globalSessionLimit}
+                    onChange={(e) => setGlobalSessionLimit(e.target.value ? Number(e.target.value) : '')}
+                    className="h-11 text-base focus:ring-blue-500 focus:border-blue-500 max-w-[120px]" 
+                  />
+                  <Button 
+                    onClick={handleSave} 
+                    disabled={saving}
+                    className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-md shadow-sm"
+                  >
+                    {saving ? 'Saving...' : 'Save Limit'}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Leave blank for no global limit. Specific campaigns can override this limit in their display rules.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
 // Main Settings Page
 // ============================================================================
 type SettingsTab = 'general' | 'team' | 'keys' | 'webhooks' | 'referral' | 'brand' | 'prioritization';
@@ -663,7 +750,7 @@ const Settings = () => {
       case 'brand':
         return <PlaceholderContent title="Brand Guidelines" description="Set up your workspace brand colors, typography, and assets." />;
       case 'prioritization':
-        return <PlaceholderContent title="Prioritization" description="Configure global campaign delivery prioritization rules." />;
+        return <PrioritizationContent />;
       default:
         return null;
     }

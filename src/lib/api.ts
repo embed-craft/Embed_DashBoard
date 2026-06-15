@@ -465,6 +465,20 @@ class ApiClient {
   public async getEnvironmentConfig(): Promise<{ organizationName: string; environments: Record<string, { apiKey: string; label: string }> }> {
     return this.request('/api/auth/environment');
   }
+
+  // ============================================================================
+  // Organization Settings
+  // ============================================================================
+  public async getOrganizationSettings(): Promise<{ settings: { global_session_limit: number | null } }> {
+    return this.request('/v1/admin/organization/settings');
+  }
+
+  public async updateOrganizationSettings(settings: { global_session_limit: number | null }): Promise<any> {
+    return this.request('/v1/admin/organization/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
 }
 
 // Export Singleton Instance

@@ -1062,7 +1062,6 @@ export interface CampaignEditor {
 
   // Trigger configuration (industry-standard events)
   trigger?: string; // e.g., 'screen_viewed', 'button_clicked', 'product_viewed'
-  screen?: string; // e.g., 'home', 'product_detail', 'checkout'
   status?: 'active' | 'paused' | 'draft';
   tags?: string[]; // ✅ FIX: Add tags property
   schedule?: CampaignSchedule; // ✅ FIX: Add schedule property
@@ -1135,7 +1134,6 @@ interface EditorStore {
   updateLayerStyle: (id: string, style: Partial<LayerStyle>) => void;
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   updateTrigger: (trigger: string) => void; // ✅ FIX: Add updateTrigger to interface
-  updateScreen: (screen: string) => void;
   updateCampaignName: (name: string) => void;
   updateTags: (tags: string[]) => void;
   updateSchedule: (schedule: CampaignSchedule) => void;
@@ -1394,8 +1392,7 @@ export const useEditorStore = create<EditorStore>()(
           type,
           experienceType,
           nudgeType,
-          trigger: 'screen_viewed', // Default trigger
-          screen: '', // Will be set by user
+          trigger: 'session_start', // Default trigger
           status: 'draft',
           layers: defaultLayers,
           interfaces: [],

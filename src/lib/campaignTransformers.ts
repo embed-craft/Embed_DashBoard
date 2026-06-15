@@ -661,9 +661,23 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
                 return defVal;
             };
 
+            // ✅ FIX: Load legacy trigger_screens array or trigger_screen string into pages
+            let pagesFallback = defaults.pages;
+            const backendTriggerScreens = (backendCampaign as any).trigger_screens;
+            const backendTriggerScreen = (backendCampaign as any).trigger_screen;
+            
+            if (fromBackend.pages && Array.isArray(fromBackend.pages) && fromBackend.pages.length > 0) {
+                pagesFallback = fromBackend.pages;
+            } else if (Array.isArray(backendTriggerScreens) && backendTriggerScreens.length > 0 && backendTriggerScreens[0] !== 'all') {
+                pagesFallback = backendTriggerScreens;
+            } else if (typeof backendTriggerScreen === 'string' && backendTriggerScreen !== 'all' && backendTriggerScreen.trim() !== '') {
+                pagesFallback = [backendTriggerScreen];
+            }
+
             const merged = {
                 ...defaults,
                 ...fromBackend,
+                pages: pagesFallback,
                 frequency: safeMerge('frequency'),
                 interactionLimit: safeMerge('interactionLimit'),
                 sessionLimit: safeMerge('sessionLimit'),

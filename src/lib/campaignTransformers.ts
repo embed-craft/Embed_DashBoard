@@ -513,6 +513,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
                 animation: rawConfig.animation ?? backendCampaign.config?.animation,
                 closeIcon: rawConfig.closeIcon ?? backendCampaign.config?.closeIcon,
                 timing: rawConfig.timing ?? backendCampaign.config?.timing ?? { delay: 0, duration: 0 },
+                controls: rawConfig.controls ?? backendCampaign.config?.controls,
+                behavior: rawConfig.behavior ?? backendCampaign.config?.behavior,
             };
         })()
         : undefined;
@@ -893,6 +895,10 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             animation: fc.animation,
             closeIcon: fc.closeIcon,
             timing: fc.timing,
+            controls: fc.controls,
+            behavior: fc.behavior,
+            doubleTapToDismiss: fc.behavior?.doubleTapToDismiss ?? false,
+            tapToDismiss: fc.behavior?.tapToDismiss ?? false,
         });
     }
 

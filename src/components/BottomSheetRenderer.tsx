@@ -80,6 +80,62 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         return val;
     };
 
+    // Find the root container layer (usually Floater Container or Bottom Sheet)
+    const rootLayer = React.useMemo(() => {
+        if (!layers || layers.length === 0) return null;
+        return layers.find(
+            l => l.type === 'container' && (l.name === 'Floater Container' || l.name === 'FloaterContainer' || l.name === 'Bottom Sheet')
+        ) || layers[0];
+    }, [layers]);
+
+    // Sanitized layers: Remove background from the root container layer to avoid double background rendering
+    const sanitizedLayers = React.useMemo(() => {
+        if (!layers || layers.length === 0 || !rootLayer) return layers;
+
+        return layers.map(layer => {
+            if (layer.id === rootLayer.id) {
+                const newStyle = { ...layer.style };
+                delete newStyle.backgroundImage;
+                delete newStyle.backgroundColor;
+                return {
+                    ...layer,
+                    style: newStyle
+                };
+            }
+            return layer;
+        });
+    }, [layers, rootLayer]);
+
+    // Hoist background image URL from config OR root layer style
+    const hoistedBgUrl = React.useMemo(() => {
+        let bgUrl = config?.backgroundImageUrl || '';
+        if (!bgUrl && rootLayer?.style?.backgroundImage) {
+            const styleBg = rootLayer.style.backgroundImage;
+            if (styleBg && styleBg.startsWith('url(')) {
+                bgUrl = styleBg
+                    .replace('url(', '')
+                    .replace(')', '')
+                    .replace(/"/g, '')
+                    .replace(/'/g, '')
+                    .trim();
+            } else if (styleBg && (styleBg.startsWith('http') || styleBg.startsWith('data:'))) {
+                bgUrl = styleBg.trim();
+            }
+        }
+        return bgUrl;
+    }, [config?.backgroundImageUrl, rootLayer]);
+
+    // Hoist background color from config OR root layer style
+    const hoistedBgColor = React.useMemo(() => {
+        if (config?.backgroundColor && config.backgroundColor !== 'transparent' && config.backgroundColor !== '#00000000') {
+            return config.backgroundColor;
+        }
+        if (rootLayer?.style?.backgroundColor && rootLayer.style.backgroundColor !== 'transparent' && rootLayer.style.backgroundColor !== '#00000000') {
+            return rootLayer.style.backgroundColor;
+        }
+        return '#FFFFFF';
+    }, [config?.backgroundColor, rootLayer]);
+
     // Create modified config for BottomSheet
     // Override Floater-specific properties and add defaults FloaterRenderer expects
     const bottomSheetConfig = React.useMemo(() => {
@@ -95,17 +151,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         // Set default width to 100% for BottomSheet
         modifiedConfig.width = modifiedConfig.width || '100%';
 
-        // FIX: FloaterRenderer's safeScale breaks on objects and applies radius/border to all 4 corners.
-        // We move these to our wrapper div and disable them on the inner box.
+        // Radii/borders are handled by our outer wrapper, so we strip them from the inner box
         modifiedConfig.borderRadius = 0;
         modifiedConfig.backgroundColor = 'transparent';
-        modifiedConfig.backgroundImageUrl = ''; // FIX: Prevent double background rendering (handled by wrapper)
+        modifiedConfig.backgroundImageUrl = ''; // Prevent double background rendering
         modifiedConfig.borderWidth = 0;
-        // Logic: Pass shadow config but disable simple boxShadow string to avoid duplicates if wrapper handles it.
-        // Actually wrapper handles shadow? User asked for Shadow on Banner.
-        // Implementation Plan said: Shadow logic differs.
-        // Top: Offset Y positive. Bottom: Offset Y negative.
-        // Let's rely on wrapper for shadow to ensure it's outside clipping.
         modifiedConfig.shadow = { enabled: false };
 
         // Ensure behavior exists with disabled Floater features
@@ -119,7 +169,6 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         // Ensure controls exists with BottomSheet defaults
         modifiedConfig.controls = {
             ...(modifiedConfig.controls || {}),
-            // AND map legacy root 'showCloseButton' to internal control logic (Match Dart)
             closeButton: {
                 show: modifiedConfig.controls?.closeButton?.show ?? modifiedConfig.showCloseButton ?? false,
                 position: 'top-right',
@@ -134,10 +183,9 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         modifiedConfig.media = modifiedConfig.media || { url: '', type: 'none' };
 
         // Pass overflow setting
-        modifiedConfig.overflow = config?.overflow || 'hidden'; // Default to hide per user request
+        modifiedConfig.overflow = config?.overflow || 'hidden';
 
-        // FIX: Disable overlay in FloaterRenderer as we render it externally in BottomSheetRenderer
-        // preventing "Double Background" / Scrim-inside-sheet issue
+        // Disable overlay in FloaterRenderer as we render it externally in BottomSheetRenderer
         modifiedConfig.overlay = { enabled: false };
 
         return modifiedConfig;
@@ -149,11 +197,6 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
     if (typeof radiusValue === 'number') {
         radiusPx = radiusValue;
     } else if (typeof radiusValue === 'object' && radiusValue !== null) {
-        // If top: use bottom corners. If bottom: use top corners.
-        // Editor saves to "borderRadius" object or number.
-        // Usually editor saves: { topLeft: x, topRight: x } for BottomSheet.
-        // For Banner legacy, it might be { bottomLeft: x, bottomRight: x }.
-        // We'll just take the max value or first available.
         const values = Object.values(radiusValue).filter(v => typeof v === 'number') as number[];
         if (values.length > 0) radiusPx = Math.max(...values);
     }
@@ -176,7 +219,6 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
         pointerEvents: 'none',
         transform: `translateY(${-keyboardOffset}px)`,
         transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        // Fix (Phase 2): Moved safe area padding to INNER container to avoid transparent gaps
     };
 
     // Shadow Logic
@@ -200,7 +242,6 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                         zIndex: 0
                     }}
                     onClick={() => {
-                        // Fix (Phase 2 Parity): In Dart, dismissOnClick defaults to true if omitted.
                         const shouldDismiss = config.overlay.dismissOnClick ?? true;
                         if (shouldDismiss && onDismiss) onDismiss();
                     }}
@@ -212,11 +253,11 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 width: '100%',
                 height: safeScale(config?.height, scaleY) || 'auto', // Apply height here
                 maxHeight: '100%',
-                position: 'relative', // FIX: Position context for absolute content
-                backgroundColor: (config?.backgroundColor === 'transparent' || config?.backgroundColor === '#00000000')
+                position: 'relative', // Position context for absolute content
+                backgroundColor: (hoistedBgColor === 'transparent' || hoistedBgColor === '#00000000')
                     ? 'transparent'
-                    : (config?.backgroundColor || '#FFFFFF'),
-                backgroundImage: config?.backgroundImageUrl ? `url('${config.backgroundImageUrl}')` : undefined,
+                    : hoistedBgColor,
+                backgroundImage: hoistedBgUrl ? `url('${hoistedBgUrl}')` : undefined,
                 backgroundSize: config?.backgroundSize === 'fill' ? '100% 100%' : (config?.backgroundSize || 'cover'),
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center',
@@ -234,18 +275,14 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
                 borderRight: borderWidth > 0 ? `${borderWidth * scale}px ${borderStyle} ${borderColor}` : undefined,
 
                 boxShadow: boxShadow,
-                // Fix: Respect user config for overflow instead of hardcoded 'hidden'
                 overflow: config?.overflow === 'scroll' ? 'auto' : 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
 
-                // Fix (Phase 2 Parity): Top Banner has Safe Area TOP and Drag Handle BOTTOM.
-                // Bottom Sheet has Drag Handle TOP and Safe Area BOTTOM. They never overlap sides.
                 paddingTop: isTop ? 'env(safe-area-inset-top)' : (config?.dragHandle ? `${12 * scale}px` : '0px'),
                 paddingBottom: !isTop ? 'env(safe-area-inset-bottom)' : (config?.dragHandle ? `${12 * scale}px` : '0px'),
             }}>
-
 
                 {/* Visual Drag Handle */}
                 {config?.dragHandle && (
@@ -270,7 +307,7 @@ export const BottomSheetRenderer: React.FC<BottomSheetRendererProps> = ({
 
                 <div style={{ position: 'relative', width: '100%', flex: 1, minHeight: 0 }}>
                     <FloaterRenderer
-                        layers={layers}
+                        layers={sanitizedLayers}
                         selectedLayerId={selectedLayerId}
                         onLayerSelect={onLayerSelect}
                         onLayerUpdate={onLayerUpdate}

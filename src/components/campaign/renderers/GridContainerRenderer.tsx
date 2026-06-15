@@ -149,7 +149,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
   // show ONLY the fallback layer so they can design the full empty state screen.
   if (isFallbackSelected && fallbackChildren.length > 0) {
     return (
-      <div style={{ width: '100%', height: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '200px', backgroundColor: 'rgba(0, 255, 0, 0.15)', border: '2px dashed #22c55e' }}>
+      <div style={{ width: '100%', height: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '200px' }}>
           {fallbackChildren.map(child => (
             <div key={child.id} style={{ position: 'relative', width: '100%', height: '100%', flex: 1, display: 'flex' }}>
               {renderChild({

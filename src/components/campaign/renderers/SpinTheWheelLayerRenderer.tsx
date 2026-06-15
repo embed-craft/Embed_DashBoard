@@ -42,6 +42,7 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     const spinsLeftRef = useRef(spinsLeft);
     const [resultIndex, setResultIndex] = useState<number | null>(null);
     const [showResult, setShowResult] = useState<'congrats' | 'betterLuck' | null>(null);
+    const showResultRef = useRef<string | null>(null); // Ref to avoid stale closure
     const [showConfetti, setShowConfetti] = useState(false);
     const [confettiPieces, setConfettiPieces] = useState<Array<{ id: number; x: number; y: number; color: string; delay: number; size: number }>>([]);
     const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -51,6 +52,21 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     useEffect(() => { isSpinningRef.current = isSpinning; }, [isSpinning]);
     useEffect(() => { spinsLeftRef.current = spinsLeft; }, [spinsLeft]);
     useEffect(() => { rotationRef.current = rotation; }, [rotation]);
+    useEffect(() => { showResultRef.current = showResult; }, [showResult]);
+
+    // Intercept overlay close action
+    useEffect(() => {
+        (window as any).__stwCloseOverlay = () => {
+            if (showResultRef.current !== null) {
+                setShowResult(null);
+                return true; // Intercepted
+            }
+            return false; // Not intercepted
+        };
+        return () => {
+            delete (window as any).__stwCloseOverlay;
+        };
+    }, []);
 
     // Expose spinsLeft for placeholder replacement in text/button layers
     useEffect(() => {

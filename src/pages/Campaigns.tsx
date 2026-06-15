@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -67,101 +67,101 @@ const Campaigns = () => {
   const [schedEndDate, setSchedEndDate] = useState('');
   const [schedTimeZone, setSchedTimeZone] = useState('UTC');
 
+  const fetchCampaigns = useCallback(async () => {
+    try {
+      const api = await import('@/lib/api');
+      const { campaigns: backendCampaigns } = await api.listCampaigns({ limit: 100 });
+
+      // Convert backend campaigns to dashboard format
+      const dashboardCampaigns = backendCampaigns.map((bc: any) => {
+        let status = (bc.status === 'inactive' ? 'paused' : bc.status);
+
+        // Apply smart status for filtering
+        if (status === 'active' && bc.schedule) {
+          const now = new Date();
+          const start = bc.schedule.start_date || bc.schedule.startDate;
+          const end = bc.schedule.end_date || bc.schedule.endDate;
+          const startDate = start ? new Date(start) : null;
+          const endDate = end ? new Date(end) : null;
+
+          if (startDate && now < startDate) {
+            status = 'scheduled';
+          } else if (endDate && now > endDate) {
+            status = 'completed';
+          }
+        }
+
+        let inferredExperience = bc.experience;
+        
+        // Smart detection for legacy campaigns that defaulted to 'nudges'
+        if (!inferredExperience || inferredExperience === 'nudges' || inferredExperience === 'nudge') {
+          if (
+            bc.type === 'spinthewheel' || 
+            bc.campaignType === 'spinthewheel' || 
+            bc.config?.spinTheWheelConfig || 
+            bc.spinTheWheelConfig 
+          ) {
+            inferredExperience = 'spinthewheel';
+          } else if (bc.campaignType === 'challenge' || bc.type === 'challenge' || bc.campaignType === 'challenges' || bc.type === 'challenges') {
+            inferredExperience = 'challenge';
+          } else if (bc.type === 'survey' || bc.type === 'surveys') {
+            inferredExperience = 'survey';
+          } else if (bc.type === 'streaks' || bc.type === 'streak') {
+            inferredExperience = 'streaks';
+          }
+        }
+
+        return {
+          id: bc.id || bc._id || bc.nudge_id,
+          name: bc.campaign_name || bc.name || 'Untitled Campaign',
+          status: status as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
+          trigger: bc.trigger_event || bc.trigger,
+          experience: (() => {
+            switch (inferredExperience) {
+              case 'story':
+              case 'stories': return 'Stories';
+              case 'message':
+              case 'messages': return 'In-app messages';
+              case 'challenge':
+              case 'challenges': return 'Challenges';
+              case 'spinthewheel':
+              case 'gamification': return 'SPIN THE WHEEL';
+              case 'survey':
+              case 'surveys': return 'Survey';
+              case 'streak':
+              case 'streaks': return 'Streaks';
+              case 'nudge':
+              case 'nudges': default: return 'In-app nudges';
+            }
+          })(),
+          events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
+          tags: bc.tags || [], // Show actual tags
+          segment: 'All Users',
+          impressions: bc.stats?.impressions || 0,
+          clicks: bc.stats?.clicks || 0,
+          conversions: bc.stats?.conversions || 0,
+          conversion: bc.stats?.impressions > 0
+            ? ((bc.stats.conversions || 0) / bc.stats.impressions * 100).toFixed(1)
+            : '0.0',
+          config: bc.config || {},
+          rules: bc.rules || [],
+          schedule: bc.schedule || null, // Include schedule from backend
+          createdAt: bc.createdAt || new Date().toISOString(),
+          updatedAt: bc.updatedAt || new Date().toISOString(),
+        };
+      });
+
+      syncCampaigns(dashboardCampaigns);
+    } catch (error) {
+      console.error('Failed to fetch campaigns:', error);
+      toast.error('Failed to load campaigns');
+    }
+  }, [syncCampaigns]);
+
   // Fetch campaigns from backend on mount
   useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        const api = await import('@/lib/api');
-        const { campaigns: backendCampaigns } = await api.listCampaigns({ limit: 100 });
-
-        // Convert backend campaigns to dashboard format
-        const dashboardCampaigns = backendCampaigns.map((bc: any) => {
-          let status = (bc.status === 'inactive' ? 'paused' : bc.status);
-
-          // Apply smart status for filtering
-          if (status === 'active' && bc.schedule) {
-            const now = new Date();
-            const start = bc.schedule.start_date || bc.schedule.startDate;
-            const end = bc.schedule.end_date || bc.schedule.endDate;
-            const startDate = start ? new Date(start) : null;
-            const endDate = end ? new Date(end) : null;
-
-            if (startDate && now < startDate) {
-              status = 'scheduled';
-            } else if (endDate && now > endDate) {
-              status = 'completed';
-            }
-          }
-
-            let inferredExperience = bc.experience;
-            
-            // Smart detection for legacy campaigns that defaulted to 'nudges'
-            if (!inferredExperience || inferredExperience === 'nudges' || inferredExperience === 'nudge') {
-              if (
-                bc.type === 'spinthewheel' || 
-                bc.campaignType === 'spinthewheel' || 
-                bc.config?.spinTheWheelConfig || 
-                bc.spinTheWheelConfig 
-              ) {
-                inferredExperience = 'spinthewheel';
-              } else if (bc.campaignType === 'challenge' || bc.type === 'challenge' || bc.campaignType === 'challenges' || bc.type === 'challenges') {
-                inferredExperience = 'challenge';
-              } else if (bc.type === 'survey' || bc.type === 'surveys') {
-                inferredExperience = 'survey';
-              } else if (bc.type === 'streaks' || bc.type === 'streak') {
-                inferredExperience = 'streaks';
-              }
-            }
-
-            return {
-              id: bc.id || bc._id || bc.nudge_id,
-              name: bc.campaign_name || bc.name || 'Untitled Campaign',
-              status: status as 'active' | 'paused' | 'draft' | 'completed' | 'scheduled',
-              trigger: bc.trigger_event || bc.trigger,
-              experience: (() => {
-                switch (inferredExperience) {
-                  case 'story':
-                  case 'stories': return 'Stories';
-                  case 'message':
-                  case 'messages': return 'In-app messages';
-                  case 'challenge':
-                  case 'challenges': return 'Challenges';
-                  case 'spinthewheel':
-                  case 'gamification': return 'SPIN THE WHEEL';
-                  case 'survey':
-                  case 'surveys': return 'Survey';
-                  case 'streak':
-                  case 'streaks': return 'Streaks';
-                  case 'nudge':
-                  case 'nudges': default: return 'In-app nudges';
-                }
-              })(),
-            events: [bc.trigger_event || bc.trigger || 'session_start'], // Show trigger event
-            tags: bc.tags || [], // Show actual tags
-            segment: 'All Users',
-            impressions: bc.stats?.impressions || 0,
-            clicks: bc.stats?.clicks || 0,
-            conversions: bc.stats?.conversions || 0,
-            conversion: bc.stats?.impressions > 0
-              ? ((bc.stats.conversions || 0) / bc.stats.impressions * 100).toFixed(1)
-              : '0.0',
-            config: bc.config || {},
-            rules: bc.rules || [],
-            schedule: bc.schedule || null, // Include schedule from backend
-            createdAt: bc.createdAt || new Date().toISOString(),
-            updatedAt: bc.updatedAt || new Date().toISOString(),
-          };
-        });
-
-        syncCampaigns(dashboardCampaigns);
-      } catch (error) {
-        console.error('Failed to fetch campaigns:', error);
-        toast.error('Failed to load campaigns');
-      }
-    };
-
     fetchCampaigns();
-  }, [syncCampaigns]);
+  }, [fetchCampaigns]);
 
   const handleEdit = (id: string) => {
     navigate(`/campaign-builder?id=${id}`);
@@ -171,6 +171,34 @@ const Campaigns = () => {
     if (window.confirm('Are you sure you want to delete this campaign?')) {
       deleteCampaign(id);
       toast.success('Campaign deleted');
+    }
+  };
+
+  const handleClone = async (id: string) => {
+    const toastId = toast.loading('Cloning campaign...');
+    try {
+      const api = await import('@/lib/api');
+      const backendCampaign = await api.apiClient.getCampaign(id);
+      
+      const clonedPayload: any = {
+        ...backendCampaign,
+        name: `${backendCampaign.name} (Copy)`,
+        status: 'draft',
+      };
+      
+      delete clonedPayload.id;
+      delete clonedPayload._id;
+      delete clonedPayload.nudge_id;
+      delete clonedPayload.createdAt;
+      delete clonedPayload.updatedAt;
+      
+      await api.apiClient.createCampaign(clonedPayload);
+      await fetchCampaigns();
+      
+      toast.success('Campaign cloned successfully', { id: toastId });
+    } catch (error) {
+      console.error('Failed to clone campaign:', error);
+      toast.error('Failed to clone campaign', { id: toastId });
     }
   };
 
@@ -567,6 +595,9 @@ const Campaigns = () => {
 
               <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(row.id); toast.success('Copied'); }}>
                 <Copy className="mr-2 h-4 w-4" /> Copy ID
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleClone(row.id)}>
+                <Copy className="mr-2 h-4 w-4" /> Clone
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate(`/campaigns/${row.id}/report`)}>
                 <BarChart2 className="mr-2 h-4 w-4" /> Usage Report

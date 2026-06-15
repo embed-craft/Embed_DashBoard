@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical, Gamepad2, RotateCw, PlaySquare } from 'lucide-react';
+import { ArrowLeft, Save, Rocket, MessageSquare, Smartphone, Film, Target, Flame, ClipboardList, ClipboardPaste, Square, Zap, Image as ImageIcon, Menu, X, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock, Plus, Trash2, Type, Palette, Settings2, Maximize2, Layout, MessageCircle, Info, ImageIcon as PictureIcon, CreditCard, PlayCircle, Grid3x3, Link2, Undo2, Redo2, Copy, LayoutGrid, Upload, Compass, Link, Send, Code, CircleOff, LayoutTemplate, RefreshCw, Layers, Globe, Check, GalleryHorizontal, Eraser, Timer, GripVertical, Gamepad2, RotateCw, PlaySquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -162,7 +162,31 @@ export const DesignStep: React.FC<any> = () => {
     // Stories Management
     activeStoryId,
     setActiveStory,
+    copyLayerToClipboard,
+    pasteLayerFromClipboard,
   } = useEditorStore();
+
+  const [copiedLayerType, setCopiedLayerType] = useState<string | null>(() => {
+    try {
+      const copied = localStorage.getItem('copied_layer');
+      if (copied) {
+        const parsed = JSON.parse(copied);
+        return parsed.layerType || null;
+      }
+    } catch (_) {}
+    return null;
+  });
+
+  const handleCopyLayer = (id: string) => {
+    copyLayerToClipboard(id);
+    try {
+      const copied = localStorage.getItem('copied_layer');
+      if (copied) {
+        const parsed = JSON.parse(copied);
+        setCopiedLayerType(parsed.layerType || null);
+      }
+    } catch (_) {}
+  };
 
   const { rewards, fetchRewards } = useStore();
 
@@ -350,7 +374,7 @@ export const DesignStep: React.FC<any> = () => {
   };
 
   const [layerAddMenuId, setLayerAddMenuId] = useState<string | null>(null);
-  const [layerAddMenuPosition, setLayerAddMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [layerAddMenuPosition, setLayerAddMenuPosition] = useState<{ top: number; left: number; openUpward?: boolean } | null>(null);
   const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null); // Fix 3
@@ -362,7 +386,7 @@ export const DesignStep: React.FC<any> = () => {
 
   // Context Menu State
   const [layerContextMenuId, setLayerContextMenuId] = useState<string | null>(null);
-  const [layerContextMenuPosition, setLayerContextMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [layerContextMenuPosition, setLayerContextMenuPosition] = useState<{ top: number; left: number; openUpward?: boolean } | null>(null);
 
   const handleRenameStart = (layer: any) => {
     setEditingLayerId(layer.id);
@@ -382,11 +406,13 @@ export const DesignStep: React.FC<any> = () => {
   const handleContextMenu = (e: React.MouseEvent, layerId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - e.clientY;
+    const openUpward = spaceBelow < 180; // Estimate context menu height at 180px
     setLayerContextMenuId(layerId);
     setLayerContextMenuPosition({
       top: e.clientY,
-      left: e.clientX
+      left: e.clientX,
+      openUpward
     });
     setLayerAddMenuId(null); // Close add menu if open
   };
@@ -1154,10 +1180,13 @@ export const DesignStep: React.FC<any> = () => {
                     setLayerAddMenuPosition(null);
                   } else {
                     const rect = e.currentTarget.getBoundingClientRect();
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const openUpward = spaceBelow < 320; // Estimate add menu height at 320px
                     setLayerAddMenuId(layer.id);
                     setLayerAddMenuPosition({
-                      top: rect.bottom + window.scrollY,
-                      left: rect.left + window.scrollX - 100 // Shift left
+                      top: openUpward ? rect.top - 4 : rect.bottom + 4,
+                      left: rect.left - 100, // Shift left
+                      openUpward
                     });
                   }
                 }}
@@ -4354,8 +4383,9 @@ export const DesignStep: React.FC<any> = () => {
       {layerAddMenuId && layerAddMenuPosition && (
         <div style={{
           position: 'fixed',
-          top: `${layerAddMenuPosition.top + 4}px`,
+          top: `${layerAddMenuPosition.top}px`,
           left: `${layerAddMenuPosition.left}px`,
+          transform: layerAddMenuPosition.openUpward ? 'translateY(-100%)' : undefined,
           backgroundColor: '#ffffff',
           border: `1px solid ${colors.gray[200]}`,
           borderRadius: '8px',
@@ -4475,6 +4505,7 @@ export const DesignStep: React.FC<any> = () => {
           position: 'fixed',
           top: `${layerContextMenuPosition.top}px`,
           left: `${layerContextMenuPosition.left}px`,
+          transform: layerContextMenuPosition.openUpward ? 'translateY(-100%)' : undefined,
           backgroundColor: 'white',
           border: `1px solid ${colors.gray[200]}`,
           borderRadius: '8px',
@@ -4498,17 +4529,31 @@ export const DesignStep: React.FC<any> = () => {
             onClick={() => {
               const layer = campaignLayers.find(l => l.id === layerContextMenuId);
               if (layer) {
-                // Call store to duplicate
-                const { duplicateLayer } = useEditorStore.getState();
-                duplicateLayer(layer.id);
-                toast.success('Layer duplicated');
+                handleCopyLayer(layer.id);
               }
               setLayerContextMenuId(null);
             }}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
           >
-            <Copy size={14} /> Duplicate
+            <Copy size={14} /> Copy
           </button>
+          {(() => {
+            const currentLayer = campaignLayers.find(l => l.id === layerContextMenuId);
+            if (currentLayer && (copiedLayerType === null || copiedLayerType === currentLayer.type)) {
+              return (
+                <button
+                  onClick={() => {
+                    pasteLayerFromClipboard(currentLayer.id);
+                    setLayerContextMenuId(null);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <ClipboardPaste size={14} /> Paste
+                </button>
+              );
+            }
+            return null;
+          })()}
           <div className="border-t border-gray-100 my-1"></div>
           <button
             onClick={() => {

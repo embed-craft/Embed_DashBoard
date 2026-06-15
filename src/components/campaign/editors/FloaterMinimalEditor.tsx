@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import {
     Layout,
     Maximize2,
@@ -31,6 +32,10 @@ export const FloaterMinimalEditor = () => {
         activeInterfaceId
     } = useEditorStore();
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+    const [closeBtnMode, setCloseBtnMode] = useState<'collapsed' | 'expanded'>('collapsed');
+    const [expandBtnMode, setExpandBtnMode] = useState<'collapsed' | 'expanded'>('collapsed');
+    const [muteBtnMode, setMuteBtnMode] = useState<'collapsed' | 'expanded'>('collapsed');
+    const [assetPickerTarget, setAssetPickerTarget] = useState<{ controlType: string; mode: 'collapsed' | 'expanded' } | null>(null);
 
     // Resolve Config
     const activeInterface = activeInterfaceId ? currentCampaign?.interfaces?.find(i => i.id === activeInterfaceId) : null;
@@ -118,6 +123,46 @@ export const FloaterMinimalEditor = () => {
             controls: {
                 ...controls,
                 [controlType]: { ...specificControl, [key]: value }
+            }
+        });
+    };
+
+    const getControlVal = (controlType: string, mode: 'collapsed' | 'expanded', key: string, defaultVal: any) => {
+        const control = config?.controls?.[controlType];
+        if (!control) return defaultVal;
+        const modeKey = mode === 'collapsed' ? 'unexpanded' : 'expanded';
+        // CRITICAL FIX: For expanded mode, do NOT fall back to the root property.
+        // updateControlMode() writes to root when mode='collapsed' (for backwards compat),
+        // so falling back to root in expanded mode would make collapsed edits pollute expanded display.
+        if (mode === 'expanded') {
+            return control[modeKey]?.[key] ?? defaultVal;
+        }
+        // Collapsed mode: check unexpanded first, then root (backwards compat), then default
+        return control[modeKey]?.[key] ?? control[key] ?? defaultVal;
+    };
+
+    const updateControlMode = (controlType: string, mode: 'collapsed' | 'expanded', key: string, value: any) => {
+        const controls = config?.controls || {};
+        // @ts-ignore
+        const specificControl = controls[controlType] || {};
+        const modeKey = mode === 'collapsed' ? 'unexpanded' : 'expanded';
+        const modeConfig = specificControl[modeKey] || {};
+        
+        const updatedControl = {
+            ...specificControl,
+            [modeKey]: { ...modeConfig, [key]: value }
+        };
+
+        // CRITICAL: For backwards compatibility and simplified rendering,
+        // if mode is collapsed, also update the root property
+        if (mode === 'collapsed') {
+            updatedControl[key] = value;
+        }
+
+        updateFloaterConfig({
+            controls: {
+                ...controls,
+                [controlType]: updatedControl
             }
         });
     };
@@ -596,8 +641,28 @@ export const FloaterMinimalEditor = () => {
                             </div>
                             {config.controls?.closeButton?.show && (
                                 <>
+                                    {/* Sub-tabs for Collapsed / Expanded Mode */}
+                                    <div className="flex p-0.5 bg-gray-100 rounded-md">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCloseBtnMode('collapsed')}
+                                            className={`flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all ${closeBtnMode === 'collapsed' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
+                                        >
+                                            Collapsed Mode
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCloseBtnMode('expanded')}
+                                            className={`flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all ${closeBtnMode === 'expanded' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
+                                        >
+                                            Expanded Mode
+                                        </button>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-2 mt-2">
-                                        <Select value={config.controls?.closeButton?.position || 'top-right'} onValueChange={(val) => updateControl('closeButton', 'position', val)}>
+                                        <Select 
+                                            value={getControlVal('closeButton', closeBtnMode, 'position', 'top-right')} 
+                                            onValueChange={(val) => updateControlMode('closeButton', closeBtnMode, 'position', val)}
+                                        >
                                             <SelectTrigger className="h-7 text-[10px]">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -608,16 +673,34 @@ export const FloaterMinimalEditor = () => {
                                                 <SelectItem value="bottom-left">Bottom Left</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Input type="number" placeholder="Size" className="h-7 text-xs" value={config.controls?.closeButton?.size || 14} onChange={e => updateControl('closeButton', 'size', parseInt(e.target.value))} />
+                                        <Input 
+                                            type="number" 
+                                            placeholder="Size" 
+                                            className="h-7 text-xs" 
+                                            value={getControlVal('closeButton', closeBtnMode, 'size', 14)} 
+                                            onChange={e => updateControlMode('closeButton', closeBtnMode, 'size', parseInt(e.target.value) || 14)} 
+                                        />
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 mt-2">
                                         <div className="flex items-center gap-2">
                                             <Label className="text-[10px] text-gray-400 w-4">X</Label>
-                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.closeButton?.offsetX || 0} onChange={e => updateControl('closeButton', 'offsetX', parseInt(e.target.value))} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0" 
+                                                className="h-7 text-xs" 
+                                                value={getControlVal('closeButton', closeBtnMode, 'offsetX', 0)} 
+                                                onChange={e => updateControlMode('closeButton', closeBtnMode, 'offsetX', parseInt(e.target.value) || 0)} 
+                                            />
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Label className="text-[10px] text-gray-400 w-4">Y</Label>
-                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.closeButton?.offsetY || 0} onChange={e => updateControl('closeButton', 'offsetY', parseInt(e.target.value))} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0" 
+                                                className="h-7 text-xs" 
+                                                value={getControlVal('closeButton', closeBtnMode, 'offsetY', 0)} 
+                                                onChange={e => updateControlMode('closeButton', closeBtnMode, 'offsetY', parseInt(e.target.value) || 0)} 
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
@@ -628,8 +711,8 @@ export const FloaterMinimalEditor = () => {
                                                 <input
                                                     type="color"
                                                     className="w-8 h-6 rounded cursor-pointer border border-gray-200"
-                                                    value={config.controls?.closeButton?.color || '#FFFFFF'}
-                                                    onChange={e => updateControl('closeButton', 'color', e.target.value)}
+                                                    value={getControlVal('closeButton', closeBtnMode, 'color', '#FFFFFF')}
+                                                    onChange={e => updateControlMode('closeButton', closeBtnMode, 'color', e.target.value)}
                                                     title="Icon Color"
                                                 />
                                             </div>
@@ -637,12 +720,12 @@ export const FloaterMinimalEditor = () => {
                                                 <Label className="text-[9px] text-gray-400">Bg</Label>
                                                 <input
                                                     type="color"
-                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${config.controls?.closeButton?.backgroundColor === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
-                                                    value={config.controls?.closeButton?.backgroundColor === '#00000000' ? '#000000' : (config.controls?.closeButton?.backgroundColor || '#000000')}
-                                                    onChange={e => updateControl('closeButton', 'backgroundColor', e.target.value)}
+                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${getControlVal('closeButton', closeBtnMode, 'backgroundColor', '#000000') === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
+                                                    value={getControlVal('closeButton', closeBtnMode, 'backgroundColor', '#000000') === '#00000000' ? '#000000' : (getControlVal('closeButton', closeBtnMode, 'backgroundColor', '#000000') || '#000000')}
+                                                    onChange={e => updateControlMode('closeButton', closeBtnMode, 'backgroundColor', e.target.value)}
                                                     title="Background Color"
                                                 />
-                                                {config.controls?.closeButton?.backgroundColor === '#00000000' && (
+                                                {getControlVal('closeButton', closeBtnMode, 'backgroundColor', '#000000') === '#00000000' && (
                                                     <div className="absolute top-[18px] left-[2px] right-[2px] h-[2px] bg-red-400 rotate-45" />
                                                 )}
                                             </div>
@@ -650,10 +733,33 @@ export const FloaterMinimalEditor = () => {
                                                 <Label className="text-[9px] text-gray-400">Transp.</Label>
                                                 <Switch
                                                     className="scale-75"
-                                                    checked={config.controls?.closeButton?.backgroundColor === '#00000000'}
-                                                    onCheckedChange={(checked) => updateControl('closeButton', 'backgroundColor', checked ? '#00000000' : '#000000')}
+                                                    checked={getControlVal('closeButton', closeBtnMode, 'backgroundColor', '#000000') === '#00000000'}
+                                                    onCheckedChange={(checked) => updateControlMode('closeButton', closeBtnMode, 'backgroundColor', checked ? '#00000000' : '#000000')}
                                                 />
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1 mt-2">
+                                        <Label className="text-[10px] text-gray-500">Custom Icon URL / Asset</Label>
+                                        <div className="flex gap-1.5">
+                                            <Input
+                                                value={getControlVal('closeButton', closeBtnMode, 'iconUrl', '')}
+                                                placeholder="https://... (Optional)"
+                                                className="h-7 text-xs flex-1"
+                                                onChange={e => updateControlMode('closeButton', closeBtnMode, 'iconUrl', e.target.value)}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 text-[10px] px-2"
+                                                onClick={() => {
+                                                    setAssetPickerTarget({ controlType: 'closeButton', mode: closeBtnMode });
+                                                    setIsAssetPickerOpen(true);
+                                                }}
+                                            >
+                                                Asset
+                                            </Button>
                                         </div>
                                     </div>
                                 </>
@@ -670,8 +776,28 @@ export const FloaterMinimalEditor = () => {
                             </div>
                             {config.controls?.expandButton?.show && (
                                 <>
+                                    {/* Sub-tabs for Collapsed / Expanded Mode */}
+                                    <div className="flex p-0.5 bg-gray-100 rounded-md">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandBtnMode('collapsed')}
+                                            className={`flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all ${expandBtnMode === 'collapsed' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
+                                        >
+                                            Collapsed Mode
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandBtnMode('expanded')}
+                                            className={`flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all ${expandBtnMode === 'expanded' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
+                                        >
+                                            Expanded Mode
+                                        </button>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-2 mt-2">
-                                        <Select value={config.controls?.expandButton?.position || 'top-left'} onValueChange={(val) => updateControl('expandButton', 'position', val)}>
+                                        <Select 
+                                            value={getControlVal('expandButton', expandBtnMode, 'position', 'top-left')} 
+                                            onValueChange={(val) => updateControlMode('expandButton', expandBtnMode, 'position', val)}
+                                        >
                                             <SelectTrigger className="h-7 text-[10px]">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -682,16 +808,34 @@ export const FloaterMinimalEditor = () => {
                                                 <SelectItem value="bottom-left">Bottom Left</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Input type="number" placeholder="Size" className="h-7 text-xs" value={config.controls?.expandButton?.size || 14} onChange={e => updateControl('expandButton', 'size', parseInt(e.target.value))} />
+                                        <Input 
+                                            type="number" 
+                                            placeholder="Size" 
+                                            className="h-7 text-xs" 
+                                            value={getControlVal('expandButton', expandBtnMode, 'size', 14)} 
+                                            onChange={e => updateControlMode('expandButton', expandBtnMode, 'size', parseInt(e.target.value) || 14)} 
+                                        />
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 mt-2">
                                         <div className="flex items-center gap-2">
                                             <Label className="text-[10px] text-gray-400 w-4">X</Label>
-                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.expandButton?.offsetX || 0} onChange={e => updateControl('expandButton', 'offsetX', parseInt(e.target.value))} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0" 
+                                                className="h-7 text-xs" 
+                                                value={getControlVal('expandButton', expandBtnMode, 'offsetX', 0)} 
+                                                onChange={e => updateControlMode('expandButton', expandBtnMode, 'offsetX', parseInt(e.target.value) || 0)} 
+                                            />
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Label className="text-[10px] text-gray-400 w-4">Y</Label>
-                                            <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.expandButton?.offsetY || 0} onChange={e => updateControl('expandButton', 'offsetY', parseInt(e.target.value))} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0" 
+                                                className="h-7 text-xs" 
+                                                value={getControlVal('expandButton', expandBtnMode, 'offsetY', 0)} 
+                                                onChange={e => updateControlMode('expandButton', expandBtnMode, 'offsetY', parseInt(e.target.value) || 0)} 
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
@@ -702,8 +846,8 @@ export const FloaterMinimalEditor = () => {
                                                 <input
                                                     type="color"
                                                     className="w-8 h-6 rounded cursor-pointer border border-gray-200"
-                                                    value={config.controls?.expandButton?.color || '#FFFFFF'}
-                                                    onChange={e => updateControl('expandButton', 'color', e.target.value)}
+                                                    value={getControlVal('expandButton', expandBtnMode, 'color', '#FFFFFF')}
+                                                    onChange={e => updateControlMode('expandButton', expandBtnMode, 'color', e.target.value)}
                                                     title="Icon Color"
                                                 />
                                             </div>
@@ -711,12 +855,12 @@ export const FloaterMinimalEditor = () => {
                                                 <Label className="text-[9px] text-gray-400">Bg</Label>
                                                 <input
                                                     type="color"
-                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${config.controls?.expandButton?.backgroundColor === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
-                                                    value={config.controls?.expandButton?.backgroundColor === '#00000000' ? '#000000' : (config.controls?.expandButton?.backgroundColor || '#000000')}
-                                                    onChange={e => updateControl('expandButton', 'backgroundColor', e.target.value)}
+                                                    className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${getControlVal('expandButton', expandBtnMode, 'backgroundColor', '#000000') === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
+                                                    value={getControlVal('expandButton', expandBtnMode, 'backgroundColor', '#000000') === '#00000000' ? '#000000' : (getControlVal('expandButton', expandBtnMode, 'backgroundColor', '#000000') || '#000000')}
+                                                    onChange={e => updateControlMode('expandButton', expandBtnMode, 'backgroundColor', e.target.value)}
                                                     title="Background Color"
                                                 />
-                                                {config.controls?.expandButton?.backgroundColor === '#00000000' && (
+                                                {getControlVal('expandButton', expandBtnMode, 'backgroundColor', '#000000') === '#00000000' && (
                                                     <div className="absolute top-[18px] left-[2px] right-[2px] h-[2px] bg-red-400 rotate-45" />
                                                 )}
                                             </div>
@@ -724,10 +868,33 @@ export const FloaterMinimalEditor = () => {
                                                 <Label className="text-[9px] text-gray-400">Transp.</Label>
                                                 <Switch
                                                     className="scale-75"
-                                                    checked={config.controls?.expandButton?.backgroundColor === '#00000000'}
-                                                    onCheckedChange={(checked) => updateControl('expandButton', 'backgroundColor', checked ? '#00000000' : '#000000')}
+                                                    checked={getControlVal('expandButton', expandBtnMode, 'backgroundColor', '#000000') === '#00000000'}
+                                                    onCheckedChange={(checked) => updateControlMode('expandButton', expandBtnMode, 'backgroundColor', checked ? '#00000000' : '#000000')}
                                                 />
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1 mt-2">
+                                        <Label className="text-[10px] text-gray-500">Custom Icon URL / Asset</Label>
+                                        <div className="flex gap-1.5">
+                                            <Input
+                                                value={getControlVal('expandButton', expandBtnMode, 'iconUrl', '')}
+                                                placeholder="https://... (Optional)"
+                                                className="h-7 text-xs flex-1"
+                                                onChange={e => updateControlMode('expandButton', expandBtnMode, 'iconUrl', e.target.value)}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 text-[10px] px-2"
+                                                onClick={() => {
+                                                    setAssetPickerTarget({ controlType: 'expandButton', mode: expandBtnMode });
+                                                    setIsAssetPickerOpen(true);
+                                                }}
+                                            >
+                                                Asset
+                                            </Button>
                                         </div>
                                     </div>
                                 </>
@@ -745,8 +912,28 @@ export const FloaterMinimalEditor = () => {
                                 </div>
                                 {config.controls?.muteButton?.show && (
                                     <>
+                                        {/* Sub-tabs for Collapsed / Expanded Mode */}
+                                        <div className="flex p-0.5 bg-gray-100 rounded-md">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMuteBtnMode('collapsed')}
+                                                className={`flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all ${muteBtnMode === 'collapsed' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
+                                            >
+                                                Collapsed Mode
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setMuteBtnMode('expanded')}
+                                                className={`flex-1 py-1.5 text-[10px] font-medium rounded-sm transition-all ${muteBtnMode === 'expanded' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-900'}`}
+                                            >
+                                                Expanded Mode
+                                            </button>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-2 mt-2">
-                                            <Select value={config.controls?.muteButton?.position || 'top-left'} onValueChange={(val) => updateControl('muteButton', 'position', val)}>
+                                            <Select 
+                                                value={getControlVal('muteButton', muteBtnMode, 'position', 'top-right')} 
+                                                onValueChange={(val) => updateControlMode('muteButton', muteBtnMode, 'position', val)}
+                                            >
                                                 <SelectTrigger className="h-7 text-[10px]">
                                                     <SelectValue />
                                                 </SelectTrigger>
@@ -757,16 +944,34 @@ export const FloaterMinimalEditor = () => {
                                                     <SelectItem value="bottom-left">Bottom Left</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                            <Input type="number" placeholder="Size" className="h-7 text-xs" value={config.controls?.muteButton?.size || 14} onChange={e => updateControl('muteButton', 'size', parseInt(e.target.value))} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="Size" 
+                                                className="h-7 text-xs" 
+                                                value={getControlVal('muteButton', muteBtnMode, 'size', 14)} 
+                                                onChange={e => updateControlMode('muteButton', muteBtnMode, 'size', parseInt(e.target.value) || 14)} 
+                                            />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2 mt-2">
                                             <div className="flex items-center gap-2">
                                                 <Label className="text-[10px] text-gray-400 w-4">X</Label>
-                                                <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.muteButton?.offsetX || 0} onChange={e => updateControl('muteButton', 'offsetX', parseInt(e.target.value))} />
+                                                <Input 
+                                                    type="number" 
+                                                    placeholder="0" 
+                                                    className="h-7 text-xs" 
+                                                    value={getControlVal('muteButton', muteBtnMode, 'offsetX', 0)} 
+                                                    onChange={e => updateControlMode('muteButton', muteBtnMode, 'offsetX', parseInt(e.target.value) || 0)} 
+                                                />
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Label className="text-[10px] text-gray-400 w-4">Y</Label>
-                                                <Input type="number" placeholder="0" className="h-7 text-xs" value={config.controls?.muteButton?.offsetY || 0} onChange={e => updateControl('muteButton', 'offsetY', parseInt(e.target.value))} />
+                                                <Input 
+                                                    type="number" 
+                                                    placeholder="0" 
+                                                    className="h-7 text-xs" 
+                                                    value={getControlVal('muteButton', muteBtnMode, 'offsetY', 0)} 
+                                                    onChange={e => updateControlMode('muteButton', muteBtnMode, 'offsetY', parseInt(e.target.value) || 0)} 
+                                                />
                                             </div>
                                         </div>
                                         <div className="space-y-1 mt-2 p-2 bg-gray-50 rounded border">
@@ -777,8 +982,8 @@ export const FloaterMinimalEditor = () => {
                                                     <input
                                                         type="color"
                                                         className="w-8 h-6 rounded cursor-pointer border border-gray-200"
-                                                        value={config.controls?.muteButton?.color || '#FFFFFF'}
-                                                        onChange={e => updateControl('muteButton', 'color', e.target.value)}
+                                                        value={getControlVal('muteButton', muteBtnMode, 'color', '#FFFFFF')}
+                                                        onChange={e => updateControlMode('muteButton', muteBtnMode, 'color', e.target.value)}
                                                         title="Icon Color"
                                                     />
                                                 </div>
@@ -786,12 +991,12 @@ export const FloaterMinimalEditor = () => {
                                                     <Label className="text-[9px] text-gray-400">Bg</Label>
                                                     <input
                                                         type="color"
-                                                        className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${config.controls?.muteButton?.backgroundColor === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
-                                                        value={config.controls?.muteButton?.backgroundColor === '#00000000' ? '#000000' : (config.controls?.muteButton?.backgroundColor || '#000000')}
-                                                        onChange={e => updateControl('muteButton', 'backgroundColor', e.target.value)}
+                                                        className={`w-8 h-6 rounded cursor-pointer border border-gray-200 ${getControlVal('muteButton', muteBtnMode, 'backgroundColor', '#000000') === '#00000000' ? 'opacity-30 pointer-events-none' : ''}`}
+                                                        value={getControlVal('muteButton', muteBtnMode, 'backgroundColor', '#000000') === '#00000000' ? '#000000' : (getControlVal('muteButton', muteBtnMode, 'backgroundColor', '#000000') || '#000000')}
+                                                        onChange={e => updateControlMode('muteButton', muteBtnMode, 'backgroundColor', e.target.value)}
                                                         title="Background Color"
                                                     />
-                                                    {config.controls?.muteButton?.backgroundColor === '#00000000' && (
+                                                    {getControlVal('muteButton', muteBtnMode, 'backgroundColor', '#000000') === '#00000000' && (
                                                         <div className="absolute top-[18px] left-[2px] right-[2px] h-[2px] bg-red-400 rotate-45" />
                                                     )}
                                                 </div>
@@ -799,10 +1004,33 @@ export const FloaterMinimalEditor = () => {
                                                     <Label className="text-[9px] text-gray-400">Transp.</Label>
                                                     <Switch
                                                         className="scale-75"
-                                                        checked={config.controls?.muteButton?.backgroundColor === '#00000000'}
-                                                        onCheckedChange={(checked) => updateControl('muteButton', 'backgroundColor', checked ? '#00000000' : '#000000')}
+                                                        checked={getControlVal('muteButton', muteBtnMode, 'backgroundColor', '#000000') === '#00000000'}
+                                                        onCheckedChange={(checked) => updateControlMode('muteButton', muteBtnMode, 'backgroundColor', checked ? '#00000000' : '#000000')}
                                                     />
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1 mt-2">
+                                            <Label className="text-[10px] text-gray-500">Custom Icon URL / Asset</Label>
+                                            <div className="flex gap-1.5">
+                                                <Input
+                                                    value={getControlVal('muteButton', muteBtnMode, 'iconUrl', '')}
+                                                    placeholder="https://... (Optional)"
+                                                    className="h-7 text-xs flex-1"
+                                                    onChange={e => updateControlMode('muteButton', muteBtnMode, 'iconUrl', e.target.value)}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-[10px] px-2"
+                                                    onClick={() => {
+                                                        setAssetPickerTarget({ controlType: 'muteButton', mode: muteBtnMode });
+                                                        setIsAssetPickerOpen(true);
+                                                    }}
+                                                >
+                                                    Asset
+                                                </Button>
                                             </div>
                                         </div>
                                     </>
@@ -870,10 +1098,16 @@ export const FloaterMinimalEditor = () => {
                 isOpen={isAssetPickerOpen}
                 onClose={() => setIsAssetPickerOpen(false)}
                 onSelect={(url) => {
-                    let type: any = 'image';
-                    if (url.includes('youtube') || url.includes('youtu.be')) type = 'youtube';
-                    else if (url.endsWith('.mp4') || url.endsWith('.webm')) type = 'video';
-                    updateFloaterConfig({ media: { ...config.media, url, type } });
+                    if (assetPickerTarget) {
+                        updateControlMode(assetPickerTarget.controlType, assetPickerTarget.mode, 'iconUrl', url);
+                        setAssetPickerTarget(null);
+                    } else {
+                        let type: any = 'image';
+                        if (url.includes('youtube') || url.includes('youtu.be')) type = 'youtube';
+                        else if (url.endsWith('.mp4') || url.endsWith('.webm')) type = 'video';
+                        updateFloaterConfig({ media: { ...config.media, url, type } });
+                    }
+                    setIsAssetPickerOpen(false);
                 }}
                 accept="image"
             />

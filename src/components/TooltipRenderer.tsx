@@ -170,6 +170,19 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
             transform: getTransformString(layer.style?.transform, scale),
         };
 
+        // FIX: For Container and Grid Item, we must strip overflow and visual styles from the wrapper because ContainerRenderer handles them internally.
+        if (layer.type === 'container' || layer.type === 'grid_item') {
+            delete baseStyle.overflow;
+            delete baseStyle.backgroundColor;
+            delete baseStyle.backgroundImage;
+            delete baseStyle.backgroundSize;
+            delete baseStyle.backgroundPosition;
+            delete baseStyle.backgroundRepeat;
+            delete baseStyle.border;
+            delete baseStyle.boxShadow;
+            delete baseStyle.opacity;
+        }
+
         // DEBUG: Log exact CSS values for comparison with SDK
         console.log(`[Dashboard] renderLayer: ${layer.type} id=${layer.id} parent=${layer.parent}`);
         console.log(`  style.left=${layer.style?.left}, style.top=${layer.style?.top}`);

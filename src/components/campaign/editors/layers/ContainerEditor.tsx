@@ -53,6 +53,86 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
     // Style Helpers
     const style = layer.style || {};
 
+    // Check if the layer is a fallback empty state container of a grid container
+    const isFallbackContainer = useEditorStore(state => {
+        const campaign = state.currentCampaign;
+        if (!campaign) return false;
+        
+        // Find parent layer
+        const parentId = layer.parent;
+        if (!parentId) return false;
+        
+        // Get all layers (from campaign, active story, or active interface)
+        let allLayers: any[] = [];
+        if (state.activeStoryId && campaign.stories) {
+            const story = campaign.stories.find(s => s.id === state.activeStoryId);
+            if (story) allLayers = story.layers || [];
+        } else if (state.activeInterfaceId && campaign.interfaces) {
+            const iface = campaign.interfaces.find(i => i.id === state.activeInterfaceId);
+            if (iface) allLayers = iface.layers || [];
+        } else {
+            allLayers = campaign.layers || [];
+        }
+        
+        const parentLayer = allLayers.find(l => l.id === parentId);
+        if (parentLayer && (parentLayer.type === 'grid_container' || parentLayer.type === 'grid-container')) {
+            // It's a child of a grid container and is not a grid_item (since its type is 'container')
+            return layer.type === 'container';
+        }
+        
+        // Fallback: check by name if it includes "Fallback"
+        return layer.name?.toLowerCase().includes('fallback') || false;
+    });
+
+    // Automatically enforce 100% width and height and reset position offsets for grid fallback containers
+    useEffect(() => {
+        if (isFallbackContainer) {
+            let needsUpdate = false;
+            const updates: any = {};
+            if (style.width !== '100%') {
+                updates.width = '100%';
+                needsUpdate = true;
+            }
+            if (style.height !== '100%') {
+                updates.height = '100%';
+                needsUpdate = true;
+            }
+            if (
+                style.left !== undefined || 
+                style.right !== undefined || 
+                style.top !== undefined || 
+                style.bottom !== undefined ||
+                style.position !== 'relative'
+            ) {
+                updates.left = undefined;
+                updates.right = undefined;
+                updates.top = undefined;
+                updates.bottom = undefined;
+                updates.position = 'relative';
+                needsUpdate = true;
+            }
+            if (needsUpdate) {
+                updateLayer(selectedLayerId, {
+                    style: {
+                        ...style,
+                        ...updates
+                    }
+                });
+            }
+        }
+    }, [
+        isFallbackContainer, 
+        selectedLayerId, 
+        style.width, 
+        style.height, 
+        style.left, 
+        style.right, 
+        style.top, 
+        style.bottom, 
+        style.position, 
+        updateLayer
+    ]);
+
     // Background Image/Color Logic
     const bgImage = style.backgroundImage;
     const bgColor = style.backgroundColor || '#ffffff';
@@ -174,142 +254,152 @@ export const ContainerEditor: React.FC<ContainerEditorProps> = ({
                         <div className="space-y-4 border rounded-lg p-3 bg-gray-50/50">
                             <Label className="text-xs font-semibold text-gray-700">Dimensions & Position</Label>
 
-                            {/* Width & Height */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Width</Label>
-                                    <div className="flex gap-1">
-                                        <div className="relative flex-1">
-                                            <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400" />
-                                            <Input
-                                                type="number"
-                                                className="pl-7 h-8 text-xs w-full"
-                                                value={getValue(style.width)}
-                                                onChange={(e) => updateDimension('width', parseFloat(e.target.value), getUnit(style.width))}
-                                            />
+                            {isFallbackContainer ? (
+                                <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-md">
+                                    <p className="text-[11px] text-blue-700 leading-normal font-medium">
+                                        🔒 Dimensions and position are locked to 100% width/height and relative layout as this is a Grid Fallback container.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Width & Height */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <Label className="text-[10px] text-gray-500 mb-1.5 block">Width</Label>
+                                            <div className="flex gap-1">
+                                                <div className="relative flex-1">
+                                                    <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400" />
+                                                    <Input
+                                                        type="number"
+                                                        className="pl-7 h-8 text-xs w-full"
+                                                        value={getValue(style.width)}
+                                                        onChange={(e) => updateDimension('width', parseFloat(e.target.value), getUnit(style.width))}
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={getUnit(style.width)}
+                                                    onChange={(e) => {
+                                                        const newUnit = e.target.value;
+                                                        const currentVal = getValue(style.width);
+                                                        if (newUnit === '%') {
+                                                            onStyleUpdate('width', `${Math.min(currentVal, 100)}%`);
+                                                        } else {
+                                                            onStyleUpdate('width', currentVal);
+                                                        }
+                                                    }}
+                                                    className="px-1 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-11 shrink-0 outline-none text-center appearance-none cursor-pointer"
+                                                >
+                                                    <option value="px">px</option>
+                                                    <option value="%">%</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <select
-                                            value={getUnit(style.width)}
-                                            onChange={(e) => {
-                                                const newUnit = e.target.value;
-                                                const currentVal = getValue(style.width);
-                                                if (newUnit === '%') {
-                                                    onStyleUpdate('width', `${Math.min(currentVal, 100)}%`);
-                                                } else {
-                                                    onStyleUpdate('width', currentVal);
-                                                }
-                                            }}
-                                            className="px-1 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-11 shrink-0 outline-none text-center appearance-none cursor-pointer"
-                                        >
-                                            <option value="px">px</option>
-                                            <option value="%">%</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label className="text-[10px] text-gray-500 mb-1.5 block">Height</Label>
-                                    <div className="flex gap-1">
-                                        <div className="relative flex-1">
-                                            <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400 rotate-90" />
-                                            <Input
-                                                type="number"
-                                                className="pl-7 h-8 text-xs w-full"
-                                                value={getValue(style.height)}
-                                                onChange={(e) => updateDimension('height', parseFloat(e.target.value), getUnit(style.height))}
-                                            />
+                                        <div>
+                                            <Label className="text-[10px] text-gray-500 mb-1.5 block">Height</Label>
+                                            <div className="flex gap-1">
+                                                <div className="relative flex-1">
+                                                    <Maximize2 className="absolute left-2 top-2.5 w-3 h-3 text-gray-400 rotate-90" />
+                                                    <Input
+                                                        type="number"
+                                                        className="pl-7 h-8 text-xs w-full"
+                                                        value={getValue(style.height)}
+                                                        onChange={(e) => updateDimension('height', parseFloat(e.target.value), getUnit(style.height))}
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={getUnit(style.height)}
+                                                    onChange={(e) => {
+                                                        const newUnit = e.target.value;
+                                                        const currentVal = getValue(style.height);
+                                                        if (newUnit === '%') {
+                                                            onStyleUpdate('height', `${Math.min(currentVal, 100)}%`);
+                                                        } else {
+                                                            onStyleUpdate('height', currentVal);
+                                                        }
+                                                    }}
+                                                    className="px-1 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-11 shrink-0 outline-none text-center appearance-none cursor-pointer"
+                                                >
+                                                    <option value="px">px</option>
+                                                    <option value="%">%</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <select
-                                            value={getUnit(style.height)}
-                                            onChange={(e) => {
-                                                const newUnit = e.target.value;
-                                                const currentVal = getValue(style.height);
-                                                if (newUnit === '%') {
-                                                    onStyleUpdate('height', `${Math.min(currentVal, 100)}%`);
-                                                } else {
-                                                    onStyleUpdate('height', currentVal);
-                                                }
+                                    </div>
+
+                                    {/* Position Anchors (Replaces PositionEditor) */}
+                                    <div>
+                                        <Label className="text-[10px] text-gray-500 mb-1.5 block">Anchor Corner</Label>
+                                        <Select
+                                            value={
+                                                // Infer position from style props (simplified inference)
+                                                (style.bottom !== undefined && style.right !== undefined) ? 'bottom-right' :
+                                                    (style.bottom !== undefined && style.left !== undefined) ? 'bottom-left' :
+                                                        (style.top !== undefined && style.right !== undefined) ? 'top-right' :
+                                                            'top-left'
+                                            }
+                                            onValueChange={(val) => {
+                                                // Reset
+                                                const reset = { top: undefined, bottom: undefined, left: undefined, right: undefined };
+                                                if (val === 'top-left') onStyleUpdate('style', { ...style, ...reset, top: '20px', left: '20px' }); // Use updates correctly
+                                                // Note: ContainerEditor handles direct style updates.
+                                                // Simplified Logic: Just utilize PositionEditor if complexity is high, but user asked for PARITY.
+                                                // Floater uses a specific 'position' config string. Container uses generic CSS 'top', 'left', etc.
+                                                // To parity this, we need to map the abstraction. 
+
+                                                // Actually, let's keep it simple for now and just update the style props directly.
+                                                if (val === 'top-left') { onStyleUpdate('top', '20px'); onStyleUpdate('left', '20px'); onStyleUpdate('bottom', undefined); onStyleUpdate('right', undefined); }
+                                                if (val === 'top-right') { onStyleUpdate('top', '20px'); onStyleUpdate('right', '20px'); onStyleUpdate('bottom', undefined); onStyleUpdate('left', undefined); }
+                                                if (val === 'bottom-left') { onStyleUpdate('bottom', '20px'); onStyleUpdate('left', '20px'); onStyleUpdate('top', undefined); onStyleUpdate('right', undefined); }
+                                                if (val === 'bottom-right') { onStyleUpdate('bottom', '20px'); onStyleUpdate('right', '20px'); onStyleUpdate('top', undefined); onStyleUpdate('left', undefined); }
                                             }}
-                                            className="px-1 h-8 text-[10px] font-medium bg-gray-100 rounded border hover:bg-gray-200 w-11 shrink-0 outline-none text-center appearance-none cursor-pointer"
                                         >
-                                            <option value="px">px</option>
-                                            <option value="%">%</option>
-                                        </select>
+                                            <SelectTrigger className="h-8 text-xs">
+                                                <SelectValue placeholder="Position" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="top-left">Top Left</SelectItem>
+                                                <SelectItem value="top-right">Top Right</SelectItem>
+                                                <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                                                <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Position Anchors (Replaces PositionEditor) */}
-                            <div>
-                                <Label className="text-[10px] text-gray-500 mb-1.5 block">Anchor Corner</Label>
-                                <Select
-                                    value={
-                                        // Infer position from style props (simplified inference)
-                                        (style.bottom !== undefined && style.right !== undefined) ? 'bottom-right' :
-                                            (style.bottom !== undefined && style.left !== undefined) ? 'bottom-left' :
-                                                (style.top !== undefined && style.right !== undefined) ? 'top-right' :
-                                                    'top-left'
-                                    }
-                                    onValueChange={(val) => {
-                                        // Reset
-                                        const reset = { top: undefined, bottom: undefined, left: undefined, right: undefined };
-                                        if (val === 'top-left') onStyleUpdate('style', { ...style, ...reset, top: '20px', left: '20px' }); // Use updates correctly
-                                        // Note: ContainerEditor handles direct style updates.
-                                        // Simplified Logic: Just utilize PositionEditor if complexity is high, but user asked for PARITY.
-                                        // Floater uses a specific 'position' config string. Container uses generic CSS 'top', 'left', etc.
-                                        // To parity this, we need to map the abstraction. 
-
-                                        // Actually, let's keep it simple for now and just update the style props directly.
-                                        if (val === 'top-left') { onStyleUpdate('top', '20px'); onStyleUpdate('left', '20px'); onStyleUpdate('bottom', undefined); onStyleUpdate('right', undefined); }
-                                        if (val === 'top-right') { onStyleUpdate('top', '20px'); onStyleUpdate('right', '20px'); onStyleUpdate('bottom', undefined); onStyleUpdate('left', undefined); }
-                                        if (val === 'bottom-left') { onStyleUpdate('bottom', '20px'); onStyleUpdate('left', '20px'); onStyleUpdate('top', undefined); onStyleUpdate('right', undefined); }
-                                        if (val === 'bottom-right') { onStyleUpdate('bottom', '20px'); onStyleUpdate('right', '20px'); onStyleUpdate('top', undefined); onStyleUpdate('left', undefined); }
-                                    }}
-                                >
-                                    <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue placeholder="Position" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="top-left">Top Left</SelectItem>
-                                        <SelectItem value="top-right">Top Right</SelectItem>
-                                        <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                                        <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Offsets */}
-                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
-                                <div>
-                                    <Label className="text-[10px] text-gray-500 mb-1">X Offset</Label>
-                                    <div className="relative">
-                                        <span className="absolute left-2 top-2 text-[10px] text-gray-400 font-mono">X</span>
-                                        <Input
-                                            type="text"
-                                            className="h-8 text-xs pl-6"
-                                            value={style.left || style.right || 0}
-                                            onChange={e => {
-                                                if (style.left !== undefined) onStyleUpdate('left', e.target.value);
-                                                else onStyleUpdate('right', e.target.value);
-                                            }}
-                                        />
+                                    {/* Offsets */}
+                                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                                        <div>
+                                            <Label className="text-[10px] text-gray-500 mb-1">X Offset</Label>
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-2 text-[10px] text-gray-400 font-mono">X</span>
+                                                <Input
+                                                    type="text"
+                                                    className="h-8 text-xs pl-6"
+                                                    value={style.left || style.right || 0}
+                                                    onChange={e => {
+                                                        if (style.left !== undefined) onStyleUpdate('left', e.target.value);
+                                                        else onStyleUpdate('right', e.target.value);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <Label className="text-[10px] text-gray-500 mb-1">Y Offset</Label>
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-2 text-[10px] text-gray-400 font-mono">Y</span>
+                                                <Input
+                                                    type="text"
+                                                    className="h-8 text-xs pl-6"
+                                                    value={style.top || style.bottom || 0}
+                                                    onChange={e => {
+                                                        if (style.top !== undefined) onStyleUpdate('top', e.target.value);
+                                                        else onStyleUpdate('bottom', e.target.value);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <Label className="text-[10px] text-gray-500 mb-1">Y Offset</Label>
-                                    <div className="relative">
-                                        <span className="absolute left-2 top-2 text-[10px] text-gray-400 font-mono">Y</span>
-                                        <Input
-                                            type="text"
-                                            className="h-8 text-xs pl-6"
-                                            value={style.top || style.bottom || 0}
-                                            onChange={e => {
-                                                if (style.top !== undefined) onStyleUpdate('top', e.target.value);
-                                                else onStyleUpdate('bottom', e.target.value);
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                                </>
+                            )}
 
                             <Separator className="bg-gray-200" />
 

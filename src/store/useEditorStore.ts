@@ -1121,6 +1121,8 @@ interface EditorStore {
   addCustomCallbackId: (id: string) => void;
 
   duplicateLayer: (id: string) => string;
+  copyLayerToClipboard: (id: string) => void;
+  pasteLayerFromClipboard: (targetId: string) => Promise<void>;
   reorderLayer: (id: string, newIndex: number) => void;
   moveLayerToParent: (layerId: string, newParentId: string | null) => void;
   selectLayer: (id: string | null) => void;
@@ -2985,6 +2987,237 @@ export const useEditorStore = create<EditorStore>()(
           }
         }
         return '';
+      },
+
+      // Copy layer to clipboard
+      copyLayerToClipboard: (id) => {
+        const { currentCampaign, activeStoryId, activeInterfaceId } = get();
+        if (!currentCampaign) return;
+
+        let activeLayers: Layer[] = [];
+        if (activeStoryId && currentCampaign.stories) {
+          const story = currentCampaign.stories.find(s => s.id === activeStoryId);
+          if (story) activeLayers = story.layers || [];
+        } else if (activeInterfaceId && currentCampaign.interfaces) {
+          const iface = currentCampaign.interfaces.find(i => i.id === activeInterfaceId);
+          if (iface) activeLayers = iface.layers || [];
+        } else {
+          activeLayers = currentCampaign.layers || [];
+        }
+
+        const rootLayer = activeLayers.find(l => l.id === id);
+        if (!rootLayer) {
+          toast.error('Layer not found');
+          return;
+        }
+
+        // Recursively find descendants
+        const descendants: Layer[] = [];
+        const findDescendants = (parentId: string) => {
+          const children = activeLayers.filter(l => l.parent === parentId);
+          for (const child of children) {
+            descendants.push(child);
+            findDescendants(child.id);
+          }
+        };
+        findDescendants(rootLayer.id);
+
+        const payload = {
+          type: 'embedcraft-layers-transfer',
+          layerType: rootLayer.type,
+          sourceLayerId: rootLayer.id,
+          sourceLayerChildren: rootLayer.children || [],
+          sourceLayer: {
+            ...rootLayer,
+            id: undefined,
+            parent: undefined,
+            children: undefined
+          },
+          descendants: descendants
+        };
+
+        localStorage.setItem('copied_layer', JSON.stringify(payload));
+        
+        if (navigator?.clipboard?.writeText) {
+          navigator.clipboard.writeText(JSON.stringify(payload)).catch(err => {
+            console.warn('Clipboard write failed:', err);
+          });
+        }
+        toast.success('Layer copied successfully');
+      },
+
+      // Paste layer from clipboard
+      pasteLayerFromClipboard: async (targetId) => {
+        const { currentCampaign, activeStoryId, activeInterfaceId } = get();
+        if (!currentCampaign) return;
+
+        let rawPayload: string | null = null;
+
+        // Try to read from system clipboard first (for cross-browser/cross-device pasting)
+        if (navigator?.clipboard?.readText) {
+          try {
+            const clipboardText = await navigator.clipboard.readText();
+            if (clipboardText && clipboardText.includes('embedcraft-layers-transfer')) {
+              rawPayload = clipboardText;
+            }
+          } catch (err) {
+            console.warn('System clipboard read failed, falling back to localStorage:', err);
+          }
+        }
+
+        // Fallback to localStorage
+        if (!rawPayload) {
+          rawPayload = localStorage.getItem('copied_layer');
+        }
+
+        if (!rawPayload) {
+          toast.error('No copied layer data found in clipboard or storage');
+          return;
+        }
+
+        let payload: any;
+        try {
+          payload = JSON.parse(rawPayload);
+        } catch (e) {
+          toast.error('Invalid copied layer data');
+          return;
+        }
+
+        if (!payload || payload.type !== 'embedcraft-layers-transfer') {
+          toast.error('Invalid copied layer format');
+          return;
+        }
+
+        let activeLayers: Layer[] = [];
+        if (activeStoryId && currentCampaign.stories) {
+          const story = currentCampaign.stories.find(s => s.id === activeStoryId);
+          if (story) activeLayers = story.layers || [];
+        } else if (activeInterfaceId && currentCampaign.interfaces) {
+          const iface = currentCampaign.interfaces.find(i => i.id === activeInterfaceId);
+          if (iface) activeLayers = iface.layers || [];
+        } else {
+          activeLayers = currentCampaign.layers || [];
+        }
+
+        const targetLayerIndex = activeLayers.findIndex(l => l.id === targetId);
+        if (targetLayerIndex === -1) {
+          toast.error('Target layer not found');
+          return;
+        }
+        const targetLayer = activeLayers[targetLayerIndex];
+
+        if (payload.layerType !== targetLayer.type) {
+          toast.error(`Cannot paste ${payload.layerType} properties into ${targetLayer.type}`);
+          return;
+        }
+
+        // Find and delete all existing descendants of the target layer
+        const descendantsToDelete = new Set<string>();
+        const findDescendantsToDelete = (parentId: string) => {
+          const children = activeLayers.filter(l => l.parent === parentId);
+          for (const child of children) {
+            descendantsToDelete.add(child.id);
+            findDescendantsToDelete(child.id);
+          }
+        };
+        findDescendantsToDelete(targetId);
+
+        let updatedLayersList = activeLayers.filter(l => !descendantsToDelete.has(l.id));
+
+        // Generate new IDs map for copied descendants
+        const idMap = new Map<string, string>();
+        const sourceRootId = payload.sourceLayerId;
+        idMap.set(sourceRootId, targetId);
+
+        const descendantsToPaste = payload.descendants || [];
+        descendantsToPaste.forEach((d: any) => {
+          const newId = `layer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+          idMap.set(d.id, newId);
+        });
+
+        // Build new cloned descendant layers list
+        const clonedDescendants: Layer[] = descendantsToPaste.map((d: any) => {
+          const newId = idMap.get(d.id)!;
+          const oldParentId = d.parent;
+          const newParentId = idMap.get(oldParentId) || targetId;
+          
+          const newChildrenIds = (d.children || [])
+            .map((cId: string) => idMap.get(cId))
+            .filter((cId: string | undefined): cId is string => !!cId);
+
+          return {
+            ...d,
+            id: newId,
+            parent: newParentId,
+            children: newChildrenIds
+          };
+        });
+
+        // Overwrite target layer properties (content, style, size, position)
+        const pastedRootChildrenIds = (payload.sourceLayerChildren || [])
+          .map((cId: string) => idMap.get(cId))
+          .filter((cId: string | undefined): cId is string => !!cId);
+
+        const updatedTargetLayer: Layer = {
+          ...targetLayer,
+          content: { ...payload.sourceLayer.content },
+          style: { ...payload.sourceLayer.style },
+          size: { ...payload.sourceLayer.size },
+          position: { ...payload.sourceLayer.position },
+          children: pastedRootChildrenIds,
+        };
+
+        const updatedTargetIndex = updatedLayersList.findIndex(l => l.id === targetId);
+        if (updatedTargetIndex !== -1) {
+          updatedLayersList[updatedTargetIndex] = updatedTargetLayer;
+        }
+
+        updatedLayersList = [...updatedLayersList, ...clonedDescendants];
+
+        // Write back updated layers
+        if (activeStoryId && currentCampaign.stories) {
+          const updatedStories = currentCampaign.stories.map(story => {
+            if (story.id !== activeStoryId) return story;
+            return { ...story, layers: updatedLayersList, updatedAt: new Date().toISOString() };
+          });
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              stories: updatedStories,
+              selectedLayerId: targetId,
+              isDirty: true
+            }
+          });
+        } else if (activeInterfaceId && currentCampaign.interfaces) {
+          const updatedInterfaces = currentCampaign.interfaces.map(iface => {
+            if (iface.id !== activeInterfaceId) return iface;
+            return { ...iface, layers: updatedLayersList, updatedAt: new Date().toISOString() };
+          });
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              interfaces: updatedInterfaces,
+              selectedLayerId: targetId,
+              isDirty: true
+            }
+          });
+        } else {
+          const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
+          newHistory.push(updatedLayersList);
+          set({
+            currentCampaign: {
+              ...currentCampaign,
+              layers: updatedLayersList,
+              history: newHistory,
+              historyIndex: newHistory.length - 1,
+              selectedLayerId: targetId,
+              updatedAt: new Date().toISOString(),
+              isDirty: true,
+            },
+          });
+        }
+
+        toast.success('Properties & children pasted successfully');
       },
 
       // Select layer

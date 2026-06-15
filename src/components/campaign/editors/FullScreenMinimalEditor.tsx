@@ -286,8 +286,19 @@ export const FullScreenMinimalEditor = () => {
                             <div className="flex items-center justify-between">
                                 <Label className="text-xs text-gray-600">Show Close Button</Label>
                                 <Switch
-                                    checked={config.controls?.closeButton?.show ?? true}
-                                    onCheckedChange={c => updateNested('controls', 'closeButton', { ...(config.controls?.closeButton || {}), show: c })}
+                                    checked={config.showCloseButton ?? config.controls?.closeButton?.show ?? true}
+                                    onCheckedChange={c => {
+                                        updateFullScreenConfig({
+                                            showCloseButton: c,
+                                            controls: {
+                                                ...(config.controls || {}),
+                                                closeButton: {
+                                                    ...(config.controls?.closeButton || {}),
+                                                    show: c
+                                                }
+                                            }
+                                        });
+                                    }}
                                 />
                             </div>
 

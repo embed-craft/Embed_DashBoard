@@ -379,6 +379,15 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             ['backgroundColor', 'border', 'borderWidth', 'borderColor', 'borderStyle', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'padding', 'margin'].forEach(k => delete scaledStyle[k]);
         }
 
+        if (['container', 'grid_item'].includes(layer.type)) {
+            [
+                'backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
+                'border', 'borderWidth', 'borderColor', 'borderStyle', 'borderRadius', 'boxShadow',
+                'opacity', 'filter', 'backdropFilter', 'WebkitBackdropFilter',
+                'overflow', 'overflowX', 'overflowY'
+            ].forEach(k => delete scaledStyle[k]);
+        }
+
         const baseStyle: React.CSSProperties = {
             position: 'relative',
             ...scaledStyle,

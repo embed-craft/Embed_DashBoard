@@ -284,7 +284,11 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
         switch (action.type) {
             case 'close':
             case 'dismiss': // Handle both temporarily
-                if (onDismiss) onDismiss();
+                if ((window as any).__stwCloseOverlay && (window as any).__stwCloseOverlay()) {
+                    console.log('Close action intercepted by Spin the Wheel overlay');
+                } else if (onDismiss) {
+                    onDismiss();
+                }
                 break;
             case 'interface':
                 if (action.interfaceId && onInterfaceAction) {
@@ -488,12 +492,27 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
             delete scaledStyle.margin;
         }
 
-        // FIX: For Container, we must strip overflow from the wrapper because ContainerRenderer handles it internally. 
-        // Otherwise, both Wrapper and Inner Container apply overflow, causing a double scrollbar.
-        if (layer.type === 'container') {
+        // FIX: For Container and Grid Item, we must strip overflow and visual styles from the wrapper because ContainerRenderer handles them internally. 
+        // Otherwise, both Wrapper and Inner Container apply them, causing double borders, double backgrounds, and double scrollbars.
+        if (layer.type === 'container' || layer.type === 'grid_item') {
             delete scaledStyle.overflow;
             delete scaledStyle.overflowX;
             delete scaledStyle.overflowY;
+            delete scaledStyle.backgroundColor;
+            delete scaledStyle.backgroundImage;
+            delete scaledStyle.backgroundSize;
+            delete scaledStyle.backgroundPosition;
+            delete scaledStyle.backgroundRepeat;
+            delete scaledStyle.border;
+            delete scaledStyle.borderWidth;
+            delete scaledStyle.borderColor;
+            delete scaledStyle.borderStyle;
+            delete scaledStyle.borderRadius;
+            delete scaledStyle.boxShadow;
+            delete scaledStyle.opacity;
+            delete scaledStyle.filter;
+            delete scaledStyle.backdropFilter;
+            delete scaledStyle.WebkitBackdropFilter;
         }
 
         // ENFORCE: Scratch foil always rigidly covers its parent. Never follows flex/auto-flow.
@@ -1067,11 +1086,21 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
     ) => {
         if (!btnConfig) return null;
 
+        // Resolve expanded vs unexpanded config
+        let resolvedConfig = btnConfig;
+        const stateKey = isExpanded ? 'expanded' : 'unexpanded';
+        if (btnConfig[stateKey]) {
+            resolvedConfig = {
+                ...btnConfig,
+                ...btnConfig[stateKey]
+            };
+        }
+
         // Scale values
-        const size = safeScale(btnConfig.size || defaultSize, scale);
+        const size = safeScale(resolvedConfig.size || defaultSize, scale);
         // Ensure offsets are strings with units
-        const offsetX = safeScale(btnConfig.offsetX || 0, scale) || '0px';
-        const offsetY = safeScale(btnConfig.offsetY || 0, scaleY) || '0px';
+        const offsetX = safeScale(resolvedConfig.offsetX || 0, scale) || '0px';
+        const offsetY = safeScale(resolvedConfig.offsetY || 0, scaleY) || '0px';
         const padding = safeScale(6, scale); // Scale padding 6px default
 
         return (
@@ -1082,14 +1111,26 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                     cursor: 'pointer',
                     padding: padding,
                     borderRadius: '50%',
-                    backgroundColor: btnConfig.backgroundColor || 'rgba(0,0,0,0.4)',
-                    color: btnConfig.color || 'white',
+                    backgroundColor: resolvedConfig.backgroundColor || 'rgba(0,0,0,0.4)',
+                    color: resolvedConfig.color || 'white',
                     display: 'flex',
                     transition: 'background-color 0.2s',
                     backdropFilter: 'blur(4px)'
                 }}
             >
-                {React.cloneElement(icon as React.ReactElement, { size: size })}
+                {resolvedConfig.iconUrl ? (
+                    <img
+                        src={resolvedConfig.iconUrl}
+                        alt="icon"
+                        style={{
+                            width: size,
+                            height: size,
+                            objectFit: 'contain'
+                        }}
+                    />
+                ) : (
+                    React.cloneElement(icon as React.ReactElement, { size: size })
+                )}
             </div>
         );
     };

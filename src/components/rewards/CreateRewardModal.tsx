@@ -97,9 +97,15 @@ const CreateRewardModal: React.FC<CreateRewardModalProps> = ({ onClose, editRewa
 
     // Embed The Vault Limit
     if (hasLimit && inventory.total_quantity !== undefined && inventory.total_quantity !== null && inventory.total_quantity !== '') {
-        (payload as any).inventory = { total_quantity: Number(inventory.total_quantity), claimed_quantity: 0 };
+        (payload as any).inventory = { 
+            total_quantity: Number(inventory.total_quantity), 
+            claimed_quantity: editReward?.inventory?.claimed_quantity || 0 
+        };
     } else {
-        (payload as any).inventory = { total_quantity: null, claimed_quantity: 0 };
+        (payload as any).inventory = { 
+            total_quantity: null, 
+            claimed_quantity: editReward?.inventory?.claimed_quantity || 0 
+        };
     }
 
     try {

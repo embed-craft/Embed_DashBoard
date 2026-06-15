@@ -101,6 +101,10 @@ export interface ScratchCardConfig {
         delay?: number;
         duration?: number;
     };
+
+    // Reward Linking (Gamification)
+    rewardId?: string;
+    fallbackRewardState?: string;
 }
 
 

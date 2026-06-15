@@ -150,6 +150,21 @@ const EXPERIENCE_TYPES = [
         Illustration: SpinWheelIllustration,
     },
     {
+        id: 'scratchcard',
+        type: 'gamification',
+        title: 'Scratch Card',
+        info: 'Deliver exciting scratch-to-win experiences natively. Link fixed rewards directly to scratch interactions for an engaging unboxing feel.',
+        Illustration: () => (
+            <svg viewBox="0 0 160 140" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <rect x="30" y="30" width="100" height="80" rx="10" fill="#E5E7EB" />
+                <rect x="40" y="40" width="80" height="60" rx="6" fill="#7C3AED" />
+                <path d="M50 50 L70 70 M60 50 L80 70 M70 50 L90 70" stroke="#C4B5FD" strokeWidth="4" strokeLinecap="round" />
+                <circle cx="100" cy="80" r="12" fill="white" stroke="#E5E7EB" strokeWidth="2" />
+                <path d="M100 86 L96 74 L104 74 Z" fill="#7C3AED" />
+            </svg>
+        ),
+    },
+    {
         id: 'survey',
         type: 'survey',
         title: 'Survey',

@@ -66,8 +66,8 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
         const newTopPx = currentTop + data.deltaY;
 
         // Convert back to percentage using the SAME reference frame
-        const newLeftPercent = `${(newLeftPx / refWidth) * 100}%`;
-        const newTopPercent = `${(newTopPx / refHeight) * 100}%`;
+        const newLeftPercent = refWidth > 0 ? `${(newLeftPx / refWidth) * 100}%` : '0%';
+        const newTopPercent = refHeight > 0 ? `${(newTopPx / refHeight) * 100}%` : '0%';
 
         onLayerUpdate(layer.id, {
             style: {

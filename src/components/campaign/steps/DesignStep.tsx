@@ -6,7 +6,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { apiClient } from '@/lib/api';
-import { useEditorStore, getDefaultLayersForNudgeType, TooltipConfig } from '@/store/useEditorStore';
+import { useEditorStore, getDefaultLayersForNudgeType, TooltipConfig, Layer } from '@/store/useEditorStore';
+import { useStore } from '@/store/useStore';
+import { GridElementProvider } from '@/components/campaign/renderers/GridElementContext';
 import { theme } from '@/styles/design-tokens';
 
 import { validateNumericInput, validatePercentage, validateOpacity, validateDimension, validateColor } from '@/lib/validation';
@@ -94,6 +96,7 @@ const EXPERIENCE_MAPPING: Record<string, string[]> = {
   'nudges': ['tooltip'],
   'messages': ['floater', 'bottomsheet', 'fullscreen'], // Restricted as per user request
   'stories': ['inline_stories', 'fullscreen'],
+  'scratchcard': ['floater', 'fullscreen'],
   // Default fallbacks for others or future types
   'challenges': [],
   'streaks': [],
@@ -160,6 +163,20 @@ export const DesignStep: React.FC<any> = () => {
     activeStoryId,
     setActiveStory,
   } = useEditorStore();
+
+  const { rewards, fetchRewards } = useStore();
+
+  useEffect(() => {
+    fetchRewards();
+  }, [fetchRewards]);
+
+  // Scratch Card Reward Injection Logic
+  const selectedRewardDetails = React.useMemo(() => {
+    if ((currentCampaign?.type === 'scratchcard' || currentCampaign?.nudgeType === 'scratchcard') && currentCampaign?.scratchCardConfig?.rewardId) {
+      return rewards.find(r => r.id === currentCampaign.scratchCardConfig.rewardId) || null;
+    }
+    return null;
+  }, [currentCampaign?.type, currentCampaign?.nudgeType, currentCampaign?.scratchCardConfig?.rewardId, rewards]);
 
   // Fetch metadata on mount if missing
   useEffect(() => {
@@ -4060,7 +4077,12 @@ export const DesignStep: React.FC<any> = () => {
                       <div className="p-6 max-h-[70vh] overflow-y-auto">
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>
                           {DESIGN_TYPES
-                            .filter(type => ['floater', 'bottomsheet', 'fullpage', 'tooltip'].includes(type.id))
+                            .filter(type => {
+                                if (currentCampaign?.type === 'scratchcard' || currentCampaign?.nudgeType === 'scratchcard') {
+                                    return ['floater', 'fullpage'].includes(type.id);
+                                }
+                                return ['floater', 'bottomsheet', 'fullpage', 'tooltip'].includes(type.id);
+                            })
                             .map((type) => {
                               const Icon = type.icon;
                               return (
@@ -4270,7 +4292,13 @@ export const DesignStep: React.FC<any> = () => {
                         backgroundUrl={previewBackgroundUrl || selectedPage?.imageUrl}
                         pageContext={selectedPage}
                       >
-                        {renderCanvasPreview()}
+                        {selectedRewardDetails ? (
+                          <GridElementProvider dataItem={selectedRewardDetails} index={0}>
+                            {renderCanvasPreview()}
+                          </GridElementProvider>
+                        ) : (
+                          renderCanvasPreview()
+                        )}
                       </PhonePreview>
                     </div>
 

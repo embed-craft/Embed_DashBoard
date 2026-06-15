@@ -45,6 +45,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewUserId = useEditorStore(state => state.previewUserId);
+  const selectedLayerId = useEditorStore(state => state.currentCampaign?.selectedLayerId);
 
   // Fetch data from URL when configured
   useEffect(() => {
@@ -127,6 +128,48 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     backgroundColor: style.backgroundColor || 'transparent',
   };
 
+  // Find the fallback container (empty state)
+  const fallbackChildren = layers.filter(
+    (l) => l.parent === layer.id && l.type !== 'grid_item'
+  );
+
+  // Helper to determine if fallback tree is selected
+  const isFallbackSelected = fallbackChildren.some(child => {
+      if (selectedLayerId === child.id) return true;
+      let current = layers.find(l => l.id === selectedLayerId);
+      while (current && current.parent) {
+          if (current.parent === child.id) return true;
+          current = layers.find(l => l.id === current?.parent);
+      }
+      return false;
+  });
+
+  // 1. HIGHEST PRIORITY: Editor preview override for Fallback State
+  // If the designer selects the fallback layer (or its children) in the sidebar, 
+  // show ONLY the fallback layer so they can design the full empty state screen.
+  if (isFallbackSelected && fallbackChildren.length > 0) {
+    return (
+      <div style={{ width: '100%', height: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '200px', backgroundColor: 'rgba(0, 255, 0, 0.15)', border: '2px dashed #22c55e' }}>
+          {fallbackChildren.map(child => (
+            <div key={child.id} style={{ position: 'relative', width: '100%', height: '100%', flex: 1, display: 'flex' }}>
+              {renderChild({
+                ...child,
+                style: {
+                  ...child.style,
+                  position: 'relative',
+                  width: '100%',
+                  height: child.style?.height || '100%',
+                  minHeight: child.style?.minHeight || '100%',
+                  top: 0,
+                  left: 0
+                }
+              })}
+            </div>
+          ))}
+      </div>
+    );
+  }
+
   // Shimmer placeholder
   const ShimmerCell: React.FC = () => (
     <div
@@ -140,7 +183,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     />
   );
 
-  // Loading state
+  // 2. Loading state
   if (loading && shimmerEnabled) {
     return (
       <div style={gridStyle}>
@@ -152,8 +195,33 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     );
   }
 
-  // Data loaded — render template for each item
+  // 3. Data loaded
   if (data && templateChild) {
+    // If data is empty, show the Fallback state (if it exists)
+    if (data.length === 0 && fallbackChildren.length > 0) {
+        return (
+          <div style={{ ...gridStyle, display: 'flex', flexDirection: 'column' }}>
+              {fallbackChildren.map(child => (
+                <div key={child.id} style={{ position: 'relative', width: '100%', height: 'auto', flex: 1, display: 'flex' }}>
+                  {renderChild({
+                    ...child,
+                    style: {
+                      ...child.style,
+                      position: 'relative',
+                      width: '100%',
+                      height: child.style?.height || '100%',
+                      minHeight: child.style?.minHeight || '100%',
+                      top: 0,
+                      left: 0
+                    }
+                  })}
+                </div>
+              ))}
+          </div>
+        );
+    }
+
+    // Otherwise render data items
     return (
       <div style={gridStyle}>
         {data.map((item, index) => (
@@ -167,7 +235,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
     );
   }
 
-  // No data / no URL — editor preview with mock ghosts
+  // 4. No data / no URL — editor preview with mock ghosts
   if (templateChild) {
     return (
       <div style={gridStyle}>
@@ -177,7 +245,7 @@ export const GridContainerRenderer: React.FC<GridContainerRendererProps> = ({
         </div>
         {/* Ghost clones for visual preview */}
         {[1, 2, 3].map((i) => (
-          <div key={`mock-${i}`} style={{ position: 'relative', opacity: 0.35, width: '100%', height: '100%', display: 'flex', justifyContent: 'center' }}>
+          <div key={`mock-${i}`} style={{ position: 'relative', opacity: 0.35, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
             {renderChild(templateChild)}
           </div>
         ))}

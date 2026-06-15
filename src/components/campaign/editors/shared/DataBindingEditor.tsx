@@ -259,6 +259,26 @@ export const DataBindingEditor: React.FC<DataBindingEditorProps> = ({
                                     });
                                     return;
                                 }
+
+                                // Function to automatically add an empty state fallback layer
+                                const ensureFallbackContainer = () => {
+                                    if (layer.type !== 'grid_container' && layer.type !== 'grid-container' && layer.type !== 'container') return;
+                                    
+                                    const layerChildren = layers.filter(l => l.parent === selectedLayerId);
+                                    let hasFallback = false;
+                                    
+                                    if (layer.type === 'grid_container' || layer.type === 'grid-container') {
+                                        hasFallback = layerChildren.some(c => c.type !== 'grid_item');
+                                    } else {
+                                        // For standard containers, we look for a fallback container specifically
+                                        hasFallback = layerChildren.some(c => c.type === 'container' && c.name?.includes('Fallback'));
+                                    }
+                                    
+                                    if (!hasFallback) {
+                                        useEditorStore.getState().addLayer('container', selectedLayerId, 'Fallback Empty State');
+                                    }
+                                };
+
                                 if (val === 'custom-api') {
                                     updateLayer(selectedLayerId, {
                                         content: {
@@ -271,6 +291,7 @@ export const DataBindingEditor: React.FC<DataBindingEditorProps> = ({
                                             cached_schema: layer.content.cached_schema || []
                                         }
                                     });
+                                    ensureFallbackContainer();
                                     return;
                                 }
                                 const feed = liveDataSources.find(d => d._id === val);
@@ -286,6 +307,7 @@ export const DataBindingEditor: React.FC<DataBindingEditorProps> = ({
                                         testParameters: undefined
                                     }
                                 });
+                                ensureFallbackContainer();
                             }}
                         >
                             <SelectTrigger className="h-8 text-[11px] bg-white border-indigo-200">

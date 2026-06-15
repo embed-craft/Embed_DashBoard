@@ -43,8 +43,9 @@ import { Film, CheckCircle2 as CheckCircle2Icon } from 'lucide-react';
 import { ChallengeTypeStep } from '@/components/campaign/steps/ChallengeTypeStep';
 import { TasksStep } from '@/components/campaign/steps/TasksStep';
 import SpinWheelRewardsStep from '@/components/campaign/steps/SpinWheelRewardsStep';
+import ScratchCardRewardStep from '@/components/campaign/steps/ScratchCardRewardStep';
 
-type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks' | 'rewards';
+type Step = 'targeting' | 'goals' | 'design' | 'stories' | 'challenge_type' | 'tasks' | 'rewards' | 'scratch_rewards';
 
 const CampaignBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -152,6 +153,24 @@ const CampaignBuilder: React.FC = () => {
       if (!currentCampaign || currentCampaign.type !== 'spinthewheel') {
         createCampaign('gamification' as any, 'fullscreen' as any, 'spinthewheel');
         setActiveStep('targeting');
+      }
+      return;
+    }
+
+    // Scratch Card flow
+    if (searchParams.get('type') === 'scratchcard' && !campaignId) {
+      const isNewUserRequest = searchParams.get('new') === 'true';
+      
+      if (isNewUserRequest && currentCampaign) {
+          resetCurrentCampaign();
+          searchParams.delete('new');
+          navigate({ search: searchParams.toString() }, { replace: true });
+          return;
+      }
+
+      if (!currentCampaign || currentCampaign.type !== 'scratchcard') {
+        createCampaign('gamification' as any, 'floater' as any, 'scratchcard');
+        setActiveStep('design');
       }
       return;
     }
@@ -298,11 +317,32 @@ const CampaignBuilder: React.FC = () => {
   const isTargetingValid = validateStep('targeting');
   const isGoalsValid = validateStep('goals');
   const isDesignValid = validateStep('design');
+  const isScratchCardGame = currentCampaign?.type === 'scratchcard' || currentCampaign?.nudgeType === 'scratchcard';
+  
+  let isScratchRewardValid = true;
+  let missingScratchReason = '';
+  if (isScratchCardGame) {
+    const hasScratchFoil = currentCampaign?.interfaces?.some(intf => 
+        intf.layers?.some((layer: any) => layer.type === 'scratch_foil')
+    ) || currentCampaign?.layers?.some(layer => layer.type === 'scratch_foil');
+    
+    const hasRewardId = !!currentCampaign?.scratchCardConfig?.rewardId;
+    const hasFallback = !!currentCampaign?.scratchCardConfig?.fallbackRewardState;
+    
+    if (!hasRewardId) {
+        isScratchRewardValid = false;
+        missingScratchReason = 'Please select a reward for the scratch card.';
+    } else if (!hasScratchFoil && !hasFallback) {
+        isScratchRewardValid = false;
+        missingScratchReason = 'Missing scratch foil layer. Please specify a fallback reward state.';
+    }
+  }
+
   const canLaunch = currentCampaign?.type === 'challenge' 
     ? (isTargetingValid && isGoalsValid && isChallengesValid) 
     : currentCampaign?.type === 'spinthewheel'
     ? (isTargetingValid && isGoalsValid) // simplified for now
-    : (isTargetingValid && isGoalsValid && isDesignValid);
+    : (isTargetingValid && isGoalsValid && isDesignValid && (!isScratchCardGame || isScratchRewardValid));
 
   // Handle Step Navigation (Skippable Unlocking)
   const handleStepClick = (stepId: Step) => {
@@ -342,6 +382,12 @@ const CampaignBuilder: React.FC = () => {
       setActiveStep(isStoriesExp ? 'stories' : 'design');
       return;
     }
+    
+    if (isScratchCardGame && !isScratchRewardValid) {
+      toast.error(`Cannot launch: ${missingScratchReason}`);
+      setActiveStep('scratch_rewards' as any);
+      return;
+    }
 
     try {
       updateStatus('active');
@@ -371,6 +417,7 @@ const CampaignBuilder: React.FC = () => {
   const isStories = currentCampaign?.experienceType === 'stories';
   const isChallenge = currentCampaign?.type === 'challenge';
   const isSpinTheWheel = currentCampaign?.type === 'spinthewheel';
+  const isScratchCard = currentCampaign?.type === 'scratchcard';
 
   const steps = isChallenge ? [
     { id: 'targeting', label: 'Targeting', icon: Target },
@@ -383,6 +430,11 @@ const CampaignBuilder: React.FC = () => {
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
     { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'design', label: 'Wheel Game', icon: Palette },
+  ] : isScratchCard ? [
+    { id: 'targeting', label: 'Targeting', icon: Target },
+    { id: 'goals', label: 'Goals & Rollout', icon: Flag },
+    { id: 'scratch_rewards', label: 'Rewards', icon: Gift },
+    { id: 'design', label: 'Design', icon: Palette },
   ] : [
     { id: 'targeting', label: 'Targeting', icon: Target },
     { id: 'goals', label: 'Goals & Rollout', icon: Flag },
@@ -780,7 +832,8 @@ const CampaignBuilder: React.FC = () => {
                       <ul className="list-disc pl-4 space-y-0.5 text-xs text-muted-foreground">
                         {!isTargetingValid && <li>Complete Targeting step</li>}
                         {!isGoalsValid && <li>Set a Goal Event and Rollout</li>}
-                        {!isDesignValid && <li>Create a Design</li>}
+                        {!isDesignValid && currentCampaign?.type !== 'challenge' && currentCampaign?.type !== 'stories' && <li>Add content to Design</li>}
+                        {isScratchCardGame && !isScratchRewardValid && <li>{missingScratchReason}</li>}
                       </ul>
                     </TooltipContent>
                   )}
@@ -808,6 +861,7 @@ const CampaignBuilder: React.FC = () => {
                 {activeStep === 'challenge_type' && <ChallengeTypeStep />}
                 {activeStep === 'tasks' && <TasksStep onNavigateToDesign={(_interfaceId) => setActiveStep('design')} />}
                 {activeStep === 'rewards' && <SpinWheelRewardsStep />}
+                {activeStep === 'scratch_rewards' && <ScratchCardRewardStep />}
                 {activeStep === 'stories' && (
                   activeStoryId ? (
                     <StoryEditorWrapper />

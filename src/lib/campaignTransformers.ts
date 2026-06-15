@@ -251,9 +251,9 @@ export function editorToBackend(campaign: CampaignEditor): BackendCampaign {
             ...(int.nudgeType === 'bottomsheet' && int.bottomSheetConfig ? { bottomSheetConfig: int.bottomSheetConfig } : {}),
             ...(int.nudgeType === 'banner' && int.bannerConfig ? { bannerConfig: int.bannerConfig } : {}),
             ...(int.nudgeType === 'tooltip' && int.tooltipConfig ? { tooltipConfig: int.tooltipConfig } : {}),
-            ...(int.nudgeType === 'scratchcard' && int.scratchCardConfig ? { scratchCardConfig: int.scratchCardConfig } : {}),
             ...(int.nudgeType === 'pip' && int.pipConfig ? { pipConfig: int.pipConfig } : {}),
             ...(int.nudgeType === 'floater' && int.floaterConfig ? { floaterConfig: int.floaterConfig } : {}),
+            ...(int.scratchCardConfig ? { scratchCardConfig: int.scratchCardConfig } : {}),
             ...(int.spinTheWheelConfig ? { spinTheWheelConfig: int.spinTheWheelConfig } : {}),
             ...((int.nudgeType === 'fullscreen' || int.nudgeType === 'fullpage') && int.fullscreenConfig ? { fullscreenConfig: int.fullscreenConfig } : {}),
             layers: int.layers || [],
@@ -483,9 +483,8 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
         ? (backendCampaign.config?.bannerConfig || extractBannerConfig(backendCampaign.config || {}))
         : undefined;
 
-    const scratchCardConfig = campaignType === 'scratchcard'
-        ? (backendCampaign.config?.scratchCardConfig || extractScratchCardConfig(backendCampaign.config || {}))
-        : undefined;
+    const scratchCardConfig = backendCampaign.config?.scratchCardConfig || 
+        (campaignType === 'scratchcard' ? extractScratchCardConfig(backendCampaign.config || {}) : undefined);
 
     const isSpinTheWheel = backendCampaign.campaignType === 'spinthewheel' || backendCampaign.type === 'spinthewheel' || backendCampaign.config?.campaignType === 'spinthewheel';
     const spinTheWheelConfig = isSpinTheWheel
@@ -684,7 +683,7 @@ export function backendToEditor(backendCampaign: any): CampaignEditor {
             bottomSheetConfig: iface.nudgeType === 'bottomsheet' ? iface.bottomSheetConfig : undefined,
             bannerConfig: iface.nudgeType === 'banner' ? iface.bannerConfig : undefined,
             tooltipConfig: iface.nudgeType === 'tooltip' ? iface.tooltipConfig : undefined,
-            scratchCardConfig: iface.nudgeType === 'scratchcard' ? iface.scratchCardConfig : undefined,
+            scratchCardConfig: iface.scratchCardConfig,
             pipConfig: iface.nudgeType === 'pip' ? iface.pipConfig : undefined,
             floaterConfig: iface.nudgeType === 'floater' ? iface.floaterConfig : undefined,
             spinTheWheelConfig: iface.spinTheWheelConfig ? iface.spinTheWheelConfig : undefined,
@@ -842,6 +841,8 @@ function buildConfigFromLayers(campaign: CampaignEditor): Record<string, any> {
             scratchSize: sc.scratchSize,
             revealThreshold: sc.revealThreshold,
             autoReveal: sc.autoReveal,
+            rewardId: sc.rewardId,
+            fallbackRewardState: sc.fallbackRewardState,
             position: sc.position,
             completionAnimation: sc.completionAnimation,
             overlay: sc.overlay,
@@ -2502,6 +2503,8 @@ function extractScratchCardConfig(config: Record<string, any>): ScratchCardConfi
         scratchType: config.scratchType || 'brush', // Required field — default to brush
         revealThreshold: config.revealThreshold || 50,
         autoReveal: config.autoReveal !== false,
+        rewardId: config.rewardId,
+        fallbackRewardState: config.fallbackRewardState,
         scratchArea: config.scratchArea || { x: 0, y: 0, width: '100%', height: '100%' },
         completionAnimation: config.completionAnimation || {
             type: 'confetti',

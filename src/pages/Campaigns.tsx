@@ -659,7 +659,7 @@ const Campaigns = () => {
           boxShadow: theme.shadows.sm,
           display: 'flex',
           flexDirection: 'column',
-          height: 'calc(100vh - 120px)', // Full height minus header
+          height: 'auto',
           width: '100%', // Full width
           maxWidth: '100%'
         }}>

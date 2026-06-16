@@ -644,7 +644,7 @@ const Campaigns = () => {
         title="Campaigns"
         subtitle="Manage your in-app experiences"
         actions={
-          <Button onClick={() => navigate('/campaigns/new')} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-sm">
+          <Button onClick={() => navigate('/campaigns/new')} className="gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white h-10 px-4 rounded-lg font-medium text-sm transition-colors duration-150 shadow-sm border-0">
             <Plus size={16} /> Create Campaign
           </Button>
         }

@@ -16,10 +16,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, actions }) => 
   return (
     <header
       style={{
-        minHeight: theme.layout.header.height,
-        padding: theme.layout.header.padding,
+        minHeight: '72px',
+        padding: '0 32px',
         backgroundColor: theme.colors.background.card,
-        borderBottom: `1px solid ${theme.colors.border.default}`,
+        borderBottom: `1px solid ${theme.colors.border.light}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -31,11 +31,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, actions }) => 
         <h1
           style={{
             margin: 0,
-            fontSize: theme.typography.fontSize['2xl'],
-            fontWeight: theme.typography.fontWeight.semibold,
+            fontSize: '24px',
+            fontWeight: 600,
             color: theme.colors.text.primary,
             fontFamily: theme.typography.fontFamily.sans.join(', '),
-            lineHeight: theme.typography.lineHeight.tight,
+            lineHeight: 1.2,
+            letterSpacing: '-0.02em',
           }}
         >
           {title}
@@ -43,10 +44,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, actions }) => 
         {subtitle && (
           <p
             style={{
-              margin: `${theme.spacing[1]} 0 0 0`,
-              fontSize: theme.typography.fontSize.sm,
+              margin: '6px 0 0 0',
+              fontSize: '13px',
+              fontWeight: 400,
               color: theme.colors.text.secondary,
               fontFamily: theme.typography.fontFamily.sans.join(', '),
+              letterSpacing: '-0.01em',
             }}
           >
             {subtitle}

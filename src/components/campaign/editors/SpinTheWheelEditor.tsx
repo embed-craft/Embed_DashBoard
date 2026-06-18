@@ -282,6 +282,52 @@ export const SpinTheWheelEditor = () => {
                             </div>
                         </div>
 
+                        {/* Wheel Rotation Offset */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] text-gray-500 mb-0">Rotation Offset (Degrees)</Label>
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="-180"
+                                    max="180"
+                                    value={content.wheelRotationOffset ?? 0}
+                                    onFocus={() => updateContent({ showSTWAlignmentGuides: true })}
+                                    onBlur={() => updateContent({ showSTWAlignmentGuides: false })}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        updateContent({ 
+                                            wheelRotationOffset: isNaN(val) ? 0 : val,
+                                            showSTWAlignmentGuides: true 
+                                        });
+                                    }}
+                                    className="w-16 h-6 text-xs text-right font-mono px-1 py-0.5 border border-indigo-200 bg-indigo-50/20 text-indigo-600 rounded focus:ring-1 focus:ring-indigo-500"
+                                />
+                            </div>
+                            <input
+                                type="range"
+                                min="-180"
+                                max="180"
+                                step="0.1"
+                                value={content.wheelRotationOffset ?? 0}
+                                onMouseDown={() => updateContent({ showSTWAlignmentGuides: true })}
+                                onMouseUp={() => updateContent({ showSTWAlignmentGuides: false })}
+                                onTouchStart={() => updateContent({ showSTWAlignmentGuides: true })}
+                                onTouchEnd={() => updateContent({ showSTWAlignmentGuides: false })}
+                                onChange={(e) => updateContent({ 
+                                    wheelRotationOffset: parseFloat(e.target.value) || 0,
+                                    showSTWAlignmentGuides: true 
+                                })}
+                                onBlur={() => updateContent({ showSTWAlignmentGuides: false })}
+                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            />
+                            <div className="flex justify-between text-[9px] text-gray-400">
+                                <span>-180°</span>
+                                <span>0°</span>
+                                <span>180°</span>
+                            </div>
+                        </div>
+
                         <Separator />
 
                         {/* Wheel Image */}

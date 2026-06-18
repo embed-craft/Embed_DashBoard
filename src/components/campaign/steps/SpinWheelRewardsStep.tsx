@@ -42,8 +42,7 @@ const SpinWheelRewardsStep = () => {
             id: Date.now().toString(),
             name: `Section ${num}`,
             rewardId: '',
-            weight: 100,
-            quantity: 1
+            weight: 100
         };
         updateSpinTheWheelConfig({
             sections: [...config.sections, newSection]
@@ -144,7 +143,13 @@ const SpinWheelRewardsStep = () => {
                                                     <select 
                                                         className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 py-2 border bg-white px-3 h-[42px]"
                                                         value={section.rewardId || ''}
-                                                        onChange={(e) => updateSection(section.id, { rewardId: e.target.value })}
+                                                        onChange={(e) => {
+                                                            const rId = e.target.value;
+                                                            updateSection(section.id, { 
+                                                                rewardId: rId,
+                                                                quantity: rId ? (section.quantity || 1) : undefined
+                                                            });
+                                                        }}
                                                     >
                                                         <option value="">Select</option>
                                                         {rewards.map(r => (
@@ -157,9 +162,16 @@ const SpinWheelRewardsStep = () => {
                                                     <input 
                                                         type="number" 
                                                         min="1"
-                                                        value={section.quantity || 1}
-                                                        onChange={(e) => updateSection(section.id, { quantity: parseInt(e.target.value) || 1 })}
-                                                        className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 py-2 border px-3 h-[42px]"
+                                                        placeholder={(!section.rewardId || section.rewardId === 'no_reward') ? "N/A (No Reward)" : "Unlimited"}
+                                                        disabled={!section.rewardId || section.rewardId === 'no_reward'}
+                                                        value={(!section.rewardId || section.rewardId === 'no_reward') ? "" : (section.quantity === undefined || section.quantity === null ? '' : section.quantity)}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            updateSection(section.id, { 
+                                                                quantity: val === '' ? undefined : parseInt(val)
+                                                            });
+                                                        }}
+                                                        className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 py-2 border px-3 h-[42px] disabled:bg-gray-100 disabled:text-gray-400"
                                                     />
                                                 </div>
                                             </div>

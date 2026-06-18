@@ -124,6 +124,20 @@ class ApiClient {
         errorBody = { message: `HTTP ${response.status}` };
       }
 
+      if (response.status === 401) {
+        // Clear authentication tokens to avoid infinite 401 loops
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+          
+          // Only redirect if we are not already on the login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
+      }
+
       throw new ApiError(
         errorBody.message || errorBody.error || `HTTP ${response.status}`,
         response.status,

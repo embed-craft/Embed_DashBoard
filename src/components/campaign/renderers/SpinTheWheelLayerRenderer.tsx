@@ -101,8 +101,26 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     // Wheel scale from editor config (default 1.0)
     const wheelScale = content.wheelScale ?? 1.0;
 
-    // Determine wheel size from actual rendered container
-    const diameter = Math.min(containerSize.width, containerSize.height) * 0.70 * wheelScale;
+    // Determine wheel size from actual rendered container (unscaled to design coordinates to prevent double-scaling)
+    const unscaledWidth = scale > 0 ? containerSize.width / scale : containerSize.width;
+    
+    // BUG FIX: Avoid using unscaledHeight in Math.min() for diameter.
+    // If the parent uses height: 'auto', measuring height creates an infinite shrinking loop
+    // where the wheel scales down slightly on every ResizeObserver tick until it hits zero or minHeight.
+    // The SDK avoids this because unbounded flex columns fallback to the device's full screen height.
+    // To ensure Dashboard parity with the SDK, we strictly base the circle scale on the container width.
+    const diameter = unscaledWidth * 0.70 * wheelScale;
+    
+    console.log('[STW] Dimensions:', {
+        containerWidth: containerSize.width,
+        containerHeight: containerSize.height,
+        scale,
+        scaleY,
+        unscaledWidth,
+        diameter,
+        wheelScale,
+        physicalDiameter: diameter * scale
+    });
     const radius = diameter / 2;
     // SVG viewBox uses a fixed coordinate space
     const svgBaseDiameter = 300; // Fixed SVG coordinate space
@@ -131,6 +149,9 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     const pointerSize = radius * 0.18;
     const pointerImage = content.pointerImage;
     const wheelImage = content.wheelImage;
+
+    const scaledInnerRadius = innerRadius * scale;
+    const scaledPointerSize = pointerSize * scale;
 
     // ─── Spin Logic ───────────────────────────────────────────────
     const winningCriteria = currentCampaign?.spinTheWheelConfig?.winningCriteria || 'weight';
@@ -183,7 +204,8 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     // ─── Animate wheel to a specific winning index ───────────────
     const animateToIndex = useCallback((winnerIdx: number) => {
         const currentRotation = rotationRef.current;
-        const targetSectionAngle = winnerIdx * degreesPerSlice + degreesPerSlice / 2;
+        const offset = content.wheelRotationOffset ?? 0;
+        const targetSectionAngle = winnerIdx * degreesPerSlice + degreesPerSlice / 2 + offset;
         const extraSpins = (5 + Math.floor(Math.random() * 3)) * 360;
         const requiredAbsoluteRotation = 360 - targetSectionAngle;
         
@@ -393,7 +415,7 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                         @keyframes stw-confetti-fall {
                             0% { transform: translateY(0) rotate(0deg); opacity: 1; }
                             25% { opacity: 1; }
-                            100% { transform: translateY(${containerSize.height + 50}px) rotate(${360 + Math.random() * 720}deg); opacity: 0; }
+                            100% { transform: translateY(${unscaledHeight + 50}px) rotate(${360 + Math.random() * 720}deg); opacity: 0; }
                         }
                     `}</style>
                 </div>
@@ -405,8 +427,16 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                 @keyframes stw-pop-in { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
             `}</style>
 
-            {/* Wheel Container */}
-            <div style={{ position: 'relative', width: diameter, height: diameter }}>
+            <div style={{
+                position: 'relative',
+                width: diameter * scale,
+                height: diameter * scale,
+                minWidth: diameter * scale,
+                minHeight: diameter * scale,
+                maxWidth: 'none',
+                maxHeight: 'none',
+                flexShrink: 0
+            }}>
 
                 {/* Rotating Wheel Wrapper */}
                 <div style={{
@@ -417,21 +447,90 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                 }}>
                     {/* Mode 1: Custom Wheel Image */}
                     {wheelImage ? (
-                        <img
-                            src={wheelImage}
-                            alt="Spin Wheel"
-                            referrerPolicy="no-referrer"
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                borderRadius: '50%',
-                                objectFit: 'contain',
-                                filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
-                            }}
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                        />
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                            <img
+                                src={wheelImage}
+                                alt="Spin Wheel"
+                                referrerPolicy="no-referrer"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: '50%',
+                                    objectFit: 'contain',
+                                    filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+                                }}
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                            {/* SVG Guide Lines for Section alignment */}
+                            {content.showSTWAlignmentGuides && (
+                                <svg
+                                    viewBox={`-10 -10 ${svgBaseDiameter + 20} ${svgBaseDiameter + 20}`}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none',
+                                        zIndex: 3
+                                    }}
+                                >
+                                    {Array.from({ length: sliceCount }).map((_, i) => {
+                                        const offsetDeg = content.wheelRotationOffset ?? 0;
+                                        const startAngle = i * anglePerSlice - Math.PI / 2 + (offsetDeg * Math.PI) / 180;
+                                        const endAngle = (i + 1) * anglePerSlice - Math.PI / 2 + (offsetDeg * Math.PI) / 180;
+                                        const midAngle = (startAngle + endAngle) / 2;
+
+                                        const lineX = svgCx + svgRadius * Math.cos(startAngle);
+                                        const lineY = svgCy + svgRadius * Math.sin(startAngle);
+
+                                        // Badge radius position (72% of total radius to place inside the sector comfortably)
+                                        const badgeR = svgRadius * 0.72;
+                                        const badgeX = svgCx + badgeR * Math.cos(midAngle);
+                                        const badgeY = svgCy + badgeR * Math.sin(midAngle);
+
+                                        return (
+                                            <g key={`guide-group-${i}`}>
+                                                {/* Dotted boundary line */}
+                                                <line
+                                                    x1={svgCx}
+                                                    y1={svgCy}
+                                                    x2={lineX}
+                                                    y2={lineY}
+                                                    stroke="#EF4444"
+                                                    strokeWidth={2}
+                                                    strokeDasharray="4 4"
+                                                />
+                                                {/* Section number badge */}
+                                                <circle
+                                                    cx={badgeX}
+                                                    cy={badgeY}
+                                                    r={11}
+                                                    fill="#EF4444"
+                                                    stroke="white"
+                                                    strokeWidth={1.5}
+                                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                                                />
+                                                <text
+                                                    x={badgeX}
+                                                    y={badgeY}
+                                                    fill="white"
+                                                    fontSize={9.5}
+                                                    fontWeight="bold"
+                                                    fontFamily="Inter, system-ui, sans-serif"
+                                                    textAnchor="middle"
+                                                    dominantBaseline="central"
+                                                >
+                                                    {i + 1}
+                                                </text>
+                                            </g>
+                                        );
+                                    })}
+                                </svg>
+                            )}
+                        </div>
                     ) : (
                         /* Mode 2: SVG Wheel */
                         <svg
@@ -555,8 +654,8 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                 <div
                     style={{
                         position: 'absolute',
-                        top: `calc(50% + ${content.spinButtonOffsetY ?? 0}px)`,
-                        left: `calc(50% + ${content.spinButtonOffsetX ?? 0}px)`,
+                        top: `calc(50% + ${(content.spinButtonOffsetY ?? 0) * scaleY}px)`,
+                        left: `calc(50% + ${(content.spinButtonOffsetX ?? 0) * scale}px)`,
                         transform: 'translate(-50%, -50%)',
                         zIndex: 5,
                         cursor: isInteractive && !isSpinning && spinsLeft > 0 ? 'pointer' : 'default',
@@ -569,8 +668,8 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                             alt="Spin Button"
                             referrerPolicy="no-referrer"
                             style={{
-                                width: innerRadius * 3,
-                                height: innerRadius * 3,
+                                width: scaledInnerRadius * 3,
+                                height: scaledInnerRadius * 3,
                                 objectFit: 'contain',
                                 filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))',
                                 opacity: 1,
@@ -579,8 +678,8 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                         />
                     ) : (
                         <div style={{
-                            width: innerRadius * 2.5,
-                            height: innerRadius * 2.5,
+                            width: scaledInnerRadius * 2.5,
+                            height: scaledInnerRadius * 2.5,
                             borderRadius: '50%',
                             backgroundColor: content.accentColor || '#1F2937',
                             border: `${3 * scale}px solid white`,
@@ -593,7 +692,7 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                         }}>
                             <span style={{
                                 color: 'white',
-                                fontSize: innerRadius * 0.5,
+                                fontSize: scaledInnerRadius * 0.5,
                                 fontWeight: 700,
                                 fontFamily: 'Inter, system-ui, sans-serif',
                                 letterSpacing: 1,
@@ -607,8 +706,8 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                 {/* Pointer / Indicator (does NOT rotate) */}
                 <div style={{
                     position: 'absolute',
-                    top: -pointerSize * 0.3 + (content.pointerOffsetY ?? 0),
-                    left: `calc(50% + ${content.pointerOffsetX ?? 0}px)`,
+                    top: -scaledPointerSize * 0.3 + (content.pointerOffsetY ?? 0) * scaleY,
+                    left: `calc(50% + ${(content.pointerOffsetX ?? 0) * scale}px)`,
                     transform: 'translateX(-50%)',
                     zIndex: 10,
                     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
@@ -619,16 +718,16 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                             alt="Pointer"
                             referrerPolicy="no-referrer"
                             style={{
-                                width: pointerSize * 1.5,
-                                height: pointerSize * 1.5,
+                                width: scaledPointerSize * 1.5,
+                                height: scaledPointerSize * 1.5,
                                 objectFit: 'contain',
                             }}
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                     ) : (
                         <svg
-                            width={pointerSize * 1.5}
-                            height={pointerSize * 1.5}
+                            width={scaledPointerSize * 1.5}
+                            height={scaledPointerSize * 1.5}
                             viewBox="0 0 40 40"
                         >
                             <polygon

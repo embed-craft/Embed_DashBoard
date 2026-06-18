@@ -1383,7 +1383,9 @@ export const useEditorStore = create<EditorStore>()(
 
       // Create new campaign
       createCampaign: (experienceType: CampaignEditor['experienceType'], nudgeType: CampaignEditor['nudgeType'], type: 'nudge' | 'challenge' = 'nudge') => {
-        const defaultLayers = getDefaultLayersForNudgeType(nudgeType);
+        const defaultLayers = type === 'spinthewheel'
+          ? getDefaultLayersForSpinTheWheel()
+          : getDefaultLayersForNudgeType(nudgeType);
 
         // FIX #4: Generate unique ID using UUID pattern
         const uniqueId = `campaign_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -1535,9 +1537,16 @@ export const useEditorStore = create<EditorStore>()(
             },
           } : undefined,
           // Initialize spinTheWheelConfig
-          spinTheWheelConfig: nudgeType === 'spinthewheel' ? {
+          spinTheWheelConfig: (type === 'spinthewheel' || nudgeType === 'spinthewheel') ? {
              winningCriteria: 'weight',
-             sections: [],
+             sections: [
+               { id: 'sec_1', name: '10% OFF', color: '#FF6B6B', weight: 10, rewardId: '' },
+               { id: 'sec_2', name: 'Free Gift', color: '#4ECDC4', weight: 10, rewardId: '' },
+               { id: 'sec_3', name: 'Try Again', color: '#45B7D1', weight: 30, rewardId: '' },
+               { id: 'sec_4', name: '20% OFF', color: '#96CEB4', weight: 10, rewardId: '' },
+               { id: 'sec_5', name: 'Free Shipping', color: '#FFEAA7', weight: 20, rewardId: '' },
+               { id: 'sec_6', name: 'Try Again', color: '#DDA0DD', weight: 20, rewardId: '' },
+             ],
           } : undefined,
           // Initialize floater config for floater nudge type
           floaterConfig: nudgeType === 'floater' ? {
@@ -2327,6 +2336,9 @@ export const useEditorStore = create<EditorStore>()(
         const { currentCampaign, activeInterfaceId } = get();
         if (!currentCampaign) return '';
 
+        // Declared here for access during parent children array update
+        let spinsCounterId: string | null = null;
+
         // FIX #7: Generate unique layer ID to prevent duplicates
         const uniqueLayerId = `layer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
@@ -2339,8 +2351,8 @@ export const useEditorStore = create<EditorStore>()(
         if (type === 'spinthewheel') {
           const congratsId = `layer_${Date.now()}_congrats`;
           const lossId = `layer_${Date.now()}_loss`;
-          const spinsCounterId = `layer_${Date.now()}_spinscounter`;
-          autoChildrenIds.push(congratsId, lossId, spinsCounterId);
+          spinsCounterId = `layer_${Date.now()}_spinscounter`;
+          autoChildrenIds.push(congratsId, lossId);
 
           autoChildren.push({
             id: congratsId,
@@ -2354,7 +2366,15 @@ export const useEditorStore = create<EditorStore>()(
             position: { x: 0, y: 0 },
             size: { width: '100%', height: '100%' },
             content: getDefaultContentForType('container'),
-            style: getDefaultStyleForType('container'),
+            style: {
+              ...getDefaultStyleForType('container'),
+              width: '100%',
+              height: '100%',
+              top: '0px',
+              left: '0px',
+              borderWidth: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            },
           });
 
           autoChildren.push({
@@ -2369,7 +2389,15 @@ export const useEditorStore = create<EditorStore>()(
             position: { x: 0, y: 0 },
             size: { width: '100%', height: '100%' },
             content: getDefaultContentForType('container'),
-            style: getDefaultStyleForType('container'),
+            style: {
+              ...getDefaultStyleForType('container'),
+              width: '100%',
+              height: '100%',
+              top: '0px',
+              left: '0px',
+              borderWidth: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            },
           });
 
           // Spins Left counter button — uses {{spins_left}} placeholder
@@ -2377,12 +2405,12 @@ export const useEditorStore = create<EditorStore>()(
             id: spinsCounterId,
             type: 'button',
             name: 'Spins Left Counter',
-            parent: uniqueLayerId,
+            parent: parentId || null,
             children: [],
             visible: true,
             locked: false,
             zIndex: 3,
-            position: { x: 370, y: 790 },
+            position: { x: 370, y: 1650 },
             size: { width: 340, height: 50 },
             content: {
               ...getDefaultContentForType('button'),
@@ -2398,6 +2426,8 @@ export const useEditorStore = create<EditorStore>()(
               position: 'absolute',
               width: 340,
               height: 50,
+              left: '370px',
+              top: '1650px',
             },
           });
         }
@@ -2450,9 +2480,13 @@ export const useEditorStore = create<EditorStore>()(
             if (parentId) {
               const parentIndex = updatedLayers.findIndex(l => l.id === parentId);
               if (parentIndex !== -1) {
+                const parentChildren = [...updatedLayers[parentIndex].children, newLayer.id];
+                if (type === 'spinthewheel' && spinsCounterId) {
+                  parentChildren.push(spinsCounterId);
+                }
                 updatedLayers[parentIndex] = {
                   ...updatedLayers[parentIndex],
-                  children: [...updatedLayers[parentIndex].children, newLayer.id]
+                  children: parentChildren
                 };
               }
             }
@@ -2501,9 +2535,13 @@ export const useEditorStore = create<EditorStore>()(
             if (parentId) {
               const parentIndex = updatedLayers.findIndex(l => l.id === parentId);
               if (parentIndex !== -1) {
+                const parentChildren = [...updatedLayers[parentIndex].children, newLayer.id];
+                if (type === 'spinthewheel' && spinsCounterId) {
+                  parentChildren.push(spinsCounterId);
+                }
                 updatedLayers[parentIndex] = {
                   ...updatedLayers[parentIndex],
-                  children: [...updatedLayers[parentIndex].children, newLayer.id]
+                  children: parentChildren
                 };
               }
             }
@@ -2546,9 +2584,13 @@ export const useEditorStore = create<EditorStore>()(
         if (parentId) {
           const parentIndex = updatedLayers.findIndex(l => l.id === parentId);
           if (parentIndex !== -1) {
+            const parentChildren = [...updatedLayers[parentIndex].children, newLayer.id];
+            if (type === 'spinthewheel' && spinsCounterId) {
+              parentChildren.push(spinsCounterId);
+            }
             updatedLayers[parentIndex] = {
               ...updatedLayers[parentIndex],
-              children: [...updatedLayers[parentIndex].children, newLayer.id],
+              children: parentChildren,
             };
           }
         }
@@ -4808,6 +4850,161 @@ export const useEditorStore = create<EditorStore>()(
 );
 
 // Helper functions
+export function getDefaultLayersForSpinTheWheel(): Layer[] {
+  const baseId = Date.now();
+  const fullscreenId = `layer_${baseId}`;
+  const stwId = `layer_${baseId}_stw`;
+  const congratsId = `layer_${baseId}_congrats`;
+  const lossId = `layer_${baseId}_loss`;
+  const spinsCounterId = `layer_${baseId}_spinscounter`;
+
+  return [
+    // 1. Fullscreen Layout Container
+    {
+      id: fullscreenId,
+      type: 'container',
+      name: 'Fullscreen Layout',
+      parent: null,
+      children: [stwId, spinsCounterId],
+      visible: true,
+      locked: false,
+      zIndex: 0,
+      position: { x: 0, y: 0 },
+      size: { width: '100%', height: '100%' },
+      content: {},
+      style: {
+        backgroundColor: '#FFFFFF',
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        top: '0px',
+        left: '0px',
+      },
+    },
+    // 2. Spin The Wheel Game Layer
+    {
+      id: stwId,
+      type: 'spinthewheel',
+      name: 'Spin The Wheel',
+      parent: fullscreenId,
+      children: [congratsId, lossId],
+      visible: true,
+      locked: false,
+      zIndex: 1,
+      position: { x: 0, y: 0 },
+      size: { width: '100%', height: '100%' },
+      content: getDefaultContentForType('spinthewheel'),
+      style: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        opacity: 1,
+        position: 'absolute',
+        top: '0px',
+        left: '0px',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'transparent',
+      },
+    },
+    // 3. Congrats Screen Overlay
+    {
+      id: congratsId,
+      type: 'container',
+      name: 'Congrats Screen',
+      parent: stwId,
+      children: [],
+      visible: false,
+      locked: false,
+      zIndex: 1,
+      position: { x: 0, y: 0 },
+      size: { width: '100%', height: '100%' },
+      content: getDefaultContentForType('container'),
+      style: {
+        padding: { top: 10, right: 10, bottom: 10, left: 10 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        opacity: 1,
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        top: '0px',
+        left: '0px',
+        borderWidth: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        borderRadius: 8,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+      },
+    },
+    // 4. Better Luck Next Time Overlay
+    {
+      id: lossId,
+      type: 'container',
+      name: 'Better Luck Next Time',
+      parent: stwId,
+      children: [],
+      visible: false,
+      locked: false,
+      zIndex: 2,
+      position: { x: 0, y: 0 },
+      size: { width: '100%', height: '100%' },
+      content: getDefaultContentForType('container'),
+      style: {
+        padding: { top: 10, right: 10, bottom: 10, left: 10 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        opacity: 1,
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        top: '0px',
+        left: '0px',
+        borderWidth: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        borderRadius: 8,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+      },
+    },
+    // 5. Spins Left Counter Button (Centered below the wheel on a 1080p canvas)
+    {
+      id: spinsCounterId,
+      type: 'button',
+      name: 'Spins Left Counter',
+      parent: fullscreenId,
+      children: [],
+      visible: true,
+      locked: false,
+      zIndex: 3,
+      position: { x: 370, y: 1650 },
+      size: { width: 340, height: 50 },
+      content: {
+        ...getDefaultContentForType('button'),
+        label: '🎰 Spins Left: {{spins_left}}',
+        fontSize: 14,
+        fontWeight: 'bold',
+        textColor: '#FFFFFF',
+      },
+      style: {
+        padding: { top: 10, right: 20, bottom: 10, left: 20 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        opacity: 1,
+        backgroundColor: '#1F2937',
+        borderRadius: 25,
+        position: 'absolute',
+        width: 340,
+        height: 50,
+        left: '370px',
+        top: '1650px',
+      },
+    },
+  ];
+}
+
 export function getDefaultLayersForNudgeType(nudgeType: CampaignEditor['nudgeType']): Layer[] {
   const baseId = Date.now();
   const normalizedType = nudgeType?.toLowerCase();
@@ -5415,6 +5612,15 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         layoutMode: 'auto',
         flexDirection: 'column',
+      };
+    case 'spinthewheel':
+      return {
+        ...baseStyle,
+        width: '100%',
+        height: '100%',
+        top: '0px',
+        left: '0px',
+        backgroundColor: 'transparent',
       };
     default:
       return baseStyle;

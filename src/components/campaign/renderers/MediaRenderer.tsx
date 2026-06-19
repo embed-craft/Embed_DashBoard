@@ -53,6 +53,77 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
         );
     }
 
+    // STW Placeholder replacement
+    const resolveText = (text: string): string => {
+        if (!text || !text.includes('{{')) return text;
+        let resolved = text;
+
+        const result = (window as any).__stwResult;
+        
+        // Spin counter placeholders
+        if (resolved.includes('{{spins_left}}')) {
+            const spinsLeft = (window as any).__stwSpinsLeft ?? '5';
+            resolved = resolved.replace(/\{\{spins_left\}\}/g, String(spinsLeft));
+        }
+        if (resolved.includes('{{max_spins}}')) {
+            const maxSpins = (window as any).__stwMaxSpins ?? '5';
+            resolved = resolved.replace(/\{\{max_spins\}\}/g, String(maxSpins));
+        }
+
+        const getPropValue = (obj: any, keyName: string) => {
+            if (!obj) return undefined;
+            if (obj[keyName] !== undefined) return obj[keyName];
+            
+            // Special coupon_code checks
+            if (keyName === 'coupon_code') {
+                return obj.couponCode ?? obj.code ?? obj.couponConfig?.code ?? obj.couponConfig?.bulkCodes?.[0] ?? obj.coupon_code;
+            }
+            if (keyName === 'icon' || keyName === 'iconUrl' || keyName === 'icon_url' || keyName === 'imageUrl' || keyName === 'image_url') {
+                return obj.iconUrl ?? obj.icon ?? obj.imageUrl ?? obj.image_url ?? obj.icon_url ?? obj.couponConfig?.iconUrl;
+            }
+
+            // Check under nested configs
+            if (obj.couponConfig && obj.couponConfig[keyName] !== undefined) return obj.couponConfig[keyName];
+            if (obj.pointsConfig && obj.pointsConfig[keyName] !== undefined) return obj.pointsConfig[keyName];
+            if (obj.featureConfig && obj.featureConfig[keyName] !== undefined) return obj.featureConfig[keyName];
+
+            // Support snake_case to camelCase fallback
+            const camelKey = keyName.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+            if (obj[camelKey] !== undefined) return obj[camelKey];
+            
+            // Check camelCase under nested configs
+            if (obj.couponConfig && obj.couponConfig[camelKey] !== undefined) return obj.couponConfig[camelKey];
+            if (obj.pointsConfig && obj.pointsConfig[camelKey] !== undefined) return obj.pointsConfig[camelKey];
+            if (obj.featureConfig && obj.featureConfig[camelKey] !== undefined) return obj.featureConfig[camelKey];
+
+            // Map generic value
+            if (keyName === 'value') {
+                return obj.couponConfig?.couponValue ?? obj.pointsConfig?.amount ?? obj.value;
+            }
+
+            return undefined;
+        };
+
+        // Generic reward placeholders {{name}}, {{value}}, etc.
+        resolved = resolved.replace(/\{\{([^}]+)\}\}/g, (match, prop) => {
+            const key = prop.trim();
+            if (key === 'spins_left' || key === 'max_spins') return match; // Already handled
+            
+            // Map legacy placeholders
+            const actualKey = key === 'reward_name' || key === 'section_name' ? 'name' : key;
+            
+            if (result) {
+                const val = getPropValue(result, actualKey) ?? getPropValue(result.rewardDetails, actualKey);
+                return val !== undefined ? String(val) : '';
+            }
+            
+            // Editor preview fallback when not spun yet
+            return `[${actualKey}]`;
+        });
+
+        return resolved;
+    };
+
     // Grid Data Binding: resolve mapped_key for dynamic image URL
     const { dataItem } = useGridElementData();
     let imageUrl = layer.content?.imageUrl || '';
@@ -67,8 +138,9 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
         if (value != null) imageUrl = String(value);
     }
 
-    const youtubeId = getYouTubeId(imageUrl);
-    const isVideo = imageUrl.toLowerCase().match(/\.(mp4|webm|ogg)$/);
+    const resolvedImageUrl = resolveText(imageUrl);
+    const youtubeId = getYouTubeId(resolvedImageUrl);
+    const isVideo = resolvedImageUrl.toLowerCase().match(/\.(mp4|webm|ogg)$/);
 
     if (youtubeId) {
         return (
@@ -108,7 +180,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
         return (
             <video
                 key={isActive ? 'playing' : 'paused'}
-                src={layer.content?.imageUrl}
+                src={resolvedImageUrl}
                 autoPlay={isActive}
                 muted={muted}
                 loop
@@ -130,7 +202,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
         );
     }
 
-    const cleanUrl = imageUrl.split('?')[0].toLowerCase();
+    const cleanUrl = resolvedImageUrl.split('?')[0].toLowerCase();
     const isLottie = cleanUrl.endsWith('.json');
     const isRive = cleanUrl.endsWith('.riv');
     const isPdf = cleanUrl.endsWith('.pdf');
@@ -180,7 +252,7 @@ export const MediaRenderer: React.FC<MediaRendererProps> = ({ layer, scale = 1, 
 
     return (
         <img
-            src={layer.content?.imageUrl}
+            src={resolvedImageUrl}
             alt={layer.name}
             draggable={false}
             style={{

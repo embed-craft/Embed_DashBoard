@@ -74,10 +74,22 @@ export const ScratchFoilLayerRenderer: React.FC<ScratchFoilLayerRendererProps> =
 
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        img.src = coverImage;
+        
+        // Add a CORS cache-buster. If the image was previously loaded in a normal <img> tag
+        // (like in the sidebar preview), the browser caches the non-CORS response.
+        // When the canvas then requests it with crossOrigin='anonymous', the browser serves
+        // the cached response, which fails CORS validation and silently breaks the canvas.
+        const urlStr = String(coverImage);
+        const cacheBuster = `corsbuster=${Date.now()}`;
+        img.src = urlStr.includes('?') ? `${urlStr}&${cacheBuster}` : `${urlStr}?${cacheBuster}`;
+        
         img.onload = () => {
             cachedImageRef.current = img;
             setIsImageLoaded(true);
+        };
+        img.onerror = (err) => {
+            console.error('[ScratchFoilLayerRenderer] Failed to load coverImage for canvas (CORS or network error):', coverImage, err);
+            setIsImageLoaded(false);
         };
     }, [coverImage]);
 

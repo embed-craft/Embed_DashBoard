@@ -118,9 +118,28 @@ const ScratchCardRewardStep = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {Object.entries(rewards.find(r => r.id === selectedRewardId) || {}).map(([key, value]) => {
-                                        if (key === 'id' || key === '_id' || typeof value === 'object') return null;
-                                        return (
+                                    {(() => {
+                                        const selectedReward = rewards.find(r => r.id === selectedRewardId);
+                                        if (!selectedReward) return null;
+                                        
+                                        const variables: { key: string; value: any }[] = [];
+                                        
+                                        Object.entries(selectedReward).forEach(([key, value]) => {
+                                            if (key === 'id' || key === '_id') return;
+                                            if (key === 'couponConfig' && value && typeof value === 'object') {
+                                                if ('code' in value) variables.push({ key: 'coupon_code', value: (value as any).code });
+                                                if ('couponValue' in value) variables.push({ key: 'coupon_value', value: (value as any).couponValue });
+                                                if ('couponType' in value) variables.push({ key: 'coupon_type', value: (value as any).couponType });
+                                            } else if (key === 'pointsConfig' && value && typeof value === 'object') {
+                                                if ('points' in value) variables.push({ key: 'points', value: (value as any).points });
+                                            } else if (key === 'inventory' && value && typeof value === 'object') {
+                                                if ('total_quantity' in value) variables.push({ key: 'total_quantity', value: (value as any).total_quantity });
+                                            } else if (typeof value !== 'object') {
+                                                variables.push({ key, value });
+                                            }
+                                        });
+
+                                        return variables.map(({ key, value }) => (
                                             <tr key={key} className="border-b border-gray-100 last:border-0">
                                                 <td className="px-4 py-3 font-mono text-indigo-600 bg-indigo-50/30">
                                                     {`{{${key}}}`}
@@ -129,8 +148,8 @@ const ScratchCardRewardStep = () => {
                                                     {String(value)}
                                                 </td>
                                             </tr>
-                                        );
-                                    })}
+                                        ));
+                                    })()}
                                 </tbody>
                             </table>
                         </div>

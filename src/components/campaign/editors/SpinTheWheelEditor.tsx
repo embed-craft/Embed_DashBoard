@@ -626,9 +626,13 @@ export const SpinTheWheelEditor = () => {
                                                 <div className="px-3 pb-3 border-t border-gray-100 space-y-3 pt-3">
                                                     {/* Section Name (Editable) */}
                                                     <div>
-                                                        <Label className="text-[10px] text-gray-500 mb-1.5 block">Section Name</Label>
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <Label className="text-[10px] text-gray-500 block">Section Name</Label>
+                                                            <span className="text-[9px] text-indigo-500 font-medium">Supports {"{{name}}"}</span>
+                                                        </div>
                                                         <Input
                                                             className="h-8 text-xs"
+                                                            placeholder="{{name}}"
                                                             value={sec.name}
                                                             onChange={(e) => {
                                                                 const newSections = sections.map((s: any) =>
@@ -637,6 +641,9 @@ export const SpinTheWheelEditor = () => {
                                                                 updateSpinTheWheelConfig({ sections: newSections });
                                                             }}
                                                         />
+                                                        <p className="text-[9px] text-gray-400 mt-1.5 leading-relaxed">
+                                                            Use placeholders to insert dynamic reward data. E.g., <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600 font-mono">{"{{name}}"}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600 font-mono">{"{{value}}"}</code>, <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600 font-mono">{"{{description}}"}</code>.
+                                                        </p>
                                                     </div>
 
                                                     {/* Section Image (Editable) */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layer } from '@/store/useEditorStore';
 import { useEditorStore } from '@/store/useEditorStore';
+import { useStore } from '@/store/useStore';
 
 // API base URL for backend calls
 const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000')).replace(/\/$/, '');
@@ -31,8 +32,22 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
     selectedLayerId,
 }) => {
     const { currentCampaign, previewUserId } = useEditorStore();
+    const { rewards } = useStore();
     const sections = currentCampaign?.spinTheWheelConfig?.sections || [];
     const content = layer.content || {};
+
+    const resolvePlaceholders = useCallback((text: string, rewardId?: string) => {
+        if (!text || !text.includes('{{')) return text;
+        const reward = rewards?.find((r: any) => r.id === rewardId);
+        if (!reward || rewardId === 'no_reward') {
+            return text.replace(/\{\{([^}]+)\}\}/g, 'No Reward');
+        }
+        return text.replace(/\{\{([^}]+)\}\}/g, (match, prop) => {
+            const key = prop.trim();
+            const value = reward[key];
+            return value !== undefined && value !== null ? String(value) : match;
+        });
+    }, [rewards]);
 
     // ─── Spin State ───────────────────────────────────────────────
     const [isSpinning, setIsSpinning] = useState(false);
@@ -103,6 +118,7 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
 
     // Determine wheel size from actual rendered container (unscaled to design coordinates to prevent double-scaling)
     const unscaledWidth = scale > 0 ? containerSize.width / scale : containerSize.width;
+    const unscaledHeight = scaleY > 0 ? containerSize.height / scaleY : containerSize.height;
     
     // BUG FIX: Avoid using unscaledHeight in Math.min() for diameter.
     // If the parent uses height: 'auto', measuring height creates an infinite shrinking loop
@@ -232,12 +248,15 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                 return newVal;
             });
 
-            const winnerSection = sections[winnerIdx];
-            (window as any).__stwResult = winnerSection ? {
-                name: winnerSection.name,
-                rewardId: winnerSection.rewardId,
-                sectionIndex: winnerIdx,
-            } : null;
+             const winnerSection = sections[winnerIdx];
+             const reward = rewards?.find((r: any) => r.id === winnerSection?.rewardId);
+             (window as any).__stwResult = winnerSection ? {
+                 name: resolvePlaceholders(winnerSection.name || `Section ${winnerIdx + 1}`, winnerSection.rewardId),
+                 rewardId: winnerSection.rewardId,
+                 sectionIndex: winnerIdx,
+                 rewardDetails: reward || {},
+                 ...(reward || {}),
+             } : null;
 
             const isWin = !!(winnerSection && winnerSection.rewardId && winnerSection.rewardId !== '' && winnerSection.rewardId !== 'no_reward');
 
@@ -569,7 +588,8 @@ export const SpinTheWheelLayerRenderer: React.FC<SpinTheWheelLayerRendererProps>
                                 const midAngle = (startAngle + endAngle) / 2;
                                 const sec = sections[i];
                                 const color = sec?.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length];
-                                const name = sec?.name || `Section ${i + 1}`;
+                                const rawName = sec?.name || `Section ${i + 1}`;
+                                const name = resolvePlaceholders(rawName, sec?.rewardId);
 
                                 const textR = svgRadius * 0.62;
                                 const textX = svgCx + textR * Math.cos(midAngle);

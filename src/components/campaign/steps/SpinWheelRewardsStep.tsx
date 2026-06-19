@@ -9,6 +9,7 @@ const SpinWheelRewardsStep = () => {
     
     // Expand/collapse states for sections
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+    const [showPlaceholders, setShowPlaceholders] = useState(false);
 
     useEffect(() => {
         // Fetch segments/cohorts on mount
@@ -74,6 +75,81 @@ const SpinWheelRewardsStep = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">Rewards</h1>
                     <p className="text-gray-500">Define the number of sections and their rewards</p>
+                </div>
+
+                {/* Placeholders Card */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    {/* Collapsible Header */}
+                    <div 
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => setShowPlaceholders(prev => !prev)}
+                    >
+                        <div className="flex items-center gap-3">
+                            <HelpCircle className="w-5 h-5 text-gray-700" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900">Dynamic Text & Image Placeholders</h3>
+                                <p className="text-xs text-gray-500">Use double-brace placeholders to render dynamic spin, reward text, or icons in your layers.</p>
+                            </div>
+                        </div>
+                        <div className="text-gray-500 pr-1">
+                            {showPlaceholders ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        </div>
+                    </div>
+
+                    {/* Content Section */}
+                    {showPlaceholders && (
+                        <div className="p-5 border-t border-gray-100 bg-gray-50/50 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <code className="px-1.5 py-0.5 bg-gray-100 text-gray-900 font-mono rounded font-semibold text-[11px]">{"{{name}}"}</code>
+                                        <span className="text-[10px] text-gray-400 font-mono font-medium">Text/Button layer</span>
+                                    </div>
+                                    <p className="text-gray-600">Resolves to the winning reward's name. (Legacy placeholders <code className="font-mono bg-gray-100 px-1 py-0.5 rounded">{"{{reward_name}}"}</code> and <code className="font-mono bg-gray-100 px-1 py-0.5 rounded">{"{{section_name}}"}</code> also work).</p>
+                                </div>
+                                
+                                <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <code className="px-1.5 py-0.5 bg-gray-100 text-gray-900 font-mono rounded font-semibold text-[11px]">{"{{coupon_code}}"}</code>
+                                        <span className="text-[10px] text-gray-400 font-mono font-medium">Text/Button layer</span>
+                                    </div>
+                                    <p className="text-gray-600">Resolves to the winning reward's coupon code or code property.</p>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <code className="px-1.5 py-0.5 bg-gray-100 text-gray-900 font-mono rounded font-semibold text-[11px]">{"{{icon}}"}</code>
+                                        <span className="text-[10px] text-gray-400 font-mono font-medium">Image layer url</span>
+                                    </div>
+                                    <p className="text-gray-600">Resolves to the winning reward's icon or image URL. (Alias: <code className="font-mono bg-gray-100 px-1 py-0.5 rounded">{"{{iconUrl}}"}</code> or <code className="font-mono bg-gray-100 px-1 py-0.5 rounded">{"{{imageUrl}}"}</code>).</p>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <code className="px-1.5 py-0.5 bg-gray-100 text-gray-900 font-mono rounded font-semibold text-[11px]">{"{{spins_left}}"}</code>
+                                        <span className="text-[10px] text-gray-400 font-mono font-medium">Text/Button layer</span>
+                                    </div>
+                                    <p className="text-gray-600">Resolves to the remaining number of spins allowed for the user.</p>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <code className="px-1.5 py-0.5 bg-gray-100 text-gray-900 font-mono rounded font-semibold text-[11px]">{"{{max_spins}}"}</code>
+                                        <span className="text-[10px] text-gray-400 font-mono font-medium">Text/Button layer</span>
+                                    </div>
+                                    <p className="text-gray-600">Resolves to the maximum attempts configured for this campaign.</p>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <code className="px-1.5 py-0.5 bg-gray-100 text-gray-900 font-mono rounded font-semibold text-[11px]">{"{{any_reward_property}}"}</code>
+                                        <span className="text-[10px] text-gray-400 font-mono font-medium">Any layer type</span>
+                                    </div>
+                                    <p className="text-gray-600">Resolves dynamically to <strong className="font-medium text-gray-900">any custom property</strong> present on your reward object (e.g. <code className="font-mono bg-gray-100 px-1 py-0.5 rounded">{"{{value}}"}</code>, <code className="font-mono bg-gray-100 px-1 py-0.5 rounded">{"{{description}}"}</code>).</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

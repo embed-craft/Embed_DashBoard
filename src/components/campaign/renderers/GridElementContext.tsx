@@ -51,12 +51,29 @@ export const interpolateDataBinding = (text: string | undefined | null, dataItem
     if (!text || typeof text !== 'string' || !dataItem) return text || '';
     
     return text.replace(/\{\{([a-zA-Z0-9_.]+)\}\}/g, (match, key) => {
-        const paths = key.split('.');
         let value: any = dataItem;
-        for (const p of paths) {
-            if (value && typeof value === 'object') value = value[p];
-            else { value = null; break; }
+        const path = key.trim();
+
+        // Handle gamification flat placeholders manually
+        if (path === 'coupon_code') {
+            value = dataItem?.couponConfig?.code ?? null;
+        } else if (path === 'coupon_value') {
+            value = dataItem?.couponConfig?.couponValue ?? null;
+        } else if (path === 'coupon_type') {
+            value = dataItem?.couponConfig?.couponType ?? null;
+        } else if (path === 'points') {
+            value = dataItem?.pointsConfig?.points ?? null;
+        } else if (path === 'total_quantity') {
+            value = dataItem?.inventory?.total_quantity ?? null;
+        } else {
+            // Standard nested resolution
+            const paths = path.split('.');
+            for (const p of paths) {
+                if (value && typeof value === 'object') value = value[p];
+                else { value = null; break; }
+            }
         }
+
         return value != null ? String(value) : match;
     });
 };

@@ -756,7 +756,7 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                 isDraggable={layer.type !== 'grid_item'}
                 style={{
                     ...baseStyle,
-                    outline: isSelected ? `5px solid ${colors.primary[500] || '#6366F1'}` : 'none',
+                    outline: isSelected ? `2px solid ${colors.primary[500] || '#6366F1'}` : 'none',
                     outlineOffset: '2px',
                 }}
             >

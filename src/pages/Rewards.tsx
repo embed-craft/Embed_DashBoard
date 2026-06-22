@@ -57,13 +57,13 @@ const Rewards = () => {
           onClick={() => setIsCreateModalOpen(true)}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            backgroundColor: theme.colors.primary[600], color: 'white',
+            backgroundColor: 'black', color: 'white',
             border: 'none', borderRadius: '8px', padding: '10px 16px',
             fontSize: '14px', fontWeight: 500, cursor: 'pointer',
             transition: 'background-color 0.2s',
           }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.colors.primary[700]}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = theme.colors.primary[600]}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgb(31, 41, 55)'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'black'}
         >
           <Plus size={18} />
           Create Reward

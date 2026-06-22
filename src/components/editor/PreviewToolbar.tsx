@@ -64,10 +64,11 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
             padding: '12px 16px',
             backgroundColor: '#FFFFFF',
             borderBottom: '1px solid #E5E7EB',
-            gap: '16px'
+            gap: '16px',
+            flexWrap: 'wrap'
         }}>
             {/* Left: Device & Background Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Smartphone size={16} color="#6B7280" />
                     <select
@@ -103,7 +104,7 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
             </div>
 
             {/* Center: Zoom Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                     onClick={() => onZoomChange(Math.max(0.1, zoom - 0.1))}
                     style={{
@@ -162,7 +163,7 @@ export const PreviewToolbar: React.FC<PreviewToolbarProps> = ({
             </div>
 
             {/* Right: Action Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 {/* Simulation Mode User ID Input */}
                 <div style={{
                     display: 'flex',

@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
 import { DataBindingEditor } from '../shared/DataBindingEditor';
+import { TypographyFontFamilySelect } from '../shared/TypographyFontFamilySelect';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     AlignCenter, AlignJustify, AlignLeft, AlignRight, Type, Palette, Layers, Box,
@@ -178,36 +179,12 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                         {/* Font Family */}
                         <div className="space-y-1.5">
                             <Label className="text-[11px]">Font Family</Label>
-                            <Select
+                            <TypographyFontFamilySelect
                                 value={layer.content?.fontFamily || 'Roboto'}
-                                onChange={(e) => {
-                                    const selectedFont = e.target.value;
-                                    handleContentUpdate('fontFamily', selectedFont);
-                                    const fontUrl = `https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}&display=swap`;
-                                    handleContentUpdate('fontUrl', fontUrl);
-                                }}
-                            >
-                                <optgroup label="Sans-Serif">
-                                    <option value="Roboto">Roboto</option>
-                                    <option value="Inter">Inter</option>
-                                    <option value="Poppins">Poppins</option>
-                                    <option value="Open Sans">Open Sans</option>
-                                    <option value="Lato">Lato</option>
-                                    <option value="Montserrat">Montserrat</option>
-                                </optgroup>
-                                <optgroup label="Serif">
-                                    <option value="Playfair Display">Playfair Display</option>
-                                    <option value="Merriweather">Merriweather</option>
-                                </optgroup>
-                                <optgroup label="Monospace">
-                                    <option value="Fira Code">Fira Code</option>
-                                </optgroup>
-                                <optgroup label="Decorative">
-                                    <option value="Pacifico">Pacifico</option>
-                                    <option value="Dancing Script">Dancing Script</option>
-                                </optgroup>
-                            </Select >
-                        </div >
+                                onChange={(val) => handleContentUpdate('fontFamily', val)}
+                                handleContentUpdate={handleContentUpdate}
+                            />
+                        </div>
 
                         {/* Size & Weight */}
                         < div className="grid grid-cols-2 gap-3" >

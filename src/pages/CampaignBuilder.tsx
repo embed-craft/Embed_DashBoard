@@ -342,7 +342,9 @@ const CampaignBuilder: React.FC = () => {
     ? (isTargetingValid && isGoalsValid && isChallengesValid) 
     : currentCampaign?.type === 'spinthewheel'
     ? (isTargetingValid && isGoalsValid) // simplified for now
-    : (isTargetingValid && isGoalsValid && isDesignValid && (!isScratchCardGame || isScratchRewardValid));
+    : currentCampaign?.type === 'scratchcard'
+    ? (isTargetingValid && isGoalsValid && isScratchRewardValid)
+    : (isTargetingValid && isGoalsValid && isDesignValid);
 
   // Handle Step Navigation (Skippable Unlocking)
   const handleStepClick = (stepId: Step) => {
@@ -804,8 +806,8 @@ const CampaignBuilder: React.FC = () => {
                 {isSaving ? 'Saving...' : 'Save Draft'}
               </Button>
 
-              <TooltipProvider>
-                <Tooltip>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <div className="inline-block cursor-not-allowed">
                       <Button
@@ -832,7 +834,7 @@ const CampaignBuilder: React.FC = () => {
                       <ul className="list-disc pl-4 space-y-0.5 text-xs text-muted-foreground">
                         {!isTargetingValid && <li>Complete Targeting step</li>}
                         {!isGoalsValid && <li>Set a Goal Event and Rollout</li>}
-                        {!isDesignValid && currentCampaign?.type !== 'challenge' && currentCampaign?.type !== 'stories' && <li>Add content to Design</li>}
+                        {!isDesignValid && currentCampaign?.type !== 'challenge' && currentCampaign?.type !== 'stories' && currentCampaign?.type !== 'scratchcard' && <li>Add content to Design</li>}
                         {isScratchCardGame && !isScratchRewardValid && <li>{missingScratchReason}</li>}
                       </ul>
                     </TooltipContent>

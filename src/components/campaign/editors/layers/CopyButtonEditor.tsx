@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayerEditorProps } from '../types';
+import { TypographyFontFamilySelect } from '../shared/TypographyFontFamilySelect';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
 import {
@@ -218,24 +219,11 @@ export const CopyButtonEditor: React.FC<CopyButtonEditorProps> = ({
 
                         <div>
                             <Label>Font Family</Label>
-                            <Select
+                            <TypographyFontFamilySelect
                                 value={style.fontFamily || 'Roboto'}
-                                onChange={(e) => onStyleUpdate('fontFamily', e.target.value)}
-                            >
-                                <optgroup label="Sans-Serif">
-                                    <option value="Roboto">Roboto</option>
-                                    <option value="Inter">Inter</option>
-                                    <option value="Poppins">Poppins</option>
-                                    <option value="Open Sans">Open Sans</option>
-                                </optgroup>
-                                <optgroup label="Serif">
-                                    <option value="Playfair Display">Playfair Display</option>
-                                    <option value="Merriweather">Merriweather</option>
-                                </optgroup>
-                                <optgroup label="Monospace">
-                                    <option value="Fira Code">Fira Code</option>
-                                </optgroup>
-                            </Select>
+                                onChange={(val) => onStyleUpdate('fontFamily', val)}
+                                handleContentUpdate={handleContentUpdate}
+                            />
                         </div>
                     </div>
 

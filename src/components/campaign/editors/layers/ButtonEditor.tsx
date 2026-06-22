@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { LayerEditorProps } from '../types';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { SizeControls } from '../shared/SizeControls';
+import { TypographyFontFamilySelect } from '../shared/TypographyFontFamilySelect';
 import {
     Layout,
     Palette,
@@ -271,27 +272,11 @@ export const ButtonEditor: React.FC<ButtonEditorProps> = ({
 
                         <div>
                             <Label>Font Family</Label>
-                            <Select
+                            <TypographyFontFamilySelect
                                 value={content.fontFamily || 'Roboto'}
-                                onChange={(e) => {
-                                    handleContentUpdate('fontFamily', e.target.value);
-                                    handleContentUpdate('fontUrl', `https://fonts.googleapis.com/css2?family=${e.target.value.replace(/ /g, '+')}&display=swap`);
-                                }}
-                            >
-                                <optgroup label="Sans-Serif">
-                                    <option value="Roboto">Roboto</option>
-                                    <option value="Inter">Inter</option>
-                                    <option value="Poppins">Poppins</option>
-                                    <option value="Open Sans">Open Sans</option>
-                                </optgroup>
-                                <optgroup label="Serif">
-                                    <option value="Playfair Display">Playfair Display</option>
-                                    <option value="Merriweather">Merriweather</option>
-                                </optgroup>
-                                <optgroup label="Monospace">
-                                    <option value="Fira Code">Fira Code</option>
-                                </optgroup>
-                            </Select>
+                                onChange={(val) => handleContentUpdate('fontFamily', val)}
+                                handleContentUpdate={handleContentUpdate}
+                            />
                         </div>
 
                         <div>

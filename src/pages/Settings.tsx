@@ -627,6 +627,165 @@ const PlaceholderContent = ({ title, description }: { title: string; description
 );
 
 // ============================================================================
+// Brand Guidelines Content
+// ============================================================================
+const BrandContent = () => {
+  const [settings, setSettings] = React.useState<any>({ typography: { fontFamilies: [], tokens: {} } });
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+  const [newFontName, setNewFontName] = React.useState('');
+  const [newFontUrl, setNewFontUrl] = React.useState('');
+
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await apiClient.getOrganizationSettings();
+        if (res.settings && res.settings.brandGuidelines) {
+          setSettings(res.settings.brandGuidelines);
+        }
+      } catch (error) {
+        console.error('Failed to fetch brand guidelines', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apiClient.updateOrganizationSettings({ brandGuidelines: settings });
+      toast.success('Brand guidelines updated successfully');
+    } catch (error) {
+      console.error('Failed to update brand guidelines', error);
+      toast.error('Failed to update brand guidelines');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddFont = () => {
+    if (!newFontName || !newFontUrl) return;
+
+    let finalUrl = newFontUrl.trim();
+    let finalName = newFontName.trim();
+
+    // Auto-convert Google Fonts share/specimen links to CSS API link
+    if (finalUrl.includes('fonts.google.com')) {
+      try {
+        const url = new URL(finalUrl);
+        let family = url.searchParams.get('selection.family') || url.searchParams.get('family');
+        if (!family && finalUrl.includes('/specimen/')) {
+          family = finalUrl.split('/specimen/')[1].split('?')[0].replace(/\+/g, ' ');
+        }
+        if (family) {
+          finalUrl = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}&display=swap`;
+          if (!finalName) finalName = family;
+        }
+      } catch (e) {
+        // Ignore URL parse errors
+      }
+    }
+
+    const newFamily = {
+      id: `font_${Date.now()}`,
+      name: finalName,
+      isVariableFont: false,
+      variants: [{ weight: 400, style: 'normal', urls: { woff2: finalUrl, ttf: finalUrl } }]
+    };
+    setSettings((prev: any) => ({
+      ...prev,
+      typography: {
+        ...prev.typography,
+        fontFamilies: [...(prev.typography?.fontFamilies || []), newFamily]
+      }
+    }));
+    setNewFontName('');
+    setNewFontUrl('');
+  };
+
+  const handleRemoveFont = (id: string) => {
+    setSettings((prev: any) => ({
+      ...prev,
+      typography: {
+        ...prev.typography,
+        fontFamilies: (prev.typography?.fontFamilies || []).filter((f: any) => f.id !== id)
+      }
+    }));
+  };
+
+  if (loading) return <div className="p-10 text-gray-500 text-center">Loading guidelines...</div>;
+
+  return (
+    <div className="max-w-4xl">
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Brand Guidelines</h2>
+        <p className="text-base text-gray-500 mt-2">Centralized design tokens and custom typography for all campaigns.</p>
+      </div>
+
+      <div className="bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden mb-8">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Custom Typography</h3>
+            <p className="text-sm text-gray-500 mt-1">Upload font files (WOFF2/TTF) to use across the editor and SDK.</p>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4 mb-8">
+            {(settings.typography?.fontFamilies || []).map((font: any) => (
+              <div key={font.id} className="p-4 border border-gray-200 rounded-md flex justify-between items-center bg-gray-50 shadow-sm">
+                <div>
+                  <span className="font-semibold text-gray-900 text-base">{font.name}</span>
+                  <div className="text-xs text-gray-500 font-mono mt-1">ID: {font.id}</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-600 truncate max-w-[200px]" title={font.variants?.[0]?.urls?.woff2}>
+                    {font.variants?.[0]?.urls?.woff2}
+                  </div>
+                  <Button variant="outline" onClick={() => handleRemoveFont(font.id)} className="h-8 px-3 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200">
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {(settings.typography?.fontFamilies || []).length === 0 && (
+              <div className="text-center p-8 border-2 border-dashed border-gray-200 rounded-lg text-gray-500">
+                No custom fonts added yet. Add your first brand font below.
+              </div>
+            )}
+          </div>
+          <div className="bg-white border border-gray-200 p-5 rounded-lg shadow-sm">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4">Register New Font Family</h4>
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="fontName" className="text-sm font-medium">Font Family Name</Label>
+                <Input id="fontName" placeholder="e.g. Corporate Sans" value={newFontName} onChange={e => setNewFontName(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="fontUrl" className="text-sm font-medium">Font URL (CDN / HTTPS)</Label>
+                <Input id="fontUrl" placeholder="https://cdn.example.com/font.woff2" value={newFontUrl} onChange={e => setNewFontUrl(e.target.value)} className="h-10" />
+              </div>
+              <Button onClick={handleAddFont} className="bg-gray-900 text-white hover:bg-black h-10 px-6">Add Font</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSave} 
+          disabled={saving}
+          className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-md shadow-sm"
+        >
+          {saving ? 'Saving Guidelines...' : 'Save Brand Guidelines'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
 // Prioritization Rules Content
 // ============================================================================
 const PrioritizationContent = () => {
@@ -748,7 +907,7 @@ const Settings = () => {
       case 'referral':
         return <PlaceholderContent title="Referral Settings" description="Configure your global referral program settings." />;
       case 'brand':
-        return <PlaceholderContent title="Brand Guidelines" description="Set up your workspace brand colors, typography, and assets." />;
+        return <BrandContent />;
       case 'prioritization':
         return <PrioritizationContent />;
       default:

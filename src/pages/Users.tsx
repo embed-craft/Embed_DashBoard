@@ -189,7 +189,7 @@ const UsersPage = () => {
                     <Button 
                         variant="default" 
                         onClick={() => setIsCohortModalOpen(true)}
-                        className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                        className="gap-2 bg-black hover:bg-gray-800 text-white"
                     >
                         <Plus size={16} />
                         Create Cohort

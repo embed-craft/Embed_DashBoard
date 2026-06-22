@@ -164,6 +164,8 @@ export const DesignStep: React.FC<any> = () => {
     setActiveStory,
     copyLayerToClipboard,
     pasteLayerFromClipboard,
+    snapThreshold,
+    setSnapThreshold,
   } = useEditorStore();
 
   const [copiedLayerType, setCopiedLayerType] = useState<string | null>(() => {
@@ -961,8 +963,8 @@ export const DesignStep: React.FC<any> = () => {
 
   // Get layers from context: Active Story > Active Interface > Campaign root
   const activeStoryForLayers = activeStoryId ? currentCampaign?.stories?.find(s => s.id === activeStoryId) : null;
-  const campaignLayers = activeStoryForLayers ? activeStoryForLayers.layers
-    : activeInterface ? activeInterface.layers
+  const campaignLayers = activeStoryForLayers ? (activeStoryForLayers.layers || [])
+    : activeInterface ? (activeInterface.layers || [])
       : (currentCampaign?.layers || []);
   const campaignName = activeInterface ? activeInterface.name : (currentCampaign?.name || 'New Campaign');
 
@@ -4262,6 +4264,45 @@ export const DesignStep: React.FC<any> = () => {
                               .filter(layer => !layer.parent || layer.parent === 'null')
                               .map(layer => renderLayerTreeItem(layer, 0))}
                           </div>
+                          
+                          {/* Snap Threshold Setting */}
+                          <div style={{ padding: '8px 12px', borderTop: `1px solid ${colors.gray[200]}`, backgroundColor: '#F9FAFB' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 600, color: colors.gray[700] }}>
+                                  Snap Sensitivity
+                                </label>
+                                <Info 
+                                  size={12} 
+                                  color={colors.gray[400]} 
+                                  style={{ cursor: 'help' }}
+                                  title="Adjust magnetic pull distance when dragging layers to align them"
+                                />
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="50"
+                                  value={snapThreshold}
+                                  onChange={(e) => {
+                                    let val = parseInt(e.target.value);
+                                    if (isNaN(val)) val = 1;
+                                    setSnapThreshold(Math.min(50, Math.max(1, val)));
+                                  }}
+                                  style={{ 
+                                    width: '36px', 
+                                    padding: '2px 4px', 
+                                    fontSize: '11px', 
+                                    border: `1px solid ${colors.gray[300]}`,
+                                    borderRadius: '4px',
+                                    textAlign: 'right'
+                                  }}
+                                />
+                                <span style={{ fontSize: '10px', color: colors.gray[500] }}>px</span>
+                              </div>
+                            </div>
+                          </div>
                         </>
                       )
                     })()}
@@ -4430,9 +4471,9 @@ export const DesignStep: React.FC<any> = () => {
             }
 
             // If parent is Fullscreen Layout (Full Page), show only relevant layers including spinthewheel
-            // Hide spinthewheel for all other parent types
+            // Hide spinthewheel for all other parent types AND only show it if the campaign type is spinthewheel
             if (item.id === 'spinthewheel') {
-              return parentLayer?.name === 'Fullscreen Layout';
+              return currentCampaign?.type === 'spinthewheel' && parentLayer?.name === 'Fullscreen Layout';
             }
 
             // Grid Control Logic

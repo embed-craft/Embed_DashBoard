@@ -1,5 +1,6 @@
 import React from 'react';
 import { theme } from '@/styles/design-tokens';
+import { useEditorStore } from '@/store/useEditorStore';
 
 interface DevicePreset {
     id: string;
@@ -28,6 +29,8 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
     pageContext,
     onElementSelect
 }) => {
+    const snapGuides = useEditorStore((state) => state.snapGuides);
+
     // Scale dimensions based on zoom (with NaN safety checks)
     const safeZoom = Number.isFinite(zoom) && zoom > 0 ? zoom : 0.7;
     const safeDeviceWidth = Number.isFinite(device.width) && device.width > 0 ? device.width : 393;
@@ -155,6 +158,32 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                             backgroundSize: `${20 * zoom}px ${20 * zoom}px`
                         }}
                     />
+                )}
+
+                {/* 2.5 Snap Guides (Canva style) */}
+                {snapGuides?.x !== null && snapGuides?.x !== undefined && (
+                    <div style={{
+                        position: 'absolute',
+                        left: `${snapGuides.x}px`,
+                        top: 0,
+                        bottom: 0,
+                        width: '1px',
+                        backgroundColor: '#FF00FF',
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                    }} />
+                )}
+                {snapGuides?.y !== null && snapGuides?.y !== undefined && (
+                    <div style={{
+                        position: 'absolute',
+                        top: `${snapGuides.y}px`,
+                        left: 0,
+                        right: 0,
+                        height: '1px',
+                        backgroundColor: '#FF00FF',
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                    }} />
                 )}
 
                 {/* 3. Campaign Canvas Children (Nudges) */}

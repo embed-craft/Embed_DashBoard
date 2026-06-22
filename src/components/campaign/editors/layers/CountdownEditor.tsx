@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { LayerEditorProps } from '../types';
+import { TypographyFontFamilySelect } from '../shared/TypographyFontFamilySelect';
 import { CommonStyleControls } from '../shared/CommonStyleControls';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -416,16 +417,12 @@ export const CountdownEditor: React.FC<CountdownEditorProps> = ({
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
                                         <Label className="text-xs">Font Family</Label>
-                                        <Select value={content.fontFamily || 'Inter'} onValueChange={(val) => handleContentUpdate('fontFamily', val)}>
-                                            <SelectTrigger className="h-8 text-xs bg-white"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Inter">Inter</SelectItem>
-                                                <SelectItem value="Roboto">Roboto</SelectItem>
-                                                <SelectItem value="Poppins">Poppins</SelectItem>
-                                                <SelectItem value="Space Mono">Space Mono</SelectItem>
-                                                <SelectItem value="Oswald">Oswald</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <TypographyFontFamilySelect
+                                            value={content.fontFamily || 'Inter'}
+                                            onChange={(val) => handleContentUpdate('fontFamily', val)}
+                                            handleContentUpdate={handleContentUpdate}
+                                            className="h-8 text-xs bg-white"
+                                        />
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-xs">Weight</Label>

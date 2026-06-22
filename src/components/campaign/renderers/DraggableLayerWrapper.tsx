@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { DraggableCore, DraggableData, DraggableEvent } from 'react-draggable';
-import { Layer } from '@/store/useEditorStore';
+import { Layer, useEditorStore } from '@/store/useEditorStore';
 
 interface DraggableLayerWrapperProps {
     layer: Layer;
@@ -49,6 +49,34 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
         style?.position === 'absolute' || style?.position === 'fixed';
     const nodeRef = useRef<HTMLDivElement>(null);
 
+    const siblingBoundsRef = useRef<{ left: number, right: number, top: number, bottom: number, centerX: number, centerY: number }[]>([]);
+
+    const handleStart = (e: DraggableEvent, data: DraggableData) => {
+        e.stopPropagation();
+        
+        const parent = data.node.offsetParent as HTMLElement;
+        if (!parent) return;
+        
+        // Cache sibling bounds for high-performance snapping
+        const siblings = Array.from(parent.children).filter(c => c !== data.node && c.classList.contains('layer-item')) as HTMLElement[];
+        
+        siblingBoundsRef.current = siblings.map(sibling => {
+            const left = sibling.offsetLeft;
+            const top = sibling.offsetTop;
+            const width = sibling.offsetWidth;
+            const height = sibling.offsetHeight;
+            
+            return {
+                left,
+                right: left + width,
+                top,
+                bottom: top + height,
+                centerX: left + width / 2,
+                centerY: top + height / 2,
+            };
+        });
+    };
+
     const handleDrag = (e: DraggableEvent, data: DraggableData) => {
         if (!onLayerUpdate) return;
 
@@ -62,8 +90,82 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
         const currentLeft = getPixelValue(layer.style?.left, refWidth);
         const currentTop = getPixelValue(layer.style?.top, refHeight);
 
-        const newLeftPx = currentLeft + data.deltaX;
-        const newTopPx = currentTop + data.deltaY;
+        let newLeftPx = currentLeft + data.deltaX;
+        let newTopPx = currentTop + data.deltaY;
+
+        // --- Magnetic Snapping Logic ---
+        const layerWidth = data.node.offsetWidth;
+        const layerHeight = data.node.offsetHeight;
+        
+        const parentCenterX = refWidth / 2;
+        const parentCenterY = refHeight / 2;
+        
+        const layerCenterX = newLeftPx + layerWidth / 2;
+        const layerCenterY = newTopPx + layerHeight / 2;
+        
+        const SNAP_THRESHOLD = useEditorStore.getState().snapThreshold; // Dynamic threshold from store
+        
+        let snapX: number | null = null;
+        let snapY: number | null = null;
+        
+        // 1. Check Parent Center
+        if (Math.abs(layerCenterX - parentCenterX) <= SNAP_THRESHOLD) {
+            newLeftPx = parentCenterX - layerWidth / 2;
+            snapX = parentCenterX;
+        }
+        
+        if (Math.abs(layerCenterY - parentCenterY) <= SNAP_THRESHOLD) {
+            newTopPx = parentCenterY - layerHeight / 2;
+            snapY = parentCenterY;
+        }
+
+        // 2. Check Sibling Edges
+        const currentLayerBounds = {
+            left: newLeftPx,
+            right: newLeftPx + layerWidth,
+            top: newTopPx,
+            bottom: newTopPx + layerHeight,
+            centerX: newLeftPx + layerWidth / 2,
+            centerY: newTopPx + layerHeight / 2,
+        };
+
+        for (const bounds of siblingBoundsRef.current) {
+            // X-Axis Snapping
+            if (snapX === null) {
+                if (Math.abs(currentLayerBounds.left - bounds.left) <= SNAP_THRESHOLD) { newLeftPx = bounds.left; snapX = bounds.left; }
+                else if (Math.abs(currentLayerBounds.right - bounds.right) <= SNAP_THRESHOLD) { newLeftPx = bounds.right - layerWidth; snapX = bounds.right; }
+                else if (Math.abs(currentLayerBounds.centerX - bounds.centerX) <= SNAP_THRESHOLD) { newLeftPx = bounds.centerX - layerWidth / 2; snapX = bounds.centerX; }
+                else if (Math.abs(currentLayerBounds.left - bounds.right) <= SNAP_THRESHOLD) { newLeftPx = bounds.right; snapX = bounds.right; }
+                else if (Math.abs(currentLayerBounds.right - bounds.left) <= SNAP_THRESHOLD) { newLeftPx = bounds.left - layerWidth; snapX = bounds.left; }
+            }
+            
+            // Y-Axis Snapping
+            if (snapY === null) {
+                if (Math.abs(currentLayerBounds.top - bounds.top) <= SNAP_THRESHOLD) { newTopPx = bounds.top; snapY = bounds.top; }
+                else if (Math.abs(currentLayerBounds.bottom - bounds.bottom) <= SNAP_THRESHOLD) { newTopPx = bounds.bottom - layerHeight; snapY = bounds.bottom; }
+                else if (Math.abs(currentLayerBounds.centerY - bounds.centerY) <= SNAP_THRESHOLD) { newTopPx = bounds.centerY - layerHeight / 2; snapY = bounds.centerY; }
+                else if (Math.abs(currentLayerBounds.top - bounds.bottom) <= SNAP_THRESHOLD) { newTopPx = bounds.bottom; snapY = bounds.bottom; }
+                else if (Math.abs(currentLayerBounds.bottom - bounds.top) <= SNAP_THRESHOLD) { newTopPx = bounds.top - layerHeight; snapY = bounds.top; }
+            }
+        }
+        // Calculate global coordinates for the magenta guide lines
+        let parentOffsetX = 0;
+        let parentOffsetY = 0;
+        
+        const phoneContent = document.getElementById('phone-preview-content');
+        if (parent && phoneContent) {
+            const parentRect = parent.getBoundingClientRect();
+            const phoneRect = phoneContent.getBoundingClientRect();
+            parentOffsetX = parentRect.left - phoneRect.left;
+            parentOffsetY = parentRect.top - phoneRect.top;
+        }
+
+        const globalSnapX = snapX !== null ? snapX + parentOffsetX : null;
+        const globalSnapY = snapY !== null ? snapY + parentOffsetY : null;
+
+        // Notify store so the UI can draw magenta lines
+        useEditorStore.getState().setSnapGuides({ x: globalSnapX, y: globalSnapY });
+        // -------------------------------
 
         // Convert back to percentage using the SAME reference frame
         const newLeftPercent = refWidth > 0 ? `${(newLeftPx / refWidth) * 100}%` : '0%';
@@ -77,6 +179,10 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
                 position: 'absolute'
             }
         });
+    };
+
+    const handleStop = () => {
+        useEditorStore.getState().setSnapGuides(null);
     };
 
     const handleClick = (e: React.MouseEvent) => {
@@ -113,8 +219,9 @@ export const DraggableLayerWrapper: React.FC<DraggableLayerWrapperProps> = ({
                 nodeRef={nodeRef}
                 disabled={!isSelected || isInteractive || !isDraggable}
                 scale={scale}
-                onStart={(e) => e.stopPropagation()}
+                onStart={handleStart}
                 onDrag={handleDrag}
+                onStop={handleStop}
             >
                 {content}
             </DraggableCore>

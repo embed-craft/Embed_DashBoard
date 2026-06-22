@@ -569,21 +569,29 @@ const AssetsPage = () => {
                             <Button
                                 className="gap-2 h-9 text-sm font-semibold shadow-md"
                                 style={{ 
-                                    background: 'linear-gradient(135deg,#6366f1,#4f46e5)', 
-                                    border: 'none', 
-                                    color: '#fff',
-                                    boxShadow: '0 4px 14px rgba(99,102,241,0.4)',
+                                    backgroundColor: 'black',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    fontWeight: 600,
+                                    fontSize: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: uploading ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
                                     transition: 'all 0.2s'
                                 }}
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={uploading}
                                 onMouseEnter={(e) => {
                                     e.currentTarget.style.transform = 'translateY(-1px)';
-                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.5)';
+                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.5)';
                                 }}
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.transform = 'none';
-                                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.4)';
+                                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
                                 }}
                             >
                                 {uploading
@@ -772,16 +780,14 @@ const AssetsPage = () => {
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
                                         style={{
-                                            marginTop: '20px',
-                                            padding: '10px 22px', borderRadius: '10px', border: 'none',
-                                            background: 'linear-gradient(135deg,#6366f1,#4f46e5)',
-                                            color: '#fff', fontSize: '13px', fontWeight: 600,
+                                            marginTop: '20px', padding: '10px 22px', borderRadius: '10px', border: 'none',
+                                            backgroundColor: 'black', color: '#fff', fontSize: '13px', fontWeight: 600,
                                             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                                            boxShadow: '0 4px 14px rgba(99,102,241,0.3)',
+                                            boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
                                             transition: 'transform 0.15s, box-shadow 0.15s'
                                         }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.4)'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.3)'; }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.3)'; }}
                                     >
                                         <Upload size={14} /> Upload Files
                                     </button>

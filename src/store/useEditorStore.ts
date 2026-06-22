@@ -1115,6 +1115,8 @@ interface EditorStore {
   isSaving: boolean;
   saveError: string | null;
   previewUserId: string | null; // Track current user simulated in preview
+  snapGuides: { x: number | null; y: number | null } | null; // Canva-style drag alignment guides
+  snapThreshold: number; // Configurable snapping sensitivity
 
   // Saved Callbacks (Local Persistence)
   customCallbackIds: string[];
@@ -1173,6 +1175,8 @@ interface EditorStore {
   setPropertyTab: (tab: 'style' | 'actions') => void;
   setShowEditor: (show: boolean) => void;
   setPreviewUserId: (id: string | null) => void;
+  setSnapGuides: (guides: { x: number | null; y: number | null } | null) => void;
+  setSnapThreshold: (threshold: number) => void;
 
   // Auto-save
   enableAutoSave: () => void;
@@ -1274,6 +1278,8 @@ export const useEditorStore = create<EditorStore>()(
       isSaving: false,
       saveError: null,
       previewUserId: null,
+      snapGuides: null,
+      snapThreshold: 3,
       editorMode: 'campaign',
       isTemplateModalOpen: false,
       isSaveTemplateModalOpen: false,
@@ -1358,6 +1364,8 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       setPreviewUserId: (id: string | null) => set({ previewUserId: id }),
+      setSnapGuides: (guides) => set({ snapGuides: guides }),
+      setSnapThreshold: (threshold) => set({ snapThreshold: threshold }),
 
       createEvent: async (event) => {
         try {

@@ -93,11 +93,20 @@ const Campaigns = () => {
 
         let inferredExperience = bc.experience;
         
-        // Smart detection for legacy campaigns that defaulted to 'nudges'
-        if (!inferredExperience || inferredExperience === 'nudges' || inferredExperience === 'nudge') {
+        // Smart detection for legacy campaigns that defaulted to 'nudges' or broad 'gamification'
+        if (!inferredExperience || ['nudges', 'nudge', 'gamification'].includes(inferredExperience)) {
           if (
+            bc.type === 'scratchcard' || 
+            bc.campaignType === 'scratchcard' || 
+            bc.nudgeType === 'scratchcard' ||
+            bc.config?.scratchCardConfig || 
+            bc.scratchCardConfig 
+          ) {
+            inferredExperience = 'scratchcard';
+          } else if (
             bc.type === 'spinthewheel' || 
             bc.campaignType === 'spinthewheel' || 
+            bc.nudgeType === 'spinthewheel' ||
             bc.config?.spinTheWheelConfig || 
             bc.spinTheWheelConfig 
           ) {
@@ -124,6 +133,7 @@ const Campaigns = () => {
               case 'messages': return 'In-app messages';
               case 'challenge':
               case 'challenges': return 'Challenges';
+              case 'scratchcard': return 'Scratch Card';
               case 'spinthewheel':
               case 'gamification': return 'SPIN THE WHEEL';
               case 'survey':
@@ -481,6 +491,7 @@ const Campaigns = () => {
           'Out-of-app Messages': '#ec4899',
           'Stories': '#8b5cf6',
           'Challenges': '#f59e0b',
+          'Scratch Card': '#eab308',
           'SPIN THE WHEEL': '#ef4444',
           'Spin The Wheel': '#ef4444',
           'Survey': '#06b6d4',
@@ -644,7 +655,7 @@ const Campaigns = () => {
         title="Campaigns"
         subtitle="Manage your in-app experiences"
         actions={
-          <Button onClick={() => navigate('/campaigns/new')} className="gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white h-10 px-4 rounded-lg font-medium text-sm transition-colors duration-150 shadow-sm border-0">
+          <Button onClick={() => navigate('/campaigns/new')} className="gap-2 bg-black hover:bg-gray-800 active:bg-gray-900 text-white h-10 px-4 rounded-lg font-medium text-sm transition-colors duration-150 shadow-sm border-0">
             <Plus size={16} /> Create Campaign
           </Button>
         }
@@ -679,7 +690,7 @@ const Campaigns = () => {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <FilterDropdown label="Status" options={['active', 'paused', 'draft', 'scheduled']} selected={statusFilter} onChange={setStatusFilter} />
-              <FilterDropdown label="Experience" options={['In-app nudges', 'In-app messages', 'Stories', 'Challenges', 'SPIN THE WHEEL', 'Survey', 'Streaks']} selected={experienceFilter} onChange={setExperienceFilter} />
+              <FilterDropdown label="Experience" options={['In-app nudges', 'In-app messages', 'Stories', 'Challenges', 'Scratch Card', 'SPIN THE WHEEL', 'Survey', 'Streaks']} selected={experienceFilter} onChange={setExperienceFilter} />
               <FilterDropdown label="Tags" options={uniqueTags} selected={tagsFilter} onChange={setTagsFilter} />
               <FilterDropdown label="Events" options={uniqueEvents} selected={eventsFilter} onChange={setEventsFilter} />
             </div>

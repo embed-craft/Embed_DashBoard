@@ -12,6 +12,39 @@ const DEFAULT_TIMEOUT_MS = 30000;
 const API_KEY_STORAGE_KEY = 'embeddedcraft_api_key';
 
 // Types
+export interface EnterpriseTypographyConfig {
+  typography?: {
+    fontFamilies: {
+      id: string;
+      name: string;
+      isVariableFont: boolean;
+      variants: {
+        weight: number;
+        style: 'normal' | 'italic';
+        urls: { woff2?: string; ttf?: string };
+      }[];
+      variableAxes?: { wght?: number[]; ital?: number[] };
+    }[];
+    tokens: {
+      displayLarge?: TypographyToken;
+      displayMedium?: TypographyToken;
+      headlineLarge?: TypographyToken;
+      bodyLarge?: TypographyToken;
+      bodyMedium?: TypographyToken;
+      labelLarge?: TypographyToken;
+    };
+  };
+}
+
+export interface TypographyToken {
+  fontFamilyId: string;
+  weight: number;
+  size: { base: number; md: number; lg: number };
+  lineHeight: { base: number; md: number; lg: number };
+  letterSpacing: number;
+  textTransform: 'none' | 'uppercase' | 'lowercase';
+}
+
 export interface ApiErrorDetails {
   message: string;
   code?: string;
@@ -483,11 +516,11 @@ class ApiClient {
   // ============================================================================
   // Organization Settings
   // ============================================================================
-  public async getOrganizationSettings(): Promise<{ settings: { global_session_limit: number | null } }> {
+  public async getOrganizationSettings(): Promise<{ settings: { global_session_limit: number | null; brandGuidelines?: EnterpriseTypographyConfig } }> {
     return this.request('/v1/admin/organization/settings');
   }
 
-  public async updateOrganizationSettings(settings: { global_session_limit: number | null }): Promise<any> {
+  public async updateOrganizationSettings(settings: { global_session_limit?: number | null; brandGuidelines?: EnterpriseTypographyConfig }): Promise<any> {
     return this.request('/v1/admin/organization/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),

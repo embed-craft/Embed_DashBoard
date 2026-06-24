@@ -54,6 +54,7 @@ import { CountdownEditor } from '@/components/campaign/editors/layers/CountdownE
 import { SpinTheWheelEditor } from '@/components/campaign/editors/SpinTheWheelEditor';
 import { GridContainerEditor } from '@/components/campaign/editors/layers/GridContainerEditor';
 import { GridItemEditor } from '@/components/campaign/editors/layers/GridItemEditor';
+import { CustomHtmlEditor } from '@/components/campaign/editors/layers/CustomHtmlEditor';
 
 import { InterfacesList } from '@/components/campaign/InterfacesList';
 import { InterfaceTypeSelector } from '@/components/campaign/InterfaceTypeSelector';
@@ -166,6 +167,11 @@ export const DesignStep: React.FC<any> = () => {
     pasteLayerFromClipboard,
     snapThreshold,
     setSnapThreshold,
+    // Undo/Redo
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useEditorStore();
 
   const [copiedLayerType, setCopiedLayerType] = useState<string | null>(() => {
@@ -211,6 +217,37 @@ export const DesignStep: React.FC<any> = () => {
       fetchMetadata();
     }
   }, []);
+
+  // Undo/Redo keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input/textarea/contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+      if (isCtrlOrMeta && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo()) undo();
+      } else if (
+        isCtrlOrMeta &&
+        (e.key === 'y' || (e.key === 'z' && e.shiftKey) || (e.key === 'Z' && e.shiftKey))
+      ) {
+        e.preventDefault();
+        if (canRedo()) redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo, canUndo, canRedo]);
 
   // Local UI state
 
@@ -3600,6 +3637,19 @@ export const DesignStep: React.FC<any> = () => {
       );
     }
 
+    // Custom HTML properties
+    if (selectedLayerObj.type === 'custom_html') {
+      return (
+        <CustomHtmlEditor
+          layer={selectedLayerObj}
+          selectedLayerId={selectedLayerId!}
+          updateLayer={updateLayer}
+          onStyleUpdate={handleStyleUpdate}
+          colors={colors}
+        />
+      );
+    }
+
     // Carousel properties
     if (selectedLayerObj.type === 'carousel') {
       return (
@@ -4444,6 +4494,7 @@ export const DesignStep: React.FC<any> = () => {
           {[
             { id: 'input', label: 'Input Field', icon: Type },
             { id: 'container', label: 'Container', icon: Layout },
+            { id: 'custom_html', label: 'Custom HTML', icon: Code },
             { id: 'media', label: 'Image', icon: ImageIcon },
             { id: 'lottie', label: 'Lottie Animation', icon: PlaySquare },
             { id: 'rive', label: 'Rive Animation', icon: PlaySquare },

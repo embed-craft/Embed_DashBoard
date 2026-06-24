@@ -14,6 +14,7 @@ import { CountdownRenderer } from './campaign/renderers/CountdownRenderer';
 import { SpinTheWheelLayerRenderer } from './campaign/renderers/SpinTheWheelLayerRenderer';
 import { LottieRenderer } from './campaign/renderers/LottieRenderer';
 import { RiveRenderer } from './campaign/renderers/RiveRenderer';
+import { CustomHtmlLayerRenderer } from './campaign/renderers/CustomHtmlLayerRenderer';
 import { Check, Circle, Move, ArrowRight, ArrowLeft, Play, Search, Home, X, Download, Upload, User, Settings, Expand, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -653,6 +654,15 @@ export const FloaterRenderer: React.FC<FloaterRendererProps> = ({
                         layer={layer}
                         scale={scale}
                         isInteractive={isInteractive}
+                    />
+                );
+                break;
+            case 'custom_html':
+                content = (
+                    <CustomHtmlLayerRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
                     />
                 );
                 break;

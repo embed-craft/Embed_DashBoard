@@ -1169,6 +1169,8 @@ interface EditorStore {
   updateSpinTheWheelConfig: (config: Partial<SpinTheWheelConfig>) => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  undo: () => void;
+  redo: () => void;
 
   // Actions - UI
   setActiveTab: (tab: 'design' | 'targeting') => void;
@@ -1236,6 +1238,7 @@ interface EditorStore {
 // Debounced history tracker to prevent race conditions
 let historyTimeout: NodeJS.Timeout | null = null;
 const HISTORY_DEBOUNCE_MS = 300;
+const MAX_HISTORY_LENGTH = 50; // Cap history to prevent memory bloat
 
 // Debounced auto-save to prevent rate limiting
 let autoSaveTimeout: NodeJS.Timeout | null = null;
@@ -1255,6 +1258,10 @@ const saveToHistoryDebounced = (get: () => EditorStore, set: (state: Partial<Edi
 
     const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
     newHistory.push(currentCampaign.layers);
+    // Trim oldest entries if over the cap
+    while (newHistory.length > MAX_HISTORY_LENGTH) {
+      newHistory.shift();
+    }
 
     set({
       currentCampaign: {
@@ -2606,6 +2613,7 @@ export const useEditorStore = create<EditorStore>()(
         // Save to history
         const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
         newHistory.push(updatedLayers);
+        while (newHistory.length > MAX_HISTORY_LENGTH) newHistory.shift();
 
         set({
           currentCampaign: {
@@ -2640,20 +2648,15 @@ export const useEditorStore = create<EditorStore>()(
         });
 
         if (found) {
-          // Verify history push
-          const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
-          newHistory.push(updatedMainLayers);
-
           set({
             currentCampaign: {
               ...currentCampaign,
               layers: updatedMainLayers,
-              history: newHistory,
-              historyIndex: newHistory.length - 1,
               updatedAt: new Date().toISOString(),
               isDirty: true,
             },
           });
+          saveToHistoryDebounced(get, set);
           return;
         }
 
@@ -3254,6 +3257,7 @@ export const useEditorStore = create<EditorStore>()(
         } else {
           const newHistory = currentCampaign.history.slice(0, currentCampaign.historyIndex + 1);
           newHistory.push(updatedLayersList);
+          while (newHistory.length > MAX_HISTORY_LENGTH) newHistory.shift();
           set({
             currentCampaign: {
               ...currentCampaign,
@@ -3307,6 +3311,7 @@ export const useEditorStore = create<EditorStore>()(
               isDirty: true,
             },
           });
+          saveToHistoryDebounced(get, set);
           return;
         }
 
@@ -3364,6 +3369,7 @@ export const useEditorStore = create<EditorStore>()(
               isDirty: true,
             },
           });
+          saveToHistoryDebounced(get, set);
           return;
         }
 
@@ -3432,6 +3438,7 @@ export const useEditorStore = create<EditorStore>()(
               isDirty: true,
             },
           });
+          saveToHistoryDebounced(get, set);
           return;
         }
 
@@ -3512,6 +3519,7 @@ export const useEditorStore = create<EditorStore>()(
               isDirty: true,
             },
           });
+          saveToHistoryDebounced(get, set);
           return;
         }
 
@@ -4268,7 +4276,30 @@ export const useEditorStore = create<EditorStore>()(
 
       // Undo
       undo: () => {
-        const { currentCampaign } = get();
+        let state = get();
+        // Cancel any pending debounced history save and flush it to history before undoing
+        if (historyTimeout) {
+          clearTimeout(historyTimeout);
+          historyTimeout = null;
+          
+          const camp = state.currentCampaign;
+          if (camp) {
+            const newHistory = camp.history.slice(0, camp.historyIndex + 1);
+            newHistory.push(camp.layers);
+            while (newHistory.length > MAX_HISTORY_LENGTH) newHistory.shift();
+            
+            set({
+              currentCampaign: {
+                ...camp,
+                history: newHistory,
+                historyIndex: newHistory.length - 1
+              }
+            });
+            state = get(); // Refresh state after flush
+          }
+        }
+        
+        const { currentCampaign } = state;
         if (!currentCampaign || currentCampaign.historyIndex <= 0) return;
 
         const newIndex = currentCampaign.historyIndex - 1;
@@ -4287,7 +4318,30 @@ export const useEditorStore = create<EditorStore>()(
 
       // Redo
       redo: () => {
-        const { currentCampaign } = get();
+        let state = get();
+        // Cancel any pending debounced history save and flush it
+        if (historyTimeout) {
+          clearTimeout(historyTimeout);
+          historyTimeout = null;
+          
+          const camp = state.currentCampaign;
+          if (camp) {
+            const newHistory = camp.history.slice(0, camp.historyIndex + 1);
+            newHistory.push(camp.layers);
+            while (newHistory.length > MAX_HISTORY_LENGTH) newHistory.shift();
+            
+            set({
+              currentCampaign: {
+                ...camp,
+                history: newHistory,
+                historyIndex: newHistory.length - 1
+              }
+            });
+            state = get();
+          }
+        }
+        
+        const { currentCampaign } = state;
         if (!currentCampaign || currentCampaign.historyIndex >= currentCampaign.history.length - 1) return;
 
         const newIndex = currentCampaign.historyIndex + 1;
@@ -5476,6 +5530,14 @@ function getDefaultContentForType(type: LayerType): LayerContent {
         scratchSize: 50,
         revealThreshold: 50,
       };
+    case 'custom_html':
+      return {
+        html: '<div class="hello-world">Hello, Custom HTML!</div>',
+        css: '.hello-world {\n  color: #4f46e5;\n  font-family: sans-serif;\n  font-weight: bold;\n  text-align: center;\n}',
+        javascript: 'console.log("Custom HTML mounted.");',
+        renderMode: 'webview',
+        bridgeEventName: 'ninjaAction'
+      };
     case 'spinthewheel':
       return {
         showCongratsScreen: true,
@@ -5576,6 +5638,17 @@ function getDefaultStyleForType(type: LayerType): LayerStyle {
         left: '0px',
         zIndex: 50,
         position: 'absolute'
+      };
+    case 'custom_html':
+      return {
+        ...baseStyle,
+        width: 300,
+        height: 200,
+        top: '0px',
+        left: '0px',
+        zIndex: 50,
+        position: 'absolute',
+        overflow: 'hidden'
       };
     case 'container':
       return {

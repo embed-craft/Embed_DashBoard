@@ -10,6 +10,7 @@ import { InputRenderer } from './campaign/renderers/InputRenderer';
 import { CopyButtonRenderer } from './campaign/renderers/CopyButtonRenderer';
 import { ScratchFoilLayerRenderer } from './campaign/renderers/ScratchFoilLayerRenderer';
 import { LottieRenderer } from './campaign/renderers/LottieRenderer';
+import { CustomHtmlLayerRenderer } from './campaign/renderers/CustomHtmlLayerRenderer';
 
 // Helper to scale any string containing "Npx" values (e.g. "1px solid red", "0 4px 10px black")
 // This ensures decorations match the mobile scaling factor
@@ -205,6 +206,15 @@ export const TooltipRenderer: React.FC<TooltipRendererProps> = ({
                         layer={layer}
                         scale={scale}
                         isInteractive={isInteractive}
+                    />
+                );
+                break;
+            case 'custom_html':
+                content = (
+                    <CustomHtmlLayerRenderer
+                        layer={layer}
+                        scale={scale}
+                        scaleY={scaleY}
                     />
                 );
                 break;

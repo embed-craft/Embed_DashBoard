@@ -14,6 +14,7 @@ import { CountdownRenderer } from './CountdownRenderer';
 import { DraggableLayerWrapper } from './DraggableLayerWrapper';
 import { LottieRenderer } from './LottieRenderer';
 import { RiveRenderer } from './RiveRenderer';
+import { CustomHtmlLayerRenderer } from './CustomHtmlLayerRenderer';
 import { Layer, LayerStyle } from '@/store/useEditorStore';
 
 interface SlideContainerRendererProps {
@@ -407,6 +408,7 @@ export const SlideContainerRenderer: React.FC<SlideContainerRendererProps> = ({
             case 'button': content = <ButtonRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'input': content = <InputRenderer layer={layer} scale={scale} scaleY={scaleY} onInterfaceAction={onInterfaceAction} />; break;
             case 'scratch_foil': content = <ScratchFoilLayerRenderer layer={layer} scale={scale} isInteractive={isInteractive} />; break;
+            case 'custom_html': content = <CustomHtmlLayerRenderer layer={layer} scale={scale} scaleY={scaleY} />; break;
             case 'carousel': content = <CarouselLayerRenderer layer={layer} scale={scale} scaleY={scaleY} isInteractive={isInteractive} isActive={slideIsActive} renderChild={renderLayer} />; break;
             case 'countdown': content = <CountdownRenderer layer={layer} scale={scale} />; break;
             case 'container': content = <ContainerRenderer layer={layer} layers={layers} scale={scale} scaleY={scaleY} renderChild={(child) => renderLayer(child, slideIsActive)} />; break;

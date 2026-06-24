@@ -170,6 +170,7 @@ const EXPERIENCE_TYPES = [
         title: 'Survey',
         info: 'Collect actionable user feedback with natively embedded NPS, CSAT, and custom surveys. Contextual, in-app data collection without interrupting the user journey.',
         Illustration: SurveyIllustration,
+        comingSoon: true,
     },
 ];
 
